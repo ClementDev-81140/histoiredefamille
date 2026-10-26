@@ -1,0 +1,74 @@
+# ---------------------------------------------------------------------------
+#  Apache — réécriture du site histoiredefamille.eu
+#  Ce fichier est lu automatiquement par Apache si AllowOverride All est actif
+#  (c'est le cas dans le VirtualHost fourni dans deploy/apache/).
+# ---------------------------------------------------------------------------
+
+Options -Indexes -MultiViews
+DirectoryIndex index.php
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Ne jamais réécrire les fichiers réellement présents (CSS, JS, images).
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Tout le reste passe par l'unique point d'entrée.
+    RewriteRule ^ index.php [L]
+</IfModule>
+
+# ---------------------------------------------------------------------------
+#  Blocage des fichiers sensibles.
+#  Apache 2.4 : on interdit l'accès à tout ce qui ressemble à du code,
+#  des données ou une sauvegarde, même par erreur de configuration.
+# ---------------------------------------------------------------------------
+<FilesMatch "(^\.|\.(git|env|ini|log|sql|sqlite|sqlite3|db|bak|dump|sh|dist|sample|example)$|^config.*\.php$|^composer\.(json|lock)$|^README|^CHANGELOG|^TODO)">
+    Require all denied
+</FilesMatch>
+
+# Interdiction explicite des dossiers sensibles, si jamais ils existaient
+# dans public/ par mégarde.
+RedirectMatch 404 /\.(git|svn|hg)(/|$)
+RedirectMatch 404 /(README\.md|CHANGELOG\.md|TODO\.md)$
+
+# ---------------------------------------------------------------------------
+#  En-têtes de sécurité (doublés par ceux envoyés en PHP, c'est volontaire :
+#  un fichier statique servi directement par Apache doit aussi les porter).
+# ---------------------------------------------------------------------------
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "DENY"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Content-Security-Policy "default-src 'self'; img-src 'self' data:; media-src 'self'; style-src 'self'; script-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'"
+    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+    Header unset X-Powered-By
+</IfModule>
+
+# ---------------------------------------------------------------------------
+#  Cache : seuls les fichiers statiques du thème peuvent être mis en cache.
+#  Les documents de famille passent par PHP (Cache-Control: private, no-store),
+#  donc ne sont jamais concernés par cette règle.
+# ---------------------------------------------------------------------------
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css "access plus 7 days"
+    ExpiresByType application/javascript "access plus 7 days"
+    ExpiresByType image/svg+xml "access plus 30 days"
+    ExpiresByType font/woff2 "access plus 30 days"
+</IfModule>
+
+# ---------------------------------------------------------------------------
+#  Compression (utile en ADSL / 4G, ce qui sera souvent le cas sur la Pi).
+# ---------------------------------------------------------------------------
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/css text/plain text/xml \
+        application/javascript application/json image/svg+xml
+</IfModule>
+
+# Pas de compression des vidéos : elles sont déjà compressées et doivent
+# pouvoir être servies avec Range (le script PHP s'en charge de toute façon).
+<FilesMatch "\.(mp4|m4v|mov|webm)$">
+    SetEnv no-gzip 1
+</FilesMatch>
