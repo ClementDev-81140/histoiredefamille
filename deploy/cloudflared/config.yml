@@ -1,0 +1,60 @@
+# ---------------------------------------------------------------------------
+#  Tunnel Cloudflare — histoiredefamille.eu
+#  Fichier : /etc/cloudflared/config.yml   (propriétaire root, mode 600)
+#
+#  Principe : aucun port n'est ouvert sur la box. Le Raspberry Pi ouvre une
+#  connexion sortante vers Cloudflare, qui renvoie le trafic vers Apache
+#  (http://localhost:80). Le HTTPS est assuré par Cloudflare.
+#
+#  Installation (voir README.md, section « Mise en ligne ») :
+#    1. installer cloudflared ;
+#    2. créer le tunnel :  sudo cloudflared tunnel login
+#                          sudo cloudflared tunnel create histoiredefamille
+#    3. copier ce fichier, puis remplacer TUNNEL-ID par l'identifiant affiché ;
+#    4. déclarer le nom de domaine :  sudo cloudflared tunnel route dns histoiredefamille histoiredefamille.eu
+#    5. installer le service :        sudo cloudflared service install
+#    6. vérifier :                    sudo systemctl status cloudflared
+#
+#  Le fichier de credentials (TUNNEL-ID.json) est créé par « tunnel create »
+#  dans /root/.cloudflared/ : il ne doit JAMAIS être copié dans le dépôt Git.
+# ---------------------------------------------------------------------------
+
+tunnel: histoiredefamille
+credentials-file: /root/.cloudflared/TUNNEL-ID.json
+
+# Le Pi est limité : deux connexions suffisent largement.
+protocol: quic
+no-autoupdate: true
+
+# Nombre de connexions simultanées vers les serveurs Cloudflare.
+# 2 est un bon compromis sur un Pi 3B+.
+edge-ip-version: 4
+
+# Métriques locales (facultatif) : http://localhost:20241/metrics
+metrics: 127.0.0.1:20241
+
+originRequest:
+  # Apache répond en HTTP en local.
+  noTLSVerify: true
+  connectTimeout: 30s
+  # Les vidéos sont lues par morceaux : il ne faut pas couper la connexion
+  # au bout de quelques secondes.
+  tcpKeepAlive: 30s
+  # Apache ne compresse pas les vidéos, Cloudflare non plus.
+  disableChunkedEncoding: false
+
+ingress:
+  # Le site lui-même.
+  - hostname: histoiredefamille.eu
+    service: http://localhost:80
+
+  # www redirige vers l'adresse principale (géré aussi côté Cloudflare).
+  - hostname: www.histoiredefamille.eu
+    service: http://localhost:80
+
+  # Règle obligatoire en dernier : tout le reste est refusé.
+  - service: http_status:404
+
+# Journaux du tunnel (utiles pour diagnostiquer une erreur 502).
+loglevel: info
+logfile: /var/log/cloudflared.log

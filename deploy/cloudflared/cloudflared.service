@@ -1,0 +1,37 @@
+# ---------------------------------------------------------------------------
+#  Service systemd du tunnel Cloudflare (installation manuelle)
+#  Fichier : /etc/systemd/system/cloudflared.service
+#
+#  En général « sudo cloudflared service install » crée ce fichier tout seul.
+#  Il est fourni ici au cas où (ou pour comprendre ce qui tourne).
+#
+#  Mise en service :
+#      sudo cp deploy/cloudflared/cloudflared.service /etc/systemd/system/
+#      sudo systemctl daemon-reload
+#      sudo systemctl enable --now cloudflared
+#      sudo systemctl status cloudflared
+#
+#  Voir les journaux :
+#      sudo journalctl -u cloudflared -n 50 --no-pager
+# ---------------------------------------------------------------------------
+
+[Unit]
+Description=Tunnel Cloudflare (histoiredefamille.eu)
+Documentation=https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/
+After=network-online.target apache2.service
+Wants=network-online.target
+
+[Service]
+Type=notify
+# Le tunnel démarre après Apache : inutile d'ouvrir le tunnel si le site
+# n'est pas encore prêt.
+TimeOutStartSec=30
+Restart=on-failure
+RestartSec=5s
+ExecStart=/usr/bin/cloudflared --no-autoupdate --config /etc/cloudflared/config.yml tunnel run
+User=root
+# Le Pi a 1 Go de RAM : on limite ce que le tunnel peut consommer.
+MemoryMax=256M
+
+[Install]
+WantedBy=multi-user.target

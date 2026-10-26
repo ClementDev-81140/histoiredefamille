@@ -1,0 +1,19 @@
+# ---------------------------------------------------------------------------
+#  Tâches planifiées — Histoire de famille
+#  Fichier : /etc/cron.d/histoiredefamille  (créé par deploy/install.sh)
+#
+#  Format : minute heure jour-du-mois mois jour-de-la-semaine utilisateur commande
+# ---------------------------------------------------------------------------
+
+# Sauvegarde quotidienne à 3 h 15 (base + fichiers vers la clé USB).
+# Journal : /mnt/sauvegarde/histoiredefamille/journal-sauvegarde.log
+15 3 * * * www-data /var/www/histoiredefamille/deploy/backup.sh >/dev/null 2>&1
+
+# Test de restauration une fois par semaine (dimanche à 4 h 45) : vérifie que
+# la dernière copie de la base est lisible et intègre. Le résultat est ajouté
+# au journal de sauvegarde.
+45 4 * * 0 www-data /var/www/histoiredefamille/deploy/backup.sh --verifier >>/mnt/sauvegarde/histoiredefamille/journal-sauvegarde.log 2>&1
+
+# Maintenance hebdomadaire : nettoyage des verrous de lecture vidéo, des
+# fichiers temporaires et optimisation de la base.
+30 5 * * 0 www-data /usr/bin/php /var/www/histoiredefamille/app/cli/maintenance.php >/dev/null 2>&1
