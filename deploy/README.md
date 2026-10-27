@@ -23,8 +23,8 @@ trouve dans le [README principal](../README.md) ; ce fichier sert d'index.
 df -h /mnt/ssd /mnt/sauvegarde
 
 # 2. récupérer le code
-cd /home/clement
-git clone https://github.com/ClementDev-81140/histoiredefamille.git
+cd /home/votre-utilisateur
+git clone https://github.com/VOTRE-COMPTE/histoiredefamille.git
 cd histoiredefamille
 
 # 3. installer

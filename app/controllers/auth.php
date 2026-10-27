@@ -14,7 +14,7 @@ function auth_login_form(): void
 
     render('public/connexion', [
         'titre'      => 'Connexion',
-        'next'       => (string) ($_GET['next'] ?? ''),
+        'next'       => safe_next_path((string) ($_GET['next'] ?? '')),
         'identifiant' => (string) ($_SESSION['_old_username'] ?? ''),
     ]);
     unset($_SESSION['_old_username']);
@@ -27,7 +27,7 @@ function auth_login_submit(): void
 
     $username = post('username');
     $password = (string) ($_POST['password'] ?? '');
-    $next     = post('next');
+    $next     = safe_next_path(post('next'));
 
     $result = auth_attempt($username, $password);
 
@@ -37,8 +37,9 @@ function auth_login_submit(): void
         redirect('/connexion' . ($next !== '' ? '?next=' . rawurlencode($next) : ''));
     }
 
-    // Redirection interne uniquement (pas d'URL externe).
-    if ($next !== '' && str_starts_with($next, '/') && !str_starts_with($next, '//')) {
+    // Redirection interne uniquement : safe_next_path() a déjà écarté les URL
+    // externes, « // » et les antislashs.
+    if ($next !== '') {
         redirect($next);
     }
     redirect(home_for_account());

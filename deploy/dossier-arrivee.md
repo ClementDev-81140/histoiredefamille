@@ -60,7 +60,7 @@ ffprobe -hide_banner -show_streams film-famille.mp4 | grep -E 'codec_name|width|
 ## 2. Copier le fichier sur le Pi (réseau local)
 
 Le Raspberry Pi doit être allumé et connecté à la même box que votre
-ordinateur. Remplacez `192.168.1.50` par l'adresse locale du Pi
+ordinateur. Remplacez `IP-DU-PI` par l'adresse locale du Pi
 (à trouver avec `hostname -I` sur le Pi).
 
 ### Méthode A — SFTP / SCP (rien à installer sur le Pi)
@@ -69,31 +69,31 @@ ordinateur. Remplacez `192.168.1.50` par l'adresse locale du Pi
 d'adresse :
 
 ```
-sftp://clement@192.168.1.50/mnt/ssd/histoiredefamille/arrivee
+sftp://votre-utilisateur@IP-DU-PI/mnt/ssd/histoiredefamille/arrivee
 ```
 
-Windows demande le mot de passe du compte `clement` (celui du Pi, pas celui
+Windows demande le mot de passe du compte `votre-utilisateur` (celui du Pi, pas celui
 du site), puis vous pouvez glisser-déposer le fichier.
 
 **macOS / Linux / Windows avec PowerShell** :
 
 ```bash
-scp film-famille.mp4 clement@192.168.1.50:/mnt/ssd/histoiredefamille/arrivee/
+scp film-famille.mp4 votre-utilisateur@IP-DU-PI:/mnt/ssd/histoiredefamille/arrivee/
 ```
 
 **Avec FileZilla** (graphique, si vous préférez) :
 
-- Hôte : `sftp://192.168.1.50`, port `22`, protocole **SFTP**
-- Identifiant : `clement`, mot de passe : celui du Pi
+- Hôte : `sftp://IP-DU-PI`, port `22`, protocole **SFTP**
+- Identifiant : `votre-utilisateur`, mot de passe : celui du Pi
 - Dossier distant : `/mnt/ssd/histoiredefamille/arrivee`
 
 > Si la copie échoue avec « Permission denied » : `/mnt/ssd/histoiredefamille/arrivee`
 > appartient à `www-data`. Le plus simple :
 >
 > ```bash
-> sudo chown clement:clement /mnt/ssd/histoiredefamille/arrivee
+> sudo chown votre-utilisateur:votre-utilisateur /mnt/ssd/histoiredefamille/arrivee
 > sudo chmod 775 /mnt/ssd/histoiredefamille/arrivee
-> sudo usermod -aG www-data clement   # puis se déconnecter/reconnecter
+> sudo usermod -aG www-data votre-utilisateur   # puis se déconnecter/reconnecter
 > ```
 >
 > Le script `deploy/install.sh` laisse le dossier accessible à `www-data` ;
@@ -115,14 +115,14 @@ sudo tee -a /etc/samba/smb.conf >/dev/null <<'CONF'
    create mask = 0660
    directory mask = 0770
    force group = www-data
-   valid users = clement
+   valid users = votre-utilisateur
 CONF
 
-sudo smbpasswd -a clement     # choisit un mot de passe pour le partage
+sudo smbpasswd -a votre-utilisateur   # choisit un mot de passe pour le partage
 sudo systemctl restart smbd
 ```
 
-Sous Windows : ouvrir `\\192.168.1.50\arrivee` (ou *Connecter un lecteur
+Sous Windows : ouvrir `\\IP-DU-PI\arrivee` (ou *Connecter un lecteur
 réseau*), coller le fichier.
 
 > Ne pas exposer Samba sur Internet : il ne sert qu'au réseau de la maison.

@@ -102,7 +102,7 @@ Chaque document, page et personne a un niveau de visibilité :
 
 | Type de compte | Identifiant | Mot de passe | Droits |
 |---|---|---|---|
-| Administrateur | `clement`, `...`, `...` (3 comptes personnels) | personnel, modifiable | tout : documents, branches, comptes, arbre, pages, réglages |
+| Administrateur | `votre-identifiant`, plus deux autres (3 comptes personnels) | personnel, modifiable | tout : documents, branches, comptes, arbre, pages, réglages |
 | Branche familiale | `MARTIN`, `DURAND`… (en majuscules) | un mot de passe partagé par la branche | lecture des documents de la branche (+ publics) |
 | Branche « voit tout » | par exemple `RAVIART` | idem | lecture de tous les documents « famille » et « branches » (mais pas des documents privés) |
 
@@ -130,6 +130,7 @@ Points importants :
 histoiredefamille/
 ├── public/                  ← SEUL dossier visible depuis le web
 │   ├── index.php            point d'entrée unique (toutes les URL passent ici)
+│   ├── maintenance.html     page statique affichée en cas de 503
 │   ├── .htaccess            URL propres, blocage des fichiers sensibles, en-têtes
 │   └── assets/              style.css et app.js (aucune bibliothèque externe)
 ├── app/                     ← code de l'application (hors racine web)
@@ -184,13 +185,13 @@ telles quelles, sauf celles marquées « à adapter ».
 1. Installer **Ubuntu Server 24.04 LTS (64 bits)** avec *Raspberry Pi Imager*.
 2. Dans les options avancées de l'outil, avant d'écrire :
    - activer SSH (clé publique si vous en avez une),
-   - définir un identifiant (`clement`) et un mot de passe,
+   - définir un identifiant (`votre-utilisateur`) et un mot de passe,
    - régler le nom d'hôte (`histoiredefamille`) et le Wi-Fi.
 3. Insérer la carte, brancher le SSD et la clé USB, démarrer, attendre une
    minute, puis se connecter depuis un autre ordinateur :
 
 ```bash
-ssh clement@histoiredefamille.local
+ssh votre-utilisateur@histoiredefamille.local
 ```
 
 (Si le nom ne se résout pas, utilisez l'adresse IP affichée sur l'écran ou
@@ -223,8 +224,8 @@ sudo -u www-data test -w /mnt/ssd/histoiredefamille && echo "OK"
 ### 4.3 Récupérer le code
 
 ```bash
-cd /home/clement
-git clone https://github.com/ClementDev-81140/histoiredefamille.git
+cd /home/votre-utilisateur
+git clone https://github.com/VOTRE-COMPTE/histoiredefamille.git
 cd histoiredefamille
 ```
 
@@ -490,7 +491,7 @@ ci-dessous. Résumé :
 
 ```bash
 # depuis votre ordinateur, sur le réseau de la maison
-scp film-famille.mp4 clement@histoiredefamille.local:/mnt/ssd/histoiredefamille/arrivee/
+scp film-famille.mp4 votre-utilisateur@histoiredefamille.local:/mnt/ssd/histoiredefamille/arrivee/
 ```
 
 puis **Administration → Importer depuis le dossier arrivée**.
@@ -522,7 +523,7 @@ Les mises à jour ne touchent **ni** `config.local.php`, **ni** le SSD, **ni**
 la clé USB.
 
 ```bash
-cd /home/clement/histoiredefamille
+cd /home/votre-utilisateur/histoiredefamille
 git pull
 sudo bash deploy/install.sh
 ```
@@ -757,6 +758,7 @@ L'import ne devine pas tout. Après coup, dans **Arbre** :
 | Miniatures noires ou vides | image CMYK ou très grande | convertir en JPEG RVB ; au-delà de 24 Mpx le site refuse (limite mémoire du Pi) |
 | Mot de passe de branche perdu | — | Administration → Branches → **Réinitialiser le mot de passe** |
 | Compte bloqué après 5 essais | protection anti-force brute | attendre 15 minutes, ou `sudo -u www-data sqlite3 /mnt/ssd/histoiredefamille/histoire.sqlite "DELETE FROM login_attempts;"` |
+| Page « Site momentanément indisponible » | Apache répond 503 (surcharge, redémarrage) ou PHP est arrêté | `sudo systemctl status apache2` ; la page est `public/maintenance.html`, modifiable librement |
 | Sauvegarde en échec | clé USB absente ou pleine | `df -h /mnt/sauvegarde`, rebrancher, relancer `sudo -u www-data /var/www/histoiredefamille/deploy/backup.sh` |
 | Le Pi ne démarre plus | disque monté dans `fstab` et absent | `nofail` doit être présent ; sinon démarrer sans le disque et corriger `/etc/fstab` |
 | Vidéo qui ne démarre pas | format non compatible | reconvertir en MP4 H.264 + AAC (§ 9) |
@@ -816,7 +818,10 @@ le dossier `storage/` sont listés dans `.gitignore`.
   régénéré à la connexion, expiration après 4 h d'inactivité et 7 jours au
   maximum.
 - **Connexion** : 5 échecs puis blocage 15 minutes, par identifiant **et** par
-  adresse IP (lue dans l'en-tête `CF-Connecting-IP` fourni par Cloudflare).
+  adresse IP. L'en-tête `CF-Connecting-IP` de Cloudflare n'est pris en compte
+  que si la requête arrive de la boucle locale (`127.0.0.1`), c'est-à-dire du
+  tunnel : sinon n'importe qui sur le réseau de la maison pourrait le forger
+  pour échapper au blocage par IP.
 - **Envois** : stockés hors de la racine web, type réel vérifié avec `finfo`,
   liste blanche d'extensions, nom aléatoire, nom d'origine conservé seulement
   en base, jamais exécutables.

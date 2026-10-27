@@ -1130,6 +1130,12 @@ legend {
     }
 }
 
+/* Page d'attente servie par Apache en cas de 503 (public/maintenance.html).
+   Statique : elle doit s'afficher même si PHP est indisponible. */
+.page-maintenance {
+    margin: 3rem auto;
+}
+
 /* Accessibilité : respect des préférences de mouvement réduit. */
 @media (prefers-reduced-motion: reduce) {
     * {

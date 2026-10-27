@@ -4,7 +4,7 @@
 # ---------------------------------------------------------------------------
 #  À lancer UNE FOIS, depuis le dossier du site, sur le Raspberry Pi :
 #
-#      cd /home/clement/histoiredefamille
+#      cd /home/votre-utilisateur/histoiredefamille
 #      sudo bash deploy/install.sh
 #
 #  Le script installe Apache, PHP et ses extensions, active les modules

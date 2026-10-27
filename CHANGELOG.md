@@ -100,3 +100,15 @@ Première version complète, installable sur le Raspberry Pi.
   la page d'accueil et l'espace famille.
 - Formulaires d'administration : variable `$isEdit` non transmise à certaines
   vues, bouton d'enregistrement absent.
+- Fichier `deploy/apache/histoiredefamille.conf` : balise de fermeture
+  `</VirtualHost>` manquante, Apache refusait de démarrer.
+- Adresse IP : l'en-tête `CF-Connecting-IP` n'est plus accepté que si la
+  requête vient de la boucle locale (le tunnel), pour qu'il ne puisse pas être
+  forgé depuis le réseau local et contourner le blocage par IP.
+- Redirection après connexion : le paramètre `next` refuse désormais les
+  antislashs (`/\site.com`), les doubles barres obliques et les caractères de
+  contrôle, en plus des URL externes.
+- Documentation : remplacement des informations personnelles (pseudo GitHub,
+  identifiant du Pi, adresse IP locale) par des valeurs à adapter.
+- Ajout de `public/maintenance.html`, la page d'attente référencée par
+  `ErrorDocument 503` (elle manquait).

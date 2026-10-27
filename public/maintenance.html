@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Site momentanément indisponible — Histoire de famille</title>
+    <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<!--
+    Page affichée par Apache quand le serveur répond 503
+    (voir « ErrorDocument 503 » dans deploy/apache/histoiredefamille.conf).
+
+    Elle est statique, volontairement : si PHP est saturé ou indisponible,
+    cette page doit quand même s'afficher. Pas de style en ligne (la politique
+    de sécurité du contenu l'interdit), uniquement /assets/style.css.
+-->
+<div class="conteneur">
+    <main class="panneau panneau--etroit panneau--centre page-maintenance">
+        <h1>Site momentanément indisponible</h1>
+        <p>
+            Le site est surchargé ou en cours de redémarrage.
+            Merci de réessayer dans quelques instants.
+        </p>
+        <p class="discret">
+            Si le message persiste au bout de plusieurs minutes,
+            prévenez la personne qui administre le site.
+        </p>
+        <p><a class="bouton" href="/">Réessayer</a></p>
+    </main>
+</div>
+</body>
+</html>

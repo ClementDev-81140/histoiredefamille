@@ -32,6 +32,38 @@ function url(string $path = '/', bool $absolute = false): string
     return $path;
 }
 
+/**
+ * Chemin de redirection interne, ou '' si la valeur est suspecte.
+ *
+ * Sert au paramètre « next » du formulaire de connexion : on ne redirige que
+ * vers une page du site. Sont refusés :
+ *  - tout ce qui ne commence pas par « / » (donc « https://exemple.test ») ;
+ *  - « // » et « /\ » en tête, que les navigateurs transforment en
+ *    « //site.com » (redirection ouverte vers un autre domaine) ;
+ *  - l'antislash et les caractères de contrôle, qui permettent cette même
+ *    transformation ou une injection d'en-tête.
+ */
+function safe_next_path(string $path): string
+{
+    if ($path === '' || strlen($path) > 512) {
+        return '';
+    }
+    if (!str_starts_with($path, '/')) {
+        return '';
+    }
+    // « // » ou « /\ » : le navigateur y voit « //autre-site.com ».
+    if (preg_match('#^/[/\\\\]#', $path) === 1) {
+        return '';
+    }
+    if (str_contains($path, '\\') || preg_match('#[\x00-\x1F\x7F]#', $path) === 1) {
+        return '';
+    }
+    if (str_contains($path, '://')) {
+        return '';
+    }
+    return $path;
+}
+
 /** Redirige puis arrête le script. */
 function redirect(string $path, int $code = 303): never
 {
@@ -291,13 +323,23 @@ function cli_err(string $text): void
 /** Adresse IP du visiteur, en tenant compte de l'en-tête Cloudflare. */
 function client_ip(): string
 {
-    // Cloudflare renseigne CF-Connecting-IP avec l'IP réelle du visiteur.
+    $remote = $_SERVER['REMOTE_ADDR'] ?? '';
+    $remote = is_string($remote) && filter_var($remote, FILTER_VALIDATE_IP) ? $remote : '0.0.0.0';
+
+    // L'en-tête CF-Connecting-IP n'est digne de confiance que si la requête
+    // arrive de cloudflared, c'est-à-dire de la boucle locale du Pi. Depuis le
+    // réseau local, n'importe qui pourrait sinon envoyer cet en-tête à la main
+    // et contourner la limitation par adresse IP.
+    if (!in_array($remote, ['127.0.0.1', '::1'], true)) {
+        return $remote;
+    }
+
     $cf = $_SERVER['HTTP_CF_CONNECTING_IP'] ?? '';
     if (is_string($cf) && filter_var($cf, FILTER_VALIDATE_IP)) {
         return $cf;
     }
-    $remote = $_SERVER['REMOTE_ADDR'] ?? '';
-    return filter_var($remote, FILTER_VALIDATE_IP) ? $remote : '0.0.0.0';
+
+    return $remote;
 }
 
 /** Journalise une action d'administration (table activity_log). */
