@@ -75,6 +75,7 @@ $navLink = static function (string $href, string $label, bool $exact = false) us
         <p class="admin-menu__titre">Système</p>
         <?= $navLink('/admin/reglages', 'Réglages') ?>
         <?= $navLink('/admin/admins', 'Administrateurs') ?>
+        <?= $navLink('/admin/connexions', 'Journal des connexions') ?>
         <?= $navLink('/admin/etat', 'État du site') ?>
     </aside>
 

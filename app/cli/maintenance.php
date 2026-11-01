@@ -43,6 +43,14 @@ try {
     cli_err("  ! purge du tchat impossible : " . $e->getMessage() . "\n");
 }
 
+// Journal des connexions : lignes plus anciennes que la durée choisie dans
+// Administration → Journal des connexions (90 jours par défaut).
+try {
+    echo "  · lignes du journal des connexions supprimées : " . journal_purger() . "\n";
+} catch (Throwable $e) {
+    cli_err("  ! purge du journal impossible : " . $e->getMessage() . "\n");
+}
+
 stream_purge_stale_locks();
 echo "  · lectures vidéo en cours : " . stream_active_count() . "\n";
 

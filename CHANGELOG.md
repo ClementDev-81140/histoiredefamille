@@ -3,6 +3,20 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [Non publié] — Journal des connexions et alertes
+
+- Administration → **Journal des connexions** : chaque tentative (réussie,
+  échec avec sa raison, blocage) est enregistrée avec la date, l'identifiant
+  saisi et l'adresse IP de confiance ; filtres par type, période,
+  identifiant ou IP ; pagination.
+- Alertes discrètes sur le tableau de bord : plus de 10 échecs en une heure,
+  et connexion d'un administrateur depuis une adresse jamais vue (la toute
+  première connexion ne déclenche rien). Bouton « J'ai pris connaissance ».
+- Durée de conservation réglable (30 jours, 90 jours par défaut, 6 mois, 1 an),
+  appliquée par la tâche d'entretien du dimanche.
+- Migration `005_journal_connexions.sql` (nouvelle table, aucune donnée touchée).
+  La limitation des essais de connexion (`login_attempts`) est inchangée.
+
 ## [1.3.1] — 2026-11-01
 
 ### Correctif — liens et texte du tchat
