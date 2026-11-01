@@ -93,11 +93,41 @@ et une installation qui tient en quelques commandes à copier-coller.
   modification et suppression.
 - **Import depuis le dossier arrivée** : pour les gros fichiers (vidéos)
   déposés sur le Pi par le réseau local.
+- **Journal des connexions** : qui s'est connecté, quand, depuis quelle
+  adresse ; les échecs avec leur raison ; les comptes bloqués après trop
+  d'essais. Une **alerte** apparaît sur le tableau de bord quand un
+  administrateur se connecte depuis une adresse inconnue, ou quand un compte
+  reçoit plus de dix échecs en une heure.
 - Page **État du site** : version de PHP, limites d'envoi, taille de la base,
   espace disque libre, dernières lignes du journal de sauvegarde, contrôles
   de sécurité.
 - Réglages du site : nom, sous-titre, description, adresse de contact,
   ouverture du **tchat** et durée de conservation de ses messages.
+
+### Journal des connexions et alertes
+
+Trois administrateurs se partagent le site : il faut pouvoir répondre à la
+question « qui est entré, et est-ce normal ? ».
+
+- **Journal des connexions** (`/admin/connexions`, menu de gauche) : les
+  dernières connexions, les plus récentes en haut — identifiant essayé, date et
+  heure, adresse, résultat (réussie ou refusée) et la raison du refus (« mot de
+  passe incorrect », « compte bloqué après trop d'essais »…). Des boutons
+  filtrent sur les réussites, les échecs ou les adresses nouvelles.
+- **Alerte sur le tableau de bord** dans deux cas seulement :
+  - un **administrateur** se connecte depuis une adresse jamais vue pour lui
+    (la toute première connexion d'un compte ne déclenche rien) ;
+  - un compte reçoit **plus de dix échecs en une heure** — quelqu'un essaie
+    d'entrer à la chaîne.
+  Le bouton « **J'ai vu** » efface l'alerte ; le journal, lui, garde la trace.
+- **Durée de conservation** réglable dans la même page : 30, 90 (valeur par
+  défaut), 180 ou 365 jours. Au-delà, les lignes sont effacées par la tâche
+  d'entretien du dimanche (`app/cli/maintenance.php`).
+- Rien de tout cela n'est visible d'un compte de famille : la page et les
+  boutons répondent « page introuvable » (404) aux autres, exactement comme
+  pour une page qui n'existe pas.
+- Un mot de passe n'est **jamais** écrit dans ce journal : seulement
+  l'identifiant essayé, l'adresse et la raison du refus.
 
 ### Articles (le journal de la famille)
 
@@ -328,9 +358,10 @@ histoiredefamille/
 │   ├── controllers/         une fonction par page
 │   ├── lib/                 base de données, sécurité, stockage, images, vidéos,
 │   │                        GEDCOM, visibilité, textes, tchat, recherche,
-│   │                        albums, calendrier, recettes…
+│   │                        albums, calendrier, recettes, journal des connexions…
 │   ├── views/               gabarits PHP (public, famille, admin)
-│   ├── migrations/          fichiers SQL numérotés (001_init … 006_recettes)
+│   ├── migrations/          fichiers SQL numérotés
+│   │                        (001_init … 007_journal_connexions)
 │   └── cli/                 commandes : migrate, create-admin, demo, maintenance, tests
 ├── deploy/
 │   ├── install.sh           installation complète sur le Pi
@@ -843,6 +874,23 @@ sur le Raspberry Pi.
 
 ---
 
+### 6.12 Vérifier qui s'est connecté
+
+Une fois par semaine, ou dès qu'une alerte apparaît sur le tableau de bord :
+
+1. ouvrez le tableau de bord, puis **Journal des connexions** dans le menu de
+   gauche ;
+2. regardez les lignes en rouge : ce sont les tentatives refusées. Un échec de
+   temps en temps est normal (mot de passe tapé trop vite) ;
+3. une **suite d'échecs sur un compte** ou une connexion d'administrateur
+   depuis une adresse inattendue : changez le mot de passe de ce compte
+   (Branches familiales pour un compte de famille, votre compte pour un
+   administrateur) ;
+4. cliquez sur « **J'ai vu** » sur le tableau de bord pour retirer l'alerte.
+
+Réglages utiles, dans la même page : « Échecs refusés » / « Adresses
+nouvelles » pour filtrer, et la durée de conservation du journal.
+
 ## 7. Mettre à jour le site
 
 Les mises à jour ne touchent **ni** `config.local.php`, **ni** le SSD, **ni**
@@ -863,7 +911,9 @@ précédente reste disponible sur la clé USB.
 
 Après une mise à jour, les petits tests automatiques (mise en forme des
 messages du tchat, préparation du texte cherché, chronologie d'une fiche de
-personne) se lancent en une commande :
+personne, albums, calendrier, GEDCOM, recettes, journal des connexions) se
+lancent en une commande. Le nom d'une famille peut être ajouté pour ne lancer
+qu'elle (`php app/cli/tests.php journal`) :
 
 ```bash
 cd /home/votre-utilisateur/histoiredefamille

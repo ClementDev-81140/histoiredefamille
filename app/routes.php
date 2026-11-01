@@ -15,6 +15,7 @@ require_once __DIR__ . '/controllers/articles.php';
 require_once __DIR__ . '/controllers/family.php';
 require_once __DIR__ . '/controllers/tchat.php';
 require_once __DIR__ . '/controllers/recherche.php';
+require_once __DIR__ . '/controllers/admin_journal.php';
 require_once __DIR__ . '/controllers/admin.php';
 require_once __DIR__ . '/controllers/admin_documents.php';
 require_once __DIR__ . '/controllers/admin_branches.php';
@@ -85,6 +86,9 @@ route('POST', '/tchat/{id}/supprimer', 'tchat_supprimer');
 // ---------------------------------------------------------------------------
 route('GET', '/admin', 'admin_dashboard');
 route('GET', '/admin/etat', 'admin_status');
+route('GET', '/admin/connexions', 'admin_connexions');
+route('POST', '/admin/connexions/conservation', 'admin_connexions_reglage');
+route('POST', '/admin/alertes/acquitter', 'admin_alertes_acquitter');
 route('GET', '/admin/reglages', 'admin_settings');
 route('POST', '/admin/reglages', 'admin_settings_save');
 route('GET', '/admin/mon-compte', 'admin_account');

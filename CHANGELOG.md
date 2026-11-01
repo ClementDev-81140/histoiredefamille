@@ -3,6 +3,26 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.8.0] — 2026-11-01
+
+### Journal des connexions et alertes pour les administrateurs
+
+- Administration → **Journal des connexions** : chaque tentative (réussie,
+  échec avec sa raison, blocage) est enregistrée avec la date, l'identifiant
+  saisi et l'adresse IP de confiance ; filtres par type, période,
+  identifiant ou IP ; pagination.
+- Alertes discrètes sur le tableau de bord : plus de 10 échecs en une heure,
+  et connexion d'un administrateur depuis une adresse jamais vue (la toute
+  première connexion ne déclenche rien). Bouton « J'ai pris connaissance ».
+- Durée de conservation réglable (30 jours, 90 jours par défaut, 6 mois, 1 an),
+  appliquée par la tâche d'entretien du dimanche.
+- Un robot qui insiste sur un compte déjà bloqué n'écrit qu'une ligne toutes
+  les cinq minutes : le journal ne grossit pas sans fin, et la limitation des
+  essais continue de s'appliquer à chaque tentative.
+- 20 vérifications automatiques de plus (famille `journal`, 110 au total).
+- Migration `007_journal_connexions.sql` (nouvelle table, aucune donnée touchée).
+  La limitation des essais de connexion (`login_attempts`) est inchangée.
+
 ## [1.7.0] — 2026-11-01
 
 ### Témoignages sonores, recettes, impression et export GEDCOM
@@ -150,7 +170,6 @@ Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
   recréées par le code ; aucune donnée existante n'est modifiée.
 - Captures : `ordinateur-recherche`, `mobile-recherche`,
   `ordinateur-fiche-personne`, `mobile-fiche-personne`.
-
 ## [1.3.1] — 2026-11-01
 
 ### Correctif — liens et texte du tchat

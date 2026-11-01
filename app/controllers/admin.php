@@ -49,6 +49,7 @@ function admin_dashboard(): void
         'stats'     => $stats,
         'documents' => $documents,
         'activity'  => $activity,
+        'alertes'   => journal_alertes(),
     ], 'layout_admin');
 }
 

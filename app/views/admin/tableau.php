@@ -15,6 +15,8 @@ $backupDays = $backup && !empty($backup['date']) ? days_since((int) $backup['dat
     </span>
 </div>
 
+<?php require __DIR__ . '/../partials/alertes_connexion.php'; ?>
+
 <?php if ($backup === null): ?>
     <div class="message message--info">
         Aucune sauvegarde enregistrée pour l’instant.

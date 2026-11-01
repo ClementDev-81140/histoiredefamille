@@ -2731,3 +2731,14 @@ legend {
         text-transform: uppercase;
     }
 }
+
+/* ---- Alertes de connexion (administration) ------------------------------ */
+
+.alerte-connexion ul {
+    margin: 0.4rem 0 0.8rem;
+    padding-left: 1.2rem;
+}
+
+.alerte-connexion form {
+    margin: 0;
+}

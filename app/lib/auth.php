@@ -142,6 +142,7 @@ function auth_attempt(string $username, string $password): array
     // 1. Blocage temporaire après trop d'échecs (par identifiant ET par IP).
     $block = login_block_status($username, $ip);
     if ($block['blocked']) {
+        journal_enregistrer($username, $ip, false, 'bloqué (trop d’essais)');
         $minutes = max(1, (int) ceil(($block['until'] - time()) / 60));
         return [
             'ok'      => false,
@@ -169,6 +170,13 @@ function auth_attempt(string $username, string $password): array
     if (!$account || !$ok || (int) $account['is_active'] !== 1
         || ($account['branch_id'] !== null && (int) ($account['branch_active'] ?? 0) !== 1)) {
         login_record_attempt($username, $ip, false);
+        journal_enregistrer(
+            $username,
+            $ip,
+            false,
+            !$account ? 'identifiant inconnu' : (!$ok ? 'mot de passe incorrect' : 'compte désactivé'),
+            $account ? (int) $account['id'] : null
+        );
 
         // Message générique : on n'indique pas si l'identifiant existe.
         $block = login_block_status($username, $ip);
@@ -182,6 +190,7 @@ function auth_attempt(string $username, string $password): array
 
     // 3. Connexion réussie.
     login_record_attempt($username, $ip, true);
+    journal_enregistrer($username, $ip, true, 'connexion réussie', (int) $account['id'], $account['role'] === 'admin');
 
     // Nouvel identifiant de session (protection contre la fixation de session).
     session_regenerate_id(true);

@@ -9,8 +9,10 @@
  * Chaque test affiche « ok » ou « ÉCHEC » ; le script termine avec le code 1
  * si au moins un test a échoué, pour pouvoir l'enchaîner dans une commande.
  *
- * Aucun accès à la base : ces tests vérifient des fonctions de texte, ils
- * peuvent donc tourner n'importe où, même sur une base vide.
+ * Les tests de texte ne touchent pas à la base et peuvent tourner n'importe où.
+ * La famille « journal » vérifie, elle, le journal des connexions : elle écrit
+ * quelques lignes d'essai puis les efface et remet les réglages en place. Si la
+ * table n'existe pas encore, elle s'arrête sans échouer.
  */
 
 declare(strict_types=1);
@@ -515,6 +517,236 @@ if ($filtre === '' || $filtre === 'recettes') {
         'obtenu : ' . json_encode(recipe_ingredient_lines("- 2 carottes\n* 1 poireau"), JSON_UNESCAPED_UNICODE)
     );
     verifier('ingrédients vides → liste vide', recipe_ingredient_lines('   ') === []);
+}
+
+// ---------------------------------------------------------------------------
+// Journal des connexions : enregistrement, alertes, purge
+// ---------------------------------------------------------------------------
+if ($filtre === '' || $filtre === 'journal') {
+    echo "\nJournal des connexions\n";
+
+    // Première instruction d'une fonction de contrôleur : sert à vérifier que
+    // la page est bien réservée aux administrateurs.
+    $premiereInstruction = static function (string $fichier, string $fonction): string {
+        $source = (string) file_get_contents(dirname(__DIR__) . '/controllers/' . $fichier);
+        $motif  = '/function\s+' . preg_quote($fonction, '/') . '\s*\(\s*\)\s*:\s*void\s*\{/';
+        if (!preg_match($motif, $source, $trouve, PREG_OFFSET_CAPTURE)) {
+            return '';
+        }
+        $corps = substr($source, (int) $trouve[0][1] + strlen((string) $trouve[0][0]), 300);
+        foreach (preg_split('/\R/', $corps) ?: [] as $ligne) {
+            $ligne = trim($ligne);
+            if ($ligne !== '' && !str_starts_with($ligne, '*') && !str_starts_with($ligne, '/*')) {
+                return $ligne;
+            }
+        }
+        return '';
+    };
+
+    // 1. Accès : les trois actions du journal sont réservées aux administrateurs.
+    foreach (['admin_connexions', 'admin_alertes_acquitter', 'admin_connexions_reglage'] as $action) {
+        verifier(
+            'action réservée aux administrateurs : ' . $action,
+            $premiereInstruction('admin_journal.php', $action) === 'require_admin();',
+            'première instruction obtenue : « ' . $premiereInstruction('admin_journal.php', $action) . ' »'
+        );
+    }
+    $routesSource = (string) file_get_contents(dirname(__DIR__) . '/routes.php');
+    verifier(
+        'route /admin/connexions déclarée',
+        str_contains($routesSource, "route('GET', '/admin/connexions', 'admin_connexions')")
+    );
+    verifier(
+        'acquittement en POST avec jeton CSRF',
+        str_contains($routesSource, "route('POST', '/admin/alertes/acquitter', 'admin_alertes_acquitter')")
+            && str_contains((string) file_get_contents(dirname(__DIR__) . '/controllers/admin_journal.php'), 'csrf_check();')
+    );
+
+    // 2. Durées de conservation proposées.
+    verifier(
+        'quatre durées de conservation, 90 jours par défaut',
+        array_keys(journal_conservations()) === [30, 90, 180, 365],
+        'obtenu : ' . implode(', ', array_keys(journal_conservations()))
+    );
+
+    $journalPrete = db_value("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'login_log'") !== null;
+
+    if (!$journalPrete) {
+        echo "  (table login_log absente : lancez d'abord les migrations)\n";
+    } else {
+        verifier(
+            'conservation enregistrée valide',
+            array_key_exists(journal_conservation_jours(), journal_conservations()),
+            'obtenu : ' . journal_conservation_jours() . ' jours'
+        );
+
+        // On note ce qui existait avant, pour tout effacer à la fin.
+        $marqueur     = (int) db_value('SELECT COALESCE(MAX(id), 0) FROM login_log', [], 0);
+        $comptesAvant = db_value('SELECT id FROM accounts WHERE username = ?', ['essai-journal-tests']);
+        if ($comptesAvant !== null) {
+            db_exec('DELETE FROM accounts WHERE id = ?', [(int) $comptesAvant]);
+        }
+        $reglage = static fn (string $cle): string
+            => (string) db_value('SELECT value FROM settings WHERE key = ?', [$cle], '');
+        $ecrireReglage = static function (string $cle, string $valeur): void {
+            db_exec(
+                'INSERT INTO settings (key, value) VALUES (?, ?)
+                 ON CONFLICT(key) DO UPDATE SET value = excluded.value',
+                [$cle, $valeur]
+            );
+        };
+        $vuesAvant = $reglage('journal_alertes_vues');
+
+        $derniere = static fn (): ?array => db_one('SELECT * FROM login_log ORDER BY id DESC LIMIT 1');
+
+        // 3. Un échec est enregistré avec sa raison.
+        journal_enregistrer('inconnu-essai-tests', '203.0.113.10', false, 'identifiant inconnu');
+        $ligne = $derniere();
+        verifier(
+            'échec enregistré avec sa raison',
+            $ligne !== null && (int) $ligne['success'] === 0
+                && $ligne['detail'] === 'identifiant inconnu'
+                && $ligne['identifier'] === 'inconnu-essai-tests'
+                && $ligne['ip'] === '203.0.113.10'
+                && empty($ligne['account_id']),
+            'obtenu : ' . json_encode($ligne, JSON_UNESCAPED_UNICODE)
+        );
+
+        // 4. Un blocage est enregistré comme tel.
+        journal_enregistrer('bloque-essai-tests', '203.0.113.11', false, 'bloqué (trop d’essais)');
+        $ligne = $derniere();
+        verifier(
+            'blocage enregistré',
+            $ligne !== null && (int) $ligne['success'] === 0
+                && str_starts_with((string) $ligne['detail'], 'bloqué')
+                && $ligne['identifier'] === 'bloque-essai-tests',
+            'obtenu : ' . json_encode($ligne, JSON_UNESCAPED_UNICODE)
+        );
+
+        // 4 bis. Un robot qui insiste sur un compte bloqué n'écrit qu'une ligne
+        //        toutes les cinq minutes (sinon le journal grossit sans fin).
+        journal_enregistrer('bloque-essai-tests', '203.0.113.11', false, 'bloqué (trop d’essais)');
+        verifier(
+            'tentative bloquée répétée : pas de doublon immédiat',
+            (int) db_value(
+                'SELECT COUNT(*) FROM login_log WHERE identifier = ?',
+                ['bloque-essai-tests'],
+                0
+            ) === 1,
+            'nombre de lignes : ' . (int) db_value('SELECT COUNT(*) FROM login_log WHERE identifier = ?', ['bloque-essai-tests'], 0)
+        );
+        journal_enregistrer('bloque-essai-tests', '203.0.113.12', false, 'bloqué (trop d’essais)');
+        verifier(
+            'tentative bloquée depuis une autre adresse : nouvelle ligne',
+            (int) db_value('SELECT COUNT(*) FROM login_log WHERE identifier = ?', ['bloque-essai-tests'], 0) === 2
+        );
+
+        // 5. Alertes : nouvelle adresse d'un administrateur, jamais la première.
+        $compteEssai = db_insert('accounts', [
+            'username'      => 'essai-journal-tests',
+            'display_name'  => 'Compte de test (tests.php)',
+            'password_hash' => password_hash(bin2hex(random_bytes(12)), PASSWORD_DEFAULT),
+            'role'          => 'admin',
+            'branch_id'     => null,
+            'is_active'     => 1,
+            'created_at'    => time(),
+            'updated_at'    => time(),
+        ]);
+        $ecrireReglage('journal_alertes_vues', '0');
+
+        journal_enregistrer('essai-journal-tests', '198.51.100.1', true, 'connexion réussie', $compteEssai, true);
+        $ligne  = $derniere();
+        $ipsAvant = array_column(journal_alertes()['nouvelles_ip'], 'ip');
+        verifier(
+            'première connexion d’un administrateur : pas d’alerte',
+            $ligne !== null && (int) $ligne['new_ip'] === 0 && !in_array('198.51.100.1', $ipsAvant, true),
+            'new_ip = ' . (int) ($ligne['new_ip'] ?? -1) . ' ; adresses alertées : ' . implode(', ', $ipsAvant)
+        );
+
+        journal_enregistrer('essai-journal-tests', '198.51.100.2', true, 'connexion réussie', $compteEssai, true);
+        $ligne   = $derniere();
+        $alertes = journal_alertes();
+        verifier(
+            'administrateur depuis une nouvelle adresse : alerte',
+            $ligne !== null && (int) $ligne['new_ip'] === 1
+                && in_array('198.51.100.2', array_column($alertes['nouvelles_ip'], 'ip'), true),
+            'new_ip = ' . (int) ($ligne['new_ip'] ?? -1) . ' ; adresses alertées : '
+                . implode(', ', array_column($alertes['nouvelles_ip'], 'ip'))
+        );
+
+        journal_enregistrer('essai-journal-tests', '198.51.100.3', true, 'connexion réussie', $compteEssai, false);
+        verifier(
+            'compte non administrateur : jamais d’alerte',
+            (int) $derniere()['new_ip'] === 0,
+            'new_ip = ' . (int) $derniere()['new_ip']
+        );
+
+        // 6. Seuil d'échecs : dix en une heure ne suffisent pas, onze déclenchent.
+        db_exec('DELETE FROM login_log WHERE id > ?', [$marqueur]);
+        $ecrireReglage('journal_alertes_vues', (string) (time() - 1));
+        for ($i = 1; $i <= 10; $i++) {
+            journal_enregistrer('seuil-essai-tests', '203.0.113.' . (20 + $i), false, 'mot de passe incorrect');
+        }
+        $alertes = journal_alertes();
+        verifier(
+            'dix échecs en une heure : pas encore d’alerte',
+            $alertes['echecs'] === null,
+            'obtenu : ' . json_encode($alertes['echecs'])
+        );
+
+        journal_enregistrer('seuil-essai-tests', '203.0.113.31', false, 'mot de passe incorrect');
+        $alertes = journal_alertes();
+        verifier(
+            'plus de dix échecs en une heure : alerte',
+            $alertes['echecs'] !== null && (int) $alertes['echecs']['nb'] === 11,
+            'obtenu : ' . json_encode($alertes['echecs'])
+        );
+
+        // 7. « J'ai pris connaissance » : la date est enregistrée.
+        journal_acquitter();
+        $vuesApres = (int) $reglage('journal_alertes_vues');
+        verifier(
+            'acquittement enregistré',
+            $vuesApres >= time() - 2,
+            'réglage obtenu : ' . $vuesApres . ' (attendu : environ ' . time() . ')'
+        );
+
+        // 8. Purge selon la conservation en vigueur. On n'y touche pas : deux
+        //    lignes sont placées de part et d'autre de la limite, une seule
+        //    doit disparaître.
+        $conservation = journal_conservation_jours();
+        $ajouterLigne = static function (string $identifiant, string $ip, int $ageEnJours): void {
+            db_exec(
+                'INSERT INTO login_log (account_id, identifier, ip, success, detail, new_ip, created_at)
+                 VALUES (NULL, ?, ?, 0, ?, 0, ?)',
+                [$identifiant, $ip, 'identifiant inconnu', time() - $ageEnJours * 86400]
+            );
+        };
+        $ajouterLigne('vieux-essai-tests', '203.0.113.40', $conservation + 1);
+        $ajouterLigne('recent-essai-tests', '203.0.113.41', $conservation - 1);
+        $supprimees = journal_purger();
+        verifier(
+            'purge : une ligne plus vieille que la conservation est effacée',
+            $supprimees >= 1
+                && db_value('SELECT COUNT(*) FROM login_log WHERE identifier = ?', ['vieux-essai-tests'], 0) === 0,
+            'conservation : ' . $conservation . ' jours ; lignes supprimées : ' . $supprimees
+        );
+        verifier(
+            'purge : une ligne plus récente est conservée',
+            (int) db_value('SELECT COUNT(*) FROM login_log WHERE identifier = ?', ['recent-essai-tests'], 0) === 1
+        );
+
+        // Rangement : on rend la base exactement comme on l'a trouvée.
+        db_exec('DELETE FROM login_log WHERE id > ?', [$marqueur]);
+        db_exec('DELETE FROM accounts WHERE id = ?', [$compteEssai]);
+        $ecrireReglage('journal_alertes_vues', $vuesAvant);
+        verifier(
+            'le test ne laisse aucune trace',
+            (int) db_value('SELECT COUNT(*) FROM login_log WHERE id > ?', [$marqueur], 0) === 0
+                && db_value('SELECT id FROM accounts WHERE username = ?', ['essai-journal-tests']) === null,
+            'des lignes du journal de test sont restées'
+        );
+    }
 }
 
 // ---------------------------------------------------------------------------

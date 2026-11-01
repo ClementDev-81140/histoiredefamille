@@ -3,6 +3,18 @@
 Ce fichier liste ce qui reste à faire, classé par priorité. Il n'y a pas de
 suivi automatique : cochez au fur et à mesure.
 
+## Fait (2026-11-01, lot 6)
+
+- [x] **Journal des connexions** (`/admin/connexions`) : identifiant essayé,
+  date, adresse, réussite ou refus avec sa raison, blocages ; filtres.
+- [x] **Alertes sur le tableau de bord** : administrateur connecté depuis une
+  adresse inconnue, plus de dix échecs en une heure pour un même compte ;
+  bouton « J'ai vu ».
+- [x] Durée de conservation réglable (30 / 90 / 180 / 365 jours) et purge par
+  la tâche d'entretien du dimanche ; un mot de passe n'est jamais écrit.
+- [x] Migration `007_journal_connexions.sql`, 22 vérifications de plus
+  (110 au total).
+
 ## Fait (2026-11-01, lot 5)
 
 - [x] **Témoignages sonores** : documents audio, lecture dans le navigateur,
@@ -87,7 +99,8 @@ suivi automatique : cochez au fur et à mesure.
 
 ## Prochains lots (un par un, après accord)
 
-- [ ] **Lot 6** — Journal des connexions et alertes pour les administrateurs.
+(Tous les lots prévus sont terminés. La suite dépend des envies de la famille :
+voir « Idées à étudier » plus bas.)
 
 ## Avant la mise en ligne (fait par Clément)
 
