@@ -7,6 +7,7 @@
  * 4. Explorateur d'arbre généalogique (chargement JSON à la demande).
  * 5. Message clair quand une vidéo ne peut pas être lue (limite de lectures).
  * 6. Tchat de la famille : interrogation périodique et envoi des messages.
+ * 7. Impression (boutons « Imprimer » des albums, fiches et recettes).
  */
 (function () {
     'use strict';
@@ -519,4 +520,17 @@
         versLeBas();
         programmer(DELAI_VIF);
     }
+    // ---------------------------------------------------------------------
+    // 7. Impression (boutons « Imprimer » des albums, fiches et recettes)
+    // ---------------------------------------------------------------------
+    // Aucun script en ligne (CSP « self ») : un seul écouteur pour tous les
+    // boutons portant l'attribut data-imprimer.
+    document.addEventListener('click', function (event) {
+        var bouton = event.target.closest ? event.target.closest('[data-imprimer]') : null;
+        if (!bouton) {
+            return;
+        }
+        event.preventDefault();
+        window.print();
+    });
 })();

@@ -3,6 +3,38 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.7.0] — 2026-11-01
+
+### Témoignages sonores, recettes, impression et export GEDCOM
+
+- **Témoignages** (`/temoignages`) : les documents audio (MP3, M4A, OGG) sont
+  lus directement dans le navigateur (`<audio>`, avance rapide comprise grâce
+  aux requêtes `Range` déjà en place pour les fichiers). Le nom des personnes
+  qui parlent vient des personnes identifiées sur le document (lot 3). L'onglet
+  du menu n'apparaît que s'il existe au moins un enregistrement visible.
+- **Recettes de famille** (`/recettes`, `/recettes/{adresse}`) : titre, origine,
+  quantités, ingrédients (un par ligne), préparation en mise en forme légère,
+  astuce et souvenir, photo facultative, visibilité habituelle.
+  Administration complète (liste, création, modification, suppression).
+  Migration `006_recettes.sql`, aucune donnée existante touchée.
+- **Impression** : feuille de style `@media print` (plus de menu, de boutons,
+  de formulaires ni de fond coloré), en-tête « nom du site — date » visible
+  seulement sur papier, et bouton « Imprimer » sur les fiches de personnes, les
+  albums, les recettes et la frise. Le clic est traité dans `app.js` (aucun
+  script en ligne, CSP « self » inchangée).
+- **Export GEDCOM** (`/admin/export/gedcom`, réservé aux administrateurs) :
+  fichier 5.5.1 (`HEAD`…`TRLR`) écrit personne par personne, donc sans charger
+  l'arbre entier en mémoire. Dates converties (« 14 mars 1901 » → « 14 MAR
+  1901 », « vers 1930 » → « ABT 1930 »), nom de famille en majuscules, « @ »
+  doublé, retours à la ligne neutralisés.
+- Démonstration : un témoignage fictif de quatre secondes (WAV généré) et deux
+  recettes.
+- **Tests** : familles « gedcom » et « recettes » (dates GEDCOM, textes,
+  ingrédients) — 90 vérifications au total.
+- Captures : `ordinateur-temoignages`, `mobile-temoignages`, `ordinateur-recettes`,
+  `ordinateur-recette`, `mobile-recette`, `ordinateur-admin-recette`,
+  `ordinateur-impression-fiche`.
+
 ## [1.6.0] — 2026-11-01
 
 ### Calendrier familial et frise chronologique

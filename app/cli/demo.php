@@ -339,6 +339,37 @@ function demo_pdf(string $texte): string
     return $pdf;
 }
 
+/** Construit un petit fichier WAV (4 secondes de notes douces, sans voix). */
+function demo_audio(): string
+{
+    $frequence = 8000;          // suffisant pour un son de démonstration
+    $duree     = 4;             // secondes
+    $echantillons = $frequence * $duree;
+    $donnees   = '';
+
+    // Une mélodie très simple (deux notes), avec fondu d'entrée et de sortie.
+    for ($i = 0; $i < $echantillons; $i++) {
+        $t     = $i / $frequence;
+        $note  = $t < 2 ? 392.0 : 329.63;             // sol4 puis mi4
+        $gain  = 0.22 * sin(M_PI * min(1, $i / ($frequence * 0.15)))
+                       * sin(M_PI * min(1, ($echantillons - $i) / ($frequence * 0.4)));
+        $valeur = (int) round(127 + 120 * $gain * sin(2 * M_PI * $note * $t));
+        $donnees .= chr(max(0, min(255, $valeur)));
+    }
+
+    $entete = 'RIFF' . pack('V', 36 + strlen($donnees)) . 'WAVE'
+        . 'fmt ' . pack('V', 16) . pack('v', 1) . pack('v', 1)
+        . pack('V', $frequence) . pack('V', $frequence) . pack('v', 1) . pack('v', 8)
+        . 'data' . pack('V', strlen($donnees));
+
+    $rel = storage_target_path('wav');
+    $abs = storage_absolute($rel);
+    file_put_contents($abs, $entete . $donnees);
+    @chmod($abs, 0640);
+
+    return $rel;
+}
+
 /**
  * Insère un document de démonstration à partir d'un fichier du stockage.
  *
@@ -472,7 +503,21 @@ demo_document([
     'tags'        => 'acte, démonstration',
 ], $rel, 'pdf', 'application/pdf', (int) filesize(storage_absolute($rel)));
 
-echo "  · 5 documents de démonstration créés\n";
+// 6. Témoignage sonore (petit fichier WAV généré, 4 secondes)
+$rel = demo_audio();
+demo_document([
+    'title'       => 'Témoignage fictif de Jean (démo)',
+    'description' => "Enregistrement **fictif** de quatre secondes, généré automatiquement : "
+        . "il sert à montrer la rubrique « Témoignages ».",
+    'doc_date'    => '1980',
+    'category_id' => $categoryIds['Photos de famille (démo)'] ?? null,
+    'visibility'  => 'famille',
+    'kind'        => 'document',
+    'original_name' => 'temoignage-demo.wav',
+    'tags'        => 'témoignage, démonstration',
+], $rel, 'wav', 'audio/wav', (int) filesize(storage_absolute($rel)));
+
+echo "  · 6 documents de démonstration créés\n";
 
 // ---------------------------------------------------------------------------
 // Vidéos (un vrai fichier MP4 de 2 secondes, généré à l'avance)
@@ -684,7 +729,53 @@ if ((int) db_value('SELECT COUNT(*) FROM albums', [], 0) === 0) {
         set_document_persons($reunion, [$jean, $marie, $paul, $anne, $suzanne, $claire]);
     }
 
+    // La personne qui parle dans le témoignage sonore.
+    $temoignage = $idDocument('Témoignage fictif de Jean (démo)');
+    if ($temoignage > 0) {
+        set_document_persons($temoignage, [$jean]);
+    }
+
     echo "  · album de démonstration créé (3 photos, 6 personnes identifiées)\n";
+}
+
+// ---------------------------------------------------------------------------
+// Recettes de famille (lot 5)
+// ---------------------------------------------------------------------------
+if ((int) db_value('SELECT COUNT(*) FROM recipes', [], 0) === 0) {
+    $photoRecette = db_one("SELECT id FROM documents WHERE kind = 'photo' AND title LIKE '%Réunion%' LIMIT 1");
+
+    db_insert('recipes', [
+        'title'             => 'Gâteau au chocolat de Mamie (démo)',
+        'slug'              => 'gateau-au-chocolat-de-mamie-demo',
+        'origin'            => 'Recette fictive de la branche Martin',
+        'servings'          => '8 personnes',
+        'ingredients'       => "200 g de chocolat noir\n150 g de beurre\n4 œufs\n150 g de sucre\n"
+            . "80 g de farine\n1 pincée de sel",
+        'preparation'       => "## La veille\n\nFaire fondre le chocolat avec le beurre à feu très doux.\n\n"
+            . "## Le jour même\n\n1. Préchauffer le four à 180 °C.\n2. Battre les œufs avec le sucre.\n"
+            . "3. Ajouter le chocolat fondu, puis la farine.\n4. Cuire 25 minutes et laisser tiédir.",
+        'notes'             => 'Se mange tiède, avec un peu de crème. **Recette inventée** pour la démonstration.',
+        'photo_document_id' => $photoRecette !== null ? (int) $photoRecette['id'] : null,
+        'visibility'        => 'famille',
+        'created_at'        => $now,
+        'updated_at'        => $now,
+    ]);
+
+    db_insert('recipes', [
+        'title'       => 'Soupe du potager (démo)',
+        'slug'        => 'soupe-du-potager-demo',
+        'origin'      => 'Cuisine de tous les jours',
+        'servings'    => '4 personnes',
+        'ingredients' => "3 pommes de terre\n2 carottes\n1 poireau\n1 litre d'eau\nSel, poivre",
+        'preparation' => "Éplucher les légumes et les couper en morceaux.\n\n"
+            . "Couvrir d'eau et laisser cuire 30 minutes.\n\nMixer, saler, poivrer.",
+        'notes'       => 'Meilleure réchauffée le lendemain.',
+        'visibility'  => 'public',
+        'created_at'  => $now,
+        'updated_at'  => $now,
+    ]);
+
+    echo "  · 2 recettes de démonstration créées\n";
 }
 
 // ---------------------------------------------------------------------------

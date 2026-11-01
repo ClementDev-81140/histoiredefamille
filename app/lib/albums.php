@@ -284,6 +284,25 @@ function audio_documents(int $limit = 0, int $offset = 0, ?int &$total = null): 
     return db_all($sql, $params);
 }
 
+/** Y a-t-il au moins un enregistrement sonore visible ? (pour le menu) */
+function audio_exist(): bool
+{
+    static $existe = null;
+    if ($existe !== null) {
+        return $existe;
+    }
+
+    $params = [];
+    $clause = visibility_clause('document', 'd', $params);
+    $existe = (int) db_value(
+        "SELECT COUNT(*) FROM documents d WHERE {$clause} AND d.mime LIKE 'audio/%'",
+        $params,
+        0
+    ) > 0;
+
+    return $existe;
+}
+
 /** Ce document est-il un son (témoignage, musique, interview) ? */
 function document_is_audio(array $doc): bool
 {

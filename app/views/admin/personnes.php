@@ -13,6 +13,7 @@
         <a class="bouton" href="/admin/arbre/personne/nouvelle">Ajouter une personne</a>
         <a class="bouton bouton--secondaire" href="/admin/arbre/couples">Couples (<?= (int) $nbCouples ?>)</a>
         <a class="bouton bouton--secondaire" href="/admin/arbre/import">Importer GEDCOM</a>
+        <a class="bouton bouton--secondaire" href="/admin/export/gedcom">Exporter GEDCOM</a>
     </span>
 </div>
 

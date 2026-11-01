@@ -48,6 +48,7 @@ $listePersonnes = static function (array $personnes): void {
             <?php endif; ?>
             <p class="actions">
                 <a class="bouton bouton--secondaire" href="/arbre?racine=<?= (int) $person['id'] ?>">Voir dans l’arbre</a>
+                <button type="button" class="bouton bouton--secondaire" data-imprimer>Imprimer</button>
                 <?php if (trim((string) $person['last_name']) !== ''): ?>
                     <a class="bouton bouton--secondaire"
                        href="/recherche?q=<?= rawurlencode(trim((string) $person['last_name'])) ?>">Chercher ce nom</a>

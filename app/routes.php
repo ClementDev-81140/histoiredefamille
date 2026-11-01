@@ -26,6 +26,9 @@ require_once __DIR__ . '/controllers/admin_videos.php';
 require_once __DIR__ . '/controllers/albums.php';
 require_once __DIR__ . '/controllers/admin_albums.php';
 require_once __DIR__ . '/controllers/calendrier.php';
+require_once __DIR__ . '/controllers/recettes.php';
+require_once __DIR__ . '/controllers/admin_recettes.php';
+require_once __DIR__ . '/controllers/admin_export.php';
 
 // ---------------------------------------------------------------------------
 // Partie publique
@@ -39,6 +42,9 @@ route('GET', '/albums', 'public_albums');
 route('GET', '/albums/{slug}', 'public_album');
 route('GET', '/calendrier', 'public_calendrier');
 route('GET', '/frise', 'public_frise');
+route('GET', '/recettes', 'public_recettes');
+route('GET', '/recettes/{slug}', 'public_recette');
+route('GET', '/temoignages', 'public_temoignages');
 route('GET', '/pages/{slug}', 'public_page');
 route('GET', '/recherche', 'public_recherche');
 route('GET', '/arbre', 'public_arbre');
@@ -122,6 +128,17 @@ route('GET', '/admin/videos/{id}', 'admin_video_form');
 route('POST', '/admin/videos/{id}', 'admin_video_save');
 route('POST', '/admin/videos/{id}/mise-en-avant', 'admin_video_feature');
 route('POST', '/admin/videos/{id}/supprimer', 'admin_video_delete');
+
+// Recettes de famille
+route('GET', '/admin/recettes', 'admin_recettes');
+route('GET', '/admin/recettes/nouvelle', 'admin_recette_form');
+route('POST', '/admin/recettes/nouvelle', 'admin_recette_save');
+route('GET', '/admin/recettes/{id}', 'admin_recette_form');
+route('POST', '/admin/recettes/{id}', 'admin_recette_save');
+route('POST', '/admin/recettes/{id}/supprimer', 'admin_recette_delete');
+
+// Export GEDCOM
+route('GET', '/admin/export/gedcom', 'admin_export_gedcom');
 
 // Catégories
 route('GET', '/admin/categories', 'admin_categories');

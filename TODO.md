@@ -3,6 +3,17 @@
 Ce fichier liste ce qui reste à faire, classé par priorité. Il n'y a pas de
 suivi automatique : cochez au fur et à mesure.
 
+## Fait (2026-11-01, lot 5)
+
+- [x] **Témoignages sonores** : documents audio, lecture dans le navigateur,
+      personnes qui parlent, onglet affiché seulement si un son existe.
+- [x] **Recettes de famille** : ingrédients, préparation, astuce, photo,
+      visibilité, administration complète (migration `006_recettes.sql`).
+- [x] **Impression** : pages sobres sans menu ni boutons, en-tête de site,
+      bouton « Imprimer » sur les fiches, albums, recettes et frise.
+- [x] **Export GEDCOM** de tout l'arbre, réservé aux administrateurs, écrit
+      sans charger l'arbre en mémoire.
+
 ## Fait (2026-11-01, lot 4)
 
 - [x] **Calendrier familial** : grille mensuelle toutes années confondues,
@@ -76,7 +87,6 @@ suivi automatique : cochez au fur et à mesure.
 
 ## Prochains lots (un par un, après accord)
 
-- [ ] **Lot 5** — Audio (témoignages), recettes, impression, export GEDCOM.
 - [ ] **Lot 6** — Journal des connexions et alertes pour les administrateurs.
 
 ## Avant la mise en ligne (fait par Clément)
@@ -109,6 +119,10 @@ suivi automatique : cochez au fur et à mesure.
 ## Développement (évolutions souhaitées, non planifiées)
 
 ### Court terme
+
+- [ ] Inclure les **recettes** dans la recherche générale (index FTS5 à étendre,
+      donc à faire avec une montée de version de l'index).
+- [ ] Inclure les **albums** dans la recherche générale (même remarque).
 
 - [ ] Export GEDCOM (aujourd'hui l'import existe, pas l'export).
 - [ ] Purge automatique des fichiers orphelins (fichiers présents dans

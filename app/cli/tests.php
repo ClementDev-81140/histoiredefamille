@@ -433,6 +433,91 @@ if ($filtre === '' || $filtre === 'calendrier') {
 }
 
 // ---------------------------------------------------------------------------
+// Export GEDCOM et recettes : préparation des textes
+// ---------------------------------------------------------------------------
+if ($filtre === '' || $filtre === 'gedcom') {
+    echo "\nExport GEDCOM — dates et textes\n";
+
+    verifier(
+        'date française écrite avec le mois en lettres',
+        gedcom_export_date('14 mars 1901') === '14 MAR 1901',
+        'obtenu : ' . gedcom_export_date('14 mars 1901')
+    );
+    verifier(
+        'date ISO',
+        gedcom_export_date('1928-06-12') === '12 JUN 1928',
+        'obtenu : ' . gedcom_export_date('1928-06-12')
+    );
+    verifier(
+        'mois seul',
+        gedcom_export_date('juin 1928') === 'JUN 1928',
+        'obtenu : ' . gedcom_export_date('juin 1928')
+    );
+    verifier(
+        'année seule',
+        gedcom_export_date('1901') === '1901',
+        'obtenu : ' . gedcom_export_date('1901')
+    );
+    verifier(
+        'date approximative : « vers 1930 » → ABT',
+        gedcom_export_date('vers 1930') === 'ABT 1930',
+        'obtenu : ' . gedcom_export_date('vers 1930')
+    );
+    verifier(
+        'date vide → vide',
+        gedcom_export_date('') === '' && gedcom_export_date(null) === ''
+    );
+    verifier(
+        'texte incompris laissé tel quel',
+        gedcom_export_date('après la guerre') === 'après la guerre',
+        'obtenu : ' . gedcom_export_date('après la guerre')
+    );
+
+    verifier(
+        'retours à la ligne remplacés par des espaces',
+        gedcom_export_text("Première ligne\nSeconde ligne") === 'Première ligne Seconde ligne',
+        'obtenu : « ' . gedcom_export_text("Première ligne\nSeconde ligne") . ' »'
+    );
+    verifier(
+        'arobase doublée (règle GEDCOM)',
+        gedcom_export_text('écrire à contact@exemple.fr') === 'écrire à contact@@exemple.fr',
+        'obtenu : « ' . gedcom_export_text('écrire à contact@exemple.fr') . ' »'
+    );
+    verifier(
+        'espaces multiples réduits',
+        gedcom_export_text('  Jean    MARTIN  ') === 'Jean MARTIN',
+        'obtenu : « ' . gedcom_export_text('  Jean    MARTIN  ') . ' »'
+    );
+    verifier(
+        'ligne GEDCOM au bon format',
+        gedcom_export_line(1, 'NAME', 'Jean /MARTIN/') === "1 NAME Jean /MARTIN/\r\n",
+        'obtenu : ' . json_encode(gedcom_export_line(1, 'NAME', 'Jean /MARTIN/'))
+    );
+    verifier(
+        'ligne GEDCOM sans valeur',
+        gedcom_export_line(0, 'TRLR') === "0 TRLR\r\n",
+        'obtenu : ' . json_encode(gedcom_export_line(0, 'TRLR'))
+    );
+}
+
+if ($filtre === '' || $filtre === 'recettes') {
+    echo "\nRecettes — ingrédients\n";
+
+    $lignes = recipe_ingredient_lines("250 g de farine\n3 œufs\n\n1 pincée de sel");
+    verifier(
+        'une ligne = un ingrédient, lignes vides ignorées',
+        $lignes === ['250 g de farine', '3 œufs', '1 pincée de sel'],
+        'obtenu : ' . json_encode($lignes, JSON_UNESCAPED_UNICODE)
+    );
+    verifier(
+        'tirets en début de ligne retirés',
+        recipe_ingredient_lines("- 2 carottes\n* 1 poireau") === ['2 carottes', '1 poireau'],
+        'obtenu : ' . json_encode(recipe_ingredient_lines("- 2 carottes\n* 1 poireau"), JSON_UNESCAPED_UNICODE)
+    );
+    verifier('ingrédients vides → liste vide', recipe_ingredient_lines('   ') === []);
+}
+
+// ---------------------------------------------------------------------------
 // Résumé
 // ---------------------------------------------------------------------------
 $total = $reussis + count($echecs);

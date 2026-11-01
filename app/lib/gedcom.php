@@ -478,3 +478,192 @@ function gedcom_import(array $parsed, ?int $accountId): array
 
     return $stats;
 }
+
+// ---------------------------------------------------------------------------
+// Export GEDCOM (l'import existe depuis le début, l'export arrive ici)
+// ---------------------------------------------------------------------------
+
+/**
+ * Nettoie un texte pour un fichier GEDCOM : pas de retour à la ligne dans une
+ * valeur (il couperait l'enregistrement), « @ » doublé comme le veut la norme.
+ * Fonction pure, testable sans base.
+ */
+function gedcom_export_text(string $texte): string
+{
+    $texte = str_replace(["\r\n", "\r", "\n", "\t"], ' ', $texte);
+    $texte = str_replace('@', '@@', $texte);
+    $texte = preg_replace('/ {2,}/', ' ', $texte) ?? $texte;
+
+    return trim($texte);
+}
+
+/** Mois français → abréviation GEDCOM. */
+function gedcom_mois_abbr(): array
+{
+    return [
+        1 => 'JAN', 2 => 'FEB', 3 => 'MAR', 4 => 'APR', 5 => 'MAY', 6 => 'JUN',
+        7 => 'JUL', 8 => 'AUG', 9 => 'SEP', 10 => 'OCT', 11 => 'NOV', 12 => 'DEC',
+    ];
+}
+
+/**
+ * Convertit une date écrite par la famille en date GEDCOM.
+ *
+ * « 14 mars 1901 » → « 14 MAR 1901 », « 1928-06-12 » → « 12 JUN 1928 »,
+ * « juin 1928 » → « JUN 1928 », « vers 1930 » → « ABT 1930 »,
+ * « 1901 » → « 1901 ». Une date incompréhensible est laissée telle quelle.
+ * Fonction pure.
+ */
+function gedcom_export_date(?string $date): string
+{
+    $brut = trim((string) $date);
+    if ($brut === '') {
+        return '';
+    }
+
+    $approximatif = (bool) preg_match('/\b(vers|environ|about|abt)\b/iu', $brut);
+    $parts = date_parts($brut);
+
+    if ($parts === null) {
+        return gedcom_export_text($brut);
+    }
+
+    $mois = gedcom_mois_abbr()[$parts['mois']] ?? '';
+
+    if ($parts['jour'] > 0 && $mois !== '') {
+        $valeur = sprintf('%d %s %d', $parts['jour'], $mois, $parts['annee']);
+    } elseif ($mois !== '') {
+        $valeur = sprintf('%s %d', $mois, $parts['annee']);
+    } else {
+        $valeur = (string) $parts['annee'];
+    }
+
+    return $approximatif ? 'ABT ' . $valeur : $valeur;
+}
+
+/** Écrit une ligne GEDCOM (niveau, étiquette, valeur). */
+function gedcom_export_line(int $niveau, string $tag, string $valeur = ''): string
+{
+    $valeur = $valeur !== '' ? ' ' . $valeur : '';
+    return $niveau . ' ' . $tag . $valeur . "\r\n";
+}
+
+/**
+ * Écrit tout l'arbre au format GEDCOM 5.5.1 sur la sortie standard.
+ *
+ * L'écriture se fait personne par personne : même avec des milliers de fiches,
+ * le Pi n'a jamais le fichier entier en mémoire.
+ */
+function gedcom_export_stream(): void
+{
+    $compteur = 0;
+
+    echo gedcom_export_line(0, 'HEAD');
+    echo gedcom_export_line(1, 'SOUR', 'HistoireDeFamille');
+    echo gedcom_export_line(2, 'NAME', 'Histoire de famille');
+    echo gedcom_export_line(2, 'VERS', '1.7');
+    echo gedcom_export_line(1, 'DATE', gedcom_export_date(date('Y-m-d')));
+    echo gedcom_export_line(1, 'GEDC');
+    echo gedcom_export_line(2, 'VERS', '5.5.1');
+    echo gedcom_export_line(2, 'FORM', 'LINEAGE-LINKED');
+    echo gedcom_export_line(1, 'CHAR', 'UTF-8');
+
+    $famillesDe = [];
+    foreach (db_all('SELECT family_id, person_id FROM family_children') as $lien) {
+        $famillesDe[(int) $lien['person_id']][] = (int) $lien['family_id'];
+    }
+
+    $unionsDe = [];
+    foreach (db_all('SELECT id, husband_id, wife_id FROM families') as $famille) {
+        foreach ([$famille['husband_id'], $famille['wife_id']] as $conjoint) {
+            if ($conjoint !== null) {
+                $unionsDe[(int) $conjoint][] = (int) $famille['id'];
+            }
+        }
+    }
+
+    foreach (db_all('SELECT * FROM persons ORDER BY id') as $personne) {
+        $id = (int) $personne['id'];
+        echo gedcom_export_line(0, '@I' . $id . '@', 'INDI');
+
+        // La norme veut le nom de famille en majuscules : « Jean /MARTIN/ ».
+        $nom = mb_strtoupper(gedcom_export_text((string) $personne['last_name']), 'UTF-8');
+        $prenom = gedcom_export_text((string) $personne['first_name']);
+        echo gedcom_export_line(1, 'NAME', trim($prenom . ' /' . $nom . '/'));
+        if ($prenom !== '') {
+            echo gedcom_export_line(2, 'GIVN', $prenom);
+        }
+        if ($nom !== '') {
+            echo gedcom_export_line(2, 'SURN', $nom);
+        }
+        if (in_array($personne['sex'], ['M', 'F'], true)) {
+            echo gedcom_export_line(1, 'SEX', (string) $personne['sex']);
+        }
+
+        if (trim((string) $personne['birth_date']) !== '' || trim((string) $personne['birth_place']) !== '') {
+            echo gedcom_export_line(1, 'BIRT');
+            if (trim((string) $personne['birth_date']) !== '') {
+                echo gedcom_export_line(2, 'DATE', gedcom_export_date((string) $personne['birth_date']));
+            }
+            if (trim((string) $personne['birth_place']) !== '') {
+                echo gedcom_export_line(2, 'PLAC', gedcom_export_text((string) $personne['birth_place']));
+            }
+        }
+
+        if (trim((string) $personne['death_date']) !== '' || trim((string) $personne['death_place']) !== '') {
+            echo gedcom_export_line(1, 'DEAT');
+            if (trim((string) $personne['death_date']) !== '') {
+                echo gedcom_export_line(2, 'DATE', gedcom_export_date((string) $personne['death_date']));
+            }
+            if (trim((string) $personne['death_place']) !== '') {
+                echo gedcom_export_line(2, 'PLAC', gedcom_export_text((string) $personne['death_place']));
+            }
+        }
+
+        foreach ($unionsDe[$id] ?? [] as $familleId) {
+            echo gedcom_export_line(1, 'FAMS', '@F' . $familleId . '@');
+        }
+        foreach ($famillesDe[$id] ?? [] as $familleId) {
+            echo gedcom_export_line(1, 'FAMC', '@F' . $familleId . '@');
+        }
+
+        if (trim((string) $personne['notes']) !== '') {
+            echo gedcom_export_line(1, 'NOTE', gedcom_export_text((string) $personne['notes']));
+        }
+
+        if (++$compteur % 200 === 0) {
+            flush();
+        }
+    }
+
+    foreach (db_all('SELECT * FROM families ORDER BY id') as $famille) {
+        $id = (int) $famille['id'];
+        echo gedcom_export_line(0, '@F' . $id . '@', 'FAM');
+        if ($famille['husband_id'] !== null) {
+            echo gedcom_export_line(1, 'HUSB', '@I' . (int) $famille['husband_id'] . '@');
+        }
+        if ($famille['wife_id'] !== null) {
+            echo gedcom_export_line(1, 'WIFE', '@I' . (int) $famille['wife_id'] . '@');
+        }
+
+        if (trim((string) $famille['marriage_date']) !== '' || trim((string) $famille['marriage_place']) !== '') {
+            echo gedcom_export_line(1, 'MARR');
+            if (trim((string) $famille['marriage_date']) !== '') {
+                echo gedcom_export_line(2, 'DATE', gedcom_export_date((string) $famille['marriage_date']));
+            }
+            if (trim((string) $famille['marriage_place']) !== '') {
+                echo gedcom_export_line(2, 'PLAC', gedcom_export_text((string) $famille['marriage_place']));
+            }
+        }
+
+        foreach (db_all('SELECT person_id FROM family_children WHERE family_id = ?', [$id]) as $enfant) {
+            echo gedcom_export_line(1, 'CHIL', '@I' . (int) $enfant['person_id'] . '@');
+        }
+
+        if (trim((string) $famille['notes']) !== '') {
+            echo gedcom_export_line(1, 'NOTE', gedcom_export_text((string) $famille['notes']));
+        }
+    }
+
+    echo gedcom_export_line(0, 'TRLR');
+}

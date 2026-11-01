@@ -46,6 +46,8 @@ et une installation qui tient en quelques commandes à copier-coller.
 - Un **calendrier familial** (naissances, mariages et décès du mois, toutes
   années confondues) et une **frise chronologique** (les mêmes événements, plus
   les documents datés, période par période).
+- Les **témoignages sonores** (enregistrements, interviews) et les **recettes de
+  famille**, chacun selon sa visibilité. Les pages s'impriment proprement.
 - Une **recherche générale** qui porte d'un seul coup sur les documents, les
   articles, les pages d'information et les personnes de l'arbre.
 - Les pages d'information publiques (histoire de la famille, annonces).
@@ -72,6 +74,10 @@ et une installation qui tient en quelques commandes à copier-coller.
   ordre d'affichage, photo de couverture, visibilité.
 - **Personnes identifiées** sur une photo (ou un témoignage) : recherche dans
   l'arbre et association en deux clics.
+- **Recettes de famille** : création, modification, suppression, photo
+  facultative, visibilité.
+- **Export GEDCOM** de tout l'arbre en un clic (Arbre généalogique →
+  Exporter GEDCOM).
 - Catégories de documents (créées par les administrateurs).
 - Branches familiales : création, modification, suppression, **réinitialisation
   du mot de passe en un clic** (mot de passe lisible affiché une seule fois),
@@ -245,6 +251,22 @@ Deux façons de traverser les dates de la famille, ouvertes à tout le monde.
   sont visibles.
 - Les deux pages s'impriment proprement (bouton « Imprimer »).
 
+### Témoignages sonores et recettes de famille
+
+- **Témoignages** (`/temoignages`) : les enregistrements audio (MP3, M4A, OGG)
+  envoyés comme des documents. Lecture directe dans le navigateur, avance
+  rapide comprise ; le nom des personnes qui parlent apparaît sous le titre
+  (elles sont identifiées sur le document, comme sur une photo). L'onglet
+  n'apparaît dans le menu que s'il existe au moins un enregistrement visible.
+- **Recettes** (`/recettes`) : titre, origine (« recette de Mamie »), quantités,
+  ingrédients (un par ligne), préparation, astuce et souvenir, plus une photo
+  si on veut. Visibilité habituelle, page propre et imprimable pour le carnet
+  de cuisine. L'onglet apparaît dès qu'une recette existe.
+- **Impression** : sur une fiche de personne, un album, une recette ou la frise,
+  le bouton « **Imprimer** » ouvre l'impression du navigateur avec une mise en
+  page sans menu, sans bouton et sans couleur de fond, avec le nom du site et
+  la date en en-tête.
+
 ### Visibilité : la règle la plus importante
 
 Chaque document, page, personne et article a un niveau de visibilité :
@@ -306,9 +328,9 @@ histoiredefamille/
 │   ├── controllers/         une fonction par page
 │   ├── lib/                 base de données, sécurité, stockage, images, vidéos,
 │   │                        GEDCOM, visibilité, textes, tchat, recherche,
-│   │                        albums, calendrier…
+│   │                        albums, calendrier, recettes…
 │   ├── views/               gabarits PHP (public, famille, admin)
-│   ├── migrations/          fichiers SQL numérotés (001_init … 005_albums)
+│   ├── migrations/          fichiers SQL numérotés (001_init … 006_recettes)
 │   └── cli/                 commandes : migrate, create-admin, demo, maintenance, tests
 ├── deploy/
 │   ├── install.sh           installation complète sur le Pi
@@ -794,7 +816,17 @@ Réglages utiles (Administration → Réglages, bloc « Tchat de la famille ») 
   (Administration → Arbre généalogique) : le calendrier et la frise suivent
   automatiquement.
 
-### 6.10 Chercher dans le site
+### 6.10 Envoyer un témoignage sonore ou écrire une recette
+
+- **Témoignage** : Administration → Documents → **Ajouter un document**, choisir
+  un fichier MP3, M4A ou OGG, puis, sur la ligne du document, le bouton
+  **Personnes** pour indiquer qui parle. L'onglet **Témoignages** apparaît tout
+  seul dans le menu.
+- **Recette** : Administration → **Recettes** → Nouvelle recette. Remplir le
+  titre, les ingrédients (un par ligne) et la préparation ; choisir une photo
+  déjà envoyée si on veut. La recette s'imprime avec le bouton **Imprimer**.
+
+### 6.11 Chercher dans le site
 
 1. Cliquer sur **Recherche** dans le menu.
 2. Taper un nom, un mot ou une année, puis **Chercher**. Par exemple
@@ -1041,7 +1073,19 @@ L'import ne devine pas tout. Après coup, dans **Arbre** :
 - ajuster la visibilité des personnes récentes (les personnes nées il y a
   moins de 100 ans restent en « Toutes les familles »).
 
-### 10.3 Conseils de saisie
+### 10.3 Exporter l'arbre (GEDCOM)
+
+**Administration → Arbre généalogique → Exporter GEDCOM** télécharge un fichier
+`histoire-famille-AAAA-MM-JJ.ged`, lisible par Gramps, Geneanet, MyHeritage,
+Ancestry et la plupart des logiciels de généalogie. Il contient **toutes** les
+fiches, y compris privées : c'est pourquoi l'export est réservé aux
+administrateurs. Le fichier est écrit au fur et à mesure, sans jamais occuper
+toute la mémoire du Pi.
+
+Les dates sont converties au format international de la généalogie
+(« 14 mars 1901 » devient « 14 MAR 1901 », « vers 1930 » devient « ABT 1930 »).
+
+### 10.4 Conseils de saisie
 
 - Un seul lieu par champ, tel qu'il apparaît sur l'acte (« Saint-Jean-de-Luz (64) »).
 - Pour les femmes mariées, saisir le **nom de naissance** ; indiquez le nom

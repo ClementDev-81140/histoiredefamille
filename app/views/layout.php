@@ -69,7 +69,12 @@ $navClass = static function (string $href) use ($currentPath): string {
             <a href="/albums"<?= $navClass('/albums') ?>>Albums</a>
             <a href="/arbre"<?= $navClass('/arbre') ?>>Arbre</a>
             <a href="/calendrier"<?= $navClass('/calendrier') ?>>Calendrier</a>
-            <a href="/frise"<?= $navClass('/frise') ?>>Frise</a>
+            <?php if (recipes_exist()): ?>
+                <a href="/recettes"<?= $navClass('/recettes') ?>>Recettes</a>
+            <?php endif; ?>
+            <?php if (audio_exist()): ?>
+                <a href="/temoignages"<?= $navClass('/temoignages') ?>>Témoignages</a>
+            <?php endif; ?>
             <a href="/recherche"<?= $navClass('/recherche') ?>>Recherche</a>
             <?php foreach ($navPages as $navPage): ?>
                 <a href="/pages/<?= e($navPage['slug']) ?>"<?= $navClass('/pages/' . $navPage['slug']) ?>><?= e($navPage['title']) ?></a>
@@ -112,6 +117,12 @@ $navClass = static function (string $href) use ($currentPath): string {
 </header>
 
 <main id="contenu" class="conteneur contenu-principal">
+    <?php /* En-tête visible uniquement à l'impression : une feuille imprimée
+             doit dire de quel site elle vient. */ ?>
+    <p class="impression-seule">
+        <?= e($siteName) ?><?= $siteSub !== '' ? ' — ' . e($siteSub) : '' ?>
+        · <?= e(french_long_date()) ?>
+    </p>
     <?php require __DIR__ . '/partials/flashes.php'; ?>
     <?= $contenu ?>
 </main>

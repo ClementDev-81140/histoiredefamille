@@ -2558,3 +2558,176 @@ legend {
     .calendrier__jour-liste { grid-template-columns: 1fr; gap: 0.35rem; }
     .frise__genre { min-width: 0; display: block; }
 }
+
+/* --------------------------------------------------------------------------
+   Recettes de famille
+   -------------------------------------------------------------------------- */
+
+.recette__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin: 0 0 1.4rem;
+    color: var(--texte-doux);
+    font-style: italic;
+}
+
+.recette__meta > span + span::before {
+    content: "· ";
+    color: var(--bordure);
+}
+
+.recette__photo {
+    margin: 0 0 1.6rem;
+    max-width: 34rem;
+}
+
+.recette__photo img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border: var(--filet);
+}
+
+.recette__photo figcaption {
+    margin-top: 0.35rem;
+    font-size: 0.82rem;
+}
+
+.recette__corps {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+}
+
+.recette__ingredients h2,
+.recette__preparation h2 { margin-top: 0; }
+
+.recette__liste {
+    margin: 0;
+    padding-left: 1.1rem;
+}
+
+.recette__liste li { padding: 0.15rem 0; }
+
+.recette__notes {
+    border-left: 2px solid var(--bordure);
+    padding-left: 0.9rem;
+    color: var(--texte-doux);
+}
+
+@media (min-width: 760px) {
+    .recette__corps { grid-template-columns: 18rem 1fr; }
+}
+
+/* --------------------------------------------------------------------------
+   Témoignages sonores
+   -------------------------------------------------------------------------- */
+
+.temoignages__intro {
+    max-width: var(--largeur-lecture);
+    color: var(--texte-doux);
+}
+
+.temoignages {
+    padding: 0;
+    margin: 1rem 0 1.6rem;
+    list-style: none;
+}
+
+.temoignage {
+    padding: 1.1rem 0;
+    border-top: var(--filet);
+}
+
+.temoignage__titre {
+    margin: 0 0 0.25rem;
+    font-size: 1.1rem;
+}
+
+.temoignage__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 0 0 0.7rem;
+    font-size: 0.85rem;
+    font-style: italic;
+    color: var(--texte-doux);
+}
+
+.temoignage audio {
+    width: 100%;
+    max-width: 30rem;
+}
+
+.temoignage__lien {
+    margin: 0.5rem 0 0;
+    font-size: 0.85rem;
+}
+
+/* --------------------------------------------------------------------------
+   Impression : pages sobres, sans menu ni boutons
+   -------------------------------------------------------------------------- */
+
+@media print {
+    .entete,
+    .pied,
+    .nav,
+    .fil,
+    .actions,
+    .filtres,
+    .pagination,
+    .lien-evitement,
+    .bandeau,
+    .message,
+    form,
+    [data-imprimer] { display: none !important; }
+
+    body {
+        background: #ffffff;
+        color: #000000;
+        font-size: 11pt;
+    }
+
+    .conteneur { max-width: none; padding: 0; }
+
+    a {
+        color: #000000;
+        text-decoration: none;
+        border-bottom: 0;
+    }
+
+    .section,
+    .panneau,
+    .carte,
+    .album-carte { border: 0; }
+
+    .album-carte__apercu,
+    .vignette__lien { background: #ffffff; }
+
+    .grille-album,
+    .grille-albums,
+    .vignette,
+    .frise__annee,
+    .calendrier__jour-liste { break-inside: avoid; }
+
+    img,
+    audio { max-width: 100%; }
+
+    h1, h2, h3 { break-after: avoid; }
+}
+
+/* En-tête réservé à l'impression (voir layout.php). */
+.impression-seule { display: none; }
+
+@media print {
+    .impression-seule {
+        display: block;
+        margin: 0 0 1.2rem;
+        padding-bottom: 0.4rem;
+        border-bottom: 1px solid #000000;
+        font-size: 0.8rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+}
