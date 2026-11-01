@@ -3,7 +3,9 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
-## [Non publié] — Articles
+## [1.2.0] — 2026-11-01
+
+### Articles
 
 - Nouvelle rubrique **Articles** (fil d'actualité de la famille) : liste
   `/articles` avec rubriques et pagination, lecture `/articles/{adresse}`,
@@ -15,6 +17,21 @@ Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 - Administration → **Articles** : liste, création, modification, suppression ;
   aperçu des brouillons réservé aux administrateurs.
 - Migration `003_articles.sql` (nouvelle table, aucune donnée existante touchée).
+- Intégration harmonisée avec l'habillage « journal » : une seule fonction de
+  date longue (`french_long_date()`, avec ou sans le jour de la semaine),
+  résumés et chapôs nettoyés de leur mise en forme légère, étiquettes de visibilité
+  affichées uniquement pour les contenus restreints.
+
+### Vidéos ouvertes à tous
+
+- L'onglet **Vidéos** est désormais visible par tout le monde, comme
+  « Documents » et « Arbre ». Un visiteur non connecté voit les vidéos
+  marquées « Public » et un message l'invitant à se connecter pour les autres ;
+  une vidéo réservée reste inaccessible (même page 404 que pour un document).
+- La page d'une vidéo et le flux `/video/{id}` appliquent les mêmes droits :
+  contrôle par `visibility.php` avant toute lecture du fichier.
+- Données de démonstration : une vidéo **publique** a été ajoutée, pour pouvoir
+  tester l'onglet sans se connecter.
 
 ## [1.1.0] — 2026-11-01
 

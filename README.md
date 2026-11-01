@@ -77,23 +77,44 @@ et une installation qui tient en quelques commandes à copier-coller.
   de sécurité.
 - Réglages du site : nom, sous-titre, description, adresse de contact.
 
-### Vidéos (onglet réservé aux comptes connectés)
+### Articles (le journal de la famille)
 
-Un onglet **Vidéos** apparaît dans le menu à côté de « Documents » et
-« Arbre » dès qu'une personne est connectée (famille ou administration).
-Les vidéos sont des documents comme les autres : mêmes droits, même stockage,
-aucun second système.
+Un onglet **Articles**, à côté d'« Accueil », sert de fil d'actualité : les
+nouvelles de la famille, les souvenirs, les annonces.
 
-- Liste filtée par les droits : public, toutes les familles, branches cochées ;
-  un administrateur voit tout, un compte « voit toutes les branches » voit
-  toutes les branches. Une vidéo **privée** n'apparaît jamais dans l'espace
-  famille.
+- La page d'accueil met les articles les plus récents **à la une**.
+- Chaque article a : un titre, une adresse (`/articles/mon-titre`), une
+  rubrique (« Souvenirs », « Nouvelles »…), un résumé, un texte mis en forme
+  légère, une image à la une (choisie parmi les photos) et une **visibilité**
+  comme les documents.
+- Un article peut rester en **brouillon** (personne d'autre que les
+  administrateurs ne le voit) ou être **publié**. La date de publication peut
+  être dans le futur : c'est une **publication programmée**, l'article apparaît
+  tout seul le jour venu, sans intervention.
+- Un article **privé** ou en brouillon renvoie une page « introuvable », comme
+  un contenu interdit.
+- Administration → **Articles** : liste de tous les articles (brouillons et
+  programmés compris), création, modification, suppression. Un administrateur
+  peut relire un brouillon en cliquant dessus.
+
+### Vidéos
+
+Un onglet **Vidéos** figure dans le menu à côté de « Documents » et « Arbre »,
+pour tout le monde. Les vidéos sont des documents comme les autres : mêmes
+droits, même stockage, aucun second système.
+
+- Liste filtée par les droits : un visiteur ne connecté voit les vidéos
+  **publiques** ; un compte de famille voit en plus celles réservées aux
+  familles et à ses branches ; un administrateur voit tout, et un compte
+  « voit toutes les branches » voit toutes les branches. Une vidéo **privée**
+  n'apparaît jamais dans l'espace famille.
 - Grille de cartes : miniature, titre, date, durée, court résumé.
 - Tri : les vidéos **mises en avant** d'abord, puis l'ordre d'affichage choisi
   par l'administrateur, puis les plus récentes. Pagination automatique.
 - Fiche d'une vidéo : lecteur `<video controls preload="metadata" playsinline>`,
   date, durée, branches concernées, bouton **Télécharger** (seulement si
-  l'administrateur l'autorise), lien de retour.
+  l'administrateur l'autorise), lien de retour. Elle est accessible à un
+  visiteur non connecté **si la vidéo est publique**.
 - Vidéo non autorisée : même page « introuvable » que les autres documents
   (on ne révèle pas son existence).
 - Lecture dans le navigateur **sans réencodage** (le Pi ne pourrait pas
@@ -106,7 +127,7 @@ aucun second système.
 
 ### Visibilité : la règle la plus importante
 
-Chaque document, page et personne a un niveau de visibilité :
+Chaque document, page, personne et article a un niveau de visibilité :
 
 | Niveau | Qui le voit |
 |---|---|
@@ -166,7 +187,7 @@ histoiredefamille/
 │   ├── lib/                 base de données, sécurité, stockage, images, vidéos,
 │   │                        GEDCOM, visibilité, textes…
 │   ├── views/               gabarits PHP (public, famille, admin)
-│   ├── migrations/          fichiers SQL numérotés (001_init.sql, …)
+│   ├── migrations/          fichiers SQL numérotés (001_init, 002_videos, 003_articles)
 │   └── cli/                 commandes : migrate, create-admin, demo, maintenance
 ├── deploy/
 │   ├── install.sh           installation complète sur le Pi
@@ -570,7 +591,33 @@ L'arbre se consulte sur `/arbre` (vue par défaut) ou depuis la fiche d'une
 personne. Le déplacement dans l'arbre est fait par un petit script maison,
 sans bibliothèque externe.
 
-### 6.5 Pages d'information
+### 6.5 Écrire un article
+
+**Administration → Articles → Écrire un article** :
+
+1. **Titre**, puis l'**adresse** de la page. Laissez-la vide : elle est
+   fabriquée automatiquement à partir du titre (utile pour un lien à envoyer
+   par courriel).
+2. **Rubrique** (« Souvenirs », « Nouvelles »…) : elle sert de filtre sur la
+   page `/articles`.
+3. **Résumé** (affiché dans les listes et en haut de l'article) et **texte**,
+   avec la même mise en forme légère que les pages d'information
+   (`## titre`, `**gras**`, `*italique*`, `- liste`, `[lien](adresse)`).
+4. **Image à la une** (facultatif) : une photo déjà envoyée sur le site.
+5. **Visibilité** : qui a le droit de lire l'article.
+6. **Statut** :
+   - *Brouillon* : invisible pour tout le monde sauf les administrateurs.
+   - *Publié* : visible selon la visibilité, et seulement à partir de la
+     **date de publication**.
+7. **Date de publication** : laissez vide pour « maintenant ». En mettant une
+   date future, l'article est **programmé** : il apparaîtra tout seul ce
+   jour-là, sans rien faire. Il reste en aperçu pour les administrateurs.
+
+> Un article publié **public** est visible par des visiteurs qui ne font pas
+> partie de la famille. C'est le seul contenu du site dans ce cas (avec les
+> pages et les documents marqués « Public »).
+
+### 6.6 Pages d'information
 
 **Administration → Pages** : texte simple, avec quelques mises en forme
 (`## titre`, `**gras**`, `*italique*`, `- liste`, `[lien](adresse)`), une

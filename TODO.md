@@ -3,6 +3,14 @@
 Ce fichier liste ce qui reste à faire, classé par priorité. Il n'y a pas de
 suivi automatique : cochez au fur et à mesure.
 
+## Fait (2026-11-01, lot 0)
+
+- [x] Rubrique **Articles** intégrée (branche `claude/articles`) : fil
+      d'actualité, brouillons, publication programmée, « À la une ».
+- [x] Onglet **Vidéos** ouvert à tout le monde : les visiteurs voient les
+      vidéos publiques, les autres restent protégées.
+- [x] Une seule fonction de date longue dans le code (`french_long_date()`).
+
 ## Fait (2026-11-01)
 
 - [x] Habillage « journal » des pages publiques et de l'espace famille
