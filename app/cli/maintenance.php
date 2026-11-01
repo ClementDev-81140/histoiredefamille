@@ -4,6 +4,7 @@
  *
  *  - supprime les tentatives de connexion anciennes ;
  *  - efface les messages de tchat plus anciens que la durée de conservation ;
+ *  - reconstruit l'index de recherche (FTS5) ;
  *  - nettoie les verrous de lecture vidéo périmés ;
  *  - supprime les fichiers temporaires de plus de 48 h ;
  *  - compacte légèrement la base (PRAGMA optimize + checkpoint WAL).
@@ -56,6 +57,18 @@ foreach (glob($tmpDir . '/*') ?: [] as $file) {
     }
 }
 echo "  · fichiers temporaires supprimés : {$removed}\n";
+
+// Recherche : l'index FTS est reconstruit une fois par semaine. Les
+// déclencheurs le tiennent déjà à jour ; ceci rattrape les cas particuliers
+// (restauration d'une sauvegarde, base modifiée à la main).
+try {
+    $indexees = recherche_reindexer();
+    echo $indexees > 0
+        ? "  · index de recherche reconstruit : {$indexees} entrées\n"
+        : "  · recherche : mode sans index (SQLite sans FTS5)\n";
+} catch (Throwable $e) {
+    cli_err("  ! réindexation impossible : " . $e->getMessage() . "\n");
+}
 
 try {
     db()->exec('PRAGMA optimize');

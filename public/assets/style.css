@@ -1997,3 +1997,173 @@ legend {
 .tchat-reglage label:first-child {
     display: block;
 }
+
+/* --------------------------------------------------------------------------
+   Recherche générale
+   -------------------------------------------------------------------------- */
+
+.recherche__formulaire {
+    margin-bottom: 1.4rem;
+}
+
+.recherche__accueil {
+    margin-top: 1rem;
+}
+
+.recherche__resume {
+    margin: 0 0 1rem;
+    padding-bottom: 0.6rem;
+    border-bottom: var(--filet);
+    font-size: 1.02rem;
+}
+
+.recherche__onglets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem 1.1rem;
+    margin-bottom: 0.6rem;
+    font-size: 0.82rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.recherche__onglets a {
+    color: var(--texte-doux);
+    text-decoration: none;
+    padding-bottom: 0.1rem;
+    border-bottom: 1px solid transparent;
+}
+
+.recherche__onglets a:hover,
+.recherche__onglets a:focus-visible {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+}
+
+.recherche__onglets a.actif {
+    color: var(--accent-fonce);
+    font-weight: 700;
+    border-bottom-color: var(--texte);
+}
+
+.recherche__bloc {
+    margin-top: 1.8rem;
+}
+
+.resultats {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: var(--filet);
+}
+
+.resultat {
+    padding: 0.75rem 0 0.8rem;
+    border-bottom: var(--filet);
+}
+
+.resultat__meta {
+    margin: 0 0 0.15rem;
+    font-size: 0.78rem;
+    font-style: italic;
+    color: var(--texte-doux);
+}
+
+.resultat__titre {
+    margin: 0 0 0.2rem;
+    font-size: 1.12rem;
+    font-weight: 400;
+    line-height: 1.3;
+}
+
+.resultat__titre a {
+    color: var(--texte);
+    text-decoration: none;
+    border-bottom: 1px solid var(--bordure);
+}
+
+.resultat__titre a:hover,
+.resultat__titre a:focus-visible {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+}
+
+.resultat__extrait {
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--texte-doux);
+}
+
+.resultat__visibilite {
+    margin: 0.3rem 0 0;
+}
+
+/* --------------------------------------------------------------------------
+   Fiche d'une personne : repères de vie et famille élargie
+   -------------------------------------------------------------------------- */
+
+.reperes {
+    list-style: none;
+    margin: 0 0 1.6rem;
+    padding: 0 0 0 0.2rem;
+    border-left: 2px solid var(--bordure);
+}
+
+.repere {
+    position: relative;
+    padding: 0 0 0.75rem 1.1rem;
+    font-size: 0.98rem;
+}
+
+.repere::before {
+    content: "";
+    position: absolute;
+    left: -0.34rem;
+    top: 0.45rem;
+    width: 0.55rem;
+    height: 0.55rem;
+    background: var(--accent);
+}
+
+.repere__date {
+    display: block;
+    font-size: 0.76rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--texte-doux);
+}
+
+.repere__texte a {
+    color: var(--accent);
+    text-decoration: none;
+    border-bottom: 1px solid var(--bordure);
+}
+
+.repere__texte a:hover,
+.repere__texte a:focus-visible {
+    border-bottom-color: var(--accent);
+}
+
+.famille-elargie {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    margin-bottom: 1.6rem;
+}
+
+.famille-elargie .panneau h3 {
+    margin-top: 0;
+    font-size: 0.86rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.famille-elargie .liste-personnes {
+    margin-bottom: 0;
+}
+
+@media (min-width: 760px) {
+    .famille-elargie {
+        grid-template-columns: 1fr 1fr;
+    }
+}

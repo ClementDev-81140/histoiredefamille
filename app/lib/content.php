@@ -529,6 +529,160 @@ function filter_visible_persons(array $persons): array
     return $visible;
 }
 
+// ---------------------------------------------------------------------------
+// Famille élargie (fiche d'une personne)
+// ---------------------------------------------------------------------------
+
+/** Grands-parents d'une personne (les parents de ses parents). */
+function person_grandparents(int $personId): array
+{
+    $trouves = [];
+    foreach (person_parents($personId) as $parent) {
+        foreach (person_parents((int) $parent['id']) as $grandParent) {
+            $id = (int) $grandParent['id'];
+            if ($id !== $personId) {
+                $trouves[$id] = $grandParent;
+            }
+        }
+    }
+    return array_values($trouves);
+}
+
+/** Petits-enfants d'une personne (les enfants de ses enfants). */
+function person_grandchildren(int $personId): array
+{
+    $trouves = [];
+    foreach (person_unions($personId) as $union) {
+        foreach ($union['children'] as $child) {
+            foreach (person_unions((int) $child['id']) as $childUnion) {
+                foreach ($childUnion['children'] as $grandChild) {
+                    $trouves[(int) $grandChild['id']] = $grandChild;
+                }
+            }
+        }
+    }
+    return array_values($trouves);
+}
+
+/** Oncles et tantes (les frères et sœurs des parents). */
+function person_uncles_aunts(int $personId): array
+{
+    $parents = person_parents($personId);
+    $exclus  = [$personId];
+    foreach ($parents as $parent) {
+        $exclus[] = (int) $parent['id'];
+    }
+
+    $trouves = [];
+    foreach ($parents as $parent) {
+        foreach (person_siblings((int) $parent['id']) as $oncle) {
+            $id = (int) $oncle['id'];
+            if (!in_array($id, $exclus, true)) {
+                $trouves[$id] = $oncle;
+            }
+        }
+    }
+    return array_values($trouves);
+}
+
+/** Neveux et nièces (les enfants des frères et sœurs). */
+function person_nephews_nieces(int $personId): array
+{
+    $trouves = [];
+    foreach (person_siblings($personId) as $sibling) {
+        foreach (person_unions((int) $sibling['id']) as $union) {
+            foreach ($union['children'] as $child) {
+                $trouves[(int) $child['id']] = $child;
+            }
+        }
+    }
+    return array_values($trouves);
+}
+
+/**
+ * Chronologie d'une personne, du plus ancien au plus récent :
+ * naissance, mariages, naissances des enfants, décès.
+ *
+ * Les dates sont celles saisies (texte libre : « 1932 », « vers 1930 »…).
+ * Le tri utilise l'année quand elle est reconnaissable.
+ *
+ * @param array $person fiche de la personne
+ * @param array $unions résultat de person_unions()
+ */
+function person_reperes(array $person, array $unions): array
+{
+    $reperes = [];
+
+    $ajouter = static function (string $date, string $texte, ?string $url = null) use (&$reperes): void {
+        $date = trim($date);
+        if ($date === '') {
+            return;
+        }
+        $reperes[] = [
+            'date'  => $date,
+            'tri'   => extract_year($date) ?? 9999,
+            'texte' => $texte,
+            'url'   => $url,
+        ];
+    };
+
+    $naissance = 'Naissance';
+    if (trim((string) ($person['birth_place'] ?? '')) !== '') {
+        $naissance .= ' à ' . trim((string) $person['birth_place']);
+    }
+    $ajouter((string) ($person['birth_date'] ?? ''), $naissance);
+
+    foreach ($unions as $union) {
+        $conjoint = $union['spouse'] !== null ? person_full_name($union['spouse']) : '';
+        $mariage  = $conjoint !== '' ? 'Mariage avec ' . $conjoint : 'Mariage';
+        if (trim((string) ($union['family']['marriage_place'] ?? '')) !== '') {
+            $mariage .= ' à ' . trim((string) $union['family']['marriage_place']);
+        }
+        $ajouter((string) ($union['family']['marriage_date'] ?? ''), $mariage);
+
+        foreach ($union['children'] as $child) {
+            $ajouter(
+                (string) ($child['birth_date'] ?? ''),
+                'Naissance : ' . person_full_name($child),
+                '/arbre/' . (int) $child['id']
+            );
+        }
+    }
+
+    $deces = 'Décès';
+    if (trim((string) ($person['death_place'] ?? '')) !== '') {
+        $deces .= ' à ' . trim((string) $person['death_place']);
+    }
+    $ajouter((string) ($person['death_date'] ?? ''), $deces);
+
+    usort($reperes, static fn (array $a, array $b): int => $a['tri'] <=> $b['tri']);
+
+    return $reperes;
+}
+
+/**
+ * Autres personnes portant le même nom de famille, visibles par le visiteur.
+ * Sert à repérer les homonymes et les branches cousines.
+ */
+function person_homonyms(array $person, int $limit = 6): array
+{
+    $nom = trim((string) $person['last_name']);
+    if ($nom === '') {
+        return [];
+    }
+
+    $params = [':nom' => $nom, ':moi' => (int) $person['id']];
+    $clause = visibility_clause('person', 'p', $params);
+
+    return db_all(
+        "SELECT p.* FROM persons p
+         WHERE {$clause} AND p.id <> :moi AND TRIM(p.last_name) = :nom COLLATE NOCASE
+         ORDER BY p.birth_year IS NULL, p.birth_year, p.first_name
+         LIMIT " . max(1, $limit),
+        $params
+    );
+}
+
 /** Année de naissance d'une personne (colonne ou texte). */
 function person_birth_year(array $person): ?int
 {

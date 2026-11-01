@@ -247,14 +247,26 @@ function public_personne(array $params): void
         }
     }
 
+    // Famille élargie : chaque personne est filtrée selon sa propre visibilité.
+    $grandsParents = filter_visible_persons(person_grandparents((int) $person['id']));
+    $petitsEnfants = filter_visible_persons(person_grandchildren((int) $person['id']));
+    $onclesTantes   = filter_visible_persons(person_uncles_aunts((int) $person['id']));
+    $neveuxNieces   = filter_visible_persons(person_nephews_nieces((int) $person['id']));
+
     render('public/personne', [
-        'titre'    => person_full_name($person),
-        'person'   => $person,
-        'parents'  => $parents,
-        'siblings' => $siblings,
-        'unions'   => $unions,
-        'photo'    => $photo,
-        'branches' => content_branch_ids('person', (int) $person['id']),
+        'titre'         => person_full_name($person),
+        'person'        => $person,
+        'parents'       => $parents,
+        'siblings'      => $siblings,
+        'unions'        => $unions,
+        'photo'         => $photo,
+        'branches'      => content_branch_ids('person', (int) $person['id']),
+        'grandsParents' => $grandsParents,
+        'petitsEnfants' => $petitsEnfants,
+        'onclesTantes'  => $onclesTantes,
+        'neveuxNieces'  => $neveuxNieces,
+        'reperes'       => person_reperes($person, $unions),
+        'homonymes'     => person_homonyms($person, 6),
     ]);
 }
 

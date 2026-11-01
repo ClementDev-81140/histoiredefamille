@@ -67,6 +67,7 @@ $navClass = static function (string $href) use ($currentPath): string {
                      vidéos publiques, les autres selon leurs droits. */ ?>
             <a href="/videos"<?= $navClass('/videos') ?>>Vidéos</a>
             <a href="/arbre"<?= $navClass('/arbre') ?>>Arbre</a>
+            <a href="/recherche"<?= $navClass('/recherche') ?>>Recherche</a>
             <?php foreach ($navPages as $navPage): ?>
                 <a href="/pages/<?= e($navPage['slug']) ?>"<?= $navClass('/pages/' . $navPage['slug']) ?>><?= e($navPage['title']) ?></a>
             <?php endforeach; ?>

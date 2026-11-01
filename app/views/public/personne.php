@@ -3,10 +3,28 @@
  * Fiche d'une personne de l'arbre.
  *
  * @var array      $person, $parents, $siblings, $unions, $branches
+ * @var array      $grandsParents, $petitsEnfants, $onclesTantes, $neveuxNieces, $reperes, $homonymes
  * @var array|null $photo
  */
 $dates = person_dates($person);
 $age   = person_age($person);
+
+/** Lien vers la recherche pour un lieu (recherche sans accents). */
+$lienLieu = static fn (string $lieu): string => '/recherche?q=' . rawurlencode($lieu);
+
+/** Petite liste de personnes (nom, dates) réutilisée plusieurs fois. */
+$listePersonnes = static function (array $personnes): void {
+    ?>
+    <ul class="liste-personnes">
+        <?php foreach ($personnes as $personne): ?>
+            <li>
+                <a href="/arbre/<?= (int) $personne['id'] ?>"><?= e(person_full_name($personne)) ?></a>
+                <span class="discret"><?= e(person_dates($personne)) ?></span>
+            </li>
+        <?php endforeach; ?>
+    </ul>
+    <?php
+};
 ?>
 <nav class="fil" aria-label="Fil d’Ariane">
     <a href="/arbre">Arbre généalogique</a>
@@ -28,6 +46,10 @@ $age   = person_age($person);
             <?php endif; ?>
             <p class="actions">
                 <a class="bouton bouton--secondaire" href="/arbre?racine=<?= (int) $person['id'] ?>">Voir dans l’arbre</a>
+                <?php if (trim((string) $person['last_name']) !== ''): ?>
+                    <a class="bouton bouton--secondaire"
+                       href="/recherche?q=<?= rawurlencode(trim((string) $person['last_name'])) ?>">Chercher ce nom</a>
+                <?php endif; ?>
                 <?php if (is_admin()): ?>
                     <a class="bouton bouton--secondaire" href="/admin/arbre/personne/<?= (int) $person['id'] ?>">Modifier</a>
                     <a class="bouton bouton--secondaire" href="/admin/arbre/couple/nouveau">Ajouter un couple</a>
@@ -57,16 +79,24 @@ $age   = person_age($person);
                 <dd>
                     <?= trim((string) $person['birth_date']) !== '' ? e($person['birth_date']) : '—' ?>
                     <?php if (trim((string) $person['birth_place']) !== ''): ?>
-                        <span class="discret">à <?= e($person['birth_place']) ?></span>
+                        <span class="discret">à
+                            <a href="<?= e($lienLieu(trim((string) $person['birth_place']))) ?>"><?= e($person['birth_place']) ?></a>
+                        </span>
                     <?php endif; ?>
                 </dd>
                 <dt>Décès</dt>
                 <dd>
                     <?= trim((string) $person['death_date']) !== '' ? e($person['death_date']) : '—' ?>
                     <?php if (trim((string) $person['death_place']) !== ''): ?>
-                        <span class="discret">à <?= e($person['death_place']) ?></span>
+                        <span class="discret">à
+                            <a href="<?= e($lienLieu(trim((string) $person['death_place']))) ?>"><?= e($person['death_place']) ?></a>
+                        </span>
                     <?php endif; ?>
                 </dd>
+                <?php if (trim((string) $person['sex']) !== ''): ?>
+                    <dt>Sexe</dt>
+                    <dd><?= $person['sex'] === 'M' ? 'Homme' : 'Femme' ?></dd>
+                <?php endif; ?>
             </dl>
 
             <h2>Parents</h2>
@@ -141,6 +171,67 @@ $age   = person_age($person);
             <?php endforeach; ?>
         </div>
     </div>
+
+    <?php if ($reperes !== []): ?>
+        <h2>Chronologie</h2>
+        <ol class="reperes">
+            <?php foreach ($reperes as $repere): ?>
+                <li class="repere">
+                    <span class="repere__date"><?= e($repere['date']) ?></span>
+                    <span class="repere__texte">
+                        <?php if ($repere['url'] !== null): ?>
+                            <a href="<?= e($repere['url']) ?>"><?= e($repere['texte']) ?></a>
+                        <?php else: ?>
+                            <?= e($repere['texte']) ?>
+                        <?php endif; ?>
+                    </span>
+                </li>
+            <?php endforeach; ?>
+        </ol>
+    <?php endif; ?>
+
+    <?php if ($grandsParents !== [] || $petitsEnfants !== [] || $onclesTantes !== [] || $neveuxNieces !== []): ?>
+        <h2>Famille élargie</h2>
+        <div class="famille-elargie">
+            <?php if ($grandsParents !== []): ?>
+                <section class="panneau">
+                    <h3>Grands-parents</h3>
+                    <?php $listePersonnes($grandsParents); ?>
+                </section>
+            <?php endif; ?>
+
+            <?php if ($onclesTantes !== []): ?>
+                <section class="panneau">
+                    <h3>Oncles et tantes</h3>
+                    <?php $listePersonnes($onclesTantes); ?>
+                </section>
+            <?php endif; ?>
+
+            <?php if ($petitsEnfants !== []): ?>
+                <section class="panneau">
+                    <h3>Petits-enfants</h3>
+                    <?php $listePersonnes($petitsEnfants); ?>
+                </section>
+            <?php endif; ?>
+
+            <?php if ($neveuxNieces !== []): ?>
+                <section class="panneau">
+                    <h3>Neveux et nièces</h3>
+                    <?php $listePersonnes($neveuxNieces); ?>
+                </section>
+            <?php endif; ?>
+        </div>
+    <?php endif; ?>
+
+    <?php if ($homonymes !== []): ?>
+        <h2>Autres personnes portant le nom « <?= e(trim((string) $person['last_name'])) ?> »</h2>
+        <?php $listePersonnes($homonymes); ?>
+        <p class="discret">
+            <a href="/recherche?q=<?= rawurlencode(trim((string) $person['last_name'])) ?>">
+                Voir tous les résultats pour « <?= e(trim((string) $person['last_name'])) ?> »
+            </a>
+        </p>
+    <?php endif; ?>
 
     <?php if (trim((string) $person['notes']) !== ''): ?>
         <h2>Notes</h2>
