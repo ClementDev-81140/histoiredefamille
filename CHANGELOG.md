@@ -3,6 +3,43 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.3.0] — 2026-11-01
+
+### Tchat de la famille
+
+- Nouvel onglet **Tchat**, visible seulement pour les personnes connectées :
+  un seul salon commun aux branches et aux administrateurs.
+- Signature « **BRANCHE/Prénom** » (« HERICHER/Jean », « ADMIN/Clément ») :
+  prénom demandé au premier passage (1 à 30 caractères, casse remise
+  proprement), gardé en session et modifiable à tout moment. Les messages déjà
+  envoyés gardent leur signature d'origine.
+- **Texte brut**, 1000 caractères au maximum, sauts de ligne conservés ; une
+  adresse web devient un lien sûr (`rel="noopener noreferrer"`, jamais de
+  `javascript:`). Tout est échappé à l'affichage.
+- Mise à jour par **interrogation toutes les 5 s**, qui ne demande que les
+  messages plus récents que le dernier affiché ; ralentissement à 30 s après
+  trois minutes sans nouveauté ; arrêt complet quand l'onglet est caché ou la
+  page quittée. Aucun service permanent (ni WebSocket, ni Node, ni Redis).
+- Affichage « journal » : séparateur par journée, heure, défilement
+  automatique, 50 derniers messages puis « Voir les messages plus anciens »
+  par paquets de 50.
+- **Anti-spam** : 1 message par seconde et 30 par minute et par compte,
+  message vide refusé. Envoi par `fetch` avec jeton CSRF.
+- **Pastille** des nouveaux messages dans le menu (une requête légère par page).
+- **Administrateurs** : suppression d'un message, avec trace dans le journal
+  d'activité (auteur, date, début du texte).
+- **Réglages** : ouverture/fermeture du tchat et durée de conservation
+  (jamais, 1 an par défaut, 6 mois, 3 mois), appliquée par
+  `app/cli/maintenance.php`.
+- Migration `004_tchat.sql` : nouvelle table `chat_messages` et deux réglages.
+  Aucune donnée existante n'est modifiée ni supprimée.
+- JavaScript ajouté dans `public/assets/app.js` (aucun script en ligne, CSP
+  « self » inchangée) et styles dans `public/assets/style.css` (palette et
+  habillage inchangés).
+- Données de démonstration : trois messages fictifs dans le tchat.
+- Captures : `ordinateur-tchat`, `mobile-tchat`, `ordinateur-tchat-admin`,
+  `ordinateur-reglages-tchat`.
+
 ## [1.2.0] — 2026-11-01
 
 ### Articles

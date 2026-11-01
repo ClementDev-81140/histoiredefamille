@@ -50,6 +50,10 @@ et une installation qui tient en quelques commandes à copier-coller.
   à une branche précise.
 - Un compte par branche familiale (un identifiant et un mot de passe partagés
   par les membres de cette branche).
+- Un **tchat** privé : un seul salon commun à toutes les branches et aux
+  administrateurs. Les messages sont signés « BRANCHE/Prénom » et ne sont
+  visibles que des personnes connectées. Aucune application à installer :
+  tout se passe dans le navigateur.
 
 ### Administration (3 comptes personnels)
 
@@ -75,7 +79,8 @@ et une installation qui tient en quelques commandes à copier-coller.
 - Page **État du site** : version de PHP, limites d'envoi, taille de la base,
   espace disque libre, dernières lignes du journal de sauvegarde, contrôles
   de sécurité.
-- Réglages du site : nom, sous-titre, description, adresse de contact.
+- Réglages du site : nom, sous-titre, description, adresse de contact,
+  ouverture du **tchat** et durée de conservation de ses messages.
 
 ### Articles (le journal de la famille)
 
@@ -124,6 +129,46 @@ droits, même stockage, aucun second système.
 - Limite de lectures simultanées (2 par défaut). Au-delà, le site affiche
   « **Trop de personnes regardent des vidéos, réessayez dans une minute** »
   au lieu d'une erreur technique, et le flux répond 503 avec `Retry-After`.
+
+### Tchat de la famille
+
+Un onglet **Tchat** apparaît dans le menu **uniquement pour les personnes
+connectées**. C'est un seul salon commun : toutes les branches et les
+administrateurs y écrivent, tout le monde lit tout.
+
+- Au premier passage, on indique le **prénom** qui signera les messages
+  (1 à 30 caractères, lettres, espace et tiret). La signature devient
+  « **MARTIN/Jean** » ; un administrateur signe « **ADMIN/Clément** ».
+  Le prénom est gardé le temps de la session (le compte d'une branche est
+  partagé : chacun met le sien sur son appareil) et se change à tout moment
+  via « Changer mon prénom ». Les messages déjà envoyés gardent leur signature
+  d'origine.
+- **Texte brut uniquement**, 1000 caractères au maximum. Le HTML n'est jamais
+  interprété ; les sauts de ligne sont conservés et une adresse web tapée
+  devient un lien qui s'ouvre dans un nouvel onglet (jamais de lien
+  `javascript:`).
+- **Anti-spam** : un message par seconde et 30 par minute et par compte ; un
+  message vide est refusé.
+- **Affichage en journal** : séparateur par journée, heure de chaque message,
+  défilement automatique vers le message le plus récent, 50 derniers messages
+  puis un bouton « Voir les messages plus anciens » (par paquets de 50 : le Pi
+  n'a jamais tout l'historique en mémoire).
+- **Mise à jour automatique** : le navigateur demande seulement les messages
+  plus récents que le dernier affiché, toutes les 5 secondes. Après trois
+  minutes sans nouveauté il passe à 30 secondes, et il s'arrête complètement
+  quand l'onglet est caché ou la page quittée. Aucun service permanent côté
+  serveur (pas de WebSocket, pas de Node, pas de Redis).
+- **Pastille** : une petite bulle sur l'onglet indique le nombre de nouveaux
+  messages depuis la dernière visite (une seule requête légère par page).
+- **Administrateurs** : bouton « Supprimer » sur chaque message. La
+  suppression est inscrite dans le journal d'activité (auteur, date, début du
+  texte).
+- **Tchat fermé** : Administration → Réglages permet de fermer le salon (l'onglet
+  disparaît, aucune lecture, aucune écriture) ; les messages sont conservés.
+- **Conservation** : Administration → Réglages choisit la durée (jamais,
+  1 an — valeur par défaut —, 6 mois, 3 mois). La tâche d'entretien
+  `app/cli/maintenance.php` efface les messages plus anciens ; avec « jamais »,
+  rien n'est jamais supprimé automatiquement.
 
 ### Visibilité : la règle la plus importante
 
@@ -185,9 +230,9 @@ histoiredefamille/
 │   ├── routes.php           table des URL
 │   ├── controllers/         une fonction par page
 │   ├── lib/                 base de données, sécurité, stockage, images, vidéos,
-│   │                        GEDCOM, visibilité, textes…
+│   │                        GEDCOM, visibilité, textes, tchat…
 │   ├── views/               gabarits PHP (public, famille, admin)
-│   ├── migrations/          fichiers SQL numérotés (001_init, 002_videos, 003_articles)
+│   ├── migrations/          fichiers SQL numérotés (001_init … 004_tchat)
 │   └── cli/                 commandes : migrate, create-admin, demo, maintenance
 ├── deploy/
 │   ├── install.sh           installation complète sur le Pi
@@ -624,6 +669,33 @@ sans bibliothèque externe.
 visibilité par page. Exemple de contenu : l'histoire de la famille, les
 annonces de réunion, une page « qui contacter ».
 
+### 6.7 Utiliser le tchat
+
+1. Se connecter avec l'identifiant de sa branche (ou son compte
+   administrateur), puis cliquer sur **Tchat** dans le menu.
+2. La première fois, indiquer son **prénom** : les messages seront signés
+   « BRANCHE/Prénom » (par exemple « MARTIN/Jean »). Pour le changer plus tard,
+   ouvrir « Changer mon prénom » en haut de la page.
+3. Écrire dans la zone du bas, puis **Envoyer** (ou la touche Entrée ;
+   Maj+Entrée ajoute une ligne).
+4. La conversation se met à jour toute seule. Quand on remonte dans les
+   anciens messages, un bouton prévient de l'arrivée de nouveaux messages.
+5. Un administrateur peut supprimer un message fautif : le journal d'activité
+   garde la trace de la suppression.
+
+Réglages utiles (Administration → Réglages, bloc « Tchat de la famille ») :
+
+- **Ouvrir le tchat** : décoché, le salon disparaît du menu et personne ne peut
+  plus lire ni écrire. Les messages restent en base.
+- **Conservation des messages** : « 1 an » par défaut. Les messages plus
+  anciens sont effacés lors de la tâche d'entretien hebdomadaire
+  (`app/cli/maintenance.php`, déjà installée par `deploy/install.sh`).
+
+> Le tchat n'est **pas** un service de messagerie instantanée : les messages
+> arrivent avec quelques secondes de décalage, et rien n'est envoyé par
+> courriel ou par notification. C'est volontaire : aucun service à maintenir
+> sur le Raspberry Pi.
+
 ---
 
 ## 7. Mettre à jour le site
@@ -908,6 +980,10 @@ Il contient **uniquement du code** :
 - aucune photo, aucun document, aucune donnée familiale réelle ;
 - les noms de famille des données de démonstration sont **fictifs**.
 
+Le **tchat** est stocké dans la même base, sur le SSD : les messages ne sont
+lisibles que par des personnes connectées (page, flux de mise à jour et envoi
+vérifient toutes la session), jamais depuis l'extérieur du site.
+
 Vos données vivent exclusivement sur le Raspberry Pi, dans
 `/mnt/ssd/histoiredefamille`. La configuration locale (`config.local.php`) et
 le dossier `storage/` sont listés dans `.gitignore`.
@@ -922,7 +998,9 @@ le dossier `storage/` sont listés dans `.gitignore`.
 - **Base de données** : requêtes préparées PDO partout (aucune concaténation
   de SQL avec une valeur saisie).
 - **Affichage** : tout est échappé avec `htmlspecialchars` (via la fonction
-  `e()`), y compris les noms venant d'un GEDCOM.
+  `e()`), y compris les noms venant d'un GEDCOM et les messages du tchat.
+  Dans le tchat, seules les adresses `http`/`https` deviennent des liens,
+  toujours avec `rel="noopener noreferrer"`.
 - **Sessions** : cookie `HttpOnly` + `Secure` + `SameSite=Lax`, identifiant
   régénéré à la connexion, expiration après 4 h d'inactivité et 7 jours au
   maximum.

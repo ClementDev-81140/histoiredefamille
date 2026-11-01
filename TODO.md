@@ -3,6 +3,22 @@
 Ce fichier liste ce qui reste à faire, classé par priorité. Il n'y a pas de
 suivi automatique : cochez au fur et à mesure.
 
+## Fait (2026-11-01, lot 1)
+
+- [x] **Tchat privé** : un salon commun réservé aux comptes connectés
+      (onglet « Tchat », pastille des nouveaux messages).
+- [x] Signature « BRANCHE/Prénom » (prénom demandé au premier passage, gardé en
+      session, modifiable) ; « ADMIN/nom » pour les administrateurs.
+- [x] Texte brut, 1000 caractères, liens sûrs, sauts de ligne conservés.
+- [x] Mise à jour par interrogation (5 s, ralentie à 30 s, arrêtée quand
+      l'onglet est caché) ; anti-spam 1/s et 30/min.
+- [x] 50 derniers messages + « voir les messages plus anciens » ; séparateur par
+      journée, défilement automatique.
+- [x] Administrateur : suppression d'un message avec trace au journal d'activité.
+- [x] Réglages : ouverture/fermeture du tchat, conservation
+      (jamais / 1 an / 6 mois / 3 mois) appliquée par `maintenance.php`.
+- [x] Migration `004_tchat.sql`, démonstration et 4 captures d'écran.
+
 ## Fait (2026-11-01, lot 0)
 
 - [x] Rubrique **Articles** intégrée (branche `claude/articles`) : fil
@@ -23,6 +39,15 @@ suivi automatique : cochez au fur et à mesure.
 - [x] Migration `002_videos.sql` (ajout de colonnes seulement).
 - [x] Captures d'écran versées dans `docs/captures/`.
 - [x] Ménage des fichiers envoyés par erreur à la racine du dépôt.
+
+## Prochains lots (un par un, après accord)
+
+- [ ] **Lot 2** — Recherche générale (documents, articles, pages, personnes) et
+      fiche personne enrichie. FTS5 si disponible, sinon `LIKE` sans accents.
+- [ ] **Lot 3** — Albums photos et personnes identifiées sur les photos.
+- [ ] **Lot 4** — Calendrier familial et frise chronologique.
+- [ ] **Lot 5** — Audio (témoignages), recettes, impression, export GEDCOM.
+- [ ] **Lot 6** — Journal des connexions et alertes pour les administrateurs.
 
 ## Avant la mise en ligne (fait par Clément)
 
@@ -88,6 +113,25 @@ suivi automatique : cochez au fur et à mesure.
       vérifier le journal de temps en temps).
 - [ ] Documenter une procédure de remplacement de la carte SD (avec la liste
       exacte des paquets à réinstaller).
+
+## Idées à étudier (sans implémentation pour l'instant)
+
+Rien n'est décidé : ces idées sont notées pour être étudiées plus tard, et ne
+doivent pas être codées sans un accord explicite.
+
+- **Courriel à la publication** : prévenir les personnes connectées quand un
+  article ou un document paraît. À étudier : envoi depuis le Pi (le compte de
+  messagerie est-il fiable ? risques de spam), ou simple résumé affiché à la
+  prochaine visite. Un envoi de courriel demande un service SMTP et des mots de
+  passe supplémentaires : à ne pas ajouter sans en mesurer le coût.
+- **Lettre d'information mensuelle** : un courriel récapitulatif (nouveaux
+  articles, photos, anniversaires) envoyé une fois par mois. Même question que
+  ci-dessus, plus la gestion des personnes qui ne veulent pas la recevoir.
+- **Carte des lieux** : afficher sur une carte les villes et villages de la
+  famille. À étudier **sans service externe** (pas de Google Maps, pas de
+  Leaflet avec des tuiles distantes) : soit une carte dessinée à la main en
+  SVG, soit des fonds de carte libres stockés sur le Pi — en vérifiant le poids
+  et la licence.
 
 ## Idées en vrac (à discuter)
 
