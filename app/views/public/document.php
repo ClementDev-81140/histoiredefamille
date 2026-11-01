@@ -9,6 +9,7 @@ $kind      = (string) $doc['kind'];
 $isPhoto   = $kind === 'photo';
 $isVideo   = $kind === 'video';
 $isPdf     = strtolower((string) $doc['ext']) === 'pdf';
+$isAudio   = document_is_audio($doc);
 $thumb     = thumbnail_url($doc);
 $canAdmin  = is_admin();
 ?>
@@ -43,6 +44,15 @@ $canAdmin  = is_admin();
                     n’est probablement pas au format MP4 (H.264 + AAC) : dans ce cas,
                     <a href="<?= e(download_url($doc)) ?>">téléchargez-le</a>.
                 </p>
+            <?php elseif ($isAudio): ?>
+                <div class="panneau panneau--centre document__son">
+                    <p class="document__icone" aria-hidden="true">Son</p>
+                    <audio controls preload="metadata" src="<?= e(file_url($doc)) ?>">
+                        Votre navigateur ne permet pas la lecture de ce fichier audio.
+                        <a href="<?= e(download_url($doc)) ?>">Télécharger le fichier</a>.
+                    </audio>
+                    <p class="note">Écoute directe dans le navigateur, sans rien installer.</p>
+                </div>
             <?php elseif ($isPdf): ?>
                 <div class="panneau panneau--centre">
                     <p class="document__icone" aria-hidden="true">PDF</p>
@@ -113,6 +123,7 @@ $canAdmin  = is_admin();
                     <a class="bouton bouton--secondaire" href="<?= e(download_url($doc)) ?>">Télécharger</a>
                 <?php endif; ?>
                 <?php if ($canAdmin): ?>
+                    <a class="bouton bouton--secondaire" href="/admin/documents/<?= (int) $doc['id'] ?>/personnes">Personnes</a>
                     <a class="bouton bouton--secondaire" href="/admin/documents/<?= (int) $doc['id'] ?>/modifier">Modifier</a>
                     <form method="post" action="/admin/documents/<?= (int) $doc['id'] ?>/supprimer"
                           class="formulaire-en-ligne"
@@ -125,6 +136,38 @@ $canAdmin  = is_admin();
         </div>
     </div>
 </article>
+
+<?php if ($personnes !== [] || $albums !== [] || is_admin()): ?>
+    <section class="section document__liens">
+        <?php if ($personnes !== []): ?>
+            <h2>Personnes sur ce document</h2>
+            <ul class="liste-personnes">
+                <?php foreach ($personnes as $personne): ?>
+                    <li>
+                        <a href="/arbre/<?= (int) $personne['id'] ?>"><?= e(person_full_name($personne)) ?></a>
+                        <span class="discret"><?= e(person_dates($personne)) ?></span>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        <?php endif; ?>
+
+        <?php if ($albums !== []): ?>
+            <h2>Dans les albums</h2>
+            <p class="etiquettes">
+                <?php foreach ($albums as $album): ?>
+                    <a class="etiquette" href="<?= e(album_url($album)) ?>"><?= e($album['title']) ?></a>
+                <?php endforeach; ?>
+            </p>
+        <?php endif; ?>
+
+        <?php if ($canAdmin && $personnes === []): ?>
+            <p class="discret">
+                Personne n’est encore identifié sur ce document :
+                <a href="/admin/documents/<?= (int) $doc['id'] ?>/personnes">indiquer qui figure dessus</a>.
+            </p>
+        <?php endif; ?>
+    </section>
+<?php endif; ?>
 
 <?php if ($related !== []): ?>
     <section class="section">

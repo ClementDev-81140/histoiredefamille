@@ -3,6 +3,15 @@
 Ce fichier liste ce qui reste à faire, classé par priorité. Il n'y a pas de
 suivi automatique : cochez au fur et à mesure.
 
+## Fait (2026-11-01, lot 3)
+
+- [x] **Albums photos** : rangement des photos existantes, titre, description,
+      visibilité, ordre, photo de couverture ; aucune copie de fichier.
+- [x] **Personnes identifiées** sur un document (photo, témoignage) :
+      association depuis l'administration, affichage sur la fiche du document
+      et sur celle de la personne, légendes filtrées par les droits.
+- [x] Migration `005_albums.sql`, démonstration et 7 captures d'écran.
+
 ## Fait (2026-11-01, lot 2)
 
 - [x] **Recherche générale** (`/recherche`) : documents, articles, pages
@@ -57,7 +66,6 @@ suivi automatique : cochez au fur et à mesure.
 
 ## Prochains lots (un par un, après accord)
 
-- [ ] **Lot 3** — Albums photos et personnes identifiées sur les photos.
 - [ ] **Lot 4** — Calendrier familial et frise chronologique.
 - [ ] **Lot 5** — Audio (témoignages), recettes, impression, export GEDCOM.
 - [ ] **Lot 6** — Journal des connexions et alertes pour les administrateurs.

@@ -66,6 +66,7 @@ $navClass = static function (string $href) use ($currentPath): string {
             <?php /* Onglet visible par tous : un visiteur ne voit que les
                      vidéos publiques, les autres selon leurs droits. */ ?>
             <a href="/videos"<?= $navClass('/videos') ?>>Vidéos</a>
+            <a href="/albums"<?= $navClass('/albums') ?>>Albums</a>
             <a href="/arbre"<?= $navClass('/arbre') ?>>Arbre</a>
             <a href="/recherche"<?= $navClass('/recherche') ?>>Recherche</a>
             <?php foreach ($navPages as $navPage): ?>

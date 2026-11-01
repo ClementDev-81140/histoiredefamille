@@ -133,6 +133,8 @@ function public_document_detail(array $params): void
         'tags'     => document_tags($doc),
         'branches' => content_branch_ids('document', (int) $doc['id']),
         'related'  => $related,
+        'personnes' => document_persons((int) $doc['id']),
+        'albums'    => albums_of_document((int) $doc['id']),
     ]);
 }
 
@@ -267,6 +269,8 @@ function public_personne(array $params): void
         'neveuxNieces'  => $neveuxNieces,
         'reperes'       => person_reperes($person, $unions),
         'homonymes'     => person_homonyms($person, 6),
+        'photos'        => person_photos((int) $person['id'], 12),
+        'nbPhotos'      => person_photo_count((int) $person['id']),
     ]);
 }
 

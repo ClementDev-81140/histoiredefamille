@@ -78,6 +78,7 @@
                         <td><?= e(format_size((int) $doc['size'])) ?></td>
                         <td><?= e(format_date((int) $doc['created_at'])) ?></td>
                         <td class="colonne-actions">
+                            <a class="bouton bouton--secondaire" href="/admin/documents/<?= (int) $doc['id'] ?>/personnes">Personnes</a>
                             <a href="/admin/documents/<?= (int) $doc['id'] ?>/modifier">Modifier</a>
                             <form method="post" action="/admin/documents/<?= (int) $doc['id'] ?>/supprimer"
                                   class="formulaire-en-ligne"

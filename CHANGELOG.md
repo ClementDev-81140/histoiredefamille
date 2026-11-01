@@ -3,6 +3,39 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.5.0] — 2026-11-01
+
+### Albums photos et personnes identifiées
+
+- Nouvel onglet **Albums** (`/albums`, `/albums/{adresse}`) : les photos déjà
+  envoyées sont regroupées par époque, voyage ou fête. Aucun fichier n'est copié
+  ni déplacé : un album est un rangement, pas une seconde médiathèque.
+- Chaque album a un titre, une description, une **visibilité** (mêmes quatre
+  niveaux que le reste du site), un ordre d'affichage et une **photo de
+  couverture** (la première par défaut). Supprimer un album ne supprime aucune
+  photo.
+- Les photos gardent leur **propre** visibilité : une photo privée placée dans
+  un album public reste invisible pour un visiteur. Un album vide n'affiche
+  jamais de contenu confidentiel.
+- **Personnes identifiées** : Administration → Documents → bouton « Personnes »
+  sur un document. On cherche un nom dans l'arbre et on l'associe en un clic
+  (`document_persons`). Seuls les noms visibles par le visiteur apparaissent
+  dans les légendes.
+- La fiche d'un document affiche « Personnes sur ce document » et « Dans les
+  albums » ; la fiche d'une personne affiche « Photos et documents ».
+- Migration `005_albums.sql` : trois tables (`albums`, `album_documents`,
+  `document_persons`). Aucune donnée existante n'est modifiée ni supprimée.
+- Ajouts à venir dans les lots suivants et déjà branchés ici : lecture des
+  fichiers **audio** dans la fiche d'un document (`<audio>`), et bouton
+  « Imprimer » sur les albums (mise en page d'impression).
+- Démonstration : un album de trois photos et six personnes identifiées.
+- **Tests** : `php app/cli/tests.php albums` (légendes « Jean MARTIN, Marie
+  LEROY et 2 autres », adresse d'un album, reconnaissance d'un son) — 57
+  vérifications au total.
+- Captures : `ordinateur-albums`, `mobile-albums`, `ordinateur-album`,
+  `mobile-album`, `ordinateur-admin-album`, `ordinateur-admin-personnes-photo`,
+  `ordinateur-document-personnes`.
+
 ## [1.4.0] — 2026-11-01
 
 ### Recherche générale et fiches de personnes enrichies

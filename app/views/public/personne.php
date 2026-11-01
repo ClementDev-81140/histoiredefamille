@@ -4,6 +4,8 @@
  *
  * @var array      $person, $parents, $siblings, $unions, $branches
  * @var array      $grandsParents, $petitsEnfants, $onclesTantes, $neveuxNieces, $reperes, $homonymes
+ * @var array      $photos
+ * @var int        $nbPhotos
  * @var array|null $photo
  */
 $dates = person_dates($person);
@@ -188,6 +190,29 @@ $listePersonnes = static function (array $personnes): void {
                 </li>
             <?php endforeach; ?>
         </ol>
+    <?php endif; ?>
+
+    <?php if ($photos !== []): ?>
+        <h2>Photos et documents</h2>
+        <p class="discret">
+            <?= (int) $nbPhotos ?> document<?= (int) $nbPhotos > 1 ? 's' : '' ?> où figure
+            <?= e(person_full_name($person)) ?>.
+        </p>
+        <ul class="galerie-personne">
+            <?php foreach ($photos as $photo): ?>
+                <li class="galerie-personne__item">
+                    <a href="<?= e(document_url($photo)) ?>">
+                        <?php if (thumbnail_url($photo) !== null): ?>
+                            <img src="<?= e(thumbnail_url($photo)) ?>" alt="<?= e($photo['title']) ?>"
+                                 loading="lazy" width="240" height="180">
+                        <?php else: ?>
+                            <span class="galerie-personne__vide">Document</span>
+                        <?php endif; ?>
+                        <span class="galerie-personne__titre"><?= e($photo['title']) ?></span>
+                    </a>
+                </li>
+            <?php endforeach; ?>
+        </ul>
     <?php endif; ?>
 
     <?php if ($grandsParents !== [] || $petitsEnfants !== [] || $onclesTantes !== [] || $neveuxNieces !== []): ?>

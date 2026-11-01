@@ -648,6 +648,46 @@ demo_document([
 echo "  · 4 vidéos de démonstration créées\n";
 
 // ---------------------------------------------------------------------------
+// Albums photos et personnes identifiées (lot 3)
+// ---------------------------------------------------------------------------
+if ((int) db_value('SELECT COUNT(*) FROM albums', [], 0) === 0) {
+    $idDocument = static function (string $titre): int {
+        $doc = db_one('SELECT id FROM documents WHERE title = ? ORDER BY id LIMIT 1', [$titre]);
+        return $doc !== null ? (int) $doc['id'] : 0;
+    };
+
+    $portrait = $idDocument('Portrait de Jean Martin (démo)');
+    $mariage  = $idDocument('Mariage de Paul et Suzanne (démo)');
+    $reunion  = $idDocument('Réunion de famille 1965 (démo, branche Martin)');
+
+    $albumId = db_insert('albums', [
+        'title'             => 'Souvenirs de la branche Martin (démo)',
+        'slug'              => 'souvenirs-branche-martin-demo',
+        'description'       => "Trois photos fictives pour montrer le fonctionnement des albums.\n\n"
+            . 'Un album ne copie aucun fichier : il range des photos déjà envoyées.',
+        'cover_document_id' => $mariage > 0 ? $mariage : null,
+        'visibility'        => 'famille',
+        'position'          => 0,
+        'created_at'        => $now,
+        'updated_at'        => $now,
+    ]);
+    set_album_photos($albumId, array_values(array_filter([$mariage, $portrait, $reunion])));
+
+    // Qui figure sur chaque photo (noms fictifs, comme le reste de la démo).
+    if ($portrait > 0) {
+        set_document_persons($portrait, [$jean]);
+    }
+    if ($mariage > 0) {
+        set_document_persons($mariage, [$paul, $suzanne]);
+    }
+    if ($reunion > 0) {
+        set_document_persons($reunion, [$jean, $marie, $paul, $anne, $suzanne, $claire]);
+    }
+
+    echo "  · album de démonstration créé (3 photos, 6 personnes identifiées)\n";
+}
+
+// ---------------------------------------------------------------------------
 // Tchat : trois messages fictifs (pour voir l'onglet en démonstration)
 // ---------------------------------------------------------------------------
 if ((int) db_value('SELECT COUNT(*) FROM chat_messages', [], 0) === 0) {

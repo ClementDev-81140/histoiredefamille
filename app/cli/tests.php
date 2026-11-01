@@ -308,6 +308,62 @@ if ($filtre === '' || $filtre === 'personne') {
 }
 
 // ---------------------------------------------------------------------------
+// Albums photos : phrase « qui figure sur cette photo »
+// ---------------------------------------------------------------------------
+if ($filtre === '' || $filtre === 'albums') {
+    echo "\nAlbums — personnes identifiées\n";
+
+    $jean  = ['first_name' => 'Jean', 'last_name' => 'Martin'];
+    $marie = ['first_name' => 'Marie', 'last_name' => 'Leroy'];
+    $paul  = ['first_name' => 'Paul', 'last_name' => 'Martin'];
+    $anne  = ['first_name' => 'Anne', 'last_name' => 'Martin'];
+    $luc   = ['first_name' => 'Luc', 'last_name' => 'Martin'];
+
+    verifier('aucune personne → texte vide', album_people_line([]) === '', 'obtenu : « ' . album_people_line([]) . ' »');
+    verifier(
+        'une personne',
+        album_people_line([$jean]) === 'Jean MARTIN',
+        'obtenu : « ' . album_people_line([$jean]) . ' »'
+    );
+    verifier(
+        'deux personnes reliées par « et »',
+        album_people_line([$jean, $marie]) === 'Jean MARTIN et Marie LEROY',
+        'obtenu : « ' . album_people_line([$jean, $marie]) . ' »'
+    );
+    verifier(
+        'trois personnes : virgules puis « et »',
+        album_people_line([$jean, $marie, $paul]) === 'Jean MARTIN, Marie LEROY et Paul MARTIN',
+        'obtenu : « ' . album_people_line([$jean, $marie, $paul]) . ' »'
+    );
+    verifier(
+        'au-delà de trois : « et N autres »',
+        album_people_line([$jean, $marie, $paul, $anne, $luc]) === 'Jean MARTIN, Marie LEROY, Paul MARTIN et 2 autres',
+        'obtenu : « ' . album_people_line([$jean, $marie, $paul, $anne, $luc]) . ' »'
+    );
+    verifier(
+        'quatre personnes (limite de trois)',
+        album_people_line([$jean, $marie, $paul, $anne]) === 'Jean MARTIN, Marie LEROY, Paul MARTIN et 1 autre',
+        'obtenu : « ' . album_people_line([$jean, $marie, $paul, $anne]) . ' »'
+    );
+    verifier(
+        'personne sans nom ignorée',
+        album_people_line([['first_name' => '', 'last_name' => ''], $jean]) === 'Jean MARTIN',
+        'obtenu : « ' . album_people_line([['first_name' => '', 'last_name' => ''], $jean]) . ' »'
+    );
+    verifier(
+        'adresse d’un album',
+        album_url(['slug' => 'vacances-1965']) === '/albums/vacances-1965',
+        'obtenu : ' . album_url(['slug' => 'vacances-1965'])
+    );
+    verifier(
+        'un son est reconnu par son type de fichier',
+        document_is_audio(['mime' => 'audio/mpeg']) === true
+            && document_is_audio(['mime' => 'image/jpeg']) === false
+            && document_is_audio([]) === false
+    );
+}
+
+// ---------------------------------------------------------------------------
 // Résumé
 // ---------------------------------------------------------------------------
 $total = $reussis + count($echecs);

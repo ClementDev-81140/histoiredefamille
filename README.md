@@ -39,7 +39,10 @@ et une installation qui tient en quelques commandes à copier-coller.
 - Une page d'accueil sobre : présentation, derniers documents publics, pages
   d'information.
 - Les documents marqués « Public » : photos avec miniature, PDF consultables
-  dans le navigateur, autres fichiers téléchargeables.
+  dans le navigateur, sons écoutables directement, autres fichiers
+  téléchargeables.
+- Des **albums photos** : les photos publiques regroupées par époque, voyage ou
+  fête, avec le nom des personnes identifiées sous chaque photo.
 - Une **recherche générale** qui porte d'un seul coup sur les documents, les
   articles, les pages d'information et les personnes de l'arbre.
 - Les pages d'information publiques (histoire de la famille, annonces).
@@ -62,6 +65,10 @@ et une installation qui tient en quelques commandes à copier-coller.
 - Documents : envoi par le navigateur (photos, PDF, sons, documents bureautiques
   jusqu'à 50 Mo), titre, description, date, catégorie, étiquettes, **visibilité**,
   modification et suppression.
+- **Albums photos** : création, rangement des photos (aucune copie de fichier),
+  ordre d'affichage, photo de couverture, visibilité.
+- **Personnes identifiées** sur une photo (ou un témoignage) : recherche dans
+  l'arbre et association en deux clics.
 - Catégories de documents (créées par les administrateurs).
 - Branches familiales : création, modification, suppression, **réinitialisation
   du mot de passe en un clic** (mot de passe lisible affiché une seule fois),
@@ -198,6 +205,24 @@ suppression, et il est reconstruit une fois par semaine par la tâche
 d'entretien (`app/cli/maintenance.php`). Si un résultat manque après une
 restauration de sauvegarde, lancer cette commande le remet d'aplomb.
 
+### Albums photos et personnes identifiées
+
+Un onglet **Albums** range les photos déjà envoyées : aucun fichier n'est copié
+ni déplacé, un album n'est qu'un rangement.
+
+- Chaque album a un titre, une description, une **visibilité**, un ordre
+  d'affichage et une **photo de couverture** (la première par défaut).
+- Les photos gardent leur propre visibilité : une photo privée glissée dans un
+  album public reste invisible pour un visiteur. Un album vide n'affiche donc
+  jamais rien de confidentiel.
+- Sur la fiche d'une photo, la section « **Personnes sur ce document** » mène
+  aux fiches des personnes concernées ; la fiche d'une personne affiche en
+  retour « **Photos et documents** » avec les photos où elle figure.
+- Seuls les noms que le visiteur a le droit de voir sont affichés : une
+  personne privée n'apparaît pas dans une légende publique.
+- « **Imprimer** » sur un album ou une fiche donne une page sobre, sans menu ni
+  boutons (mise en page spéciale pour l'imprimante).
+
 ### Visibilité : la règle la plus importante
 
 Chaque document, page, personne et article a un niveau de visibilité :
@@ -258,9 +283,10 @@ histoiredefamille/
 │   ├── routes.php           table des URL
 │   ├── controllers/         une fonction par page
 │   ├── lib/                 base de données, sécurité, stockage, images, vidéos,
-│   │                        GEDCOM, visibilité, textes, tchat, recherche…
+│   │                        GEDCOM, visibilité, textes, tchat, recherche,
+│   │                        albums…
 │   ├── views/               gabarits PHP (public, famille, admin)
-│   ├── migrations/          fichiers SQL numérotés (001_init … 004_tchat)
+│   ├── migrations/          fichiers SQL numérotés (001_init … 005_albums)
 │   └── cli/                 commandes : migrate, create-admin, demo, maintenance, tests
 ├── deploy/
 │   ├── install.sh           installation complète sur le Pi
@@ -724,7 +750,18 @@ Réglages utiles (Administration → Réglages, bloc « Tchat de la famille ») 
 > courriel ou par notification. C'est volontaire : aucun service à maintenir
 > sur le Raspberry Pi.
 
-### 6.8 Chercher dans le site
+### 6.8 Ranger des photos dans un album
+
+1. Envoyer d'abord les photos normalement (Administration → Documents).
+2. Ouvrir **Administration → Albums photos → Nouvel album** : titre,
+   description, visibilité, puis cocher les photos à ranger.
+3. Choisir la photo de couverture, puis **Créer l'album**.
+4. Pour nommer les personnes d'une photo : Administration → Documents →
+   bouton **Personnes** sur la ligne de la photo, puis taper un nom et
+   **Ajouter**. Le nom apparaît sous la photo, dans l'album et sur la fiche de
+   la personne.
+
+### 6.9 Chercher dans le site
 
 1. Cliquer sur **Recherche** dans le menu.
 2. Taper un nom, un mot ou une année, puis **Chercher**. Par exemple

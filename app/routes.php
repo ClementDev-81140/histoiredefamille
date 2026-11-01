@@ -23,6 +23,8 @@ require_once __DIR__ . '/controllers/admin_persons.php';
 require_once __DIR__ . '/controllers/admin_import.php';
 require_once __DIR__ . '/controllers/videos.php';
 require_once __DIR__ . '/controllers/admin_videos.php';
+require_once __DIR__ . '/controllers/albums.php';
+require_once __DIR__ . '/controllers/admin_albums.php';
 
 // ---------------------------------------------------------------------------
 // Partie publique
@@ -32,6 +34,8 @@ route('GET', '/articles', 'public_articles');
 route('GET', '/articles/{slug}', 'public_article_detail');
 route('GET', '/documents', 'public_documents');
 route('GET', '/documents/{id}', 'public_document_detail');
+route('GET', '/albums', 'public_albums');
+route('GET', '/albums/{slug}', 'public_album');
 route('GET', '/pages/{slug}', 'public_page');
 route('GET', '/recherche', 'public_recherche');
 route('GET', '/arbre', 'public_arbre');
@@ -84,6 +88,19 @@ route('POST', '/admin/documents/nouveau', 'admin_document_save');
 route('GET', '/admin/documents/{id}/modifier', 'admin_document_form');
 route('POST', '/admin/documents/{id}/modifier', 'admin_document_save');
 route('POST', '/admin/documents/{id}/supprimer', 'admin_document_delete');
+
+// Personnes identifiées sur un document (photo, témoignage…)
+route('GET', '/admin/documents/{id}/personnes', 'admin_document_persons');
+route('POST', '/admin/documents/{id}/personnes/ajouter', 'admin_document_person_add');
+route('POST', '/admin/documents/{id}/personnes/retirer', 'admin_document_person_remove');
+
+// Albums photos
+route('GET', '/admin/albums', 'admin_albums');
+route('GET', '/admin/albums/nouveau', 'admin_album_form');
+route('POST', '/admin/albums/nouveau', 'admin_album_save');
+route('GET', '/admin/albums/{id}/modifier', 'admin_album_form');
+route('POST', '/admin/albums/{id}/modifier', 'admin_album_save');
+route('POST', '/admin/albums/{id}/supprimer', 'admin_album_delete');
 
 // Articles (fil d'actualité)
 route('GET', '/admin/articles', 'admin_articles');
