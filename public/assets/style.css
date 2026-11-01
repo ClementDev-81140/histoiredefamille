@@ -1143,3 +1143,247 @@ legend {
         animation: none !important;
     }
 }
+
+/* ===========================================================================
+   STYLE « JOURNAL »
+   Même palette, typographie de presse ancienne. Aucune police téléchargée :
+   on utilise les polices à empattements déjà présentes sur l'appareil
+   (Iowan Old Style / Palatino sur Apple, Palatino Linotype / Georgia sur
+   Windows, Times en dernier recours).
+   =========================================================================== */
+
+:root {
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua",
+             "Hoefler Text", Georgia, "Times New Roman", serif;
+    --rayon: 0;
+    --ombre: none;
+}
+
+body {
+    font-family: var(--serif);
+    font-size: 1.0625rem;
+    line-height: 1.65;
+    font-feature-settings: "liga", "kern";
+}
+
+h1, h2, h3, h4 {
+    font-family: var(--serif);
+    font-weight: 700;
+    letter-spacing: -0.005em;
+}
+
+h1 { font-size: 2.1rem; }
+h2 { font-size: 1.4rem; }
+h3 { font-size: 1.15rem; }
+
+/* Boutons et champs : angles droits, même police. */
+button,
+input,
+select,
+textarea {
+    font-family: inherit;
+}
+
+.bouton {
+    letter-spacing: 0.04em;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+}
+
+.panneau,
+.carte,
+.hero {
+    box-shadow: none;
+}
+
+/* ---- Titre du journal (public) ------------------------------------------ */
+
+.une {
+    background: var(--fond);
+    text-align: center;
+}
+
+.une__date {
+    margin: 0;
+    padding: 0.5rem 0 0.35rem;
+    font-size: 0.8rem;
+    font-style: italic;
+    letter-spacing: 0.04em;
+    color: var(--texte-doux);
+    border-bottom: 1px solid var(--bordure);
+}
+
+.une__titre {
+    display: block;
+    padding: 1rem 0 0.8rem;
+    text-decoration: none;
+    color: var(--texte);
+}
+
+.une__nom {
+    display: block;
+    font-size: clamp(1.9rem, 6vw, 3.4rem);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: 0.01em;
+    color: var(--texte);
+}
+
+.une__sous-titre {
+    display: block;
+    margin-top: 0.35rem;
+    font-size: 0.95rem;
+    font-style: italic;
+    color: var(--texte-doux);
+}
+
+/* Bande de navigation entre deux filets (fin au-dessus, double en dessous). */
+.nav--journal {
+    justify-content: center;
+    gap: 0.25rem 1.6rem;
+    padding: 0.55rem 0;
+    margin-top: 0.3rem;
+    border-top: 1px solid var(--texte);
+    border-bottom: 3px double var(--texte);
+    font-size: 0.82rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.nav--journal a,
+.nav--journal .lien-bouton {
+    font-size: 0.82rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    text-decoration: none;
+}
+
+.nav--journal .nav__accent {
+    font-weight: 700;
+}
+
+.une .bandeau-compte {
+    text-align: center;
+    padding-top: 0.5rem;
+}
+
+/* ---- Page d'accueil : « une » du journal -------------------------------- */
+
+.hero {
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid var(--texte);
+    padding: 1.2rem 0 1.6rem;
+    text-align: center;
+}
+
+.hero h1 {
+    font-size: clamp(1.9rem, 5vw, 2.8rem);
+    margin-bottom: 0.25em;
+}
+
+.hero__sous-titre {
+    font-style: italic;
+    color: var(--texte-doux);
+}
+
+.hero__texte {
+    margin-left: auto;
+    margin-right: auto;
+    font-size: 1.1rem;
+}
+
+.hero .actions {
+    justify-content: center;
+}
+
+.hero__chiffres {
+    justify-content: center;
+    border-top: 1px solid var(--bordure);
+    font-size: 0.9rem;
+    font-style: italic;
+}
+
+.note {
+    background: transparent;
+    border-left: 3px solid var(--accent);
+    color: var(--texte-doux);
+    font-style: italic;
+    text-align: left;
+}
+
+/* ---- Intertitres de rubrique ------------------------------------------- */
+
+.section__entete {
+    border-bottom: 1px solid var(--texte);
+    padding-bottom: 0.3rem;
+    margin-bottom: 1rem;
+}
+
+.section__entete h2 {
+    margin: 0;
+    font-size: 1.05rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+}
+
+.section > h2 {
+    font-size: 1.05rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    border-bottom: 1px solid var(--texte);
+    padding-bottom: 0.3rem;
+    margin-bottom: 1rem;
+}
+
+/* ---- Articles (pages d'information) ------------------------------------- */
+
+.page-info {
+    max-width: 44rem;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.page-info h1 {
+    text-align: center;
+    font-size: clamp(1.9rem, 5vw, 2.6rem);
+    margin-bottom: 0.2em;
+}
+
+.page-info > .discret {
+    text-align: center;
+    font-style: italic;
+    border-bottom: 3px double var(--texte);
+    padding-bottom: 0.8rem;
+    margin-bottom: 1.4rem;
+}
+
+.page-info .texte {
+    text-align: justify;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+}
+
+/* ---- Cartes et pied de page -------------------------------------------- */
+
+.carte,
+.panneau {
+    border-color: var(--texte-doux);
+}
+
+.pied {
+    background: transparent;
+    border-top: 3px double var(--texte);
+    text-align: center;
+    font-style: italic;
+}
+
+@media (max-width: 600px) {
+    .nav--journal {
+        gap: 0.2rem 1rem;
+        letter-spacing: 0.08em;
+    }
+    .page-info .texte {
+        text-align: left;
+    }
+}

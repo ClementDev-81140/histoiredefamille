@@ -11,10 +11,8 @@
 $siteName = site_setting('name');
 ?>
 <section class="hero">
-    <h1><?= e($siteName) ?></h1>
-    <?php if (site_setting('subtitle') !== ''): ?>
-        <p class="hero__sous-titre"><?= e(site_setting('subtitle')) ?></p>
-    <?php endif; ?>
+    <?php /* Le nom et le sous-titre figurent déjà dans le titre du journal (en-tête) : on garde le h1 pour les moteurs de recherche et les lecteurs d'écran. */ ?>
+    <h1 class="sr-only"><?= e($siteName) ?></h1>
     <?php if (site_setting('description') !== ''): ?>
         <p class="hero__texte"><?= e(site_setting('description')) ?></p>
     <?php endif; ?>

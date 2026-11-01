@@ -19,6 +19,15 @@ try {
 }
 $flashes    = take_flashes();
 $pageTitle  = !empty($titre) ? $titre . ' — ' . $siteName : $siteName;
+
+// Date de l'« édition » affichée sous le titre, en français (sans extension intl).
+$joursFr = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+$moisFr  = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet',
+            'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+$jourNum = (int) date('j');
+$dateEdition = $joursFr[(int) date('w')] . ' '
+    . ($jourNum === 1 ? '1er' : (string) $jourNum) . ' '
+    . $moisFr[(int) date('n') - 1] . ' ' . date('Y');
 ?>
 <!doctype html>
 <html lang="fr">
@@ -33,16 +42,18 @@ $pageTitle  = !empty($titre) ? $titre . ' — ' . $siteName : $siteName;
 <body>
 <a class="lien-evitement" href="#contenu">Aller au contenu principal</a>
 
-<header class="entete">
-    <div class="conteneur entete__barre">
-        <a class="entete__titre" href="/">
-            <span class="entete__nom"><?= e($siteName) ?></span>
+<header class="une">
+    <div class="conteneur">
+        <p class="une__date"><?= e($dateEdition) ?></p>
+
+        <a class="une__titre" href="/">
+            <span class="une__nom"><?= e($siteName) ?></span>
             <?php if ($siteSub !== ''): ?>
-                <span class="entete__sous-titre"><?= e($siteSub) ?></span>
+                <span class="une__sous-titre"><?= e($siteSub) ?></span>
             <?php endif; ?>
         </a>
 
-        <nav class="nav" aria-label="Navigation principale">
+        <nav class="nav nav--journal" aria-label="Navigation principale">
             <a href="/">Accueil</a>
             <a href="/documents">Documents</a>
             <a href="/arbre">Arbre</a>
