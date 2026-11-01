@@ -11,6 +11,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/controllers/public.php';
 require_once __DIR__ . '/controllers/auth.php';
 require_once __DIR__ . '/controllers/files.php';
+require_once __DIR__ . '/controllers/articles.php';
 require_once __DIR__ . '/controllers/family.php';
 require_once __DIR__ . '/controllers/admin.php';
 require_once __DIR__ . '/controllers/admin_documents.php';
@@ -25,6 +26,8 @@ require_once __DIR__ . '/controllers/admin_videos.php';
 // Partie publique
 // ---------------------------------------------------------------------------
 route('GET', '/', 'public_accueil');
+route('GET', '/articles', 'public_articles');
+route('GET', '/articles/{slug}', 'public_article_detail');
 route('GET', '/documents', 'public_documents');
 route('GET', '/documents/{id}', 'public_document_detail');
 route('GET', '/pages/{slug}', 'public_page');
@@ -73,6 +76,14 @@ route('POST', '/admin/documents/{id}/modifier', 'admin_document_save');
 route('POST', '/admin/documents/{id}/supprimer', 'admin_document_delete');
 
 // Vidéos (réglages propres : mise en avant, ordre, durée, téléchargement)
+// Articles
+route('GET', '/admin/articles', 'admin_articles');
+route('GET', '/admin/articles/nouveau', 'admin_article_form');
+route('POST', '/admin/articles/nouveau', 'admin_article_save');
+route('GET', '/admin/articles/{id}', 'admin_article_form');
+route('POST', '/admin/articles/{id}', 'admin_article_save');
+route('POST', '/admin/articles/{id}/supprimer', 'admin_article_delete');
+
 route('GET', '/admin/videos', 'admin_videos');
 route('GET', '/admin/videos/nouvelle', 'admin_video_form');
 route('POST', '/admin/videos/nouvelle', 'admin_video_save');

@@ -3,6 +3,19 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [Non publié] — Articles
+
+- Nouvelle rubrique **Articles** (fil d'actualité de la famille) : liste
+  `/articles` avec rubriques et pagination, lecture `/articles/{adresse}`,
+  « À la une » sur la page d'accueil.
+- Chaque article a une visibilité (public, toutes les familles, branches
+  précises, privé), un statut (brouillon / publié), une date de publication
+  (une date future programme la publication), une rubrique, un résumé et une
+  image à la une choisie parmi les photos.
+- Administration → **Articles** : liste, création, modification, suppression ;
+  aperçu des brouillons réservé aux administrateurs.
+- Migration `003_articles.sql` (nouvelle table, aucune donnée existante touchée).
+
 ## [1.1.0] — 2026-11-01
 
 Habillage « journal », onglet **Vidéos** et ménage du dépôt.
