@@ -11,11 +11,14 @@ $siteSub    = site_setting('subtitle');
 try {
     $account  = current_account();
     $navPages = nav_pages();
+    // Pastille du tchat : une seule petite requête par page, aucun sondage.
+    $tchatNonLus = $account !== null ? tchat_non_lus() : 0;
 } catch (Throwable) {
     // La base peut être momentanément indisponible : la page d'erreur doit
     // quand même pouvoir s'afficher.
     $account  = null;
     $navPages = [];
+    $tchatNonLus = 0;
 }
 $flashes    = take_flashes();
 $pageTitle  = !empty($titre) ? $titre . ' — ' . $siteName : $siteName;
@@ -67,6 +70,12 @@ $navClass = static function (string $href) use ($currentPath): string {
             <?php foreach ($navPages as $navPage): ?>
                 <a href="/pages/<?= e($navPage['slug']) ?>"<?= $navClass('/pages/' . $navPage['slug']) ?>><?= e($navPage['title']) ?></a>
             <?php endforeach; ?>
+
+            <?php /* Onglet visible seulement pour les personnes connectées :
+                     le salon est privé. */ ?>
+            <?php if ($account !== null && tchat_actif()): ?>
+                <a href="/tchat"<?= $navClass('/tchat') ?>>Tchat<?php if ($tchatNonLus > 0): ?><span class="pastille" aria-label="nouveaux messages"><?= $tchatNonLus > 99 ? '99+' : (int) $tchatNonLus ?></span><?php endif; ?></a>
+            <?php endif; ?>
 
             <?php if ($account === null): ?>
                 <a class="nav__accent" href="/connexion">Espace famille</a>

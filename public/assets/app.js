@@ -6,6 +6,7 @@
  * 3. Filtrage rapide des longues listes de personnes.
  * 4. Explorateur d'arbre généalogique (chargement JSON à la demande).
  * 5. Message clair quand une vidéo ne peut pas être lue (limite de lectures).
+ * 6. Tchat de la famille : interrogation périodique et envoi des messages.
  */
 (function () {
     'use strict';
@@ -182,6 +183,7 @@
             });
     }
 
+
     // ---------------------------------------------------------------------
     // 5. Vidéo illisible : message d'attente au lieu d'une erreur technique
     // ---------------------------------------------------------------------
@@ -197,4 +199,324 @@
             bloc.hidden = false;
         });
     });
+    // ---------------------------------------------------------------------
+    // 6. Tchat de la famille
+    // ---------------------------------------------------------------------
+    // Interrogation périodique (toutes les 5 s), qui ne demande QUE les
+    // messages plus récents que le dernier affiché. Elle se ralentit à 30 s
+    // après 3 minutes sans nouveauté, s'arrête quand l'onglet est caché et
+    // quand on quitte la page. Envoi par fetch, avec le jeton CSRF du
+    // formulaire. Aucun script n'est inséré par cette page : le texte des
+    // messages est échappé côté serveur.
+    var tchat = document.getElementById('tchat');
+    if (tchat) {
+        var MESSAGE_URL = '/tchat/messages.json';
+        var DELAI_VIF = 5000;      // rythme normal
+        var DELAI_CALME = 30000;   // après 3 minutes sans nouveauté
+        var SEUIL_CALME = 36;      // 36 × 5 s = 3 minutes
+
+        var liste = document.getElementById('tchat-messages');
+        var etat = document.getElementById('tchat-etat');
+        var vide = document.getElementById('tchat-vide');
+        var boutonAnciens = document.getElementById('tchat-plus-anciens');
+        var boutonNouveaux = document.getElementById('tchat-nouveaux');
+        var formulaire = document.getElementById('tchat-envoi');
+        var zone = document.querySelector('[data-tchat-texte]');
+        var compteur = document.getElementById('tchat-compteur');
+        var erreur = document.getElementById('tchat-erreur');
+        var boutonEnvoi = formulaire ? formulaire.querySelector('button[type="submit"]') : null;
+
+        var dernier = parseInt(tchat.getAttribute('data-apres'), 10) || 0;
+        var premier = parseInt(tchat.getAttribute('data-premier'), 10) || 0;
+        var jourDernier = tchat.getAttribute('data-jour') || '';
+        var jourPremier = jourDernier;
+        var resteAnciens = tchat.getAttribute('data-reste-avant') === '1';
+        var silences = 0;
+        var minuterie = null;
+        var arrete = false;
+
+        var dire = function (texte) {
+            if (etat) {
+                etat.textContent = texte;
+            }
+        };
+
+        var auBas = function () {
+            if (!liste) {
+                return true;
+            }
+            return (liste.scrollHeight - liste.scrollTop - liste.clientHeight) < 80;
+        };
+
+        var versLeBas = function () {
+            if (liste) {
+                liste.scrollTop = liste.scrollHeight;
+            }
+        };
+
+        var masquerVide = function () {
+            if (vide && vide.parentNode) {
+                vide.parentNode.removeChild(vide);
+                vide = null;
+            }
+        };
+
+        // ---- interrogation -------------------------------------------------
+        var programmer = function (delai) {
+            if (arrete || document.hidden) {
+                return;
+            }
+            if (minuterie) {
+                window.clearTimeout(minuterie);
+            }
+            minuterie = window.setTimeout(interroger, delai);
+        };
+
+        var interroger = function () {
+            if (arrete || document.hidden) {
+                return;
+            }
+            if (!navigator.onLine) {
+                programmer(DELAI_CALME);
+                return;
+            }
+
+            fetch(MESSAGE_URL + '?apres=' + encodeURIComponent(dernier), {
+                headers: { 'Accept': 'application/json' },
+                credentials: 'same-origin'
+            })
+                .then(function (reponse) {
+                    if (reponse.status === 403) {
+                        arrete = true;
+                        dire('Le tchat a été fermé par les administrateurs.');
+                        return null;
+                    }
+                    if (!reponse.ok) {
+                        throw new Error('Réponse ' + reponse.status);
+                    }
+                    return reponse.json();
+                })
+                .then(function (donnees) {
+                    if (!donnees) {
+                        return;
+                    }
+                    if (donnees.prenom_requis) {
+                        arrete = true;
+                        dire('Choisissez d’abord votre prénom pour discuter.');
+                        return;
+                    }
+                    if (donnees.ok && donnees.nombre > 0) {
+                        var collé = auBas();
+                        masquerVide();
+                        liste.insertAdjacentHTML('beforeend', donnees.html);
+                        dernier = donnees.dernier;
+                        jourDernier = donnees.jour || jourDernier;
+                        tchat.setAttribute('data-apres', String(dernier));
+                        tchat.setAttribute('data-jour', jourDernier);
+                        silences = 0;
+                        if (collé) {
+                            versLeBas();
+                            if (boutonNouveaux) {
+                                boutonNouveaux.hidden = true;
+                            }
+                        } else if (boutonNouveaux) {
+                            boutonNouveaux.hidden = false;
+                        }
+                        dire('');
+                    } else {
+                        silences = silences + 1;
+                    }
+                })
+                .catch(function () {
+                    dire('Connexion interrompue, nouvelle tentative dans un instant…');
+                })
+                .then(function () {
+                    programmer(silences >= SEUIL_CALME ? DELAI_CALME : DELAI_VIF);
+                });
+        };
+
+        // ---- messages plus anciens ----------------------------------------
+        if (boutonAnciens) {
+            var lienAnciens = boutonAnciens.querySelector('[data-voir-anciens]');
+            if (lienAnciens) {
+                lienAnciens.addEventListener('click', function () {
+                    if (premier <= 0) {
+                        return;
+                    }
+                    lienAnciens.disabled = true;
+                    var hauteurAvant = liste.scrollHeight;
+
+                    fetch(MESSAGE_URL + '?avant=' + encodeURIComponent(premier)
+                        + '&jour=' + encodeURIComponent(jourPremier), {
+                        headers: { 'Accept': 'application/json' },
+                        credentials: 'same-origin'
+                    })
+                        .then(function (reponse) {
+                            if (!reponse.ok) {
+                                throw new Error('Réponse ' + reponse.status);
+                            }
+                            return reponse.json();
+                        })
+                        .then(function (donnees) {
+                            if (!donnees.ok || donnees.nombre === 0) {
+                                boutonAnciens.hidden = true;
+                                return;
+                            }
+                            masquerVide();
+                            liste.insertAdjacentHTML('afterbegin', donnees.html);
+                            premier = donnees.premier;
+                            jourPremier = donnees.jour || jourPremier;
+                            tchat.setAttribute('data-premier', String(premier));
+                            resteAnciens = donnees.resteAvant === true;
+                            boutonAnciens.hidden = !resteAnciens;
+                            // On garde le repère de lecture : la vue ne saute pas.
+                            liste.scrollTop = liste.scrollHeight - hauteurAvant;
+                        })
+                        .catch(function () {
+                            dire('Impossible de charger les messages plus anciens.');
+                        })
+                        .then(function () {
+                            lienAnciens.disabled = false;
+                        });
+                });
+            }
+        }
+
+        if (boutonNouveaux) {
+            var lienBas = boutonNouveaux.querySelector('[data-vers-bas]');
+            if (lienBas) {
+                lienBas.addEventListener('click', function () {
+                    versLeBas();
+                    boutonNouveaux.hidden = true;
+                });
+            }
+        }
+
+        // ---- envoi ---------------------------------------------------------
+        var actualiserCompteur = function () {
+            if (compteur && zone) {
+                compteur.textContent = zone.value.length + ' / 1000 caractères';
+            }
+        };
+
+        if (zone) {
+            zone.addEventListener('input', actualiserCompteur);
+            // Entrée seule = envoyer ; Maj+Entrée = nouvelle ligne.
+            zone.addEventListener('keydown', function (evenement) {
+                if (evenement.key === 'Enter' && !evenement.shiftKey) {
+                    evenement.preventDefault();
+                    if (formulaire) {
+                        formulaire.requestSubmit
+                            ? formulaire.requestSubmit()
+                            : formulaire.dispatchEvent(new Event('submit', { cancelable: true }));
+                    }
+                }
+            });
+            actualiserCompteur();
+        }
+
+        if (formulaire) {
+            formulaire.addEventListener('submit', function (evenement) {
+                if (!window.fetch || !window.FormData) {
+                    return; // navigateur ancien : envoi normal, la page se recharge
+                }
+                evenement.preventDefault();
+
+                if (erreur) {
+                    erreur.textContent = '';
+                }
+                var texte = zone ? zone.value.trim() : '';
+                if (texte === '') {
+                    if (erreur) {
+                        erreur.textContent = 'Votre message est vide.';
+                    }
+                    return;
+                }
+                if (texte.length > 1000) {
+                    if (erreur) {
+                        erreur.textContent = 'Votre message dépasse 1000 caractères.';
+                    }
+                    return;
+                }
+                if (boutonEnvoi) {
+                    boutonEnvoi.disabled = true;
+                }
+
+                fetch(formulaire.getAttribute('action'), {
+                    method: 'POST',
+                    body: new FormData(formulaire),
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'fetch'
+                    },
+                    credentials: 'same-origin'
+                })
+                    .then(function (reponse) {
+                        return reponse.json().catch(function () {
+                            return { ok: false, erreur: 'La page a expiré, rechargez-la.' };
+                        });
+                    })
+                    .then(function (donnees) {
+                        if (!donnees.ok) {
+                            if (erreur) {
+                                erreur.textContent = donnees.erreur || 'Envoi impossible.';
+                            }
+                            return;
+                        }
+                        masquerVide();
+                        liste.insertAdjacentHTML('beforeend', donnees.html);
+                        dernier = donnees.dernier;
+                        jourDernier = donnees.jour || jourDernier;
+                        tchat.setAttribute('data-apres', String(dernier));
+                        tchat.setAttribute('data-jour', jourDernier);
+                        if (zone) {
+                            zone.value = '';
+                        }
+                        actualiserCompteur();
+                        versLeBas();
+                        if (boutonNouveaux) {
+                            boutonNouveaux.hidden = true;
+                        }
+                        silences = 0;
+                        dire('Message envoyé.');
+                        window.setTimeout(function () { dire(''); }, 3000);
+                    })
+                    .catch(function () {
+                        if (erreur) {
+                            erreur.textContent = 'Envoi impossible : vérifiez votre connexion.';
+                        }
+                    })
+                    .then(function () {
+                        if (boutonEnvoi) {
+                            boutonEnvoi.disabled = false;
+                        }
+                        if (zone) {
+                            zone.focus();
+                        }
+                    });
+            });
+        }
+
+        // ---- mise en veille quand l'onglet est caché ------------------------
+        document.addEventListener('visibilitychange', function () {
+            if (document.hidden) {
+                if (minuterie) {
+                    window.clearTimeout(minuterie);
+                    minuterie = null;
+                }
+            } else if (!arrete) {
+                interroger();
+            }
+        });
+
+        window.addEventListener('beforeunload', function () {
+            arrete = true;
+            if (minuterie) {
+                window.clearTimeout(minuterie);
+            }
+        });
+
+        versLeBas();
+        programmer(DELAI_VIF);
+    }
 })();

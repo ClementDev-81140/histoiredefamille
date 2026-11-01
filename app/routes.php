@@ -13,6 +13,7 @@ require_once __DIR__ . '/controllers/auth.php';
 require_once __DIR__ . '/controllers/files.php';
 require_once __DIR__ . '/controllers/articles.php';
 require_once __DIR__ . '/controllers/family.php';
+require_once __DIR__ . '/controllers/tchat.php';
 require_once __DIR__ . '/controllers/admin.php';
 require_once __DIR__ . '/controllers/admin_documents.php';
 require_once __DIR__ . '/controllers/admin_branches.php';
@@ -56,6 +57,13 @@ route('POST', '/deconnexion', 'auth_logout_action');
 // Espace famille
 // ---------------------------------------------------------------------------
 route('GET', '/famille', 'family_home');
+
+// Tchat privé : un seul salon, réservé aux personnes connectées.
+route('GET', '/tchat', 'tchat_page');
+route('GET', '/tchat/messages.json', 'tchat_messages_json');
+route('POST', '/tchat/envoyer', 'tchat_envoyer');
+route('POST', '/tchat/prenom', 'tchat_prenom_save');
+route('POST', '/tchat/{id}/supprimer', 'tchat_supprimer');
 
 // ---------------------------------------------------------------------------
 // Administration
