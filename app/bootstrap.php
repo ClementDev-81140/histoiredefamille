@@ -25,6 +25,7 @@ require_once __DIR__ . '/lib/text.php';
 require_once __DIR__ . '/lib/stream.php';
 require_once __DIR__ . '/lib/gedcom.php';
 require_once __DIR__ . '/lib/content.php';
+require_once __DIR__ . '/lib/tchat.php';
 
 /**
  * Le script tourne-t-il en ligne de commande ?
