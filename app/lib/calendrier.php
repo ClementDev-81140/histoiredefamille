@@ -215,7 +215,7 @@ function calendrier_evenements(int $mois): array
     // Mariages : seulement si les deux époux sont visibles.
     $paramsMariage = [];
     $clauseH = visibility_clause('person', 'h', $paramsMariage);
-    $clauseF = visibility_clause('person', 'f', $paramsMariage);
+    $clauseF = visibility_clause('person', 'w', $paramsMariage);
     $mariages = db_all(
         "SELECT f.marriage_date, f.marriage_place,
                 h.id AS h_id, h.first_name AS h_first, h.last_name AS h_last,
