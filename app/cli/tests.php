@@ -364,6 +364,75 @@ if ($filtre === '' || $filtre === 'albums') {
 }
 
 // ---------------------------------------------------------------------------
+// Calendrier et frise : lecture des dates de la famille
+// ---------------------------------------------------------------------------
+if ($filtre === '' || $filtre === 'calendrier') {
+    echo "\nCalendrier — dates et grille du mois\n";
+
+    verifier(
+        'date ISO',
+        date_parts('1928-06-12') === ['annee' => 1928, 'mois' => 6, 'jour' => 12],
+        'obtenu : ' . json_encode(date_parts('1928-06-12'))
+    );
+    verifier(
+        'date à la française 12/06/1928',
+        date_parts('12/06/1928') === ['annee' => 1928, 'mois' => 6, 'jour' => 12],
+        'obtenu : ' . json_encode(date_parts('12/06/1928'))
+    );
+    verifier(
+        'date écrite « 12 juin 1928 »',
+        date_parts('12 juin 1928') === ['annee' => 1928, 'mois' => 6, 'jour' => 12],
+        'obtenu : ' . json_encode(date_parts('12 juin 1928'))
+    );
+    verifier(
+        'date écrite « 1er février 1975 »',
+        date_parts('1er février 1975') === ['annee' => 1975, 'mois' => 2, 'jour' => 1],
+        'obtenu : ' . json_encode(date_parts('1er février 1975'))
+    );
+    verifier(
+        'mois sans jour : « juin 1928 »',
+        date_parts('juin 1928') === ['annee' => 1928, 'mois' => 6, 'jour' => 0],
+        'obtenu : ' . json_encode(date_parts('juin 1928'))
+    );
+    verifier(
+        'année seule : « vers 1930 »',
+        date_parts('vers 1930') === ['annee' => 1930, 'mois' => 0, 'jour' => 0],
+        'obtenu : ' . json_encode(date_parts('vers 1930'))
+    );
+    verifier('date vide → rien', date_parts('') === null && date_parts(null) === null);
+    verifier('texte sans année → rien', date_parts('inconnu') === null);
+    verifier('31 février refusé', date_parts('31/02/1950') === null);
+    verifier('mois 13 refusé', date_parts('1928-13-01') === null);
+
+    $grille = calendrier_grille(2026, 11);
+    verifier('grille de novembre 2026 : 6 semaines complètes', count($grille) === 6, 'obtenu : ' . count($grille));
+    verifier('chaque semaine a 7 cases', count(array_filter($grille, static fn ($s) => count($s) === 7)) === count($grille));
+    verifier('novembre 2026 commence un dimanche', $grille[0] === [0, 0, 0, 0, 0, 0, 1], 'obtenu : ' . json_encode($grille[0]));
+    verifier('le mois compte 30 jours', count(array_filter(array_merge(...$grille), static fn ($j) => $j > 0)) === 30);
+
+    verifier(
+        'mois suivant passé correctement (décembre)',
+        calendrier_mois_voisin(2026, 11, 1) === [2026, 12],
+        'obtenu : ' . json_encode(calendrier_mois_voisin(2026, 11, 1))
+    );
+    verifier(
+        'changement d’année (janvier précédent)',
+        calendrier_mois_voisin(2026, 1, -1) === [2025, 12],
+        'obtenu : ' . json_encode(calendrier_mois_voisin(2026, 1, -1))
+    );
+    verifier(
+        'nombre du mois à partir du nom',
+        calendrier_mois_numero('Août') === 8 && calendrier_mois_numero('fevrier') === 2
+            && calendrier_mois_numero('inconnu') === 0
+    );
+    verifier(
+        'âge lors d’une année',
+        calendrier_age(1905, 1982) === 77 && calendrier_age(null, 1982) === null
+            && calendrier_age(1990, 1982) === null
+    );
+}
+
+// ---------------------------------------------------------------------------
 // Résumé
 // ---------------------------------------------------------------------------
 $total = $reussis + count($echecs);

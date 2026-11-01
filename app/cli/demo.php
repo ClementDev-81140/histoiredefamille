@@ -143,36 +143,36 @@ function demo_person(array $data): int
 
 $jean  = demo_person([
     'first_name' => 'Jean', 'last_name' => 'Martin', 'sex' => 'M',
-    'birth_date' => '1901', 'birth_place' => 'Exempleville (fictif)',
-    'death_date' => '1975', 'death_place' => 'Exempleville (fictif)',
+    'birth_date' => '14 mars 1901', 'birth_place' => 'Exempleville (fictif)',
+    'death_date' => '2 février 1975', 'death_place' => 'Exempleville (fictif)',
     'notes'      => "Personnage **fictif** créé pour la démonstration.\n\n- Agriculteur\n- Aimait la photographie",
 ]);
 $marie = demo_person([
     'first_name' => 'Marie', 'last_name' => 'Leroy', 'sex' => 'F',
-    'birth_date' => '1905', 'birth_place' => 'Village-d’Exemple (fictif)',
-    'death_date' => '1982',
+    'birth_date' => '2 août 1905', 'birth_place' => 'Village-d’Exemple (fictif)',
+    'death_date' => '18 novembre 1982',
     'notes'      => 'Personnage fictif de démonstration.',
 ]);
 $paul  = demo_person([
     'first_name' => 'Paul', 'last_name' => 'Martin', 'sex' => 'M',
-    'birth_date' => '1930', 'death_date' => '2005',
+    'birth_date' => '9 janvier 1930', 'death_date' => '30 avril 2005',
     'birth_place' => 'Exempleville (fictif)',
 ]);
 $anne  = demo_person([
     'first_name' => 'Anne', 'last_name' => 'Martin', 'sex' => 'F',
-    'birth_date' => '1935',
+    'birth_date' => '21 juillet 1935',
 ]);
 $suzanne = demo_person([
     'first_name' => 'Suzanne', 'last_name' => 'Durand', 'sex' => 'F',
-    'birth_date' => '1932',
+    'birth_date' => '30 mai 1932',
 ]);
 $claire = demo_person([
     'first_name' => 'Claire', 'last_name' => 'Martin', 'sex' => 'F',
-    'birth_date' => '1960',
+    'birth_date' => '5 avril 1960',
 ]);
 $luc = demo_person([
     'first_name' => 'Luc', 'last_name' => 'Martin', 'sex' => 'M',
-    'birth_date' => '1963',
+    'birth_date' => '17 novembre 1963',
 ]);
 $prive = demo_person([
     'first_name' => 'Fiche', 'last_name' => 'Privée',
@@ -182,8 +182,8 @@ $prive = demo_person([
 
 // Couples : (conjoint 1, conjoint 2, date, lieu, enfants)
 $couples = [
-    [$jean, $marie, '1928', 'Exempleville (fictif)', [$paul, $anne]],
-    [$paul, $suzanne, '1958', null, [$claire, $luc]],
+    [$jean, $marie, '12 juin 1928', 'Exempleville (fictif)', [$paul, $anne]],
+    [$paul, $suzanne, '3 septembre 1958', null, [$claire, $luc]],
 ];
 
 foreach ($couples as [$a, $b, $date, $place, $children]) {

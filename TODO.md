@@ -3,6 +3,16 @@
 Ce fichier liste ce qui reste à faire, classé par priorité. Il n'y a pas de
 suivi automatique : cochez au fur et à mesure.
 
+## Fait (2026-11-01, lot 4)
+
+- [x] **Calendrier familial** : grille mensuelle toutes années confondues,
+      naissances, mariages et décès, détail au jour, navigation par mois.
+- [x] **Frise chronologique** : événements et documents datés, par périodes de
+      cinquante ans, 400 événements au plus par page.
+- [x] Lecture des dates écrites à la main (ISO, française, « 12 juin 1928 »,
+      « vers 1930 »), âges calculés, droits respectés.
+- [x] Dates de démonstration complètes, 5 captures, 15 vérifications de plus.
+
 ## Fait (2026-11-01, lot 3)
 
 - [x] **Albums photos** : rangement des photos existantes, titre, description,
@@ -66,7 +76,6 @@ suivi automatique : cochez au fur et à mesure.
 
 ## Prochains lots (un par un, après accord)
 
-- [ ] **Lot 4** — Calendrier familial et frise chronologique.
 - [ ] **Lot 5** — Audio (témoignages), recettes, impression, export GEDCOM.
 - [ ] **Lot 6** — Journal des connexions et alertes pour les administrateurs.
 

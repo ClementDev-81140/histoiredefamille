@@ -25,6 +25,7 @@ require_once __DIR__ . '/controllers/videos.php';
 require_once __DIR__ . '/controllers/admin_videos.php';
 require_once __DIR__ . '/controllers/albums.php';
 require_once __DIR__ . '/controllers/admin_albums.php';
+require_once __DIR__ . '/controllers/calendrier.php';
 
 // ---------------------------------------------------------------------------
 // Partie publique
@@ -36,6 +37,8 @@ route('GET', '/documents', 'public_documents');
 route('GET', '/documents/{id}', 'public_document_detail');
 route('GET', '/albums', 'public_albums');
 route('GET', '/albums/{slug}', 'public_album');
+route('GET', '/calendrier', 'public_calendrier');
+route('GET', '/frise', 'public_frise');
 route('GET', '/pages/{slug}', 'public_page');
 route('GET', '/recherche', 'public_recherche');
 route('GET', '/arbre', 'public_arbre');

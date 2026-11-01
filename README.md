@@ -43,6 +43,9 @@ et une installation qui tient en quelques commandes à copier-coller.
   téléchargeables.
 - Des **albums photos** : les photos publiques regroupées par époque, voyage ou
   fête, avec le nom des personnes identifiées sous chaque photo.
+- Un **calendrier familial** (naissances, mariages et décès du mois, toutes
+  années confondues) et une **frise chronologique** (les mêmes événements, plus
+  les documents datés, période par période).
 - Une **recherche générale** qui porte d'un seul coup sur les documents, les
   articles, les pages d'information et les personnes de l'arbre.
 - Les pages d'information publiques (histoire de la famille, annonces).
@@ -223,6 +226,25 @@ ni déplacé, un album n'est qu'un rangement.
 - « **Imprimer** » sur un album ou une fiche donne une page sobre, sans menu ni
   boutons (mise en page spéciale pour l'imprimante).
 
+### Calendrier familial et frise chronologique
+
+Deux façons de traverser les dates de la famille, ouvertes à tout le monde.
+
+- **Calendrier** (`/calendrier`) : une grille mensuelle, toutes années
+  confondues. Chaque jour signale les naissances, mariages et décès qui y sont
+  tombés, avec le détail sous la grille (« 18 novembre 1982 — décès de Marie
+  LEROY, 77 ans »). Les flèches changent de mois.
+- **Frise** (`/frise`) : les mêmes événements, plus les documents datés, année
+  par année, par périodes de cinquante ans (1900-1949, 1950-1999…).
+- Les dates sont lues telles que la famille les a écrites : « 12 juin 1928 »,
+  « 12/06/1928 », « 1928-06-12 », « 1er février 1975 », « juin 1928 » ou
+  simplement « vers 1930 ». Une date sans jour ni mois ne peut pas entrer dans
+  le calendrier : elle reste dans la frise, à son année.
+- Comme partout, un visiteur ne voit que les événements des personnes et des
+  documents auxquels il a droit ; un mariage n'apparaît que si les deux époux
+  sont visibles.
+- Les deux pages s'impriment proprement (bouton « Imprimer »).
+
 ### Visibilité : la règle la plus importante
 
 Chaque document, page, personne et article a un niveau de visibilité :
@@ -284,7 +306,7 @@ histoiredefamille/
 │   ├── controllers/         une fonction par page
 │   ├── lib/                 base de données, sécurité, stockage, images, vidéos,
 │   │                        GEDCOM, visibilité, textes, tchat, recherche,
-│   │                        albums…
+│   │                        albums, calendrier…
 │   ├── views/               gabarits PHP (public, famille, admin)
 │   ├── migrations/          fichiers SQL numérotés (001_init … 005_albums)
 │   └── cli/                 commandes : migrate, create-admin, demo, maintenance, tests
@@ -761,7 +783,18 @@ Réglages utiles (Administration → Réglages, bloc « Tchat de la famille ») 
    **Ajouter**. Le nom apparaît sous la photo, dans l'album et sur la fiche de
    la personne.
 
-### 6.9 Chercher dans le site
+### 6.9 Suivre le calendrier et la frise
+
+- **Calendrier** : le mois en cours s'affiche ; les flèches permettent de
+  revenir au mois précédent ou d'aller au suivant. Les dates des personnes
+  doivent comporter un jour et un mois pour apparaître.
+- **Frise** : les périodes de cinquante ans se parcourent avec « ← » et « → ».
+  Les documents datés y figurent aussi : une photo de 1928 apparaît en 1928.
+- Pour corriger une date, la modifier sur la fiche de la personne
+  (Administration → Arbre généalogique) : le calendrier et la frise suivent
+  automatiquement.
+
+### 6.10 Chercher dans le site
 
 1. Cliquer sur **Recherche** dans le menu.
 2. Taper un nom, un mot ou une année, puis **Chercher**. Par exemple

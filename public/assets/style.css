@@ -2360,3 +2360,201 @@ legend {
     width: 100%;
     max-width: 460px;
 }
+
+/* --------------------------------------------------------------------------
+   Calendrier familial
+   -------------------------------------------------------------------------- */
+
+.calendrier__intro {
+    max-width: var(--largeur-lecture);
+    color: var(--texte-doux);
+}
+
+.calendrier__nav {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.8rem;
+    margin: 1.2rem 0;
+}
+
+.calendrier__mois {
+    font-size: 1.1rem;
+    letter-spacing: 0.04em;
+}
+
+.calendrier__mois .lien { margin-left: 0.6rem; font-size: 0.85rem; }
+
+.calendrier__grille {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    border-top: var(--filet);
+    border-left: var(--filet);
+    margin-bottom: 2.2rem;
+}
+
+.calendrier__entete-jour {
+    padding: 0.45rem 0.3rem;
+    border-right: var(--filet);
+    border-bottom: var(--filet);
+    background: #f2f0eb;
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--texte-doux);
+    text-align: center;
+}
+
+.calendrier__case {
+    min-height: 72px;
+    padding: 0.35rem 0.4rem;
+    border-right: var(--filet);
+    border-bottom: var(--filet);
+    font-size: 0.78rem;
+}
+
+.calendrier__case--vide { background: #f8f7f4; }
+.calendrier__case--pleine { background: var(--accent-clair); }
+
+.calendrier__jour { color: var(--texte-doux); }
+
+.calendrier__points {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    margin: 0.25rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.calendrier__point {
+    padding-left: 0.4rem;
+    border-left: 2px solid var(--accent);
+    font-size: 0.7rem;
+    color: var(--texte);
+}
+
+.calendrier__point--deces { border-left-color: var(--texte-doux); }
+.calendrier__point--mariage { border-left-color: #8a6f4b; }
+
+.calendrier__liste {
+    padding: 0;
+    margin: 0 0 1rem;
+    list-style: none;
+}
+
+.calendrier__jour-liste {
+    display: grid;
+    grid-template-columns: 9rem 1fr;
+    gap: 1rem;
+    padding: 0.8rem 0;
+    border-top: var(--filet);
+}
+
+.calendrier__date {
+    margin: 0;
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--texte-doux);
+}
+
+.calendrier__jour-liste ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.calendrier__evenement { padding: 0.15rem 0; }
+
+.calendrier__annee {
+    margin-right: 0.45rem;
+    font-style: italic;
+    color: var(--texte-doux);
+}
+
+/* --------------------------------------------------------------------------
+   Frise chronologique
+   -------------------------------------------------------------------------- */
+
+.frise__intro {
+    max-width: var(--largeur-lecture);
+    color: var(--texte-doux);
+}
+
+.frise__nav {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.7rem;
+    margin: 1.2rem 0;
+}
+
+.frise__periode {
+    font-size: 1.05rem;
+    letter-spacing: 0.06em;
+    padding: 0 0.4rem;
+}
+
+.frise__liste {
+    margin: 0 0 2rem;
+    padding: 0 0 0 1.5rem;
+    list-style: none;
+    border-left: 2px solid var(--bordure);
+}
+
+.frise__annee {
+    position: relative;
+    padding-bottom: 1.6rem;
+}
+
+.frise__annee::before {
+    content: "";
+    position: absolute;
+    left: -1.85rem;
+    top: 0.45rem;
+    width: 10px;
+    height: 10px;
+    background: var(--accent);
+}
+
+.frise__titre-annee {
+    margin: 0 0 0.5rem;
+    font-size: 1.15rem;
+    letter-spacing: 0.06em;
+}
+
+.frise__evenements {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.frise__evenement { font-size: 0.95rem; }
+
+.frise__genre {
+    display: inline-block;
+    min-width: 7rem;
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--texte-doux);
+}
+
+.frise__date {
+    margin-left: 0.45rem;
+    font-size: 0.85rem;
+    font-style: italic;
+    color: var(--texte-doux);
+}
+
+@media (max-width: 640px) {
+    .calendrier__case { min-height: 52px; padding: 0.25rem; font-size: 0.7rem; }
+    .calendrier__entete-jour { font-size: 0.62rem; letter-spacing: 0.04em; }
+    .calendrier__jour-liste { grid-template-columns: 1fr; gap: 0.35rem; }
+    .frise__genre { min-width: 0; display: block; }
+}

@@ -3,6 +3,36 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.6.0] — 2026-11-01
+
+### Calendrier familial et frise chronologique
+
+- Nouvelle page **Calendrier** (`/calendrier`) : grille d'un mois, toutes
+  années confondues, avec les naissances, mariages et décès du jour ; détail
+  sous la grille (année, âge, lieu du mariage) et navigation mois précédent /
+  suivant.
+- Nouvelle page **Frise chronologique** (`/frise`) : événements classés par
+  année, par périodes de cinquante ans (navigation « Commencer », « ← », « → »),
+  naissances, mariages, décès et **documents datés**. 400 événements au
+  maximum par page : le Pi n'a jamais tout l'arbre en mémoire.
+- **Lecture des dates** (`date_parts()`) : « 1928-06-12 », « 12/06/1928 »,
+  « 12 juin 1928 », « 1er février 1975 », « juin 1928 », « vers 1930 ». Une
+  date impossible (« 31 février ») est ignorée ; une date sans jour ni mois ne
+  figure que dans la frise, à son année.
+- Droits : un visiteur ne voit que les événements de ce qu'il peut voir ; un
+  mariage n'apparaît que si **les deux** époux sont visibles. Quatre requêtes
+  bornées par page (personnes, mariages, documents), aucune boucle sur l'arbre
+  entier.
+- Les deux pages s'impriment proprement (mise en page d'impression et bouton
+  « Imprimer »).
+- Données de démonstration : les dates de l'arbre fictif sont maintenant
+  complètes (« 14 mars 1901 », mariage du « 12 juin 1928 ») pour que le
+  calendrier soit vivant.
+- **Tests** : `php app/cli/tests.php calendrier` (15 vérifications de dates et de
+  grille) — 75 vérifications au total.
+- Captures : `ordinateur-calendrier`, `ordinateur-calendrier-novembre`,
+  `ordinateur-frise`, `mobile-calendrier`, `mobile-frise`.
+
 ## [1.5.0] — 2026-11-01
 
 ### Albums photos et personnes identifiées
