@@ -1,6 +1,6 @@
 <?php
 /**
- * Mise en page publique.
+ * Mise en page publique — présentation « journal ».
  *
  * @var string|null $titre
  * @var string      $contenu
@@ -20,14 +20,14 @@ try {
 $flashes    = take_flashes();
 $pageTitle  = !empty($titre) ? $titre . ' — ' . $siteName : $siteName;
 
-// Date de l'« édition » affichée sous le titre, en français (sans extension intl).
-$joursFr = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
-$moisFr  = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet',
-            'août', 'septembre', 'octobre', 'novembre', 'décembre'];
-$jourNum = (int) date('j');
-$dateEdition = $joursFr[(int) date('w')] . ' '
-    . ($jourNum === 1 ? '1er' : (string) $jourNum) . ' '
-    . $moisFr[(int) date('n') - 1] . ' ' . date('Y');
+// Un chemin courant pour souligner l'onglet actif (aide à s'orienter).
+$currentPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+$navClass = static function (string $href) use ($currentPath): string {
+    $active = $href === '/'
+        ? $currentPath === '/'
+        : str_starts_with($currentPath, $href);
+    return $active ? ' class="actif" aria-current="page"' : '';
+};
 ?>
 <!doctype html>
 <html lang="fr">
@@ -38,27 +38,35 @@ $dateEdition = $joursFr[(int) date('w')] . ' '
     <meta name="description" content="<?= e(site_setting('description')) ?>">
     <meta name="robots" content="<?= is_logged_in() ? 'noindex, nofollow' : 'index, follow' ?>">
     <link rel="stylesheet" href="/assets/style.css">
+    <link rel="preload" href="/assets/fonts/old-standard-tt-400.woff2" as="font" type="font/woff2" crossorigin>
 </head>
 <body>
 <a class="lien-evitement" href="#contenu">Aller au contenu principal</a>
 
-<header class="une">
-    <div class="conteneur">
-        <p class="une__date"><?= e($dateEdition) ?></p>
+<header class="entete">
+    <div class="conteneur entete__barre">
+        <?php /* Ligne de date : « dimanche 1er novembre 2026 », écrite par PHP
+                 (aucune dépendance à l'extension intl). */ ?>
+        <p class="entete__date"><?= e(french_long_date()) ?></p>
 
-        <a class="une__titre" href="/">
-            <span class="une__nom"><?= e($siteName) ?></span>
+        <a class="entete__titre" href="/">
+            <span class="entete__nom"><?= e($siteName) ?></span>
             <?php if ($siteSub !== ''): ?>
-                <span class="une__sous-titre"><?= e($siteSub) ?></span>
+                <span class="entete__sous-titre"><?= e($siteSub) ?></span>
             <?php endif; ?>
         </a>
 
-        <nav class="nav nav--journal" aria-label="Navigation principale">
-            <a href="/">Accueil</a>
-            <a href="/documents">Documents</a>
-            <a href="/arbre">Arbre</a>
+        <nav class="nav" aria-label="Navigation principale">
+            <a href="/"<?= $navClass('/') ?>>Accueil</a>
+            <a href="/documents"<?= $navClass('/documents') ?>>Documents</a>
+            <?php if ($account !== null): ?>
+                <?php /* Onglet réservé aux comptes connectés : jamais affiché
+                         à un visiteur non connecté. */ ?>
+                <a href="/videos"<?= $navClass('/videos') ?>>Vidéos</a>
+            <?php endif; ?>
+            <a href="/arbre"<?= $navClass('/arbre') ?>>Arbre</a>
             <?php foreach ($navPages as $navPage): ?>
-                <a href="/pages/<?= e($navPage['slug']) ?>"><?= e($navPage['title']) ?></a>
+                <a href="/pages/<?= e($navPage['slug']) ?>"<?= $navClass('/pages/' . $navPage['slug']) ?>><?= e($navPage['title']) ?></a>
             <?php endforeach; ?>
 
             <?php if ($account === null): ?>

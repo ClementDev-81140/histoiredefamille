@@ -106,9 +106,33 @@ function text_inline(string $line): string
     return $safe;
 }
 
-/** Résumé d'un texte brut (sans mise en forme) pour les listes. */
+/**
+ * Résumé d'un texte brut (sans mise en forme) pour les listes.
+ *
+ * La mise en forme légère est retirée au passage : un aperçu ne doit pas
+ * afficher « **gras** », « ## Titre » ni « - puce ».
+ */
 function text_summary(?string $text, int $length = 160): string
 {
-    $plain = preg_replace('/\s+/u', ' ', (string) $text) ?? (string) $text;
+    $plain = text_to_plain($text);
     return excerpt($plain, $length);
+}
+
+/** Texte débarrassé de sa mise en forme légère (titres, gras, liens, puces). */
+function text_to_plain(?string $text): string
+{
+    $plain = str_replace(["\r\n", "\r"], "\n", (string) $text);
+
+    // Liens [texte](adresse) → texte.
+    $plain = preg_replace('/\[([^\]]+)\]\(([^)]+)\)/u', '$1', $plain) ?? $plain;
+    // Titres Markdown : retirés entièrement (un titre n'est pas du texte
+    // suivi, il ne doit pas se retrouver collé au paragraphe dans un aperçu).
+    $plain = preg_replace('/^[ \t]*#{1,6}[ \t].*$/mu', '', $plain) ?? $plain;
+    // Puces et numéros de liste.
+    $plain = preg_replace('/^[ \t]*(?:[-*+]|\d+[.)])[ \t]+/mu', '', $plain) ?? $plain;
+    // Gras, italique, code en ligne.
+    $plain = str_replace(['**', '`'], '', $plain);
+    $plain = preg_replace('/(?<!\*)\*([^*\n]+)\*(?!\*)/u', '$1', $plain) ?? $plain;
+
+    return preg_replace('/\s+/u', ' ', $plain) ?? $plain;
 }

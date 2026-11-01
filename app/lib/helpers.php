@@ -221,6 +221,35 @@ function format_date(?int $timestamp, bool $withTime = false): string
     return date($withTime ? 'd/m/Y à H:i' : 'd/m/Y', $timestamp);
 }
 
+/**
+ * Date longue en français, sans dépendre de l'extension intl :
+ * « dimanche 1er novembre 2026 ».
+ *
+ * Utilisée pour la ligne de date de l'en-tête « journal ». Les noms sont
+ * écrits en dur : le site est en français uniquement, c'est plus simple et
+ * cela évite une dépendance système (setlocale n'est pas toujours installé
+ * sur un Raspberry Pi).
+ */
+function french_long_date(?int $timestamp = null): string
+{
+    $ts = $timestamp ?? time();
+
+    $jours = [
+        1 => 'lundi', 'mardi', 'mercredi', 'jeudi',
+        'vendredi', 'samedi', 'dimanche',
+    ];
+    $mois = [
+        1 => 'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
+        'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre',
+    ];
+
+    $numeroJour = (int) date('j', $ts);
+    $jourTexte  = $numeroJour === 1 ? '1er' : (string) $numeroJour;
+
+    return $jours[(int) date('N', $ts)] . ' ' . $jourTexte . ' '
+        . $mois[(int) date('n', $ts)] . ' ' . date('Y', $ts);
+}
+
 /** Nombre de jours depuis un horodatage. */
 function days_since(?int $timestamp): ?int
 {

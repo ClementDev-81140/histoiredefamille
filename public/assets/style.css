@@ -1,9 +1,44 @@
 /* ---------------------------------------------------------------------------
    Histoire de famille — feuille de style unique
-   Design sobre, lisible, responsive. Aucune police ni ressource externe.
+   Style « journal ancien » : typographie à empattements, filets fins,
+   aucun coin arrondi, aucune ombre.
+
+   Deux principes :
+   1. la palette ne change pas (voir les variables ci-dessous) ;
+   2. aucune ressource externe : la police est servie par le site lui-même
+      (public/assets/fonts/), ce qui respecte la politique de sécurité CSP
+      « default-src 'self' » et évite toute requête vers un tiers.
    --------------------------------------------------------------------------- */
 
+/* Old Standard TT — licence SIL Open Font License 1.1 (voir fonts/OFL.txt).
+   Trois fichiers seulement (romain, italique, gras) pour rester léger :
+   74 Ko au total, mis en cache par le navigateur. */
+@font-face {
+    font-family: "Old Standard TT";
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url("/assets/fonts/old-standard-tt-400.woff2") format("woff2");
+}
+
+@font-face {
+    font-family: "Old Standard TT";
+    font-style: italic;
+    font-weight: 400;
+    font-display: swap;
+    src: url("/assets/fonts/old-standard-tt-400-italic.woff2") format("woff2");
+}
+
+@font-face {
+    font-family: "Old Standard TT";
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url("/assets/fonts/old-standard-tt-700.woff2") format("woff2");
+}
+
 :root {
+    /* Palette inchangée. */
     --fond: #f6f5f2;
     --surface: #ffffff;
     --texte: #1d1d1b;
@@ -18,9 +53,20 @@
     --erreur-texte: #8b2a22;
     --info-fond: #eaf1f7;
     --info-texte: #2c4a68;
-    --rayon: 6px;
+
+    /* Réglages du journal. */
+    --serif: "Old Standard TT", "Iowan Old Style", "Palatino Linotype", Palatino,
+             "Book Antiqua", Georgia, "Times New Roman", serif;
     --largeur: 1080px;
-    --ombre: 0 1px 2px rgba(0, 0, 0, 0.06);
+    --largeur-lecture: 44rem;
+
+    /* Plus aucun arrondi ni ombre : les composants s'en servent encore. */
+    --rayon: 0;
+    --ombre: none;
+
+    --filet: 1px solid var(--bordure);
+    --filet-fort: 1px solid var(--texte);
+    --filet-double: 3px double var(--texte);
 }
 
 *,
@@ -38,21 +84,25 @@ body {
     margin: 0;
     background: var(--fond);
     color: var(--texte);
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    font-size: 1rem;
-    line-height: 1.6;
+    font-family: var(--serif);
+    font-size: 1.0625rem;
+    line-height: 1.62;
+    font-kerning: normal;
+    font-variant-ligatures: common-ligatures;
+    text-rendering: optimizeLegibility;
 }
 
 h1, h2, h3, h4 {
-    line-height: 1.25;
+    font-family: var(--serif);
+    line-height: 1.2;
     margin: 0 0 0.6em;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--accent-fonce);
 }
 
-h1 { font-size: 1.7rem; }
-h2 { font-size: 1.25rem; margin-top: 1.4em; }
-h3 { font-size: 1.05rem; }
+h1 { font-size: 1.85rem; }
+h2 { font-size: 1.15rem; }
+h3 { font-size: 1.02rem; }
 
 p { margin: 0 0 1em; }
 
@@ -60,6 +110,7 @@ a {
     color: var(--accent);
     text-decoration: underline;
     text-underline-offset: 2px;
+    text-decoration-thickness: 1px;
 }
 
 a:hover,
@@ -71,19 +122,22 @@ a:focus-visible,
 button:focus-visible,
 input:focus-visible,
 select:focus-visible,
-textarea:focus-visible {
+textarea:focus-visible,
+video:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
 }
 
 img { max-width: 100%; height: auto; }
 
+strong { font-weight: 700; }
+
 code {
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: 0.9em;
+    font-size: 0.85em;
     background: #efede8;
-    padding: 0.1em 0.35em;
-    border-radius: 3px;
+    padding: 0.08em 0.3em;
+    border-radius: 0;
 }
 
 pre {
@@ -91,14 +145,14 @@ pre {
     background: #24292f;
     color: #f0f0f0;
     padding: 0.9rem;
-    border-radius: var(--rayon);
-    font-size: 0.82rem;
+    font-size: 0.78rem;
     line-height: 1.45;
+    border-radius: 0;
 }
 
 hr {
     border: 0;
-    border-top: 1px solid var(--bordure);
+    border-top: var(--filet);
     margin: 1.6rem 0;
 }
 
@@ -114,8 +168,8 @@ hr {
 }
 
 .contenu-principal {
-    padding-top: 1.6rem;
-    padding-bottom: 3rem;
+    padding-top: 1.8rem;
+    padding-bottom: 3.2rem;
     min-height: 55vh;
 }
 
@@ -123,7 +177,7 @@ hr {
     position: absolute;
     left: -9999px;
     top: 0;
-    background: var(--accent);
+    background: var(--texte);
     color: #fff;
     padding: 0.6rem 1rem;
     z-index: 10;
@@ -146,56 +200,79 @@ hr {
 }
 
 /* --------------------------------------------------------------------------
-   En-tête et navigation
+   En-tête : la « une » du journal
    -------------------------------------------------------------------------- */
 
 .entete {
     background: var(--surface);
-    border-bottom: 1px solid var(--bordure);
-    box-shadow: var(--ombre);
+    /* Aucun filet ici : la barre de navigation ferme le « une » par son
+       double filet (évite deux traits épais collés). */
 }
 
 .entete__barre {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 0.5rem 1.5rem;
-    padding-top: 0.9rem;
-    padding-bottom: 0.9rem;
+    display: block;
+    padding-top: 1.1rem;
+    padding-bottom: 0;
 }
 
-.entete__titre {
-    text-decoration: none;
-    color: var(--accent-fonce);
-    display: flex;
-    flex-direction: column;
-}
-
-.entete__nom {
-    font-size: 1.3rem;
-    font-weight: 600;
+/* Ligne de date, en italique au-dessus du titre. */
+.entete__date {
+    margin: 0 0 0.35rem;
+    text-align: center;
+    font-style: italic;
+    font-size: 0.92rem;
+    color: var(--texte-doux);
     letter-spacing: 0.01em;
 }
 
-.entete__sous-titre {
-    font-size: 0.85rem;
-    color: var(--texte-doux);
+.entete__titre {
+    display: block;
+    text-align: center;
+    text-decoration: none;
+    color: var(--accent-fonce);
+    margin-bottom: 0.55rem;
 }
 
+.entete__nom {
+    display: block;
+    font-size: clamp(1.85rem, 6vw, 3.1rem);
+    line-height: 1.08;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.entete__sous-titre {
+    display: block;
+    margin-top: 0.35rem;
+    font-size: 0.95rem;
+    font-style: italic;
+    color: var(--texte-doux);
+    letter-spacing: 0.02em;
+}
+
+/* Bandeau de navigation : filet fin au-dessus, double filet en dessous. */
 .nav {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.35rem 1rem;
-    font-size: 0.95rem;
+    justify-content: center;
+    gap: 0.25rem 0.8rem;
+    margin-top: 0.75rem;
+    padding: 0.45rem 0 0.4rem;
+    border-top: var(--filet-fort);
+    border-bottom: var(--filet-double);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
 }
 
 .nav a {
     text-decoration: none;
     color: var(--texte);
-    padding: 0.25rem 0;
-    border-bottom: 2px solid transparent;
+    padding: 0.15rem 0;
+    border-bottom: 1px solid transparent;
+    white-space: nowrap;
 }
 
 .nav a:hover,
@@ -205,19 +282,33 @@ hr {
 }
 
 .nav__accent {
-    font-weight: 600;
+    font-weight: 700;
     color: var(--accent) !important;
 }
 
 .nav__form {
     margin: 0;
+    display: inline-flex;
 }
+
+/* Lien simple (réinitialiser un filtre, etc.). */
+.lien {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
+}
+
+.lien:hover,
+.lien:focus-visible { color: var(--accent-fonce); }
 
 .lien-bouton {
     background: none;
     border: 0;
-    padding: 0.25rem 0;
+    padding: 0.15rem 0;
     font: inherit;
+    font-size: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
     color: var(--texte);
     text-decoration: underline;
     text-underline-offset: 2px;
@@ -233,18 +324,23 @@ hr {
     color: var(--erreur-texte);
 }
 
+/* Bandeau « connecté en tant que ». */
 .bandeau-compte {
-    font-size: 0.85rem;
+    display: block;
+    padding: 0.45rem 1rem 0.55rem;
+    text-align: center;
+    font-size: 0.82rem;
+    font-style: italic;
     color: var(--texte-doux);
-    padding-bottom: 0.6rem;
+    border-bottom: var(--filet);
 }
 
 .entete--admin {
-    border-bottom: 3px solid var(--accent);
+    border-bottom: var(--filet-double);
 }
 
 /* --------------------------------------------------------------------------
-   Boutons
+   Boutons : carrés, en majuscules
    -------------------------------------------------------------------------- */
 
 .bouton {
@@ -252,14 +348,15 @@ hr {
     background: var(--accent);
     color: #fff;
     border: 1px solid var(--accent);
-    border-radius: var(--rayon);
+    border-radius: 0;
     padding: 0.5rem 0.95rem;
     font: inherit;
-    font-size: 0.95rem;
-    line-height: 1.3;
+    font-size: 0.76rem;
+    line-height: 1.35;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
     text-decoration: none;
     cursor: pointer;
-    transition: background-color 0.12s ease-in-out;
 }
 
 .bouton:hover,
@@ -300,16 +397,15 @@ hr {
 }
 
 /* --------------------------------------------------------------------------
-   Panneaux, sections
+   Panneaux et sections : filets fins
    -------------------------------------------------------------------------- */
 
 .panneau {
     background: var(--surface);
-    border: 1px solid var(--bordure);
-    border-radius: var(--rayon);
+    border: var(--filet);
+    border-radius: 0;
     padding: 1.1rem 1.2rem;
     margin-bottom: 1.4rem;
-    box-shadow: var(--ombre);
 }
 
 .panneau > :last-child { margin-bottom: 0; }
@@ -318,26 +414,66 @@ hr {
 
 .panneau--etroit {
     max-width: 32rem;
-    margin: 2rem auto;
+    margin: 2.4rem auto;
 }
 
-.panneau--public { border-left: 4px solid #2f6b46; }
-.panneau--famille { border-left: 4px solid var(--accent); }
+.panneau--public { border-top: 2px solid #2f6b46; }
+.panneau--famille { border-top: 2px solid var(--accent); }
 
-.section { margin-bottom: 2.2rem; }
+/* Panneau d'action irréversible : filet d'accent, jamais de fond criard. */
+.panneau--danger { border-top: 2px solid var(--erreur-texte); }
+
+/* Aperçu vidéo : même cadre que les cartes de documents. */
+.carte__apercu--video { background: #111; }
+.carte__apercu--video .carte__type { color: #f2f0eb; }
+
+.section { margin-bottom: 2.4rem; }
+
+/* Titres de rubriques : majuscules espacées, filet en dessous. */
+.section > h2,
+.texte h2 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--texte);
+    border-bottom: var(--filet-fort);
+    padding-bottom: 0.35rem;
+    margin: 2rem 0 1.1rem;
+}
 
 .section__entete {
     display: flex;
     flex-wrap: wrap;
-    align-items: center;
+    align-items: baseline;
     justify-content: space-between;
-    gap: 0.6rem;
-    margin-bottom: 0.8rem;
+    gap: 0.5rem 1rem;
+    margin-bottom: 0.9rem;
+    padding-bottom: 0.4rem;
+    border-bottom: var(--filet-fort);
+}
+
+.section__entete .lien,
+.section__entete > a {
+    white-space: nowrap;
 }
 
 .section__entete h1,
 .section__entete h2 {
     margin: 0;
+    border: 0;
+    padding: 0;
+}
+
+.section__entete h1 {
+    font-size: 1.6rem;
+}
+
+.section__entete h2 {
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--texte);
 }
 
 .deux-colonnes {
@@ -346,57 +482,73 @@ hr {
     gap: 1.2rem;
 }
 
+/* Accueil : pas de cadre, texte centré. */
 .hero {
-    background: var(--surface);
-    border: 1px solid var(--bordure);
-    border-radius: var(--rayon);
-    padding: 1.8rem 1.4rem;
-    margin-bottom: 2rem;
-    box-shadow: var(--ombre);
-}
-
-.hero h1 {
-    font-size: 2rem;
-    margin-bottom: 0.2em;
+    text-align: center;
+    margin: 0 auto 2.6rem;
+    max-width: var(--largeur-lecture);
 }
 
 .hero__sous-titre {
-    color: var(--accent);
-    font-size: 1.1rem;
-    margin-bottom: 0.8rem;
+    font-style: italic;
+    color: var(--texte-doux);
+    font-size: 1.05rem;
+    margin-bottom: 0.9rem;
 }
 
 .hero__texte {
-    max-width: 46rem;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .hero__chiffres {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem 1.6rem;
-    margin: 1.2rem 0 0;
-    padding: 0.9rem 0 0;
+    display: block;
+    margin: 1.4rem 0 1.2rem;
+    padding: 0.9rem 0;
     border-top: 1px solid var(--bordure);
+    border-bottom: 1px solid var(--bordure);
+    font-style: italic;
+    font-size: 0.98rem;
     color: var(--texte-doux);
-    font-size: 0.95rem;
+}
+
+.hero__chiffres span {
+    display: inline-block;
+    margin: 0.15rem 0.9rem;
 }
 
 .hero__chiffres strong {
-    color: var(--accent-fonce);
-    font-size: 1.1rem;
+    font-style: normal;
+    color: var(--texte);
+    font-weight: 700;
 }
 
+.hero .actions { justify-content: center; }
+
+.hero .note,
 .note {
+    border: 1px solid #c3d5e5;
     background: var(--info-fond);
     color: var(--info-texte);
-    border-radius: var(--rayon);
     padding: 0.7rem 0.9rem;
-    font-size: 0.92rem;
+    font-size: 0.9rem;
+    font-style: italic;
+}
+
+.hero .note {
+    background: transparent;
+    border: 0;
+    border-top: var(--filet);
+    border-bottom: var(--filet);
+    color: var(--texte-doux);
+    text-align: center;
+    margin-top: 1.2rem;
 }
 
 .aide {
     color: var(--texte-doux);
-    font-size: 0.85rem;
+    font-size: 0.84rem;
+    font-style: italic;
     margin: 0.35rem 0 0;
 }
 
@@ -411,8 +563,8 @@ hr {
 
 .message {
     border: 1px solid transparent;
-    border-radius: var(--rayon);
-    padding: 0.8rem 1rem;
+    border-left-width: 4px;
+    padding: 0.75rem 1rem;
     margin-bottom: 1.2rem;
     font-size: 0.95rem;
 }
@@ -439,29 +591,30 @@ hr {
 }
 
 .mot-de-passe-genere {
-    font-size: 1.05rem;
+    font-size: 1rem;
     background: #fff;
     border: 1px dashed var(--accent);
     padding: 0.8rem;
-    border-radius: var(--rayon);
 }
 
 .mot-de-passe-genere code {
-    font-size: 1.1rem;
+    font-size: 1.05rem;
     background: transparent;
 }
 
 /* --------------------------------------------------------------------------
-   Badges et étiquettes
+   Badges et étiquettes : carrés, en petites capitales
    -------------------------------------------------------------------------- */
 
 .badge {
     display: inline-block;
-    font-size: 0.75rem;
-    line-height: 1.4;
-    padding: 0.1rem 0.5rem;
-    border-radius: 999px;
+    font-size: 0.66rem;
+    line-height: 1.5;
+    padding: 0.1rem 0.45rem;
+    border-radius: 0;
     border: 1px solid;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
     white-space: nowrap;
 }
 
@@ -491,11 +644,12 @@ hr {
 
 .etiquette {
     display: inline-block;
-    font-size: 0.8rem;
+    font-size: 0.78rem;
     background: #efede8;
-    border-radius: 999px;
-    padding: 0.15rem 0.6rem;
-    margin: 0 0.25rem 0.25rem 0;
+    border: 1px solid var(--bordure);
+    border-radius: 0;
+    padding: 0.1rem 0.5rem;
+    margin: 0 0.25rem 0.35rem 0;
     text-decoration: none;
     color: var(--texte);
 }
@@ -519,9 +673,11 @@ a.etiquette:focus {
 
 label {
     display: block;
-    font-weight: 500;
+    font-weight: 700;
     margin-bottom: 0.25rem;
-    font-size: 0.95rem;
+    font-size: 0.86rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
 }
 
 .obligatoire { color: var(--erreur-texte); }
@@ -532,6 +688,7 @@ input[type="email"],
 input[type="password"],
 input[type="number"],
 input[type="file"],
+input[type="url"],
 select,
 textarea {
     width: 100%;
@@ -542,7 +699,7 @@ textarea {
     color: var(--texte);
     background: #fff;
     border: 1px solid #b9b3a8;
-    border-radius: var(--rayon);
+    border-radius: 0;
 }
 
 input[type="file"] {
@@ -553,15 +710,17 @@ input[type="file"] {
 textarea { resize: vertical; }
 
 fieldset {
-    border: 1px solid var(--bordure);
-    border-radius: var(--rayon);
+    border: var(--filet);
+    border-radius: 0;
     padding: 0.9rem 1rem 0.4rem;
     margin: 0 0 1.05rem;
 }
 
 legend {
-    font-weight: 600;
-    font-size: 0.95rem;
+    font-weight: 700;
+    font-size: 0.86rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
     padding: 0 0.35rem;
 }
 
@@ -571,13 +730,16 @@ legend {
     align-items: flex-start;
     gap: 0.5rem;
     font-weight: 400;
-    margin-bottom: 0.4rem;
+    margin-bottom: 0.45rem;
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 0.95rem;
 }
 
 .radio input,
 .case input {
     width: auto;
-    margin-top: 0.25rem;
+    margin-top: 0.3rem;
 }
 
 .ligne-champs {
@@ -602,8 +764,7 @@ legend {
     grid-template-columns: 1fr;
     gap: 0 1rem;
     background: var(--surface);
-    border: 1px solid var(--bordure);
-    border-radius: var(--rayon);
+    border: var(--filet);
     padding: 0.9rem 1rem 0.2rem;
     margin-bottom: 1.2rem;
 }
@@ -630,7 +791,7 @@ legend {
 
 .branches {
     margin-top: 0.6rem;
-    padding-left: 0.2rem;
+    padding-left: 0.7rem;
     border-left: 2px solid var(--bordure);
 }
 
@@ -639,22 +800,20 @@ legend {
 .filtre-liste { margin-bottom: 0.4rem; }
 
 /* --------------------------------------------------------------------------
-   Cartes de documents
+   Cartes (documents et vidéos)
    -------------------------------------------------------------------------- */
 
 .grille-cartes {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-    gap: 1rem;
+    gap: 1.1rem;
 }
 
 .carte {
     background: var(--surface);
-    border: 1px solid var(--bordure);
-    border-radius: var(--rayon);
+    border: var(--filet);
+    border-radius: 0;
     overflow: hidden;
-    box-shadow: var(--ombre);
-    transition: border-color 0.12s ease-in-out;
 }
 
 .carte:hover { border-color: var(--accent); }
@@ -673,6 +832,7 @@ legend {
     align-items: center;
     justify-content: center;
     overflow: hidden;
+    border-bottom: var(--filet);
 }
 
 .carte__apercu img {
@@ -683,8 +843,8 @@ legend {
 }
 
 .carte__type {
-    font-size: 0.9rem;
-    letter-spacing: 0.05em;
+    font-size: 0.78rem;
+    letter-spacing: 0.14em;
     color: var(--texte-doux);
     text-transform: uppercase;
 }
@@ -695,26 +855,40 @@ legend {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 2.2rem;
+    font-size: 2rem;
     color: #fff;
-    background: rgba(0, 0, 0, 0.28);
+    background: rgba(0, 0, 0, 0.26);
 }
 
-.carte__corps { padding: 0.7rem 0.8rem 0.8rem; }
+.carte__corps {
+    padding: 0.65rem 0.8rem 0.8rem;
+}
 
 .carte__titre {
     font-size: 1rem;
-    margin: 0 0 0.2em;
+    margin: 0 0 0.25em;
     color: var(--accent-fonce);
 }
 
 .carte__meta {
     margin: 0;
     font-size: 0.8rem;
+    font-style: italic;
     color: var(--texte-doux);
 }
 
 .carte__visibilite { margin: 0.35rem 0 0; }
+
+.carte__duree {
+    position: absolute;
+    right: 0.45rem;
+    bottom: 0.45rem;
+    background: rgba(0, 0, 0, 0.72);
+    color: #fff;
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    padding: 0.05rem 0.35rem;
+}
 
 /* --------------------------------------------------------------------------
    Fiches, tableaux, listes
@@ -730,6 +904,7 @@ legend {
 
 .fiche dt {
     color: var(--texte-doux);
+    font-style: italic;
 }
 
 .fiche dd {
@@ -753,10 +928,11 @@ legend {
 
 .tableau thead th {
     background: #efece6;
-    font-size: 0.82rem;
+    font-size: 0.74rem;
     text-transform: uppercase;
-    letter-spacing: 0.03em;
+    letter-spacing: 0.08em;
     color: var(--texte-doux);
+    border-top: var(--filet-fort);
 }
 
 .tableau tbody tr:hover { background: #faf9f6; }
@@ -770,11 +946,28 @@ legend {
 
 .tableau-defilant {
     overflow-x: auto;
-    border: 1px solid var(--bordure);
-    border-radius: var(--rayon);
+    border: var(--filet);
 }
 
-.tableau-defilant .tableau { min-width: 42rem; }
+.tableau-defilant .tableau { min-width: 52rem; }
+
+/* Précision secondaire sous un titre de tableau (durée, ordre, droits). */
+.discret--bloc {
+    display: block;
+    font-size: 0.78rem;
+    font-style: italic;
+    color: var(--texte-doux);
+}
+
+/* Colonne d'actions : jamais coupée au milieu d'un mot. */
+.tableau .colonne-actions,
+.tableau .colonne-actions a,
+.tableau .lien-bouton {
+    white-space: nowrap;
+}
+
+.tableau th,
+.tableau td { vertical-align: top; }
 
 .liste,
 .liste-personnes {
@@ -792,7 +985,7 @@ legend {
 .liste li:last-child,
 .liste-personnes li:last-child { border-bottom: 0; }
 
-.liste-personnes li .discret { margin-left: 0.5rem; }
+.liste-personnes li .discret { margin-left: 0.5rem; font-style: italic; }
 
 .liste { list-style: disc; padding-left: 1.3rem; }
 .liste li { border-bottom: 0; padding: 0.2rem 0; }
@@ -828,17 +1021,18 @@ legend {
 .journal-technique {
     max-height: 20rem;
     overflow: auto;
-    font-size: 0.75rem;
+    font-size: 0.74rem;
 }
 
 /* --------------------------------------------------------------------------
-   Fil d'Ariane, pagination
+   Fil d'Ariane, pagination, lettres
    -------------------------------------------------------------------------- */
 
 .fil {
-    font-size: 0.88rem;
+    font-size: 0.85rem;
+    font-style: italic;
     color: var(--texte-doux);
-    margin-bottom: 0.8rem;
+    margin-bottom: 0.9rem;
 }
 
 .fil span[aria-hidden] { margin: 0 0.35rem; }
@@ -847,19 +1041,22 @@ legend {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
+    justify-content: center;
     gap: 0.8rem 1.2rem;
-    margin: 1.4rem 0;
-    font-size: 0.92rem;
+    margin: 1.6rem 0;
+    font-size: 0.9rem;
+    border-top: var(--filet);
+    padding-top: 1rem;
 }
 
-.pagination__info { color: var(--texte-doux); }
+.pagination__info { color: var(--texte-doux); font-style: italic; }
 
 .lettres {
     display: flex;
     flex-wrap: wrap;
     gap: 0.3rem;
     margin-bottom: 0.9rem;
-    font-size: 0.9rem;
+    font-size: 0.88rem;
 }
 
 .lettres a,
@@ -869,7 +1066,7 @@ legend {
     text-align: center;
     padding: 0.15rem 0.3rem;
     border: 1px solid var(--bordure);
-    border-radius: 3px;
+    border-radius: 0;
     text-decoration: none;
 }
 
@@ -886,7 +1083,7 @@ legend {
 }
 
 /* --------------------------------------------------------------------------
-   Document (fiche)
+   Fiche document
    -------------------------------------------------------------------------- */
 
 .document__corps {
@@ -900,22 +1097,86 @@ legend {
     width: 100%;
     height: auto;
     background: #111;
-    border-radius: var(--rayon);
+    border: var(--filet);
+}
+
+/* Aperçu (image, lecteur ou icône) : colonne principale sur grand écran. */
+.document__apercu {
+    border: var(--filet);
+    padding: 0.8rem;
+    background: var(--surface);
+}
+
+.document__apercu img,
+.document__apercu video {
+    display: block;
+    margin: 0 auto;
+}
+
+/* Informations de la fiche : texte secondaire, avec filet de séparation. */
+.document__infos {
+    border-top: var(--filet);
+    padding-top: 1rem;
 }
 
 .document__icone {
-    font-size: 2rem;
-    font-weight: 600;
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
     color: var(--accent);
     margin: 0.5rem 0 1rem;
 }
 
-.texte {
-    max-width: 46rem;
-    font-size: 1rem;
+/* --------------------------------------------------------------------------
+   Pages d'information : article de journal
+   -------------------------------------------------------------------------- */
+
+.page-info {
+    max-width: 52rem;
+    margin-left: auto;
+    margin-right: auto;
 }
 
-.texte h2 { font-size: 1.2rem; }
+.page-info h1 {
+    text-align: center;
+    font-size: 2.1rem;
+    margin-bottom: 0.35rem;
+}
+
+.page-info__date {
+    text-align: center;
+    font-style: italic;
+    font-size: 0.9rem;
+    color: var(--texte-doux);
+    margin: 0 auto 1.8rem;
+    padding-bottom: 0.7rem;
+    border-bottom: var(--filet-double);
+    max-width: var(--largeur-lecture);
+}
+
+.page-info .texte {
+    max-width: var(--largeur-lecture);
+    margin-left: auto;
+    margin-right: auto;
+    text-align: justify;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+}
+
+.texte {
+    max-width: var(--largeur-lecture);
+    font-size: 1.02rem;
+}
+
+.texte h2 {
+    font-size: 0.92rem;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    border-bottom: var(--filet-fort);
+    padding-bottom: 0.3rem;
+    margin: 1.8rem 0 0.9rem;
+}
+
 .texte h3 { font-size: 1.05rem; }
 .texte h4 { font-size: 1rem; }
 
@@ -927,7 +1188,10 @@ legend {
     padding-left: 1em;
     border-left: 3px solid var(--bordure);
     color: var(--texte-doux);
+    font-style: italic;
 }
+
+.texte p:first-of-type { margin-top: 0; }
 
 /* --------------------------------------------------------------------------
    Arbre généalogique
@@ -951,19 +1215,21 @@ legend {
 }
 
 .explorateur__legende {
-    font-size: 0.78rem;
+    font-size: 0.7rem;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.12em;
     color: var(--texte-doux);
     margin: 0 0 0.4rem;
+    border-bottom: var(--filet);
+    padding-bottom: 0.2rem;
 }
 
 .explorateur__noeud {
     display: block;
     background: var(--surface);
-    border: 1px solid var(--bordure);
+    border: var(--filet);
     border-left: 3px solid var(--accent);
-    border-radius: 4px;
+    border-radius: 0;
     padding: 0.4rem 0.55rem;
     margin-bottom: 0.45rem;
     text-decoration: none;
@@ -979,12 +1245,13 @@ legend {
 
 .explorateur__noeud--central {
     border-left-color: #2f6b46;
-    font-weight: 600;
+    font-weight: 700;
 }
 
 .explorateur__dates {
     display: block;
-    font-size: 0.78rem;
+    font-size: 0.76rem;
+    font-style: italic;
     color: var(--texte-doux);
 }
 
@@ -994,18 +1261,20 @@ legend {
     gap: 1.2rem;
     align-items: flex-start;
     margin-bottom: 1.6rem;
+    padding-bottom: 1rem;
+    border-bottom: var(--filet-double);
 }
 
 .fiche-personne__photo {
     width: 10rem;
     height: 10rem;
     object-fit: cover;
-    border-radius: var(--rayon);
-    border: 1px solid var(--bordure);
+    border: var(--filet);
 }
 
 .fiche-personne__dates {
     color: var(--texte-doux);
+    font-style: italic;
     margin-top: -0.3em;
 }
 
@@ -1018,7 +1287,62 @@ legend {
 .union { padding: 0.8rem 0.9rem; }
 
 /* --------------------------------------------------------------------------
-   Administration
+   Vidéos
+   -------------------------------------------------------------------------- */
+
+.videos-intro {
+    max-width: var(--largeur-lecture);
+    margin: 0 auto 1.8rem;
+    text-align: center;
+    font-style: italic;
+    color: var(--texte-doux);
+}
+
+.video-joueur {
+    width: 100%;
+    max-height: 70vh;
+    background: #111;
+    border: var(--filet);
+}
+
+.video-indisponible {
+    border: var(--filet-fort);
+    border-left: 4px solid var(--erreur-texte);
+    background: var(--erreur-fond);
+    color: var(--erreur-texte);
+    padding: 1rem 1.2rem;
+    margin: 0 0 1rem;
+    font-style: italic;
+}
+
+.video-indisponible strong { font-style: normal; }
+
+.video-meta {
+    font-style: italic;
+    color: var(--texte-doux);
+    font-size: 0.92rem;
+    margin-bottom: 1.2rem;
+}
+
+.video-description {
+    max-width: var(--largeur-lecture);
+}
+
+/* Mise en avant : petit repère typographique, sans couleur ajoutée. */
+.carte--mise-en-avant { border-color: var(--accent); }
+
+.carte__mise-en-avant {
+    font-size: 0.64rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--accent);
+    border-top: var(--filet);
+    margin-top: 0.5rem;
+    padding-top: 0.35rem;
+}
+
+/* --------------------------------------------------------------------------
+   Administration : lisible et fonctionnelle, même police
    -------------------------------------------------------------------------- */
 
 .admin-corps {
@@ -1032,17 +1356,15 @@ legend {
 
 .admin-menu {
     background: var(--surface);
-    border: 1px solid var(--bordure);
-    border-radius: var(--rayon);
-    padding: 0.8rem;
+    border: var(--filet);
+    padding: 0.7rem;
     align-self: start;
-    font-size: 0.94rem;
+    font-size: 0.92rem;
 }
 
 .admin-menu a {
     display: block;
     padding: 0.3rem 0.5rem;
-    border-radius: 4px;
     text-decoration: none;
     color: var(--texte);
 }
@@ -1059,34 +1381,71 @@ legend {
 }
 
 .admin-menu__titre {
-    margin: 0.9rem 0 0.25rem;
-    padding: 0 0.5rem;
-    font-size: 0.72rem;
+    margin: 1rem 0 0.25rem;
+    padding: 0 0.5rem 0.2rem;
+    font-size: 0.68rem;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.14em;
     color: var(--texte-doux);
+    border-bottom: var(--filet);
 }
 
 .admin-contenu { min-width: 0; }
 
-.pied {
-    border-top: 1px solid var(--bordure);
-    background: var(--surface);
-    padding: 1.2rem 0;
-    font-size: 0.85rem;
-    color: var(--texte-doux);
+/* --------------------------------------------------------------------------
+   Pied de page : centré, italique, double filet au-dessus
+   -------------------------------------------------------------------------- */
+
+/* Conteneur du pied de page (mise en page « journal »). */
+.pied__contenu {
+    max-width: var(--largeur);
+    margin: 0 auto;
+    padding: 0 1.2rem;
 }
 
-.pied p { margin: 0 0 0.3rem; }
+/* Corps de page de l'administration : le style journal ne change que la police. */
+.page-admin { font-family: var(--serif); }
+
+/* Page « document » : le conteneur n'ajoute pas de filet (les blocs le portent). */
+.document { max-width: 100%; }
+
+/* Aperçus de cartes selon le type de fichier (photo, document, vidéo). */
+.carte__apercu--photo,
+.carte__apercu--document { background: #e9e6df; }
+
+/* Bloc de l'explorateur d'arbre (conteneur) : centré, sans cadre. */
+.explorateur { margin-top: 1.6rem; }
+
+/* Fiche d'une personne : marge au-dessus des blocs. */
+.fiche-personne { display: block; }
+
+/* Grille des pages d'informations sur l'accueil. */
+.grille-pages {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    gap: 1.2rem;
+}
+
+.pied {
+    border-top: var(--filet-double);
+    background: transparent;
+    padding: 1.4rem 0 1.8rem;
+    font-size: 0.86rem;
+    font-style: italic;
+    color: var(--texte-doux);
+    text-align: center;
+}
+
+.pied p { margin: 0 0 0.35rem; }
 .pied__note { font-size: 0.8rem; }
-.pied--admin { border-top: 3px solid var(--accent); }
+.pied--admin { border-top: var(--filet-double); font-style: normal; }
 
 /* --------------------------------------------------------------------------
    Grands écrans
    -------------------------------------------------------------------------- */
 
 @media (min-width: 700px) {
-    h1 { font-size: 1.9rem; }
+    h1 { font-size: 2rem; }
 
     .ligne-champs {
         grid-template-columns: 1fr 1fr;
@@ -1113,8 +1472,12 @@ legend {
         grid-template-columns: 1fr 1fr;
     }
 
-    .hero {
-        padding: 2.4rem 2rem;
+    .entete__barre {
+        padding-top: 1.4rem;
+    }
+
+    .nav {
+        gap: 0.15rem 1.6rem;
     }
 }
 
@@ -1130,6 +1493,92 @@ legend {
     }
 }
 
+/* --------------------------------------------------------------------------
+   Petits écrans (390 px de large et moins) : tout reste lisible,
+   sans défilement horizontal.
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 640px) {
+    body {
+        font-size: 1.02rem;
+    }
+
+    .conteneur {
+        padding: 0 0.85rem;
+    }
+
+    .entete__nom {
+        font-size: clamp(1.45rem, 8.5vw, 2rem);
+        letter-spacing: 0.03em;
+    }
+
+    .entete__date {
+        font-size: 0.84rem;
+    }
+
+    /* Sur 390 px, les majuscules espacées ne tiennent pas : on réduit
+       l'interlettrage et on autorise le retour à la ligne DANS un lien
+       (« Bienvenue (démo) »), sinon la barre dépasse et fait apparaître
+       un défilement horizontal. */
+    .nav {
+        font-size: 0.66rem;
+        letter-spacing: 0.05em;
+        gap: 0.15rem 0.7rem;
+        overflow-wrap: anywhere;
+    }
+
+    .nav a,
+    .nav__form {
+        white-space: normal;
+        max-width: 100%;
+    }
+
+    .section__entete {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .grille-cartes {
+        grid-template-columns: 1fr;
+    }
+
+    .carte__apercu {
+        aspect-ratio: 16 / 10;
+    }
+
+    .page-info h1 {
+        font-size: 1.55rem;
+    }
+
+    /* Sur mobile, le texte des pages d'information est aligné à gauche
+       (la justification et la césure rendent les lignes trop hachées). */
+    .page-info .texte {
+        text-align: left;
+        hyphens: manual;
+        -webkit-hyphens: manual;
+    }
+
+    .fiche {
+        grid-template-columns: 1fr;
+        gap: 0.1rem 0;
+    }
+
+    .fiche dt {
+        font-weight: 700;
+        margin-top: 0.5rem;
+    }
+
+    .hero__chiffres span {
+        display: block;
+        margin: 0.2rem 0;
+    }
+
+    .bouton {
+        padding: 0.5rem 0.8rem;
+        letter-spacing: 0.08em;
+    }
+}
+
 /* Page d'attente servie par Apache en cas de 503 (public/maintenance.html).
    Statique : elle doit s'afficher même si PHP est indisponible. */
 .page-maintenance {
@@ -1141,249 +1590,5 @@ legend {
     * {
         transition: none !important;
         animation: none !important;
-    }
-}
-
-/* ===========================================================================
-   STYLE « JOURNAL »
-   Même palette, typographie de presse ancienne. Aucune police téléchargée :
-   on utilise les polices à empattements déjà présentes sur l'appareil
-   (Iowan Old Style / Palatino sur Apple, Palatino Linotype / Georgia sur
-   Windows, Times en dernier recours).
-   =========================================================================== */
-
-:root {
-    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua",
-             "Hoefler Text", Georgia, "Times New Roman", serif;
-    --rayon: 0;
-    --ombre: none;
-}
-
-body {
-    font-family: var(--serif);
-    font-size: 1.0625rem;
-    line-height: 1.65;
-    font-feature-settings: "liga", "kern";
-}
-
-h1, h2, h3, h4 {
-    font-family: var(--serif);
-    font-weight: 700;
-    letter-spacing: -0.005em;
-}
-
-h1 { font-size: 2.1rem; }
-h2 { font-size: 1.4rem; }
-h3 { font-size: 1.15rem; }
-
-/* Boutons et champs : angles droits, même police. */
-button,
-input,
-select,
-textarea {
-    font-family: inherit;
-}
-
-.bouton {
-    letter-spacing: 0.04em;
-    font-size: 0.9rem;
-    text-transform: uppercase;
-}
-
-.panneau,
-.carte,
-.hero {
-    box-shadow: none;
-}
-
-/* ---- Titre du journal (public) ------------------------------------------ */
-
-.une {
-    background: var(--fond);
-    text-align: center;
-}
-
-.une__date {
-    margin: 0;
-    padding: 0.5rem 0 0.35rem;
-    font-size: 0.8rem;
-    font-style: italic;
-    letter-spacing: 0.04em;
-    color: var(--texte-doux);
-    border-bottom: 1px solid var(--bordure);
-}
-
-.une__titre {
-    display: block;
-    padding: 1rem 0 0.8rem;
-    text-decoration: none;
-    color: var(--texte);
-}
-
-.une__nom {
-    display: block;
-    font-size: clamp(1.9rem, 6vw, 3.4rem);
-    font-weight: 700;
-    line-height: 1.1;
-    letter-spacing: 0.01em;
-    color: var(--texte);
-}
-
-.une__sous-titre {
-    display: block;
-    margin-top: 0.35rem;
-    font-size: 0.95rem;
-    font-style: italic;
-    color: var(--texte-doux);
-}
-
-/* Bande de navigation entre deux filets (fin au-dessus, double en dessous). */
-.nav--journal {
-    justify-content: center;
-    gap: 0.25rem 1.6rem;
-    padding: 0.55rem 0;
-    margin-top: 0.3rem;
-    border-top: 1px solid var(--texte);
-    border-bottom: 3px double var(--texte);
-    font-size: 0.82rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-}
-
-.nav--journal a,
-.nav--journal .lien-bouton {
-    font-size: 0.82rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    text-decoration: none;
-}
-
-.nav--journal .nav__accent {
-    font-weight: 700;
-}
-
-.une .bandeau-compte {
-    text-align: center;
-    padding-top: 0.5rem;
-}
-
-/* ---- Page d'accueil : « une » du journal -------------------------------- */
-
-.hero {
-    background: transparent;
-    border: 0;
-    border-bottom: 1px solid var(--texte);
-    padding: 1.2rem 0 1.6rem;
-    text-align: center;
-}
-
-.hero h1 {
-    font-size: clamp(1.9rem, 5vw, 2.8rem);
-    margin-bottom: 0.25em;
-}
-
-.hero__sous-titre {
-    font-style: italic;
-    color: var(--texte-doux);
-}
-
-.hero__texte {
-    margin-left: auto;
-    margin-right: auto;
-    font-size: 1.1rem;
-}
-
-.hero .actions {
-    justify-content: center;
-}
-
-.hero__chiffres {
-    justify-content: center;
-    border-top: 1px solid var(--bordure);
-    font-size: 0.9rem;
-    font-style: italic;
-}
-
-.note {
-    background: transparent;
-    border-left: 3px solid var(--accent);
-    color: var(--texte-doux);
-    font-style: italic;
-    text-align: left;
-}
-
-/* ---- Intertitres de rubrique ------------------------------------------- */
-
-.section__entete {
-    border-bottom: 1px solid var(--texte);
-    padding-bottom: 0.3rem;
-    margin-bottom: 1rem;
-}
-
-.section__entete h2 {
-    margin: 0;
-    font-size: 1.05rem;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-}
-
-.section > h2 {
-    font-size: 1.05rem;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    border-bottom: 1px solid var(--texte);
-    padding-bottom: 0.3rem;
-    margin-bottom: 1rem;
-}
-
-/* ---- Articles (pages d'information) ------------------------------------- */
-
-.page-info {
-    max-width: 44rem;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-.page-info h1 {
-    text-align: center;
-    font-size: clamp(1.9rem, 5vw, 2.6rem);
-    margin-bottom: 0.2em;
-}
-
-.page-info > .discret {
-    text-align: center;
-    font-style: italic;
-    border-bottom: 3px double var(--texte);
-    padding-bottom: 0.8rem;
-    margin-bottom: 1.4rem;
-}
-
-.page-info .texte {
-    text-align: justify;
-    hyphens: auto;
-    -webkit-hyphens: auto;
-}
-
-/* ---- Cartes et pied de page -------------------------------------------- */
-
-.carte,
-.panneau {
-    border-color: var(--texte-doux);
-}
-
-.pied {
-    background: transparent;
-    border-top: 3px double var(--texte);
-    text-align: center;
-    font-style: italic;
-}
-
-@media (max-width: 600px) {
-    .nav--journal {
-        gap: 0.2rem 1rem;
-        letter-spacing: 0.08em;
-    }
-    .page-info .texte {
-        text-align: left;
     }
 }

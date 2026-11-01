@@ -11,8 +11,12 @@
 $siteName = site_setting('name');
 ?>
 <section class="hero">
-    <?php /* Le nom et le sous-titre figurent déjà dans le titre du journal (en-tête) : on garde le h1 pour les moteurs de recherche et les lecteurs d'écran. */ ?>
+    <?php /* Le nom et le sous-titre figurent déjà dans l'en-tête du journal :
+             on garde un h1 lisible par les lecteurs d'écran et les moteurs de
+             recherche, mais invisible à l'écran (évite le doublon). */ ?>
     <h1 class="sr-only"><?= e($siteName) ?></h1>
+    <?php /* Le sous-titre est déjà dans l'en-tête du journal : on ne
+             l'affiche pas une deuxième fois ici. */ ?>
     <?php if (site_setting('description') !== ''): ?>
         <p class="hero__texte"><?= e(site_setting('description')) ?></p>
     <?php endif; ?>
@@ -25,7 +29,7 @@ $siteName = site_setting('name');
         <?php endif; ?>
     </p>
 
-    <p class="hero__chiffres">
+    <p class="hero__chiffres" aria-label="Le site en chiffres">
         <span><strong><?= (int) $nbDocs ?></strong> document<?= (int) $nbDocs > 1 ? 's' : '' ?> accessible<?= (int) $nbDocs > 1 ? 's' : '' ?></span>
         <span><strong><?= (int) $nbPages ?></strong> page<?= (int) $nbPages > 1 ? 's' : '' ?> d’information</span>
         <span><strong><?= (int) $nbPersonnes ?></strong> personne<?= (int) $nbPersonnes > 1 ? 's' : '' ?> dans l’arbre</span>
