@@ -3,20 +3,17 @@
  * Onglet « Vidéos ».
  *
  * Les vidéos sont des documents (table documents, kind = 'video') : aucun
- * second système de stockage. Les droits sont vérifiés par visibility.php,
- * la lecture passe par /video/{id} (HTTP Range), et l'onglet n'apparaît
- * que pour les comptes connectés.
+ * second système de stockage. Les droits sont vérifiés par visibility.php
+ * (un visiteur non connecté ne voit que les vidéos publiques) et la lecture
+ * passe par /video/{id} (HTTP Range). L'onglet est visible par tout le monde ;
+ * seuls les administrateurs peuvent ajouter des vidéos.
  */
 
 declare(strict_types=1);
 
-/** Liste des vidéos accessibles au compte connecté. */
+/** Liste des vidéos visibles (publiques pour un visiteur, plus selon les droits). */
 function public_videos(): void
 {
-    // Onglet réservé aux personnes connectées : un visiteur non connecté est
-    // envoyé vers la page de connexion (il reviendra ensuite sur /videos).
-    require_login();
-
     $params = [];
     $clause = visibility_clause('document', 'd', $params);
 
@@ -49,9 +46,6 @@ function public_videos(): void
 /** Fiche d'une vidéo, avec lecteur. */
 function public_video_detail(array $params): void
 {
-    // Comme la liste : l'onglet Vidéos est réservé aux comptes connectés.
-    require_login();
-
     $video = find_viewable_video((int) ($params['id'] ?? 0));
     if (!$video) {
         // Même réponse qu'un document interdit : on ne révèle pas l'existence.

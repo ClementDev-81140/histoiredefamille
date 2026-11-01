@@ -614,7 +614,23 @@ demo_document([
     'tags'        => 'film, démonstration',
 ], $videoRel2, 'mp4', 'video/mp4', (int) filesize(storage_absolute($videoRel2)));
 
-// 3. Vidéo privée (administrateurs uniquement).
+// 3. Vidéo publique (visible sans connexion, comme un document public).
+$videoRel4 = demo_video_file();
+demo_document([
+    'title'       => 'Vidéo publique de démonstration',
+    'description' => 'Vidéo fictive **publique** : elle est visible sans connexion, '
+        . 'comme les documents marqués « Public ». Sert à vérifier l’onglet Vidéos '
+        . 'depuis un navigateur non connecté.',
+    'doc_date'    => '1975',
+    'category_id' => $categoryIds['Photos de famille (démo)'],
+    'visibility'  => 'public',
+    'kind'        => 'video',
+    'duration_seconds' => 2,
+    'original_name' => 'video-publique-demo.mp4',
+    'tags'        => 'film, démonstration',
+], $videoRel4, 'mp4', 'video/mp4', (int) filesize(storage_absolute($videoRel4)));
+
+// 4. Vidéo privée (administrateurs uniquement).
 $videoRel3  = demo_video_file();
 demo_document([
     'title'       => 'Vidéo privée (démo)',
@@ -629,7 +645,7 @@ demo_document([
     'tags'        => 'film, démonstration',
 ], $videoRel3, 'mp4', 'video/mp4', (int) filesize(storage_absolute($videoRel3)));
 
-echo "  · 3 vidéos de démonstration créées\n";
+echo "  · 4 vidéos de démonstration créées\n";
 
 // ---------------------------------------------------------------------------
 // Résumé

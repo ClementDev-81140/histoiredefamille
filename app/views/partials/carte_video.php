@@ -33,7 +33,7 @@ $resume   = trim((string) ($video['description'] ?? ''));
             <?php if ($resume !== ''): ?>
                 <p class="carte__meta"><?= e(text_summary($resume, 110)) ?></p>
             <?php endif; ?>
-            <?php if (is_logged_in()): ?>
+            <?php if (is_logged_in() && (string) $video['visibility'] !== 'public'): ?>
                 <p class="carte__visibilite">
                     <span class="<?= e(visibility_class((string) $video['visibility'])) ?>">
                         <?= e(visibility_short((string) $video['visibility'])) ?>

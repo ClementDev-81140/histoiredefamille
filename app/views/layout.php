@@ -60,11 +60,9 @@ $navClass = static function (string $href) use ($currentPath): string {
             <a href="/"<?= $navClass('/') ?>>Accueil</a>
             <a href="/articles"<?= $navClass('/articles') ?>>Articles</a>
             <a href="/documents"<?= $navClass('/documents') ?>>Documents</a>
-            <?php if ($account !== null): ?>
-                <?php /* Onglet réservé aux comptes connectés : jamais affiché
-                         à un visiteur non connecté. */ ?>
-                <a href="/videos"<?= $navClass('/videos') ?>>Vidéos</a>
-            <?php endif; ?>
+            <?php /* Onglet visible par tous : un visiteur ne voit que les
+                     vidéos publiques, les autres selon leurs droits. */ ?>
+            <a href="/videos"<?= $navClass('/videos') ?>>Vidéos</a>
             <a href="/arbre"<?= $navClass('/arbre') ?>>Arbre</a>
             <?php foreach ($navPages as $navPage): ?>
                 <a href="/pages/<?= e($navPage['slug']) ?>"<?= $navClass('/pages/' . $navPage['slug']) ?>><?= e($navPage['title']) ?></a>

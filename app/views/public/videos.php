@@ -1,6 +1,7 @@
 <?php
 /**
- * Onglet « Vidéos » : liste des vidéos accessibles au compte connecté.
+ * Onglet « Vidéos » : liste des vidéos que le visiteur a le droit de voir
+ * (les publiques pour tout le monde, les autres selon le compte connecté).
  *
  * @var array $videos, $pagination
  * @var int   $total, $nbFeatured
@@ -17,18 +18,27 @@
     </div>
 
     <p class="videos-intro">
-        <?= (int) $total ?> vidéo<?= (int) $total > 1 ? 's' : '' ?>
-        <?php if ($nbFeatured > 0): ?>
-            — dont <?= (int) $nbFeatured ?> mise<?= $nbFeatured > 1 ? 's' : '' ?> en avant
-        <?php endif; ?>.
-        Les vidéos sont lues directement, sans conversion : le fichier doit être
-        au format MP4 (H.264 + AAC).
+        <?php if ((int) $total === 0): ?>
+            Aucune vidéo publique pour le moment.
+        <?php else: ?>
+            <?= (int) $total ?> vidéo<?= (int) $total > 1 ? 's' : '' ?>
+            <?php if ($nbFeatured > 0): ?>
+                — dont <?= (int) $nbFeatured ?> mise<?= $nbFeatured > 1 ? 's' : '' ?> en avant
+            <?php endif; ?>.
+        <?php endif; ?>
+        <?php if (!is_logged_in()): ?>
+            Une partie des vidéos est réservée aux familles :
+            <a href="/connexion?next=%2Fvideos">connectez-vous</a> pour les voir.
+        <?php else: ?>
+            Les vidéos sont lues directement, sans conversion : le fichier doit
+            être au format MP4 (H.264 + AAC).
+        <?php endif; ?>
     </p>
 
     <?php if ($videos === []): ?>
         <div class="panneau panneau--centre">
             <p class="discret">
-                Aucune vidéo pour le moment.
+                Aucune vidéo<?= is_logged_in() ? '' : ' publique' ?> pour le moment.
                 <?php if (is_admin()): ?>
                     Les administrateurs peuvent en ajouter depuis
                     <a href="/admin/videos">la gestion des vidéos</a>
