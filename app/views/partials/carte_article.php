@@ -7,8 +7,10 @@
  */
 $grand   = !empty($grand);
 $image   = article_image($article);
+// Le résumé est nettoyé de sa mise en forme légère : un aperçu ne doit pas
+// afficher « **gras** » ni « ## Titre » (même règle que les documents).
 $resume  = trim((string) $article['summary']) !== ''
-    ? (string) $article['summary']
+    ? text_to_plain((string) $article['summary'])
     : text_summary((string) $article['body'], $grand ? 320 : 180);
 ?>
 <article class="article-carte<?= $grand ? ' article-carte--une' : '' ?>">
@@ -22,8 +24,8 @@ $resume  = trim((string) $article['summary']) !== ''
             <?php if ($article['category'] !== ''): ?>
                 <span class="article-carte__rubrique"><?= e($article['category']) ?></span> ·
             <?php endif; ?>
-            <?= e(format_date_long((int) $article['published_at'], false)) ?>
-            <?php if (is_logged_in()): ?>
+            <?= e(french_long_date((int) $article['published_at'], false)) ?>
+            <?php if (is_logged_in() && (string) $article['visibility'] !== 'public'): ?>
                 <span class="<?= e(visibility_class((string) $article['visibility'])) ?>">
                     <?= e(visibility_short((string) $article['visibility'])) ?>
                 </span>

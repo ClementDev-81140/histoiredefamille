@@ -230,7 +230,7 @@ function format_date(?int $timestamp, bool $withTime = false): string
  * cela évite une dépendance système (setlocale n'est pas toujours installé
  * sur un Raspberry Pi).
  */
-function french_long_date(?int $timestamp = null): string
+function french_long_date(?int $timestamp = null, bool $withWeekday = true): string
 {
     $ts = $timestamp ?? time();
 
@@ -246,8 +246,9 @@ function french_long_date(?int $timestamp = null): string
     $numeroJour = (int) date('j', $ts);
     $jourTexte  = $numeroJour === 1 ? '1er' : (string) $numeroJour;
 
-    return $jours[(int) date('N', $ts)] . ' ' . $jourTexte . ' '
-        . $mois[(int) date('n', $ts)] . ' ' . date('Y', $ts);
+    $date = $jourTexte . ' ' . $mois[(int) date('n', $ts)] . ' ' . date('Y', $ts);
+
+    return $withWeekday ? $jours[(int) date('N', $ts)] . ' ' . $date : $date;
 }
 
 /** Nombre de jours depuis un horodatage. */

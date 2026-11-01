@@ -16,7 +16,7 @@ $publie = $article['status'] === 'publie' && (int) $article['published_at'] <= t
 <?php if (is_admin() && !$publie): ?>
     <p class="note">
         Aperçu réservé aux administrateurs :
-        <?= $article['status'] === 'brouillon' ? 'cet article est un brouillon.' : 'cet article est programmé pour le ' . e(format_date_long((int) $article['published_at'], false)) . '.' ?>
+        <?= $article['status'] === 'brouillon' ? 'cet article est un brouillon.' : 'cet article est programmé pour le ' . e(french_long_date((int) $article['published_at'], false)) . '.' ?>
     </p>
 <?php endif; ?>
 
@@ -26,11 +26,13 @@ $publie = $article['status'] === 'publie' && (int) $article['published_at'] <= t
             <?php if ($article['category'] !== ''): ?>
                 <a class="article__rubrique" href="/articles?categorie=<?= rawurlencode((string) $article['category']) ?>"><?= e($article['category']) ?></a> ·
             <?php endif; ?>
-            <?= e(format_date_long((int) $article['published_at'])) ?>
+            <?= e(french_long_date((int) $article['published_at'])) ?>
         </p>
         <h1><?= e($article['title']) ?></h1>
         <?php if (trim((string) $article['summary']) !== ''): ?>
-            <p class="article__chapo"><?= e($article['summary']) ?></p>
+            <?php /* Le chapô est un texte simple : on retire la mise en forme
+                     légère éventuellement saisie (astérisques, titres). */ ?>
+            <p class="article__chapo"><?= e(text_to_plain((string) $article['summary'])) ?></p>
         <?php endif; ?>
         <?php if (is_logged_in()): ?>
             <p>

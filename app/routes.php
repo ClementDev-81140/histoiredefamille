@@ -75,8 +75,7 @@ route('GET', '/admin/documents/{id}/modifier', 'admin_document_form');
 route('POST', '/admin/documents/{id}/modifier', 'admin_document_save');
 route('POST', '/admin/documents/{id}/supprimer', 'admin_document_delete');
 
-// Vidéos (réglages propres : mise en avant, ordre, durée, téléchargement)
-// Articles
+// Articles (fil d'actualité)
 route('GET', '/admin/articles', 'admin_articles');
 route('GET', '/admin/articles/nouveau', 'admin_article_form');
 route('POST', '/admin/articles/nouveau', 'admin_article_save');
@@ -84,6 +83,7 @@ route('GET', '/admin/articles/{id}', 'admin_article_form');
 route('POST', '/admin/articles/{id}', 'admin_article_save');
 route('POST', '/admin/articles/{id}/supprimer', 'admin_article_delete');
 
+// Vidéos (réglages propres : mise en avant, ordre, durée, téléchargement)
 route('GET', '/admin/videos', 'admin_videos');
 route('GET', '/admin/videos/nouvelle', 'admin_video_form');
 route('POST', '/admin/videos/nouvelle', 'admin_video_save');

@@ -542,18 +542,6 @@ function person_birth_year(array $person): ?int
 // Articles
 // ---------------------------------------------------------------------------
 
-/** Date longue en français (« dimanche 1er novembre 2026 »), sans extension intl. */
-function format_date_long(int $timestamp, bool $withWeekday = true): string
-{
-    $jours = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
-    $mois  = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet',
-              'août', 'septembre', 'octobre', 'novembre', 'décembre'];
-    $jour  = (int) date('j', $timestamp);
-    $texte = ($jour === 1 ? '1er' : (string) $jour) . ' ' . $mois[(int) date('n', $timestamp) - 1]
-           . ' ' . date('Y', $timestamp);
-    return $withWeekday ? $jours[(int) date('w', $timestamp)] . ' ' . $texte : $texte;
-}
-
 /**
  * Condition SQL des articles visibles par le visiteur courant : publiés,
  * date de publication atteinte, et droits de visibilité respectés.
