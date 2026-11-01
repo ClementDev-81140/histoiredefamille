@@ -537,3 +537,79 @@ function person_birth_year(array $person): ?int
     }
     return extract_year($person['birth_date'] ?? null);
 }
+
+// ---------------------------------------------------------------------------
+// Articles
+// ---------------------------------------------------------------------------
+
+/** Date longue en français (« dimanche 1er novembre 2026 »), sans extension intl. */
+function format_date_long(int $timestamp, bool $withWeekday = true): string
+{
+    $jours = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+    $mois  = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet',
+              'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+    $jour  = (int) date('j', $timestamp);
+    $texte = ($jour === 1 ? '1er' : (string) $jour) . ' ' . $mois[(int) date('n', $timestamp) - 1]
+           . ' ' . date('Y', $timestamp);
+    return $withWeekday ? $jours[(int) date('w', $timestamp)] . ' ' . $texte : $texte;
+}
+
+/**
+ * Condition SQL des articles visibles par le visiteur courant : publiés,
+ * date de publication atteinte, et droits de visibilité respectés.
+ */
+function article_visible_clause(string $alias, array &$params): string
+{
+    $clause = visibility_clause('article', $alias, $params);
+    static $n = 0;
+    $n++;
+    $params[':anow' . $n] = time();
+    return "({$alias}.status = 'publie' AND {$alias}.published_at <= :anow{$n} AND {$clause})";
+}
+
+/** Article visible par le visiteur (les admins peuvent aussi prévisualiser un brouillon). */
+function find_viewable_article(string $slug): ?array
+{
+    $article = db_one('SELECT * FROM articles WHERE slug = ?', [$slug]);
+    if (!$article) {
+        return null;
+    }
+    if (is_admin()) {
+        return $article;
+    }
+    if ($article['status'] !== 'publie' || (int) $article['published_at'] > time()) {
+        return null;
+    }
+    if (!can_view((string) $article['visibility'], content_branch_ids('article', (int) $article['id']))) {
+        return null;
+    }
+    return $article;
+}
+
+/** Image à la une d'un article : [url miniature, url grande] ou null. */
+function article_image(array $article): ?array
+{
+    if (empty($article['image_id'])) {
+        return null;
+    }
+    $doc = db_one("SELECT id, thumb_path FROM documents WHERE id = ? AND kind = 'photo'", [(int) $article['image_id']]);
+    if (!$doc) {
+        return null;
+    }
+    return [
+        'thumb' => !empty($doc['thumb_path']) ? '/media/miniature/' . (int) $doc['id'] : '/f/' . (int) $doc['id'],
+        'full'  => '/f/' . (int) $doc['id'],
+    ];
+}
+
+/** Derniers articles visibles (page d'accueil). */
+function recent_articles(int $limit = 4): array
+{
+    $params = [];
+    $clause = article_visible_clause('a', $params);
+    return db_all(
+        "SELECT a.* FROM articles a WHERE {$clause}
+         ORDER BY a.published_at DESC, a.id DESC LIMIT " . max(1, $limit),
+        $params
+    );
+}

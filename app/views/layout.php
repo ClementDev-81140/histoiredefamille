@@ -58,6 +58,7 @@ $navClass = static function (string $href) use ($currentPath): string {
 
         <nav class="nav" aria-label="Navigation principale">
             <a href="/"<?= $navClass('/') ?>>Accueil</a>
+            <a href="/articles"<?= $navClass('/articles') ?>>Articles</a>
             <a href="/documents"<?= $navClass('/documents') ?>>Documents</a>
             <?php if ($account !== null): ?>
                 <?php /* Onglet réservé aux comptes connectés : jamais affiché

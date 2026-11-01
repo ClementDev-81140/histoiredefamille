@@ -12,6 +12,7 @@ function public_accueil(): void
 {
     $documents = recent_documents(6);
     $photos    = recent_documents(4, 'photo');
+    $articles  = recent_articles(4);
 
     $params = [];
     $clause = visibility_clause('page', 'p', $params);
@@ -26,6 +27,7 @@ function public_accueil(): void
         'titre'      => null,
         'documents'  => $documents,
         'photos'     => $photos,
+        'articles'   => $articles,
         'pages'      => $pages,
         'personnes'  => recent_persons(4),
         'nbDocs'     => count_visible('documents', 'document'),

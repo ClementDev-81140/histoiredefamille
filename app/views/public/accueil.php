@@ -44,6 +44,21 @@ $siteName = site_setting('name');
     <?php endif; ?>
 </section>
 
+<?php if ($articles !== []): ?>
+    <section class="section">
+        <div class="section__entete">
+            <h2>À la une</h2>
+            <a href="/articles">Tous les articles →</a>
+        </div>
+        <div class="articles-liste">
+            <?php foreach ($articles as $i => $article): ?>
+                <?php $grand = ($i === 0); ?>
+                <?php require __DIR__ . '/../partials/carte_article.php'; ?>
+            <?php endforeach; ?>
+        </div>
+    </section>
+<?php endif; ?>
+
 <?php if ($documents !== []): ?>
     <section class="section">
         <div class="section__entete">
