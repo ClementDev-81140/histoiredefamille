@@ -3,6 +3,7 @@
  * Maintenance quotidienne (à lancer par cron, voir deploy/crontab.example).
  *
  *  - supprime les tentatives de connexion anciennes ;
+ *  - efface les messages de tchat plus anciens que la durée de conservation ;
  *  - nettoie les verrous de lecture vidéo périmés ;
  *  - supprime les fichiers temporaires de plus de 48 h ;
  *  - compacte légèrement la base (PRAGMA optimize + checkpoint WAL).
@@ -28,6 +29,19 @@ echo "Maintenance — " . date('d/m/Y H:i') . "\n";
 
 $attempts = login_purge_attempts(30);
 echo "  · tentatives de connexion supprimées : {$attempts}\n";
+
+// Tchat : messages plus anciens que la durée de conservation choisie dans
+// Administration → Réglages (par défaut 1 an ; « jamais » = aucune suppression).
+try {
+    $mois = tchat_conservation_mois();
+    if ($mois === 0) {
+        echo "  · tchat : conservation illimitée, rien à supprimer\n";
+    } else {
+        echo "  · messages de tchat supprimés : " . tchat_purger() . "\n";
+    }
+} catch (Throwable $e) {
+    cli_err("  ! purge du tchat impossible : " . $e->getMessage() . "\n");
+}
 
 stream_purge_stale_locks();
 echo "  · lectures vidéo en cours : " . stream_active_count() . "\n";

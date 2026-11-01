@@ -41,6 +41,36 @@ $val = static fn (string $key, string $default = ''): string => (string) old_val
         <p class="aide">Utilisée uniquement pour indiquer à qui demander un accès.</p>
     </div>
 
+    <fieldset class="champ">
+        <legend>Tchat de la famille</legend>
+
+        <div class="tchat-reglage">
+            <label class="case">
+                <input type="checkbox" id="tchat_actif" name="tchat_actif" value="1"
+                       <?= checked($val('tchat_actif') === '1') ?>>
+                Ouvrir le tchat pour les personnes connectées
+            </label>
+            <p class="aide">
+                Quand le tchat est fermé, l’onglet disparaît de la navigation et personne
+                ne peut lire ni écrire. Les messages déjà envoyés sont conservés.
+            </p>
+        </div>
+
+        <div class="tchat-reglage">
+            <label for="tchat_conservation_mois">Conservation des messages</label>
+            <select id="tchat_conservation_mois" name="tchat_conservation_mois">
+                <?php foreach ([0 => 'Jamais (conservation illimitée)', 12 => '1 an', 6 => '6 mois', 3 => '3 mois'] as $mois => $libelle): ?>
+                    <option value="<?= (int) $mois ?>"<?= selected($val('tchat_conservation_mois') === (string) $mois) ?>><?= e($libelle) ?></option>
+                <?php endforeach; ?>
+            </select>
+            <p class="aide">
+                Un message plus ancien que cette durée est effacé automatiquement par la
+                tâche d’entretien de la nuit du dimanche (<code>app/cli/maintenance.php</code>).
+                Valeur par défaut : 1 an.
+            </p>
+        </div>
+    </fieldset>
+
     <p class="actions">
         <button type="submit" class="bouton">Enregistrer</button>
         <a class="bouton bouton--secondaire" href="/">Voir le résultat</a>

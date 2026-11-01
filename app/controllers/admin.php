@@ -129,6 +129,8 @@ function admin_settings(): void
             'subtitle'    => site_setting('subtitle'),
             'description' => site_setting('description'),
             'contact'     => site_setting('contact'),
+            'tchat_actif' => tchat_actif() ? '1' : '0',
+            'tchat_conservation_mois' => (string) tchat_conservation_mois(),
         ],
     ], 'layout_admin');
 }
@@ -144,6 +146,9 @@ function admin_settings_save(): void
         'subtitle'    => post('subtitle'),
         'description' => post('description'),
         'contact'     => post('contact'),
+        // Case à cocher : absente de l'envoi quand elle est décochée.
+        'tchat_actif' => post('tchat_actif') === '1' ? '1' : '0',
+        'tchat_conservation_mois' => (string) post('tchat_conservation_mois', '12'),
     ];
 
     $errors = [];
@@ -156,6 +161,9 @@ function admin_settings_save(): void
     if ($values['contact'] !== '' && !filter_var($values['contact'], FILTER_VALIDATE_EMAIL)) {
         $errors[] = 'L’adresse de contact n’est pas valide.';
     }
+    if (!in_array($values['tchat_conservation_mois'], ['0', '3', '6', '12'], true)) {
+        $errors[] = 'La durée de conservation du tchat n’est pas valide.';
+    }
 
     if ($errors !== []) {
         form_fail($errors, $values, '/admin/reglages');
@@ -165,7 +173,11 @@ function admin_settings_save(): void
         save_site_setting($key, $value);
     }
 
-    log_activity((int) current_account()['id'], 'reglages', 'Modification des réglages du site');
+    log_activity(
+        (int) current_account()['id'],
+        'reglages',
+        'Modification des réglages du site (tchat : retour en arrière possible dans « Réglages »)'
+    );
     flash('succes', 'Les réglages ont été enregistrés.');
     redirect('/admin/reglages');
 }

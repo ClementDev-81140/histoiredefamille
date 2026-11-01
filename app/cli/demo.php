@@ -648,6 +648,29 @@ demo_document([
 echo "  · 4 vidéos de démonstration créées\n";
 
 // ---------------------------------------------------------------------------
+// Tchat : trois messages fictifs (pour voir l'onglet en démonstration)
+// ---------------------------------------------------------------------------
+if ((int) db_value('SELECT COUNT(*) FROM chat_messages', [], 0) === 0) {
+    $messages = [
+        ['MARTIN', 'Jean', 'Bonjour à toutes et à tous ! Ce salon sert à échanger les nouvelles de la famille.', 3600 * 30],
+        ['DURAND', 'Marie', 'Très bonne idée. J’ai retrouvé des photos de vacances, je vous les montrerai bientôt.', 3600 * 26],
+        ['LEROY', 'Paul', 'Quelqu’un sait comment fonctionne le bouton « voir les messages plus anciens » ?', 3600 * 4],
+    ];
+
+    foreach ($messages as [$code, $prenom, $texte, $anciennete]) {
+        $compte = db_one('SELECT id FROM accounts WHERE username = ?', [$code]);
+        db_insert('chat_messages', [
+            'account_id'    => $compte !== null ? (int) $compte['id'] : null,
+            'author_label'  => $code . '/' . $prenom,
+            'author_branch' => $code,
+            'body'          => $texte,
+            'created_at'    => $now - $anciennete,
+        ]);
+    }
+    echo "  · 3 messages de tchat de démonstration créés\n";
+}
+
+// ---------------------------------------------------------------------------
 // Résumé
 // ---------------------------------------------------------------------------
 echo "\nTerminé.\n\n";
