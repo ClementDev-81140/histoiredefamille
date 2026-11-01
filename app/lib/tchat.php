@@ -91,42 +91,78 @@ function tchat_signature(array $account): string
 }
 
 /**
+ * Transforme une adresse détectée en lien sûr, ou renvoie null si elle doit
+ * rester du simple texte.
+ *
+ * Seuls http et https sont acceptés : « javascript: », « data: » ou un
+ * schéma farfelu ne deviennent jamais un lien. Le texte du lien comme sa
+ * cible sont échappés ICI, une seule fois.
+ */
+function tchat_lien_adresse(string $adresse): ?string
+{
+    // « www.exemple.fr » fonctionne sans que l'on tape « https:// ».
+    $href = preg_match('#^www\.#i', $adresse) === 1 ? 'https://' . $adresse : $adresse;
+
+    $parties = parse_url($href);
+    if (!is_array($parties) || !isset($parties['scheme'], $parties['host'])) {
+        return null;
+    }
+    if (!in_array(strtolower((string) $parties['scheme']), ['http', 'https'], true)) {
+        return null;
+    }
+    if ((string) $parties['host'] === '' || preg_match('/[\x00-\x20]/', $href) === 1) {
+        return null;
+    }
+
+    return '<a href="' . e($href) . '" rel="noopener noreferrer" target="_blank">'
+        . e($adresse) . '</a>';
+}
+
+/**
  * Met en forme le texte d'un message pour l'affichage.
  *
- * 1. échappement complet (aucune balise saisie n'est interprétée) ;
- * 2. les adresses http(s) et www. deviennent des liens externes sûrs ;
- * 3. les retours à la ligne sont conservés.
+ * 1. les adresses sont repérées sur le texte BRUT (avant échappement), en
+ *    s'arrêtant sur les espaces, les guillemets et les chevrons ;
+ * 2. chaque morceau — texte normal, adresse, ponctuation finale — est échappé
+ *    une seule fois : un « & » tapé reste un « & », et un guillemet de fin
+ *    n'est jamais collé au bout du lien ;
+ * 3. seules les adresses http et https deviennent des liens externes sûrs
+ *    (« rel="noopener noreferrer" ») ;
+ * 4. les retours à la ligne sont conservés.
  */
 function tchat_texte(string $corps): string
 {
-    $texte = e(trim($corps));
+    $brut = trim($corps);
 
-    $texte = preg_replace_callback(
-        '#(?<![\w@/])((?:https?://|www\.)[^\s<>"]+)#iu',
-        static function (array $m): string {
-            $url = $m[1];
+    // Guillemets et chevrons terminent l'adresse : ils ne font pas partie du
+    // lien (c'est ce qui produisait « &quot; » collé à la fin).
+    $motif = '#(?<![\w@/])(?:https?://|www\.)[^\s<>"\'«»]+#iu';
 
-            // Ponctuation collée en fin de phrase : on la laisse en dehors du lien.
+    $sortie   = '';
+    $position = 0;
+
+    if (preg_match_all($motif, $brut, $trouvees, PREG_OFFSET_CAPTURE) > 0) {
+        foreach ($trouvees[0] as [$trouvee, $debut]) {
+            $longueur = strlen($trouvee);
+            $adresse  = $trouvee;
+
+            // Ponctuation collée en fin de phrase : elle reste hors du lien.
             $fin = '';
-            while ($url !== '' && str_contains('.,;:!?»)]', mb_substr($url, -1, 1, 'UTF-8'))) {
-                $fin  = mb_substr($url, -1, 1, 'UTF-8') . $fin;
-                $url  = mb_substr($url, 0, -1, 'UTF-8');
-            }
-            if ($url === '') {
-                return $m[0];
+            while ($adresse !== '' && preg_match('/[.,;:!?…)\]}]$/u', $adresse) === 1) {
+                $fin     = mb_substr($adresse, -1, 1, 'UTF-8') . $fin;
+                $adresse = mb_substr($adresse, 0, -1, 'UTF-8');
             }
 
-            // Seuls http et https sont transformés en lien : « javascript: »
-            // ne correspond pas au motif et reste donc du texte inerte.
-            $href = str_starts_with(mb_strtolower($url, 'UTF-8'), 'www.') ? 'https://' . $url : $url;
+            $sortie  .= e(substr($brut, $position, $debut - $position));
+            $sortie  .= tchat_lien_adresse($adresse) ?? e($adresse);
+            $sortie  .= e($fin);
+            $position = $debut + $longueur;
+        }
+    }
 
-            return '<a href="' . e($href) . '" rel="noopener noreferrer" target="_blank">'
-                . e($url) . '</a>' . $fin;
-        },
-        $texte
-    ) ?? $texte;
+    $sortie .= e(substr($brut, $position));
 
-    return nl2br($texte, false);
+    return nl2br($sortie, false);
 }
 
 /**
