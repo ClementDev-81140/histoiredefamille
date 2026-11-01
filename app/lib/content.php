@@ -102,6 +102,146 @@ function video_url(array $doc): string
     return '/video/' . (int) $doc['id'];
 }
 
+/** L'administrateur autorise-t-il le téléchargement de ce document ? */
+function document_download_allowed(array $doc): bool
+{
+    // Les vidéos peuvent être mises en lecture seule par l'administrateur.
+    if (($doc['kind'] ?? '') === 'video') {
+        return (int) ($doc['allow_download'] ?? 1) === 1;
+    }
+    return true;
+}
+
+/** Adresse de la page publique d'une vidéo. */
+function video_page_url(array $doc): string
+{
+    return '/videos/' . (int) $doc['id'];
+}
+
+/**
+ * Durée lisible : « 12 min 30 s », « 1 h 04 min », « 42 s ».
+ * Retourne '' si la durée n'est pas renseignée.
+ */
+function video_duration_label(?int $seconds): string
+{
+    if ($seconds === null || $seconds <= 0) {
+        return '';
+    }
+
+    $heures = intdiv($seconds, 3600);
+    $minutes = intdiv($seconds % 3600, 60);
+    $reste = $seconds % 60;
+
+    if ($heures > 0) {
+        return sprintf('%d h %02d', $heures, $minutes);
+    }
+    if ($minutes > 0) {
+        return $reste > 0 ? sprintf('%d min %02d s', $minutes, $reste) : sprintf('%d min', $minutes);
+    }
+    return sprintf('%d s', $reste);
+}
+
+/**
+ * Durée compacte pour un badge de carte : « 12:30 », « 1:02:03 ».
+ */
+function video_duration_short(?int $seconds): string
+{
+    if ($seconds === null || $seconds <= 0) {
+        return '';
+    }
+    $heures = intdiv($seconds, 3600);
+    $minutes = intdiv($seconds % 3600, 60);
+    $reste = $seconds % 60;
+
+    return $heures > 0
+        ? sprintf('%d:%02d:%02d', $heures, $minutes, $reste)
+        : sprintf('%d:%02d', $minutes, $reste);
+}
+
+/**
+ * Comprend une durée saisie à la main : « 750 » (secondes), « 12:30 »,
+ * « 1:02:03 », « 12 min 30 ». Retourne null si ce n'est pas compréhensible.
+ */
+function parse_duration(?string $valeur): ?int
+{
+    $valeur = trim((string) $valeur);
+    if ($valeur === '') {
+        return null;
+    }
+
+    // « 1:02:03 » ou « 12:30 »
+    if (preg_match('/^(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?$/', $valeur, $m)) {
+        if (isset($m[3]) && $m[3] !== '') {
+            return ((int) $m[1]) * 3600 + ((int) $m[2]) * 60 + (int) $m[3];
+        }
+        return ((int) $m[1]) * 60 + (int) $m[2];
+    }
+
+    // « 12 min 30 s », « 12 minutes », « 42 s »
+    if (preg_match('/^(?:(\d+)\s*(?:h|heure[s]?))?\s*(?:(\d+)\s*(?:min|mn|minute[s]?))?\s*(?:(\d+)\s*(?:s|sec|seconde[s]?))?$/iu', $valeur, $m)
+        && ($m[1] ?? '') . ($m[2] ?? '') . ($m[3] ?? '') !== '') {
+        return ((int) ($m[1] ?? 0)) * 3600 + ((int) ($m[2] ?? 0)) * 60 + (int) ($m[3] ?? 0);
+    }
+
+    // Nombre seul : des secondes.
+    if (preg_match('/^\d+$/', $valeur)) {
+        return (int) $valeur;
+    }
+
+    return null;
+}
+
+/**
+ * Vidéos visibles par le compte courant.
+ *
+ * Tri : mises en avant d'abord, puis ordre d'affichage croissant, puis les
+ * plus récentes (date du souvenir si elle existe, sinon date d'ajout).
+ *
+ * @param int      $limit  nombre maximum de résultats (0 = pas de limite)
+ * @param int      $offset décalage pour la pagination
+ * @param int|null $total  reçoit le nombre total de vidéos visibles
+ */
+function videos_visible(int $limit = 0, int $offset = 0, ?int &$total = null): array
+{
+    $params = [];
+    $clause = visibility_clause('document', 'd', $params);
+
+    $where = "d.kind = 'video' AND d.is_attachment = 0 AND {$clause}";
+
+    $total = (int) db_value("SELECT COUNT(*) FROM documents d WHERE {$where}", $params, 0);
+
+    $sql = "SELECT d.* FROM documents d
+            WHERE {$where}
+            ORDER BY d.is_featured DESC,
+                     (d.display_order = 0),
+                     d.display_order ASC,
+                     (d.doc_date_sort IS NULL),
+                     d.doc_date_sort DESC,
+                     d.created_at DESC";
+
+    if ($limit > 0) {
+        $sql .= ' LIMIT ' . max(1, $limit) . ' OFFSET ' . max(0, $offset);
+    }
+
+    return db_all($sql, $params);
+}
+
+/** Une vidéo visible (ou null : 404, même réponse qu'un document interdit). */
+function find_viewable_video(int $id): ?array
+{
+    $doc = find_viewable_document($id);
+    if (!$doc || ($doc['kind'] ?? '') !== 'video') {
+        return null;
+    }
+    return $doc;
+}
+
+/** Y a-t-il déjà des vidéos en base ? (message d'accueil de l'onglet) */
+function videos_exist(): bool
+{
+    return (int) db_value("SELECT COUNT(*) FROM documents WHERE kind = 'video'", [], 0) > 0;
+}
+
 /** Étiquettes d'un document. */
 function document_tags(int|array $doc): array
 {

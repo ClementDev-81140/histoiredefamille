@@ -1,0 +1,87 @@
+<?php
+/**
+ * Onglet « Vidéos ».
+ *
+ * Les vidéos sont des documents (table documents, kind = 'video') : aucun
+ * second système de stockage. Les droits sont vérifiés par visibility.php,
+ * la lecture passe par /video/{id} (HTTP Range), et l'onglet n'apparaît
+ * que pour les comptes connectés.
+ */
+
+declare(strict_types=1);
+
+/** Liste des vidéos accessibles au compte connecté. */
+function public_videos(): void
+{
+    // Onglet réservé aux personnes connectées : un visiteur non connecté est
+    // envoyé vers la page de connexion (il reviendra ensuite sur /videos).
+    require_login();
+
+    $params = [];
+    $clause = visibility_clause('document', 'd', $params);
+
+    $total = (int) db_value(
+        "SELECT COUNT(*) FROM documents d
+         WHERE d.kind = 'video' AND d.is_attachment = 0 AND {$clause}",
+        $params,
+        0
+    );
+
+    $pg     = pagination($total, (int) config('per_page', 24), max(1, query_int('page', 1)));
+    $videos = videos_visible($pg['perPage'], $pg['offset']);
+
+    $nbFeatured = (int) db_value(
+        "SELECT COUNT(*) FROM documents d
+         WHERE d.kind = 'video' AND d.is_attachment = 0 AND d.is_featured = 1 AND {$clause}",
+        $params,
+        0
+    );
+
+    render('public/videos', [
+        'titre'      => 'Vidéos',
+        'videos'     => $videos,
+        'pagination' => $pg,
+        'total'      => $total,
+        'nbFeatured' => $nbFeatured,
+    ]);
+}
+
+/** Fiche d'une vidéo, avec lecteur. */
+function public_video_detail(array $params): void
+{
+    // Comme la liste : l'onglet Vidéos est réservé aux comptes connectés.
+    require_login();
+
+    $video = find_viewable_video((int) ($params['id'] ?? 0));
+    if (!$video) {
+        // Même réponse qu'un document interdit : on ne révèle pas l'existence.
+        http_response_code(404);
+        render('erreur', [
+            'titre'   => 'Vidéo introuvable',
+            'message' => 'Cette vidéo n’existe pas, ou elle n’est pas accessible avec votre compte.',
+        ]);
+        return;
+    }
+
+    $maxStreams = max(1, (int) config('video.max_concurrent_streams', 2));
+    $actifs     = stream_active_count();
+
+    $branches = [];
+    if (is_logged_in()) {
+        foreach (content_branch_ids('document', (int) $video['id']) as $branchId) {
+            $branch = find_branch($branchId);
+            if ($branch) {
+                $branches[] = $branch['name'];
+            }
+        }
+    }
+
+    render('public/video', [
+        'titre'       => $video['title'],
+        'video'       => $video,
+        'branches'    => $branches,
+        'downloadable' => document_download_allowed($video),
+        'saturation'  => $actifs >= $maxStreams,
+        'maxStreams'  => $maxStreams,
+    ]);
+}

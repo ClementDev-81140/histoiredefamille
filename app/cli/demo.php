@@ -339,7 +339,13 @@ function demo_pdf(string $texte): string
     return $pdf;
 }
 
-/** Insère un document de démonstration à partir d'un fichier du stockage. */
+/**
+ * Insère un document de démonstration à partir d'un fichier du stockage.
+ *
+ * @param array $data champs de la fiche ; les clés « kind », « is_featured »,
+ *                    « display_order », « allow_download » et
+ *                    « duration_seconds » sont facultatives.
+ */
 function demo_document(array $data, string $relPath, string $ext, string $mime, int $size): int
 {
     $now = time();
@@ -364,8 +370,12 @@ function demo_document(array $data, string $relPath, string $ext, string $mime, 
         'doc_date'      => $data['doc_date'] ?? null,
         'doc_date_sort' => extract_year($data['doc_date'] ?? null),
         'category_id'   => $data['category_id'] ?? null,
-        'kind'          => str_starts_with($mime, 'image/') ? 'photo' : 'document',
+        'kind'          => $data['kind'] ?? (str_starts_with($mime, 'image/') ? 'photo' : 'document'),
         'visibility'    => $data['visibility'],
+        'is_featured'   => (int) ($data['is_featured'] ?? 0),
+        'display_order' => (int) ($data['display_order'] ?? 0),
+        'allow_download' => (int) ($data['allow_download'] ?? 1),
+        'duration_seconds' => $data['duration_seconds'] ?? null,
         'rel_path'      => $relPath,
         'thumb_path'    => $thumb,
         'original_name' => $data['original_name'],
@@ -463,6 +473,163 @@ demo_document([
 ], $rel, 'pdf', 'application/pdf', (int) filesize(storage_absolute($rel)));
 
 echo "  · 5 documents de démonstration créés\n";
+
+// ---------------------------------------------------------------------------
+// Vidéos (un vrai fichier MP4 de 2 secondes, généré à l'avance)
+// ---------------------------------------------------------------------------
+/**
+ * Écrit le petit film de démonstration dans le stockage et renvoie son chemin
+ * relatif. Le fichier est un MP4 H.264 + AAC de 2 secondes : il sert à vérifier
+ * la lecture en flux (HTTP Range) sans embarquer de vraie vidéo de famille.
+ */
+function demo_video_file(): string
+{
+    $base64 =         'AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAbYbW9vdgAAAGxtdmhkAAAAAAAAAAAAAAAAAAAD6AAAB9AAAQAA'
+        . 'AQAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+        . 'AAAAAwAAAqp0cmFrAAAAXHRraGQAAAADAAAAAAAAAAAAAAABAAAAAAAAB9AAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAA'
+        . 'AAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAMAAAACQAAAAAAAkZWR0cwAAABxlbHN0AAAAAAAAAAEAAAfQAAAAAAABAAAAAAIi'
+        . 'bWRpYQAAACBtZGhkAAAAAAAAAAAAAAAAAAAwAAAAYABVxAAAAAAALWhkbHIAAAAAAAAAAHZpZGUAAAAAAAAAAAAAAABWaWRl'
+        . 'b0hhbmRsZXIAAAABzW1pbmYAAAAUdm1oZAAAAAEAAAAAAAAAAAAAACRkaW5mAAAAHGRyZWYAAAAAAAAAAQAAAAx1cmwgAAAA'
+        . 'AQAAAY1zdGJsAAAAuXN0c2QAAAAAAAAAAQAAAKlhdmMxAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAMAAkABIAAAASAAAAAAA'
+        . 'AAABFExhdmM2MS4zLjEwMCBsaWJ4MjY0AAAAAAAAAAAAAAAAGP//AAAAL2F2Y0MBQsAL/+EAF2dCwAvZAwTsBEAAAAMAQAAA'
+        . 'AwMDxQqSAQAFaMuAxLIAAAAQcGFzcAAAAAEAAAABAAAAFGJ0cnQAAAAAAABBQAAAQUAAAAAYc3R0cwAAAAAAAAABAAAADAAA'
+        . 'CAAAAAAUc3RzcwAAAAAAAAABAAAAAQAAABxzdHNjAAAAAAAAAAEAAAABAAAAAQAAAAEAAABEc3RzegAAAAAAAAAAAAAADAAA'
+        . 'CDwAAAC/AAAAqQAAALgAAADeAAAA1gAAAOAAAADNAAAAsAAAAI8AAACiAAAAsgAAAEBzdGNvAAAAAAAAAAwAAAcbAAAPYwAA'
+        . 'EC4AABDfAAARowAAEo0AABNrAAAUVwAAFSwAABXoAAAWgwAAFy0AAANZdHJhawAAAFx0a2hkAAAAAwAAAAAAAAAAAAAAAgAA'
+        . 'AAAAAAfQAAAAAAAAAAAAAAABAQAAAAABAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAJGVk'
+        . 'dHMAAAAcZWxzdAAAAAAAAAABAAAH0AAABAAAAQAAAAAC0W1kaWEAAAAgbWRoZAAAAAAAAAAAAAAAAAAAPoAAAIEAVcQAAAAA'
+        . 'AC1oZGxyAAAAAAAAAABzb3VuAAAAAAAAAAAAAAAAU291bmRIYW5kbGVyAAAAAnxtaW5mAAAAEHNtaGQAAAAAAAAAAAAAACRk'
+        . 'aW5mAAAAHGRyZWYAAAAAAAAAAQAAAAx1cmwgAAAAAQAAAkBzdGJsAAAAfnN0c2QAAAAAAAAAAQAAAG5tcDRhAAAAAAAAAAEA'
+        . 'AAAAAAAAAAABABAAAAAAPoAAAAAAADZlc2RzAAAAAAOAgIAlAAIABICAgBdAFQAAAAAAPoAAAAI5BYCAgAUUCFblAAaAgIAB'
+        . 'AgAAABRidHJ0AAAAAAAAPoAAAAI5AAAAIHN0dHMAAAAAAAAAAgAAACAAAAQAAAAAAQAAAQAAAACIc3RzYwAAAAAAAAAKAAAA'
+        . 'AQAAAAEAAAABAAAAAgAAAAMAAAABAAAABAAAAAIAAAABAAAABQAAAAMAAAABAAAABwAAAAIAAAABAAAACAAAAAMAAAABAAAA'
+        . 'CQAAAAIAAAABAAAACgAAAAMAAAABAAAADAAAAAIAAAABAAAADQAAAAMAAAABAAAAmHN0c3oAAAAAAAAAAAAAACEAAAATAAAA'
+        . 'BAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAA'
+        . 'BAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAABEc3RjbwAAAAAAAAANAAAH'
+        . 'CAAAD1cAABAiAAAQ1wAAEZcAABKBAAATYwAAFEsAABUkAAAV3AAAFncAABclAAAX3wAAABpzZ3BkAQAAAHJvbGwAAAACAAAA'
+        . 'Af//AAAAHHNiZ3AAAAAAcm9sbAAAAAEAAAAhAAAAAQAAAGF1ZHRhAAAAWW1ldGEAAAAAAAAAIWhkbHIAAAAAAAAAAG1kaXJh'
+        . 'cHBsAAAAAAAAAAAAAAAALGlsc3QAAAAkqXRvbwAAABxkYXRhAAAAAQAAAABMYXZmNjEuMS4xMDAAAAAIZnJlZQAAEOttZGF0'
+        . '3ABMYXZjNjEuMy4xMDAAAjBADgAAAnAGBf//bNxF6b3m2Ui3lizYINkj7u94MjY0IC0gY29yZSAxNjQgcjMxOTEgNDYxM2Fj'
+        . 'MyAtIEguMjY0L01QRUctNCBBVkMgY29kZWMgLSBDb3B5bGVmdCAyMDAzLTIwMjQgLSBodHRwOi8vd3d3LnZpZGVvbGFuLm9y'
+        . 'Zy94MjY0Lmh0bWwgLSBvcHRpb25zOiBjYWJhYz0wIHJlZj0zIGRlYmxvY2s9MTowOjAgYW5hbHlzZT0weDE6MHgxMTEgbWU9'
+        . 'aGV4IHN1Ym1lPTcgcHN5PTEgcHN5X3JkPTEuMDA6MC4wMCBtaXhlZF9yZWY9MSBtZV9yYW5nZT0xNiBjaHJvbWFfbWU9MSB0'
+        . 'cmVsbGlzPTEgOHg4ZGN0PTAgY3FtPTAgZGVhZHpvbmU9MjEsMTEgZmFzdF9wc2tpcD0xIGNocm9tYV9xcF9vZmZzZXQ9LTIg'
+        . 'dGhyZWFkcz0zIGxvb2thaGVhZF90aHJlYWRzPTEgc2xpY2VkX3RocmVhZHM9MCBucj0wIGRlY2ltYXRlPTEgaW50ZXJsYWNl'
+        . 'ZD0wIGJsdXJheV9jb21wYXQ9MCBjb25zdHJhaW5lZF9pbnRyYT0wIGJmcmFtZXM9MCB3ZWlnaHRwPTAga2V5aW50PTI1MCBr'
+        . 'ZXlpbnRfbWluPTYgc2NlbmVjdXQ9NDAgaW50cmFfcmVmcmVzaD0wIHJjX2xvb2thaGVhZD00MCByYz1jcmYgbWJ0cmVlPTEg'
+        . 'Y3JmPTM4LjAgcWNvbXA9MC42MCBxcG1pbj0wIHFwbWF4PTY5IHFwc3RlcD00IGlwX3JhdGlvPTEuNDAgYXE9MToxLjAwAIAA'
+        . 'AAXEZYiEBHyYoAAjvxEFAOACJxAvEAALg3/eRSIsICcN+EncBDjh886H8IgyiBAAEQGFGYDM2oG2zLpwAC9VWGpibADc4OiM'
+        . 'WBuNJUpI3J/KH4aOBuAu6vrwkXAMEIAAgLqAAIEgYP4fK/6gf6VLeDUVf6gYcRHA4AReDAtEAALA8RBSKAxBkOAMRigACXFH'
+        . 'AAEmuOAAII0RBQDgBF4gLRAACwPDEe/wXYSH/wlNBKdADDdDzLnvwAwzoNCPnv9T8DzmceY84dAHvNs/JDwuGAQIAEACilEX'
+        . 'JyfghkcenJ0DQdSOA7s7sA9Pagx3LuhEQDgAicQJYOAAXAkRBSKBmREv8C/aQoIAi4EC9b1wAM2/5Xz4LEJkQAAiEMDO/Rq3'
+        . '6ACXqph1idQn2ogoQ344//4KxYIHwP3n/hEiEEAATDlkt7/tv/2KUlIkkGHMwyB6JAODU9PT08z78OsP9hoJLPCLu98QCeIA'
+        . 'AIAIA2OCaEHBNDAZe7MApaAFkAhgXcnQw4JDTHhDmlsPwAvqun3+bxJAEA6jgVpy3R5t0cf8gziH7vFDMVVs9MEdfZvsTQ7D'
+        . 'YItJ/VbvWwJdjqTff/tgBPyrm3cAoyn+r+7eW4VF4VEdgjjGNaenp6enp///2CuKvyI3zQs0L+mn0gwwCJr09D8f2APqqHfs'
+        . 'gCEefVmvr83/6fYIBfwANN06/Jd7/2t8LQoIgBfs+iH35GoxLGB9VO7EA6aTPY5zxTAf3+9/TBDT09PT09P/8Bhow6CQAbKt'
+        . '1RvQwCOlah2Kj476AYX29lL8IJIQAAgFWJdEu4PBaDwWp9Ifw+w9OO0R1eYC7ZanHvXT0wS09PT09PTwkwTC8PRvn4CQU0+8'
+        . '/8AkGTX2msW2+8/8xjNv7X2p6f+FPhwoe8AGceTVsn/yA7qpu9L+9l5K3qyemCGnp6enp6fimEcPsaCQAlI6RqHYqPnz5fmH'
+        . 'AGQZNb7Xeyx8Qg0IAARAEQnonuDweg8Hun/Bvh/YT4ARM+6f57xj9fXl5lvtH09//48IdNih9VEJoDgxsWxJM4gEyIEzSkOg'
+        . 'Q4R4kAR8uRV3HhP01ence3K7OHY/ldVA5jcSBMg6AjOIEyDwGZFoRQPn+mLYrAcSMpYCjAwABINwdAjIOgRnB0EZB0BGfh+O'
+        . 'AIFonWICSETACB9vxACZFoZAzp2xAmfh/wDAIdE6vu4gABcHg9GDwGZB4BmcSATIkCZ/+AYBDpd3xW4RG7C54OQAzIPAGZxI'
+        . 'TIgEyLRuQM6/bFWKZwJvqYIAAjIDHPB4GZB4GZxITIt/KHHYMOeABkbtkvGij3Atg4pbiABMir0xAAmbfxwwBBs09/th/cD5'
+        . '50xS/+H/AIdLgrctOaigrFVZLqXRMgYqoRaP/gGAQ70lxPFGKPmUuhLomVipdH/15WNr7+a4b2OVnLKzlqpmbQK6j/8MAhDf'
+        . 'zW/cGUhe8OkcsOkcuZB1HUA6R1AXV//8alqpYMCJAQF3t/GpYtGCJVAggvez4tX+H+AYBDp8t8fZWDWgM6uw8ylh5lLewNvo'
+        . 'G30f/AMAh3lofMQ44smd2HmKWDzLou0rQiaBag1kBYMIF+72OqKc6gPOZYMVLKKl26Vov//7DvDuW8GN74GzVZXA8bSyipYv'
+        . 'CWdAH5qqq5RUsoqWIhU8AYggAFEQABAXmjgOc0AOBZAYEFdM5wP5rOOIy7+WOEhOIEEspFScevwmLkAIi2rFR2SD8AEi/rC4'
+        . 'qiw/0+w2JFH86KBsAAICgVDAAJ4DINi6KnvuxkBTCVip7s0wOFeBiDBAOAAQZjoe9KhTFgOAkYImA4ABAAAQX4MAAWAAECS/'
+        . 'X7khV48syzNCwNkmQMAARIBQOBCLC6E//+EZpBWxW+AMI8SNg94ATTNxEZp9DgREREReC8VDqCBjoEPoh7I22HYYABWEhAQg'
+        . 'FZzEE/qA5ts/ADAMN5ghH66BxuNwsGZPwZs8DBwnAMAATU50EdzAARggBwEYIAcBGCAHAAAAu0GaOAj4nkDUV4EDiwhquq+C'
+        . 'g+q6rEqj0YO5ZA+/0xMzgQK99CTJ8EYrVa4OKO+wcwUQRlxWK65YJBGq8ywTfoWVZ9CipwZUVuCyGOazXw0y0lH8NaAtPw5T'
+        . '2P+CqqfCFfbsHleZXg5og6uDKj/y/5ee38E39nL4NPlhzxr3x/AkWqeS//HnlvCuX/wdMOctlsfAF/hXL8GFZ5JIbF4e0YAo'
+        . 'VN4AkbF0UDvwBkBTCVnT34PddBFzgloLPJ8BGCAHARggBwEYIAcAAAClQZpUAj4EA7xPgoBZquqlRV8EYmouvKo9GmQHz/Ez'
+        . 'IkmeCj+HD6qZfEJkQmfhBEcDOrtiEz/BR/BGfd5Mu5xETL9sQmeCKj9+HO7lTi2Lf/OIKnFtP+C7hBlElg7AMcG3LbvBty/E'
+        . 'nmRVl0u8jUtF/61HP1g04JN7mR3yeAsQR82DXky4qegI/wQirZf6ODXt9gqowi78E9VVa1GgoTyXfoOu8FuWARggBwEYIAcA'
+        . 'AAC0QZpgEfAkl/8JSgu1W/BBOLY/iZkleWCQm7pVw5/Uyfgk7iu54Lv4cPquDL8VYq/goFarqqZdULKjL6jFPwSCtRflXBVy'
+        . '//hg+k/BW5ZKH4R7hG/srBliT8lWXW+Tb7OWv5dCzLvBYwcTkPFh+VuX3WCYMgkJjvlvnVgulPtDXobUO5f/y6Xcul0YwYQL'
+        . '7u5TH6jAdl8Gn9EAAG8GkE9RdRdVrIn6/BDp0tMe9+g760L7r65YARggBwEYIAcBGCAHAAAA2kGagBHwJPhsGGqlRViZlP78'
+        . 'HFDUVntEY/Uy/w31UycVYq/+GO77vky/bEJngw/gkPqqZfOK5l+ITLflONi5tE9++Fc8wuU0KX9eDqcYlX8W+CzhxlCGZn/+'
+        . 'XS7kCXeCz0N3g25egLQ05TIjy6FmX/g8qO2+UEU88Bv4NuX38IgkJjvnW5+ev5dHZfBNOVv5W5fwcQ5zYNeQPn/A8yly//gk'
+        . '3uOA7aQFTIciAL+B7Uv4+F9aqsmCXEvl0u/vvJDY3DxowBEDfwBI2TIwO/AEisXZQO/g91/gnyfgARggBwEYIAcBGCAHAAAA'
+        . '0kGaoBHwJPhsF2qpV+LYmZ+HBe7pV+LacIIkA5VxCZ0xMz8OdVMo4hMiEz/1MoTf/HjDvV96LOLaeKWnwIH8OH1XiKX4hMiE'
+        . 'zCCGSoy0xb22+DL+hZU14JocEai8Y6YmZ/gqo75v/H77/fe8tzIA+Oy27wOkculAtZFyALwWegKTPTL8LMvugVQYDVrw/Pi5'
+        . 'tT/gqgj5sGvOYQUXEjgkDrV7m2X/0N3gz6iLvIwT1F6qL1LE8nhsXh40YAoAuAJGyZGB34AkbF2cDv4LdehrngjyfgEYIAcB'
+        . 'GCAHAAAA3EGawBHwXF/wQAWMMAiBsXisXvB4yPLY0QMstgChJosS7weC2MeCDrUYXwQAV/wrwuHxOHwGCBFlseIyvLYDoUkh'
+        . 'PeDwe9+hSVfBQfd93MiriSgj7ux4MOX/wYVw3hzCP6I34IxOovEy5aMKbwYUPy/BIKxcU4gI14KqN/wVc3/j9gw97lvyAbjs'
+        . 'vy6B0jl8Hwk5zrH+DFS0sFWz/j8Frp27fICgf4Lp/f4ccfgmhvw7lm/j3uX/7UYDJqsDMPy+DD3o1h0guWta1LB7/WXdffp3'
+        . '+17+/rQXc8E+T8ABGCAHARggBwEYIAcAAADJQZrgEfAk+cFiVfiZkW/hs+7pV+JmRbhDgNcSEyKX/VTJ+GybuZGWITP7wRYX'
+        . '8HH8MCdV1XmX4hMirhBCHA+bi2KX8ewmHcsAxuDW7/4YHai+qlRVpiZnTFuvBNBITVYlXBxVsOOIH//5dLo2gJbHZfl0DpHL'
+        . '7SOMCvwVfEM9Ab+HGn5fEfjawTQR+HcsmUIKXg5A5EqqNLm028Ew1feZnMiv+Fcvr8E5Vqqrll7677znAFAFwESTRjvwBI2T'
+        . 'IwO/YK/egzVYJ8nWARggBwEYIAcAAACsQZsAEfAleCMFG7mQrx8oaZYycSEyLf8PcfMAj3z8MgmX08HQIyn4IULSjwcfw2TV'
+        . 'Sq8W/hBCCkgPn9MTM/wbfwUF1XVeVV4Jp6VfpiZngs4cxX//l0uiKg77jsu1h3QHSOXe8WiiS/jKuJfwXYuj+Ln+Dbl/j1qs'
+        . 'EUEfh3Lcmvzk//ghFWziB/6v4hIqJcnnKAKALgShyYb8ASNi6KB38FYqvOPafT7/wR5PwAEYIAcBGCAHARggBwAAAItBmyAQ'
+        . '8CT4JAWbuZFXzny7YhM4t+JG+CbvBXghBH3dm/w4J1F+Zftir4KP6MVZ5aEFTwZfwUF1F9VjH4JO7pVwVf1HPy+BO/aOL283'
+        . 'wXP41WK9RgOy//og4O8Fg1e3zAsnmZR/CuXwgygraB2JPg25ZW5dakrPAFAFwJQ5MN+AJGyZGB36Bb8FIQngARggBwEYIAcB'
+        . 'GCAHAAAAnkGbQBDwJJf8HUk4LF/TEzP0Wvi/BV/BH3e5+Cg+q6rERS4KKEV+fF0xb/55U4tp/wbfw31X/EzKeLYt/PSr8TMi'
+        . '3wUV/+o57wUDUJqsFUN82DXkBv4NuX+P8k5F/Lpd+o47WDDqJanYE4aHPHfbfy6XZPbf8CaKPMxWYWZfgxUv4NIIt77JLznA'
+        . 'FAFwJQ5MN+AJGyZGB37BT6BSEJq8ARggBwEYIAcAAACuQZtgP8CT6BUZFXzzKO2Kv49iwEj1vwo57fb4LuPiAEPvfhkYdviQ'
+        . 'Jlv4YLquqpl+KsQmfo3MvqVKwcfwR9V0q+CTu7Hgoor9YJOqjgB/QFAai1VAVCBvmwt8y/Bty+T0q8FJIRVxwbUSv1HBvBVP'
+        . 'QEf4Qitn8oc6Q75O/8Exfsl8F0F2NzlMiHBty/KKl/BlBJd70QvrvzwBQBcCU6Yb8BEkyMd/Bf6BaMmvQRbAARggBwEYIAcB'
+        . 'GCAH';
+
+    $rel = storage_target_path('mp4');
+    file_put_contents(storage_absolute($rel), base64_decode($base64, true) ?: '');
+    @chmod(storage_absolute($rel), 0640);
+
+    return $rel;
+}
+
+$videoRel   = demo_video_file();
+$videoSize  = (int) filesize(storage_absolute($videoRel));
+
+// 1. Vidéo « famille », mise en avant.
+demo_document([
+    'title'       => 'Film de famille fictif (démo)',
+    'description' => "Petit film **fictif** de deux secondes, généré pour la démonstration.\n\n"
+        . "Il sert à vérifier la lecture dans le navigateur (lecture par morceaux, sans conversion).",
+    'doc_date'    => '1958',
+    'category_id' => $categoryIds['Photos de famille (démo)'],
+    'visibility'  => 'famille',
+    'kind'        => 'video',
+    'is_featured' => 1,
+    'duration_seconds' => 2,
+    'original_name' => 'film-demo.mp4',
+    'tags'        => 'film, démonstration',
+], $videoRel, 'mp4', 'video/mp4', $videoSize);
+
+// 2. Vidéo réservée à la branche MARTIN, sans téléchargement.
+$videoRel2  = demo_video_file();
+demo_document([
+    'title'       => 'Souvenir de la branche Martin (démo)',
+    'description' => 'Vidéo fictive visible uniquement par la branche MARTIN. '
+        . 'Le téléchargement est volontairement désactivé pour tester le cas.',
+    'doc_date'    => '1965',
+    'category_id' => $categoryIds['Photos de famille (démo)'],
+    'visibility'  => 'branches',
+    'branches'    => [$branchIds['MARTIN']],
+    'kind'        => 'video',
+    'display_order' => 1,
+    'allow_download' => 0,
+    'duration_seconds' => 2,
+    'original_name' => 'souvenir-demo.mp4',
+    'tags'        => 'film, démonstration',
+], $videoRel2, 'mp4', 'video/mp4', (int) filesize(storage_absolute($videoRel2)));
+
+// 3. Vidéo privée (administrateurs uniquement).
+$videoRel3  = demo_video_file();
+demo_document([
+    'title'       => 'Vidéo privée (démo)',
+    'description' => 'Vidéo fictive privée : seuls les administrateurs la voient. '
+        . 'Utile pour vérifier qu’un compte de famille obtient bien une page « introuvable ».',
+    'doc_date'    => '1970',
+    'category_id' => $categoryIds['Photos de famille (démo)'],
+    'visibility'  => 'prive',
+    'kind'        => 'video',
+    'duration_seconds' => 2,
+    'original_name' => 'video-privee-demo.mp4',
+    'tags'        => 'film, démonstration',
+], $videoRel3, 'mp4', 'video/mp4', (int) filesize(storage_absolute($videoRel3)));
+
+echo "  · 3 vidéos de démonstration créées\n";
 
 // ---------------------------------------------------------------------------
 // Résumé

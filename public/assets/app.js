@@ -5,6 +5,7 @@
  * 2. Affichage du bloc « branches » quand la visibilité « branches » est choisie.
  * 3. Filtrage rapide des longues listes de personnes.
  * 4. Explorateur d'arbre généalogique (chargement JSON à la demande).
+ * 5. Message clair quand une vidéo ne peut pas être lue (limite de lectures).
  */
 (function () {
     'use strict';
@@ -180,4 +181,20 @@
                 }
             });
     }
+
+    // ---------------------------------------------------------------------
+    // 5. Vidéo illisible : message d'attente au lieu d'une erreur technique
+    // ---------------------------------------------------------------------
+    // Le lecteur déclenche « error » quand le serveur refuse le flux (trop de
+    // lectures simultanées) ou quand le format n'est pas lisible. On affiche
+    // alors un texte compréhensible, sans exposer de détail technique.
+    document.querySelectorAll('video[data-video-erreur]').forEach(function (video) {
+        var bloc = document.getElementById(video.getAttribute('data-video-erreur'));
+        if (!bloc) {
+            return;
+        }
+        video.addEventListener('error', function () {
+            bloc.hidden = false;
+        });
+    });
 })();

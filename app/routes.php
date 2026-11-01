@@ -18,6 +18,8 @@ require_once __DIR__ . '/controllers/admin_branches.php';
 require_once __DIR__ . '/controllers/admin_pages.php';
 require_once __DIR__ . '/controllers/admin_persons.php';
 require_once __DIR__ . '/controllers/admin_import.php';
+require_once __DIR__ . '/controllers/videos.php';
+require_once __DIR__ . '/controllers/admin_videos.php';
 
 // ---------------------------------------------------------------------------
 // Partie publique
@@ -29,6 +31,10 @@ route('GET', '/pages/{slug}', 'public_page');
 route('GET', '/arbre', 'public_arbre');
 route('GET', '/arbre/{id}', 'public_personne');
 route('GET', '/api/arbre/{id}', 'api_arbre');
+
+// Vidéos : onglet réservé aux comptes connectés.
+route('GET', '/videos', 'public_videos');
+route('GET', '/videos/{id}', 'public_video_detail');
 
 // Fichiers : jamais servis directement, toujours après contrôle des droits.
 route('GET', '/f/{id}', 'file_inline');
@@ -65,6 +71,16 @@ route('POST', '/admin/documents/nouveau', 'admin_document_save');
 route('GET', '/admin/documents/{id}/modifier', 'admin_document_form');
 route('POST', '/admin/documents/{id}/modifier', 'admin_document_save');
 route('POST', '/admin/documents/{id}/supprimer', 'admin_document_delete');
+
+// Vidéos (réglages propres : mise en avant, ordre, durée, téléchargement)
+route('GET', '/admin/videos', 'admin_videos');
+route('GET', '/admin/videos/nouvelle', 'admin_video_form');
+route('POST', '/admin/videos/nouvelle', 'admin_video_save');
+route('POST', '/admin/videos/importer', 'admin_video_import');
+route('GET', '/admin/videos/{id}', 'admin_video_form');
+route('POST', '/admin/videos/{id}', 'admin_video_save');
+route('POST', '/admin/videos/{id}/mise-en-avant', 'admin_video_feature');
+route('POST', '/admin/videos/{id}/supprimer', 'admin_video_delete');
 
 // Catégories
 route('GET', '/admin/categories', 'admin_categories');
