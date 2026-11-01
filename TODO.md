@@ -3,6 +3,19 @@
 Ce fichier liste ce qui reste à faire, classé par priorité. Il n'y a pas de
 suivi automatique : cochez au fur et à mesure.
 
+## Fait (2026-11-01)
+
+- [x] Habillage « journal » des pages publiques et de l'espace famille
+      (palette inchangée, police Old Standard TT auto-hébergée, aucun arrondi,
+      aucun appel externe).
+- [x] Onglet **Vidéos** (liste filtrée par les droits, fiche avec lecteur,
+      lecture par morceaux, limite de lectures simultanées avec message clair).
+- [x] Administration des vidéos : mise en avant, ordre d'affichage, durée,
+      autorisation de téléchargement, import depuis le dossier arrivée.
+- [x] Migration `002_videos.sql` (ajout de colonnes seulement).
+- [x] Captures d'écran versées dans `docs/captures/`.
+- [x] Ménage des fichiers envoyés par erreur à la racine du dépôt.
+
 ## Avant la mise en ligne (fait par Clément)
 
 - [ ] Acheter / vérifier le domaine `histoiredefamille.eu` et le placer chez
@@ -50,6 +63,13 @@ suivi automatique : cochez au fur et à mesure.
 - [ ] Livret imprimable (PDF) d'une branche de l'arbre.
 
 ### Technique / exploitation
+
+- [ ] Sur le Pi : vérifier l'affichage du nouvel habillage dans un vrai
+      navigateur (Firefox et Safari inclus) et la police auto-hébergée.
+- [ ] Sur le Pi : lire un film MP4 de plusieurs centaines de Mo d'un bout à
+      l'autre, avec avance rapide, et vérifier que la mémoire reste stable.
+- [ ] Sur le Pi : vérifier que deux vidéos en parallèle déclenchent bien le
+      message d'attente à la troisième.
 
 - [ ] Vérifier la consommation de RAM avec deux lectures vidéo simultanées et
       ajuster `video.max_concurrent_streams` si nécessaire.

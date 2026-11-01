@@ -3,6 +3,77 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.1.0] — 2026-11-01
+
+Habillage « journal », onglet **Vidéos** et ménage du dépôt.
+
+### Présentation (partie publique et espace famille)
+
+- Nouvelle feuille de style inspirée des quotidiens anciens : filets fins,
+  aucun coin arrondi, aucune ombre, boutons carrés en majuscules, tableaux et
+  fiches à filets, titres de rubriques en majuscules espacées.
+- En-tête « une » : ligne de date française en italique (« dimanche
+  1er novembre 2026 », écrite en PHP, sans l'extension `intl`), grand titre
+  centré, sous-titre italique, barre de navigation en majuscules espacées
+  entre un filet fin et un double filet.
+- Texte justifié avec césure sur ordinateur, aligné à gauche et sans césure
+  sur téléphone ; largeur de lecture d'environ 44 rem ; aucun débordement
+  horizontal à 390 px.
+- Police à empattements **Old Standard TT** (licence OFL) **auto-hébergée** :
+  trois fichiers `woff2` (normal, italique, gras), `font-display: swap`,
+  aucune requête vers un service tiers.
+- Les couleurs ne changent pas : la palette reste définie dans `:root`.
+- Accueil : le nom du site n'est plus affiché deux fois (un `h1` réservé aux
+  lecteurs d'écran), chiffres et note centrés en italique, sous-titre non
+  répété.
+- Pages d'information présentées comme des articles (titre centré, date de
+  mise à jour en italique, double filet).
+- Les aperçus des listes ne montrent plus la mise en forme brute
+  (« **gras** », « ## Titre »).
+- Administration : seule la police change (mise en page inchangée).
+
+### Vidéos
+
+- Nouvel onglet **Vidéos**, visible seulement pour les comptes connectés, à
+  côté de « Documents » et « Arbre ».
+- `/videos` : liste filtrée par les droits (public, familles, branches, compte
+  « voit toutes les branches », administrateurs), grille de cartes avec
+  miniature, titre, date, durée et résumé. Tri : mises en avant, puis ordre
+  d'affichage, puis les plus récentes. Pagination.
+- `/videos/{id}` : lecteur `<video controls preload="metadata" playsinline>`
+  sur `/video/{id}`, date, durée, branches concernées, bouton « Télécharger »
+  seulement si l'administrateur l'autorise, lien de retour.
+- Limite de lectures simultanées atteinte : message « Trop de personnes
+  regardent des vidéos, réessayez dans une minute » au lieu d'une erreur
+  technique (le flux répond toujours 503 avec `Retry-After`).
+- Vidéo non autorisée : même page 404 que les autres documents.
+- Administration → Vidéos : liste complète, recherche, filtre de visibilité,
+  mise en avant en un clic, ordre d'affichage, durée, autorisation de
+  téléchargement, import depuis le dossier arrivée (déplacement du fichier,
+  jamais en mémoire), modification et suppression.
+- Migration `002_videos.sql` : quatre colonnes ajoutées à `documents`
+  (`is_featured`, `display_order`, `allow_download`, `duration_seconds`) et un
+  index de tri. **Ajout seulement** : aucune colonne ni donnée supprimée, les
+  valeurs par défaut conservent le comportement précédent.
+- Données de démonstration : trois vidéos (famille, branche, privée) avec un
+  petit MP4 H.264 + AAC de deux secondes, pour tester la lecture sans
+  embarquer de vrai film.
+
+### Ménage
+
+- Suppression des copies parasites envoyées par erreur à la racine
+  (`accueil.php`, `layout.php`, `style.css`, `app/app/`, `app/public/`).
+
+### Vérifications faites
+
+- Les 71 fichiers PHP sont syntaxiquement valides.
+- Parcours testé de bout en bout (PHP + base SQLite réelle) : visiteur non
+  connecté, compte de famille, compte « voit tout », administrateur, accès
+  direct à une vidéo privée, lecture par morceaux (206 / 416), limite de
+  lectures simultanées, import depuis le dossier arrivée, CSRF invalide.
+- Captures d'écran versées dans `docs/captures/` (ordinateur 1280 px et
+  téléphone 390 px).
+
 ## [1.0.0] — 2026-10-25
 
 Première version complète, installable sur le Raspberry Pi.

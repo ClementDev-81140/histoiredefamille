@@ -66,6 +66,10 @@ et une installation qui tient en quelques commandes à copier-coller.
 - Pages d'information : texte simple (markdown léger) avec visibilité.
 - Arbre généalogique : saisie manuelle des personnes et des couples, ou import
   **GEDCOM** avec aperçu avant validation.
+- **Vidéos** : liste complète (même les privées), recherche, filtre de
+  visibilité, **mise en avant** en un clic, **ordre d'affichage**, durée,
+  autorisation de téléchargement, import depuis le dossier arrivée,
+  modification et suppression.
 - **Import depuis le dossier arrivée** : pour les gros fichiers (vidéos)
   déposés sur le Pi par le réseau local.
 - Page **État du site** : version de PHP, limites d'envoi, taille de la base,
@@ -73,13 +77,32 @@ et une installation qui tient en quelques commandes à copier-coller.
   de sécurité.
 - Réglages du site : nom, sous-titre, description, adresse de contact.
 
-### Vidéos
+### Vidéos (onglet réservé aux comptes connectés)
 
-- Lecture dans le navigateur avec `<video>`, **sans réencodage** (le Pi ne
-  pourrait pas convertir un film).
-- Diffusion par morceaux (HTTP Range) : on peut se déplacer dans la vidéo
-  sans télécharger tout le fichier, et la mémoire du Pi n'est jamais saturée.
-- Limite de lectures simultanées (2 par défaut) pour ne pas bloquer le site.
+Un onglet **Vidéos** apparaît dans le menu à côté de « Documents » et
+« Arbre » dès qu'une personne est connectée (famille ou administration).
+Les vidéos sont des documents comme les autres : mêmes droits, même stockage,
+aucun second système.
+
+- Liste filtée par les droits : public, toutes les familles, branches cochées ;
+  un administrateur voit tout, un compte « voit toutes les branches » voit
+  toutes les branches. Une vidéo **privée** n'apparaît jamais dans l'espace
+  famille.
+- Grille de cartes : miniature, titre, date, durée, court résumé.
+- Tri : les vidéos **mises en avant** d'abord, puis l'ordre d'affichage choisi
+  par l'administrateur, puis les plus récentes. Pagination automatique.
+- Fiche d'une vidéo : lecteur `<video controls preload="metadata" playsinline>`,
+  date, durée, branches concernées, bouton **Télécharger** (seulement si
+  l'administrateur l'autorise), lien de retour.
+- Vidéo non autorisée : même page « introuvable » que les autres documents
+  (on ne révèle pas son existence).
+- Lecture dans le navigateur **sans réencodage** (le Pi ne pourrait pas
+  convertir un film), diffusion par morceaux (HTTP Range) : on peut se déplacer
+  dans le film sans télécharger tout le fichier, et la mémoire du Pi n'est
+  jamais saturée.
+- Limite de lectures simultanées (2 par défaut). Au-delà, le site affiche
+  « **Trop de personnes regardent des vidéos, réessayez dans une minute** »
+  au lieu d'une erreur technique, et le flux répond 503 avec `Retry-After`.
 
 ### Visibilité : la règle la plus importante
 
@@ -132,7 +155,8 @@ histoiredefamille/
 │   ├── index.php            point d'entrée unique (toutes les URL passent ici)
 │   ├── maintenance.html     page statique affichée en cas de 503
 │   ├── .htaccess            URL propres, blocage des fichiers sensibles, en-têtes
-│   └── assets/              style.css et app.js (aucune bibliothèque externe)
+│   └── assets/              style.css, app.js et polices woff2 auto-hébergées
+│                            (aucune bibliothèque ni ressource externe)
 ├── app/                     ← code de l'application (hors racine web)
 │   ├── bootstrap.php        démarrage, gestion des erreurs
 │   ├── config.php           configuration par défaut + lecture de config.local.php
@@ -156,6 +180,7 @@ histoiredefamille/
 ├── config.example.php       modèle de configuration (à copier)
 ├── config.local.php         VOTRE configuration (jamais dans Git)
 ├── storage/                 stockage local de développement (jamais dans Git)
+├── docs/captures/           captures d'écran du site (ordinateur et mobile)
 ├── CHANGELOG.md             historique des versions
 └── TODO.md                  ce qui reste à faire
 ```
@@ -172,6 +197,26 @@ Autour du dossier du site :
 Pourquoi séparer le SSD de la carte SD : la carte SD des Raspberry Pi meurt
 souvent. Le code se réinstalle en dix minutes ; les photos, elles, ne se
 reconstituent pas. Elles sont donc sur le SSD, et sauvegardées sur la clé USB.
+
+### Le style et les polices
+
+La présentation s'inspire des quotidiens anciens : filets fins, aucun coin
+arrondi, aucune ombre, titres de rubriques en majuscules espacées, texte
+justifié (aligné à gauche sur téléphone), en-tête « une » avec la date en
+français écrite par PHP (aucune dépendance à l'extension `intl`).
+
+Les couleurs n'ont pas changé : elles restent définies une seule fois dans le
+bloc `:root` de `public/assets/style.css`.
+
+La police à empattements (**Old Standard TT**, licence OFL) est **hébergée sur
+le site** dans `public/assets/fonts/` (3 fichiers `woff2` : normal, italique,
+gras, avec `font-display: swap`). Aucun appel à Google Fonts ni à un autre
+service : la CSP peut rester `default-src 'self'`, et le site fonctionne même
+si l'accès à Internet tombe. La licence est fournie à côté des fichiers
+(`OFL.txt`).
+
+Pour changer de police plus tard : remplacer les trois `woff2` et la famille
+dans `@font-face` (variable `--serif`), rien d'autre.
 
 ---
 
@@ -484,7 +529,21 @@ fichier est vérifié : renommer un fichier n'aide pas à contourner la règle.
 3. Un mot de passe est généré : **notez-le tout de suite**, il ne sera plus
    affiché. En cas d'oubli, utilisez le bouton **Réinitialiser le mot de passe**.
 
-### 6.3 Ajouter un film (gros fichier)
+### 6.3 Ajouter une vidéo
+
+Deux façons, selon la taille du fichier :
+
+**a. Petit film (moins de 50 Mo, la limite d'envoi du navigateur)**
+
+1. **Administration → Vidéos → Ajouter une vidéo**.
+2. Choisir le fichier MP4, saisir un titre, éventuellement une description,
+   une date, une durée, une catégorie.
+3. Cocher **Mettre en avant** pour la placer en tête de l'onglet Vidéos,
+   et régler l'**ordre d'affichage** (0 = pas de classement).
+4. Décider si le bouton **Télécharger** est proposé.
+5. Choisir la **visibilité** — comme pour un document.
+
+**b. Gros film (plusieurs centaines de Mo)**
 
 Voir **[`deploy/dossier-arrivee.md`](deploy/dossier-arrivee.md)** et le § 9
 ci-dessous. Résumé :
@@ -494,7 +553,10 @@ ci-dessous. Résumé :
 scp film-famille.mp4 votre-utilisateur@histoiredefamille.local:/mnt/ssd/histoiredefamille/arrivee/
 ```
 
-puis **Administration → Importer depuis le dossier arrivée**.
+puis **Administration → Vidéos**, section « Depuis le dossier arrivée »
+(ou **Importer depuis le dossier arrivée** pour les autres formats). Le
+fichier est **déplacé** sur le disque, jamais chargé en mémoire : un film
+volumineux passe sans problème.
 
 ### 6.4 Remplir l'arbre généalogique
 
@@ -693,9 +755,9 @@ Ensuite, déposez le fichier sur le Pi et importez-le :
 ### Limite de lectures simultanées
 
 Deux lectures vidéo en même temps au maximum (réglable dans
-`config.local.php`, clé `video.max_concurrent_streams`). Au-delà, le site
-répond « Trop de vidéos sont en cours de lecture » avec un code 503 et
-demande de réessayer dans 30 secondes. C'est volontaire : le Pi doit rester
+`config.local.php`, clé `video.max_concurrent_streams`). Au-delà, la page de
+la vidéo affiche « **Trop de personnes regardent des vidéos, réessayez dans
+une minute** » et le flux répond 503 avec l'en-tête `Retry-After`. C'est volontaire : le Pi doit rester
 capable d'afficher les pages et l'arbre pendant qu'un film est regardé.
 
 Les verrous sont automatiquement libérés au bout de deux minutes sans
