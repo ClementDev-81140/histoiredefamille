@@ -1387,3 +1387,41 @@ textarea {
         text-align: left;
     }
 }
+
+/* ===========================================================================
+   ONGLET VIDÉOS
+   =========================================================================== */
+
+.video-page__lecteur {
+    margin-bottom: 1.2rem;
+}
+
+.video-page .document__video {
+    display: block;
+    width: 100%;
+    max-height: 75vh;
+    background: #000;
+}
+
+.carte__meta--une {
+    margin: 0 0 0.2rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+}
+
+.filtres--simple {
+    grid-template-columns: 1fr;
+}
+
+.champ-nombre {
+    width: 5rem;
+}
+
+@media (min-width: 700px) {
+    .filtres--simple {
+        grid-template-columns: 2fr auto;
+    }
+}

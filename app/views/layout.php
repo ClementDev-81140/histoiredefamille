@@ -56,6 +56,7 @@ $dateEdition = $joursFr[(int) date('w')] . ' '
         <nav class="nav nav--journal" aria-label="Navigation principale">
             <a href="/">Accueil</a>
             <a href="/documents">Documents</a>
+            <a href="/videos">Vidéos</a>
             <a href="/arbre">Arbre</a>
             <?php foreach ($navPages as $navPage): ?>
                 <a href="/pages/<?= e($navPage['slug']) ?>"><?= e($navPage['title']) ?></a>

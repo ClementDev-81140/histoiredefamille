@@ -63,6 +63,7 @@ $navLink = static function (string $href, string $label, bool $exact = false) us
         <p class="admin-menu__titre">Partie publique</p>
         <?= $navLink('/admin/pages', 'Pages d’informations') ?>
         <?= $navLink('/admin/documents', 'Documents & photos') ?>
+        <?= $navLink('/admin/videos', 'Vidéos') ?>
         <?= $navLink('/admin/categories', 'Catégories') ?>
 
         <p class="admin-menu__titre">Partie famille</p>

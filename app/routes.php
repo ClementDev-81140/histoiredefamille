@@ -11,6 +11,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/controllers/public.php';
 require_once __DIR__ . '/controllers/auth.php';
 require_once __DIR__ . '/controllers/files.php';
+require_once __DIR__ . '/controllers/videos.php';
 require_once __DIR__ . '/controllers/family.php';
 require_once __DIR__ . '/controllers/admin.php';
 require_once __DIR__ . '/controllers/admin_documents.php';
@@ -25,6 +26,8 @@ require_once __DIR__ . '/controllers/admin_import.php';
 route('GET', '/', 'public_accueil');
 route('GET', '/documents', 'public_documents');
 route('GET', '/documents/{id}', 'public_document_detail');
+route('GET', '/videos', 'public_videos');
+route('GET', '/videos/{id}', 'public_video_detail');
 route('GET', '/pages/{slug}', 'public_page');
 route('GET', '/arbre', 'public_arbre');
 route('GET', '/arbre/{id}', 'public_personne');
@@ -65,6 +68,10 @@ route('POST', '/admin/documents/nouveau', 'admin_document_save');
 route('GET', '/admin/documents/{id}/modifier', 'admin_document_form');
 route('POST', '/admin/documents/{id}/modifier', 'admin_document_save');
 route('POST', '/admin/documents/{id}/supprimer', 'admin_document_delete');
+
+// Vidéos (mise en avant et ordre)
+route('GET', '/admin/videos', 'admin_videos');
+route('POST', '/admin/videos/{id}', 'admin_video_save');
 
 // Catégories
 route('GET', '/admin/categories', 'admin_categories');

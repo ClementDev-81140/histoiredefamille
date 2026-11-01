@@ -3,6 +3,21 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [Non publié]
+
+### Onglet « Vidéos »
+
+- Nouvel onglet **Vidéos** dans la navigation, visible par tout le monde :
+  un visiteur sans compte ne voit que les vidéos « public », un compte de
+  branche voit aussi « toutes les familles » et sa branche, un administrateur
+  voit tout. Une vidéo non autorisée répond 404 (comme un document inconnu).
+- Pages `/videos` (grille, recherche, pagination) et `/videos/{id}` (lecteur
+  HTML5, lecture progressive par HTTP Range, rubrique « À voir aussi »).
+- Administration → **Vidéos** : liste, case « À la une », numéro d'ordre,
+  accès au formulaire de modification (visibilité, branches).
+- Migration `002_videos.sql` : colonnes `featured` et `sort_order` sur
+  `documents` (aucune donnée existante modifiée).
+
 ## [1.0.0] — 2026-10-25
 
 Première version complète, installable sur le Raspberry Pi.
