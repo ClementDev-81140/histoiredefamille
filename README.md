@@ -233,7 +233,7 @@ histoiredefamille/
 │   │                        GEDCOM, visibilité, textes, tchat…
 │   ├── views/               gabarits PHP (public, famille, admin)
 │   ├── migrations/          fichiers SQL numérotés (001_init … 004_tchat)
-│   └── cli/                 commandes : migrate, create-admin, demo, maintenance
+│   └── cli/                 commandes : migrate, create-admin, demo, maintenance, tests
 ├── deploy/
 │   ├── install.sh           installation complète sur le Pi
 │   ├── backup.sh            sauvegarde quotidienne + test de restauration
@@ -715,6 +715,17 @@ migrations SQL (les nouvelles seulement, sans rien effacer) et recharge Apache.
 Si une migration échoue, la base n'est pas modifiée à moitié : chaque
 migration est appliquée dans une transaction. La sauvegarde de la nuit
 précédente reste disponible sur la clé USB.
+
+Après une mise à jour, les petits tests automatiques (mise en forme des
+messages du tchat, et plus tard la recherche) se lancent en une commande :
+
+```bash
+cd /home/votre-utilisateur/histoiredefamille
+php app/cli/tests.php
+```
+
+Chaque test affiche `ok`, un résumé s'affiche à la fin ; rien n'est modifié
+dans la base ni dans les dossiers.
 
 ---
 

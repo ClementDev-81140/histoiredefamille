@@ -3,6 +3,23 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.3.1] — 2026-11-01
+
+### Correctif — liens et texte du tchat
+
+- Le texte d'un message était échappé deux fois : une adresse contenant « & »
+  affichait « &amp;amp; » dans le texte **et** dans le lien, et une adresse
+  entre guillemets traînait un « &quot; » à la fin de son adresse de lien.
+- Les adresses sont maintenant repérées sur le **texte brut**, avant tout
+  échappement, en s'arrêtant sur les espaces, guillemets et chevrons ; chaque
+  morceau (texte normal, adresse, ponctuation finale) est échappé **une seule
+  fois**. Seuls `http` et `https` deviennent des liens (donc jamais
+  `javascript:`), toujours avec `rel="noopener noreferrer"`.
+- Nouveau fichier **`app/cli/tests.php`** : 23 vérifications automatiques
+  (« & », guillemets, point final, parenthèse, `javascript:`, balise
+  `<script>`, message de 1000 caractères sans espace, accents, sauts de
+  ligne…). Commande : `php app/cli/tests.php`.
+
 ## [1.3.0] — 2026-11-01
 
 ### Tchat de la famille
