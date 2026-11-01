@@ -3,6 +3,59 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.4.0] — 2026-11-01
+
+### Recherche générale et fiches de personnes enrichies
+
+- Nouvel onglet **Recherche** (`/recherche`) ouvert à tout le monde : une seule
+  case, et les mots tapés sont cherchés dans les **documents** (titre,
+  description, étiquettes, date), les **articles** (titre, résumé, texte), les
+  **pages d'information** et les **personnes** de l'arbre (prénom, nom, lieux,
+  dates).
+- **Accents, majuscules et ponctuation ignorés** : le texte cherché est
+  préparé une seule fois (`recherche_normaliser()`), six mots au maximum, mots
+  répétés comptés une fois.
+- **Index plein texte** SQLite (`FTS5`, `unicode61` avec
+  `remove_diacritics 2`), tenu à jour par des déclencheurs sur les quatre
+  tables : aucun ajout, aucune modification, aucune suppression ne peut le
+  désynchroniser.
+  - Si la version de SQLite du serveur ne connaît pas FTS5, le code bascule
+    tout seul sur une recherche `GLOB` (plus lente, même résultat) ;
+    `HDF_SEARCH_MODE=like` force ce repli pour les essais.
+  - La version de l'index est rangée dans le réglage `recherche_version` (2) :
+    après une restauration de sauvegarde ou une mise à jour du code, il est
+    reconstruit automatiquement, une seule fois.
+- **Rapidité** : sur 6000 personnes, la recherche est passée de 5–8 secondes à
+  **9–22 ms**. La jointure entre l'index et la table est écrite avec un
+  `CROSS JOIN` (l'optimiseur de SQLite faisait sinon parcourir toutes les
+  fiches avant de filtrer). Le repli sans index reste sous 100 ms.
+- **Droits respectés** : chaque catégorie de résultat réutilise les règles de
+  visibilité existantes (`visibility_clause()`, `article_visible_clause()`),
+  et les personnes passent par `filter_visible_persons()` : ce qui est interdit
+  n'apparaît pas, même dans le compteur.
+- Résultats groupés par catégorie, pastilles de comptage, onglets
+  « Tout / Documents / Articles / Pages d'information / Personnes », et
+  pagination de 24 résultats par page (aucun gros tableau en mémoire).
+- **Fiche d'une personne** :
+  - **Chronologie** : naissance, mariages (avec lieu), naissances des enfants
+    (avec lien vers leur fiche) et décès, classés par année ; une date sans
+    année lisible (« vers 1950 ») est reconnue et placée en fin de liste.
+  - **Famille élargie** : grands-parents, oncles et tantes, petits-enfants,
+    neveux et nièces, filtrés par les droits.
+  - **Lieux cliquables** (naissance, décès, mariage) : un clic lance une
+    recherche sur ce lieu.
+  - **Autres personnes portant le nom …** : jusqu'à six homonymes pour repérer
+    les branches cousines, avec un lien « Chercher ce nom ».
+  - Ligne « Sexe » ajoutée au bloc « Repères ».
+- `app/cli/maintenance.php` reconstruit l'index de recherche à chaque passage
+  (une ligne de plus dans son résumé).
+- **Tests** : `app/cli/tests.php` passe de 23 à **48 vérifications**
+  (`php app/cli/tests.php recherche`, `php app/cli/tests.php personne`).
+- Aucune migration : la recherche vit dans des tables à part, créées et
+  recréées par le code ; aucune donnée existante n'est modifiée.
+- Captures : `ordinateur-recherche`, `mobile-recherche`,
+  `ordinateur-fiche-personne`, `mobile-fiche-personne`.
+
 ## [1.3.1] — 2026-11-01
 
 ### Correctif — liens et texte du tchat

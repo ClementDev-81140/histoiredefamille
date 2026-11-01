@@ -3,6 +3,21 @@
 Ce fichier liste ce qui reste à faire, classé par priorité. Il n'y a pas de
 suivi automatique : cochez au fur et à mesure.
 
+## Fait (2026-11-01, lot 2)
+
+- [x] **Recherche générale** (`/recherche`) : documents, articles, pages
+      d'information et personnes ; accents et majuscules ignorés, index `FTS5`
+      tenu à jour par déclencheurs, repli `GLOB` si FTS5 manque.
+- [x] Résultats groupés par catégorie, onglets de filtrage, pagination de 24,
+      droits de visibilité respectés (aucun résultat interdit).
+- [x] **Fiche personne enrichie** : chronologie, famille élargie
+      (grands-parents, oncles et tantes, petits-enfants, neveux et nièces),
+      lieux cliquables, homonymes.
+- [x] Rapidité : 6000 personnes cherchées en 9–22 ms (`CROSS JOIN` avec
+      l'index) au lieu de 5–8 s.
+- [x] `maintenance.php` reconstruit l'index ; 48 vérifications automatiques ;
+      4 captures d'écran.
+
 ## Fait (2026-11-01, lot 1)
 
 - [x] **Tchat privé** : un salon commun réservé aux comptes connectés
@@ -42,8 +57,6 @@ suivi automatique : cochez au fur et à mesure.
 
 ## Prochains lots (un par un, après accord)
 
-- [ ] **Lot 2** — Recherche générale (documents, articles, pages, personnes) et
-      fiche personne enrichie. FTS5 si disponible, sinon `LIKE` sans accents.
 - [ ] **Lot 3** — Albums photos et personnes identifiées sur les photos.
 - [ ] **Lot 4** — Calendrier familial et frise chronologique.
 - [ ] **Lot 5** — Audio (témoignages), recettes, impression, export GEDCOM.

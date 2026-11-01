@@ -40,7 +40,8 @@ et une installation qui tient en quelques commandes à copier-coller.
   d'information.
 - Les documents marqués « Public » : photos avec miniature, PDF consultables
   dans le navigateur, autres fichiers téléchargeables.
-- La recherche simple (titre, description, étiquettes).
+- Une **recherche générale** qui porte d'un seul coup sur les documents, les
+  articles, les pages d'information et les personnes de l'arbre.
 - Les pages d'information publiques (histoire de la famille, annonces).
 - L'arbre généalogique pour les personnes marquées « Public ».
 
@@ -170,6 +171,33 @@ administrateurs y écrivent, tout le monde lit tout.
   `app/cli/maintenance.php` efface les messages plus anciens ; avec « jamais »,
   rien n'est jamais supprimé automatiquement.
 
+### Recherche générale et fiches de personnes
+
+Un onglet **Recherche** figure dans le menu, pour tout le monde.
+
+- Une seule case à remplir : les mots tapés sont cherchés dans les **titres,
+  descriptions et étiquettes** des documents, dans les **articles**, dans les
+  **pages d'information** et dans les **noms et lieux** des personnes de
+  l'arbre.
+- Les accents, les majuscules et la ponctuation n'ont pas d'importance :
+  « begles », « Bègles » et « BÈGLES » donnent le même résultat, et « 1928 »
+  trouve les documents et les personnes de cette année-là.
+- Un lien par catégorie permet de ne voir que les documents, que les articles,
+  que les pages ou que les personnes.
+- **Chacun ne trouve que ce qu'il a le droit de voir** : un visiteur non
+  connecté ne voit que le public, une branche voit en plus ce qui la concerne.
+  Les résultats interdits n'apparaissent pas du tout.
+- Les fiches de personnes sont plus complètes : une **chronologie** (naissance,
+  mariages, naissances des enfants, décès), la **famille élargie**
+  (grands-parents, oncles et tantes, petits-enfants, neveux et nièces), les
+  **lieux cliquables** (ils lancent une recherche) et « **Autres personnes
+  portant le nom …** » pour repérer les homonymes et les branches cousines.
+
+L'index de recherche se remplit tout seul à chaque ajout, modification ou
+suppression, et il est reconstruit une fois par semaine par la tâche
+d'entretien (`app/cli/maintenance.php`). Si un résultat manque après une
+restauration de sauvegarde, lancer cette commande le remet d'aplomb.
+
 ### Visibilité : la règle la plus importante
 
 Chaque document, page, personne et article a un niveau de visibilité :
@@ -230,7 +258,7 @@ histoiredefamille/
 │   ├── routes.php           table des URL
 │   ├── controllers/         une fonction par page
 │   ├── lib/                 base de données, sécurité, stockage, images, vidéos,
-│   │                        GEDCOM, visibilité, textes, tchat…
+│   │                        GEDCOM, visibilité, textes, tchat, recherche…
 │   ├── views/               gabarits PHP (public, famille, admin)
 │   ├── migrations/          fichiers SQL numérotés (001_init … 004_tchat)
 │   └── cli/                 commandes : migrate, create-admin, demo, maintenance, tests
@@ -696,6 +724,21 @@ Réglages utiles (Administration → Réglages, bloc « Tchat de la famille ») 
 > courriel ou par notification. C'est volontaire : aucun service à maintenir
 > sur le Raspberry Pi.
 
+### 6.8 Chercher dans le site
+
+1. Cliquer sur **Recherche** dans le menu.
+2. Taper un nom, un mot ou une année, puis **Chercher**. Par exemple
+   « martin », « mariage 1928 » ou « Bègles ».
+3. Les résultats arrivent groupés par catégorie (documents, articles, pages
+   d'information, personnes). Cliquer sur « Tout », « Documents », « Articles »,
+   « Pages d'information » ou « Personnes » pour n'en voir qu'une.
+4. Sur la fiche d'une personne, **Chronologie** rassemble les grands moments de
+   sa vie, et « Autres personnes portant le nom … » mène aux homonymes.
+
+Rien à régler : l'index se met à jour à chaque modification. Même sur une base
+de plusieurs milliers de personnes, une recherche répond en moins d'une seconde
+sur le Raspberry Pi.
+
 ---
 
 ## 7. Mettre à jour le site
@@ -717,7 +760,8 @@ migration est appliquée dans une transaction. La sauvegarde de la nuit
 précédente reste disponible sur la clé USB.
 
 Après une mise à jour, les petits tests automatiques (mise en forme des
-messages du tchat, et plus tard la recherche) se lancent en une commande :
+messages du tchat, préparation du texte cherché, chronologie d'une fiche de
+personne) se lancent en une commande :
 
 ```bash
 cd /home/votre-utilisateur/histoiredefamille
@@ -1034,6 +1078,11 @@ le dossier `storage/` sont listés dans `.gitignore`.
 - **SQLite** : mode WAL, `busy_timeout` 5000 ms, 3 tentatives espacées de
   300 ms sur les écritures sensibles (la cause du « database is locked » vue
   sur un autre site).
+- **Recherche** : index plein texte SQLite (FTS5) tenu à jour par des
+  déclencheurs. Si la version de SQLite du serveur ne sait pas le faire, le
+  code bascule tout seul sur une recherche plus lente mais correcte (`GLOB`).
+  Dans les deux cas, seuls les contenus autorisés pour la personne connectée
+  sont cherchés, et rien ne quitte le serveur.
 
 ### Ce que vous devez faire de votre côté
 

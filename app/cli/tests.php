@@ -151,6 +151,163 @@ if ($filtre === '' || $filtre === 'tchat') {
 }
 
 // ---------------------------------------------------------------------------
+// Recherche : préparation du texte cherché
+// ---------------------------------------------------------------------------
+if ($filtre === '' || $filtre === 'recherche') {
+    echo "\nRecherche — texte cherché\n";
+
+    verifier(
+        'minuscules et accents retirés',
+        recherche_normaliser('L’Hélène de Bègles') === 'l helene de begles',
+        'obtenu : « ' . recherche_normaliser('L’Hélène de Bègles') . ' »'
+    );
+    verifier(
+        'majuscules accentuées',
+        recherche_normaliser('ÉCOLE PRIVÉE') === 'ecole privee',
+        'obtenu : « ' . recherche_normaliser('ÉCOLE PRIVÉE') . ' »'
+    );
+    verifier(
+        'ligatures (œ, æ)',
+        recherche_normaliser('cœur et æquo') === 'coeur et aequo',
+        'obtenu : « ' . recherche_normaliser('cœur et æquo') . ' »'
+    );
+    verifier(
+        'ponctuation et guillemets ignorés',
+        recherche_normaliser('« Martin, Jean ! » (1932)') === 'martin jean 1932',
+        'obtenu : « ' . recherche_normaliser('« Martin, Jean ! » (1932)') . ' »'
+    );
+    verifier(
+        'années séparées par un tiret',
+        recherche_normaliser('1928-1930') === '1928 1930',
+        'obtenu : « ' . recherche_normaliser('1928-1930') . ' »'
+    );
+
+    verifier(
+        'découpage en mots',
+        recherche_mots('  Jean   MARTIN ') === ['jean', 'martin'],
+        'obtenu : ' . implode(', ', recherche_mots('  Jean   MARTIN '))
+    );
+    verifier('recherche vide → aucun mot', recherche_mots('   ') === []);
+    verifier('recherche vide de sens → aucun mot', recherche_mots('!!! ???') === []);
+    verifier(
+        'six mots au maximum',
+        count(recherche_mots('un deux trois quatre cinq six sept huit')) === 6
+    );
+    verifier(
+        'mots répétés comptés une fois',
+        recherche_mots('martin martin martin') === ['martin']
+    );
+    verifier(
+        'mot très long coupé à 40 caractères',
+        mb_strlen(recherche_mots(str_repeat('a', 80))[0], 'UTF-8') === 40
+    );
+
+    $motif = recherche_motif_glob('begles');
+    verifier(
+        'motif GLOB : variantes accentuées de chaque lettre',
+        $motif === '*b[eéèêëEÉÈÊË]gl[eéèêëEÉÈÊË]s*',
+        'obtenu : ' . $motif
+    );
+    verifier(
+        'motif GLOB : chiffres conservés',
+        recherche_motif_glob('1901') === '*1901*',
+        'obtenu : ' . recherche_motif_glob('1901')
+    );
+    verifier(
+        'motif GLOB : caractères spéciaux neutralisés',
+        recherche_motif_glob('a*b') === '*[aàâäáãåAÀÂÄÁÃÅ]?b*',
+        'obtenu : ' . recherche_motif_glob('a*b')
+    );
+
+    verifier(
+        'requête FTS : chaque mot entre guillemets, en préfixe',
+        recherche_requete_fts(['jean', 'martin']) === '"jean"* "martin"*',
+        'obtenu : ' . recherche_requete_fts(['jean', 'martin'])
+    );
+    verifier(
+        'catégories cherchées',
+        array_keys(recherche_types()) === ['documents', 'articles', 'pages', 'personnes'],
+        'obtenu : ' . implode(', ', array_keys(recherche_types()))
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Fiche d'une personne : les repères de vie
+// ---------------------------------------------------------------------------
+if ($filtre === '' || $filtre === 'personne') {
+    echo "\nFiche d'une personne — repères de vie\n";
+
+    $jean = [
+        'id' => 1, 'first_name' => 'Jean', 'last_name' => 'Martin',
+        'birth_date' => '1901', 'birth_place' => 'Bordeaux',
+        'death_date' => '1975', 'death_place' => '',
+    ];
+    $unions = [
+        [
+            'spouse'  => ['first_name' => 'Marie', 'last_name' => 'Leroy'],
+            'family'  => ['marriage_date' => '1928-06-12', 'marriage_place' => 'Bègles'],
+            'children' => [
+                ['id' => 4, 'first_name' => 'Paul', 'last_name' => 'Martin', 'birth_date' => '1930'],
+                ['id' => 5, 'first_name' => 'Anne', 'last_name' => 'Martin', 'birth_date' => '1935'],
+            ],
+        ],
+    ];
+
+    $reperes = person_reperes($jean, $unions);
+
+    verifier('un repère par naissance, mariage, enfant et décès', count($reperes) === 5, 'obtenu : ' . count($reperes));
+    verifier(
+        'repères classés du plus ancien au plus récent',
+        array_column($reperes, 'tri') === [1901, 1928, 1930, 1935, 1975],
+        'obtenu : ' . implode(', ', array_column($reperes, 'tri'))
+    );
+    verifier(
+        'lieu de naissance ajouté',
+        $reperes[0]['texte'] === 'Naissance à Bordeaux',
+        'obtenu : « ' . $reperes[0]['texte'] . ' »'
+    );
+    verifier(
+        'mariage nommé avec le conjoint et le lieu',
+        $reperes[1]['texte'] === 'Mariage avec Marie LEROY à Bègles',
+        'obtenu : « ' . $reperes[1]['texte'] . ' »'
+    );
+    verifier(
+        'naissance d\'un enfant : texte et lien vers sa fiche',
+        $reperes[2]['texte'] === 'Naissance : Paul MARTIN' && $reperes[2]['url'] === '/arbre/4',
+        'obtenu : « ' . $reperes[2]['texte'] . ' », lien : ' . (string) $reperes[2]['url']
+    );
+    verifier(
+        'décès sans lieu : simple',
+        $reperes[4]['texte'] === 'Décès',
+        'obtenu : « ' . $reperes[4]['texte'] . ' »'
+    );
+
+    verifier('personne sans aucune date → aucun repère', person_reperes(['id' => 9], []) === []);
+
+    $inconnues = person_reperes(
+        ['id' => 2, 'birth_date' => '', 'death_date' => 'vers 1950'],
+        [
+            [
+                'spouse'  => null,
+                'family'  => ['marriage_date' => '', 'marriage_place' => 'Pessac'],
+                'children' => [['id' => 7, 'first_name' => 'Luc', 'last_name' => 'Durand', 'birth_date' => '']],
+            ],
+        ]
+    );
+    verifier(
+        'année inconnue (« vers 1950 ») reconnue et placée à la fin',
+        count($inconnues) === 1
+            && $inconnues[0]['texte'] === 'Décès'
+            && $inconnues[0]['tri'] === 1950,
+        'obtenu : ' . json_encode($inconnues, JSON_UNESCAPED_UNICODE)
+    );
+    verifier(
+        'mariage sans date de mariage : repère absent',
+        array_column($inconnues, 'texte') === ['Décès']
+    );
+}
+
+// ---------------------------------------------------------------------------
 // Résumé
 // ---------------------------------------------------------------------------
 $total = $reussis + count($echecs);
