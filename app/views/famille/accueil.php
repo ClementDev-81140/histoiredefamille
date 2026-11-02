@@ -3,6 +3,7 @@
  * Espace famille.
  *
  * @var array $account, $documents, $personnes, $pages, $articles, $annonces, $courrier
+ * @var array $videos, $albums, $acces
  * @var int   $nbDocuments, $nbPersonnes, $nbPages
  */
 $isBranchAccount = ($account['role'] === 'famille');
@@ -69,6 +70,15 @@ $isBranchAccount = ($account['role'] === 'famille');
         <?php endif; ?>
 
         <section class="encart">
+            <h2 class="encart__titre">Accès rapides</h2>
+            <ul class="encart__liste encart__liste--liens">
+                <?php foreach ($acces as $lien): ?>
+                    <li><a href="<?= e($lien[0]) ?>"><?= e($lien[1]) ?></a></li>
+                <?php endforeach; ?>
+            </ul>
+        </section>
+
+        <section class="encart">
             <h2 class="encart__titre">En chiffres</h2>
             <p class="hero__chiffres">
                 <span><strong><?= (int) $nbDocuments ?></strong> document<?= (int) $nbDocuments > 1 ? 's' : '' ?></span>
@@ -82,6 +92,42 @@ $isBranchAccount = ($account['role'] === 'famille');
         </section>
     </aside>
 </div>
+
+<?php if ($videos !== []): ?>
+    <section class="section">
+        <div class="section__entete">
+            <h2>Dernières vidéos</h2>
+            <a href="/videos">Toutes les vidéos →</a>
+        </div>
+        <ul class="liste-personnes">
+            <?php foreach ($videos as $video): ?>
+                <li>
+                    <a href="/videos/<?= (int) $video['id'] ?>"><?= e((string) $video['title']) ?></a>
+                    <span class="discret"><?= e((string) ($video['doc_date'] ?? '')) ?></span>
+                </li>
+            <?php endforeach; ?>
+        </ul>
+    </section>
+<?php endif; ?>
+
+<?php if ($albums !== []): ?>
+    <section class="section">
+        <div class="section__entete">
+            <h2>Albums photos</h2>
+            <a href="/albums">Tous les albums →</a>
+        </div>
+        <ul class="liste-personnes">
+            <?php foreach ($albums as $album): ?>
+                <li>
+                    <a href="/albums/<?= e((string) $album['slug']) ?>"><?= e((string) $album['title']) ?></a>
+                    <?php if (trim((string) ($album['description'] ?? '')) !== ''): ?>
+                        <span class="discret"><?= e(text_summary((string) $album['description'], 80)) ?></span>
+                    <?php endif; ?>
+                </li>
+            <?php endforeach; ?>
+        </ul>
+    </section>
+<?php endif; ?>
 
 <?php if ($pages !== []): ?>
     <section class="section">

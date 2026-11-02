@@ -32,6 +32,7 @@ require_once __DIR__ . '/lib/recettes.php';
 require_once __DIR__ . '/lib/recherche.php';
 require_once __DIR__ . '/lib/journal.php';
 require_once __DIR__ . '/lib/gazette.php';
+require_once __DIR__ . '/lib/rubriques.php';
 
 /**
  * Le script tourne-t-il en ligne de commande ?

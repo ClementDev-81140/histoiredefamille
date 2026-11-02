@@ -69,32 +69,29 @@ $navClass = static function (string $href) use ($currentPath): string {
             </p>
         <?php endif; ?>
 
+        <?php
+        // Menu : réduit pour un visiteur (seulement ce qui a du contenu
+        // public), complet pour un compte de famille ou un administrateur.
+        // La règle est dans app/lib/rubriques.php, testée automatiquement.
+        $menu = menu_rubriques($account, [
+            'recettes'    => recipes_exist(),
+            'temoignages' => audio_exist(),
+            'tchat'       => $account !== null && tchat_actif(),
+        ]);
+        // Le tchat reste en dernier, après les pages d'information, comme avant.
+        $menuTchat   = array_values(array_filter($menu, static fn (array $e): bool => $e['cle'] === 'tchat'));
+        $menuAvant   = array_values(array_filter($menu, static fn (array $e): bool => $e['cle'] !== 'tchat'));
+        ?>
         <nav class="nav" aria-label="Navigation principale">
-            <a href="/"<?= $navClass('/') ?>>Accueil</a>
-            <a href="/articles"<?= $navClass('/articles') ?>>Articles</a>
-            <a href="/documents"<?= $navClass('/documents') ?>>Documents</a>
-            <?php /* Onglet visible par tous : un visiteur ne voit que les
-                     vidéos publiques, les autres selon leurs droits. */ ?>
-            <a href="/videos"<?= $navClass('/videos') ?>>Vidéos</a>
-            <a href="/albums"<?= $navClass('/albums') ?>>Albums</a>
-            <a href="/arbre"<?= $navClass('/arbre') ?>>Arbre</a>
-            <a href="/calendrier"<?= $navClass('/calendrier') ?>>Calendrier</a>
-            <?php if (recipes_exist()): ?>
-                <a href="/recettes"<?= $navClass('/recettes') ?>>Recettes</a>
-            <?php endif; ?>
-            <?php if (audio_exist()): ?>
-                <a href="/temoignages"<?= $navClass('/temoignages') ?>>Témoignages</a>
-            <?php endif; ?>
-            <a href="/recherche"<?= $navClass('/recherche') ?>>Recherche</a>
+            <?php foreach ($menuAvant as $entree): ?>
+                <a href="<?= e($entree['href']) ?>"<?= $navClass($entree['href']) ?>><?= e($entree['libelle']) ?></a>
+            <?php endforeach; ?>
             <?php foreach ($navPages as $navPage): ?>
                 <a href="/pages/<?= e($navPage['slug']) ?>"<?= $navClass('/pages/' . $navPage['slug']) ?>><?= e($navPage['title']) ?></a>
             <?php endforeach; ?>
-
-            <?php /* Onglet visible seulement pour les personnes connectées :
-                     le salon est privé. */ ?>
-            <?php if ($account !== null && tchat_actif()): ?>
-                <a href="/tchat"<?= $navClass('/tchat') ?>>Tchat<?php if ($tchatNonLus > 0): ?><span class="pastille" aria-label="nouveaux messages"><?= $tchatNonLus > 99 ? '99+' : (int) $tchatNonLus ?></span><?php endif; ?></a>
-            <?php endif; ?>
+            <?php foreach ($menuTchat as $entree): ?>
+                <a href="<?= e($entree['href']) ?>"<?= $navClass($entree['href']) ?>><?= e($entree['libelle']) ?><?php if ($tchatNonLus > 0): ?><span class="pastille" aria-label="nouveaux messages"><?= $tchatNonLus > 99 ? '99+' : (int) $tchatNonLus ?></span><?php endif; ?></a>
+            <?php endforeach; ?>
 
             <?php if ($account === null): ?>
                 <a class="nav__accent" href="/connexion">Espace famille</a>

@@ -13,6 +13,9 @@
  * La famille « journal » vérifie, elle, le journal des connexions : elle écrit
  * quelques lignes d'essai puis les efface et remet les réglages en place. Si la
  * table n'existe pas encore, elle s'arrête sans échouer.
+ * La famille « rubriques » vérifie ce que voit un visiteur (menu public réduit,
+ * rubriques vides masquées) : ses essais se font dans une transaction annulée,
+ * la base est donc rendue intacte dans tous les cas.
  */
 
 declare(strict_types=1);
@@ -745,6 +748,228 @@ if ($filtre === '' || $filtre === 'journal') {
             (int) db_value('SELECT COUNT(*) FROM login_log WHERE id > ?', [$marqueur], 0) === 0
                 && db_value('SELECT id FROM accounts WHERE username = ?', ['essai-journal-tests']) === null,
             'des lignes du journal de test sont restées'
+        );
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Rubriques publiques et menu (lot 7)
+// ---------------------------------------------------------------------------
+if ($filtre === '' || $filtre === 'rubriques') {
+    echo "Rubriques publiques et menu\n";
+
+    $tablesPubliques = ['articles', 'documents', 'albums', 'pages', 'persons'];
+    $tablesPresentes = true;
+    foreach ($tablesPubliques as $table) {
+        if ((int) db_value(
+            "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = ?",
+            [$table],
+            0
+        ) === 0) {
+            $tablesPresentes = false;
+        }
+    }
+
+    if (!$tablesPresentes) {
+        echo "  (base incomplète : migrations à lancer, tests ignorés)\n\n";
+    } else {
+        /**
+         * Exécute des modifications puis les annule : la base est rendue
+         * exactement dans l'état où on l'a trouvée, même si un test échoue.
+         */
+        $dansUneTransactionAnnulee = static function (callable $travail): void {
+            try {
+                db_transaction(static function () use ($travail): void {
+                    $travail();
+                    throw new RuntimeException('annulation volontaire du test');
+                });
+            } catch (RuntimeException $e) {
+                if ($e->getMessage() !== 'annulation volontaire du test') {
+                    throw $e;
+                }
+            }
+        };
+
+        // 1. Aucun contenu public : il ne reste que les trois entrées de base.
+        $sansRien     = null;
+        $menuSansRien = null;
+        $dansUneTransactionAnnulee(static function () use (&$sansRien, &$menuSansRien): void {
+            db_exec("UPDATE articles SET status = 'brouillon'");
+            db_exec("UPDATE documents SET visibility = 'prive'");
+            db_exec("UPDATE albums SET visibility = 'prive'");
+            db_exec("UPDATE pages SET visibility = 'prive'");
+            db_exec("UPDATE persons SET visibility = 'prive'");
+            $sansRien     = rubriques_publiques(true);
+            $menuSansRien = array_column(menu_rubriques(null), 'cle');
+        });
+
+        verifier(
+            'aucun contenu public : seulement documents, arbre et famille',
+            !empty($sansRien['documents']) && !empty($sansRien['arbre']) && !empty($sansRien['famille'])
+                && empty($sansRien['articles']) && empty($sansRien['videos'])
+                && empty($sansRien['albums']) && empty($sansRien['calendrier'])
+                && empty($sansRien['recherche']),
+            'obtenu : ' . json_encode($sansRien, JSON_UNESCAPED_UNICODE)
+        );
+        verifier(
+            'aucun contenu public : menu du visiteur réduit aux trois entrées',
+            $menuSansRien === ['accueil', 'documents', 'arbre'],
+            'obtenu : ' . implode(', ', (array) $menuSansRien)
+        );
+
+        // Hors transaction : on recalcule sur l'état réel de la base.
+        rubriques_publiques(true);
+
+        // 2. Un article public : la rubrique Articles revient, dans le menu aussi.
+        $avecArticle = null;
+        $menuArticle = null;
+        $dansUneTransactionAnnulee(static function () use (&$avecArticle, &$menuArticle): void {
+            db_exec("UPDATE articles SET status = 'brouillon'");
+            db_exec(
+                "INSERT INTO articles (slug, title, summary, body, category, visibility, status, published_at, created_at, updated_at)
+                 VALUES ('article-essai-tests', 'Article de test', '', 'Texte', '', 'public', 'publie', ?, ?, ?)",
+                [time() - 60, time(), time()]
+            );
+            $avecArticle = rubriques_publiques(true);
+            $menuArticle = menu_rubriques(null);
+        });
+        verifier(
+            'un article public : rubrique Articles affichée',
+            !empty($avecArticle['articles']),
+            'obtenu : ' . json_encode($avecArticle, JSON_UNESCAPED_UNICODE)
+        );
+        verifier(
+            'un article public : lien Articles dans le menu du visiteur',
+            in_array('articles', array_column($menuArticle, 'cle'), true),
+            'menu : ' . implode(', ', array_column($menuArticle, 'cle'))
+        );
+
+        // 3. Article programmé (date future) : pas encore public.
+        $programme = null;
+        $dansUneTransactionAnnulee(static function () use (&$programme): void {
+            db_exec("UPDATE articles SET status = 'brouillon'");
+            db_exec(
+                "INSERT INTO articles (slug, title, summary, body, category, visibility, status, published_at, created_at, updated_at)
+                 VALUES ('article-programme-tests', 'Article à paraître', '', 'Texte', '', 'public', 'publie', ?, ?, ?)",
+                [time() + 7 * 86400, time(), time()]
+            );
+            $programme = rubriques_publiques(true);
+        });
+        verifier(
+            'article programmé : rubrique Articles masquée',
+            empty($programme['articles']),
+            'obtenu : ' . json_encode($programme, JSON_UNESCAPED_UNICODE)
+        );
+
+        // 4. Article réservé à la famille : masqué pour un visiteur.
+        $familleSeule = null;
+        $dansUneTransactionAnnulee(static function () use (&$familleSeule): void {
+            db_exec("UPDATE articles SET status = 'brouillon'");
+            db_exec(
+                "INSERT INTO articles (slug, title, summary, body, category, visibility, status, published_at, created_at, updated_at)
+                 VALUES ('article-famille-tests', 'Article de famille', '', 'Texte', '', 'famille', 'publie', ?, ?, ?)",
+                [time() - 60, time(), time()]
+            );
+            $familleSeule = rubriques_publiques(true);
+        });
+        verifier(
+            'article réservé à la famille : rubrique Articles masquée',
+            empty($familleSeule['articles']),
+            'obtenu : ' . json_encode($familleSeule, JSON_UNESCAPED_UNICODE)
+        );
+
+        // 5. Calendrier : seulement si une personne publique a des dates.
+        $avecDates = null;
+        $sansDates = null;
+        $dansUneTransactionAnnulee(static function () use (&$avecDates, &$sansDates): void {
+            db_exec("UPDATE persons SET visibility = 'prive'");
+            db_exec(
+                "INSERT INTO persons (first_name, last_name, birth_date, birth_year, visibility, created_at, updated_at)
+                 VALUES ('Essai', 'Calendrier', '12/06/1900', 1900, 'public', ?, ?)",
+                [time(), time()]
+            );
+            $avecDates = rubriques_publiques(true);
+            db_exec("UPDATE persons SET birth_date = NULL, death_date = NULL WHERE last_name = 'Calendrier'");
+            $sansDates = rubriques_publiques(true);
+        });
+        verifier(
+            'personne publique avec des dates : calendrier affiché',
+            !empty($avecDates['calendrier']),
+            'obtenu : ' . json_encode($avecDates, JSON_UNESCAPED_UNICODE)
+        );
+        verifier(
+            'personne publique sans date : calendrier masqué',
+            empty($sansDates['calendrier']),
+            'obtenu : ' . json_encode($sansDates, JSON_UNESCAPED_UNICODE)
+        );
+
+        // 6. Le tchat n'est jamais public.
+        verifier(
+            'tchat : jamais dans le menu public',
+            rubriques_publiques(true)['tchat'] === false
+                && !in_array('tchat', array_column(menu_rubriques(null), 'cle'), true)
+        );
+
+        // 7. Le menu de chaque profil.
+        $compteFamille = ['role' => 'famille', 'username' => 'essai', 'branch_name' => 'Essai'];
+        $compteAdmin   = ['role' => 'admin', 'username' => 'essai'];
+        $extras        = ['recettes' => true, 'temoignages' => true, 'tchat' => true];
+
+        rubriques_publiques(true);
+        $menuVisiteur = array_column(menu_rubriques(null, $extras), 'cle');
+        $menuFamille  = array_column(menu_rubriques($compteFamille, $extras), 'cle');
+        $menuAdmin    = array_column(menu_rubriques($compteAdmin, $extras), 'cle');
+
+        verifier(
+            'menu visiteur : commence par accueil, documents, arbre',
+            array_slice($menuVisiteur, 0, 3) === ['accueil', 'documents', 'arbre'],
+            'obtenu : ' . implode(', ', $menuVisiteur)
+        );
+        verifier(
+            'menu visiteur : jamais de tchat',
+            !in_array('tchat', $menuVisiteur, true),
+            'obtenu : ' . implode(', ', $menuVisiteur)
+        );
+        verifier(
+            'menu visiteur : aucun lien vers une rubrique vide',
+            (static function () use ($menuVisiteur): bool {
+                $base = ['accueil', 'documents', 'arbre', 'recettes', 'temoignages'];
+                foreach ($menuVisiteur as $cle) {
+                    if (!in_array($cle, $base, true) && !rubrique_publique($cle)) {
+                        return false;
+                    }
+                }
+                return true;
+            })(),
+            'obtenu : ' . implode(', ', $menuVisiteur)
+        );
+        verifier(
+            'menu compte famille : toutes les rubriques',
+            array_values(array_intersect(
+                ['articles', 'documents', 'videos', 'albums', 'arbre', 'calendrier', 'recherche', 'tchat'],
+                $menuFamille
+            )) === ['articles', 'documents', 'videos', 'albums', 'arbre', 'calendrier', 'recherche', 'tchat'],
+            'obtenu : ' . implode(', ', $menuFamille)
+        );
+        verifier(
+            'menu administrateur : identique au menu famille',
+            $menuAdmin === $menuFamille,
+            'obtenu : ' . implode(', ', $menuAdmin)
+        );
+        verifier(
+            'menu connecté : tchat présent seulement si le tchat est ouvert',
+            in_array('tchat', $menuFamille, true)
+                && !in_array('tchat', array_column(menu_rubriques($compteFamille, ['tchat' => false]), 'cle'), true)
+        );
+
+        rubriques_publiques(true);
+
+        // 8. La base n'a pas été modifiée par ces essais.
+        verifier(
+            'les essais de rubriques ne laissent aucune trace',
+            (int) db_value("SELECT COUNT(*) FROM articles WHERE slug LIKE '%-essai-tests' OR slug LIKE '%-tests'", [], 0) === 0
+                && (int) db_value("SELECT COUNT(*) FROM persons WHERE last_name = 'Calendrier'", [], 0) === 0,
+            'des lignes d’essai sont restées en base'
         );
     }
 }

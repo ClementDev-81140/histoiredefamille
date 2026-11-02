@@ -21,6 +21,9 @@ $siteName = site_setting('name');
         <p class="hero__texte"><?= e(site_setting('description')) ?></p>
     <?php endif; ?>
 
+    <?php /* Trois entrées, pas une de plus : le site se consulte d'abord
+             en privé. Les autres rubriques ne sont proposées que si elles
+             contiennent vraiment quelque chose de public. */ ?>
     <p class="actions">
         <a class="bouton" href="/documents">Parcourir les documents</a>
         <a class="bouton bouton--secondaire" href="/arbre">Voir l’arbre généalogique</a>
@@ -28,6 +31,33 @@ $siteName = site_setting('name');
             <a class="bouton bouton--secondaire" href="/connexion">Espace famille</a>
         <?php endif; ?>
     </p>
+
+    <?php
+    // Rubriques supplémentaires : seulement celles qui ont du contenu public
+    // (une seule fonction, mise en cache pour la requête). Pour un compte
+    // connecté, le menu complet suffit : on n'ajoute rien ici.
+    $autres = [];
+    if (menu_public_reduit()) {
+        $autres = [
+            'articles'   => ['/articles', 'Articles'],
+            'videos'     => ['/videos', 'Vidéos'],
+            'albums'     => ['/albums', 'Albums'],
+            'calendrier' => ['/calendrier', 'Calendrier'],
+            'recherche'  => ['/recherche', 'Recherche'],
+        ];
+        $autres = array_filter($autres, static fn (string $cle): bool => rubrique_publique($cle), ARRAY_FILTER_USE_KEY);
+    }
+    ?>
+    <?php if ($autres !== []): ?>
+        <nav class="hero__rubriques" aria-label="Autres rubriques publiques">
+            <p class="hero__rubriques-titre">Également publié</p>
+            <ul>
+                <?php foreach ($autres as $lien): ?>
+                    <li><a href="<?= e($lien[0]) ?>"><?= e($lien[1]) ?></a></li>
+                <?php endforeach; ?>
+            </ul>
+        </nav>
+    <?php endif; ?>
 
     <p class="hero__chiffres" aria-label="Le site en chiffres">
         <span><strong><?= (int) $nbDocs ?></strong> document<?= (int) $nbDocs > 1 ? 's' : '' ?> accessible<?= (int) $nbDocs > 1 ? 's' : '' ?></span>
