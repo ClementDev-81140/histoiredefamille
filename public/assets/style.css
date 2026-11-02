@@ -2880,3 +2880,334 @@ body {
 .encart__lettre p { margin: 0 0 .25rem; }
 .encart__lettre footer { font-size: .8rem; font-style: normal; color: var(--texte-doux); }
 .encart__suite { text-align: right; font-style: italic; margin: .5rem 0 0; }
+
+
+/* ==========================================================================
+   DESIGN « GAZETTE » — COMPLÉMENTS ET CORRECTIONS (lot 7)
+   --------------------------------------------------------------------------
+   Ajouté APRÈS le bloc « DESIGN GAZETTE » ci-dessus, qui reste intact.
+   Objectif : plus rien de bleu ni de blanc froid, tout est sur le même
+   papier. Aucune classe n'est renommée ; seules des couleurs et quelques
+   espacements sont repris, plus les nouveaux blocs du menu public réduit.
+   Pour revenir au bleu : supprimer le bloc « :root » du design Gazette
+   (les couleurs ci-dessous suivent alors les variables, elles restent
+   cohérentes avec l'ancienne palette claire).
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Champs de formulaire : papier, filet à l'encre
+   -------------------------------------------------------------------------- */
+input[type="text"],
+input[type="search"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="file"],
+input[type="url"],
+input[type="date"],
+input[type="tel"],
+select,
+textarea {
+    background: var(--surface);
+    border: 1px solid var(--bordure);
+    color: var(--texte);
+}
+
+input::placeholder,
+textarea::placeholder {
+    color: var(--texte-doux);
+    opacity: 1;
+}
+
+input[type="file"]::file-selector-button {
+    background: var(--accent-clair);
+    border: 1px solid var(--bordure);
+    color: var(--texte);
+    font: inherit;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0.25rem 0.6rem;
+    margin-right: 0.6rem;
+}
+
+.mot-de-passe-genere {
+    background: var(--surface);
+}
+
+code,
+.etiquette {
+    background: #efe6d2;
+}
+
+/* --------------------------------------------------------------------------
+   Encadrés d'information : plus de filet bleu
+   -------------------------------------------------------------------------- */
+.note,
+.message--info {
+    border-color: #b89c78;
+}
+
+.message--succes {
+    border-color: #b3bf95;
+}
+
+.message--erreur {
+    border-color: #d3a596;
+}
+
+/* --------------------------------------------------------------------------
+   Badges : mêmes couleurs que les encadrés, teintes chaudes
+   -------------------------------------------------------------------------- */
+.badge-famille {
+    border-color: #b89c78;
+}
+
+.badge-public {
+    background: var(--succes-fond);
+    border-color: #b3bf95;
+    color: #40501f;
+}
+
+.badge-branches {
+    background: #f0e3c4;
+    border-color: #c8b083;
+    color: #6b5518;
+}
+
+.badge-prive {
+    background: #e7dcc9;
+    border-color: #b9a68c;
+    color: #55443a;
+}
+
+/* --------------------------------------------------------------------------
+   Tableaux : en-tête et survol sur papier
+   -------------------------------------------------------------------------- */
+.tableau thead th {
+    background: #e7dcc9;
+}
+
+.tableau tbody tr:hover {
+    background: #f5e9d2;
+}
+
+/* --------------------------------------------------------------------------
+   Calendrier, vignettes, aperçus : gris remplacés par du parchemin
+   -------------------------------------------------------------------------- */
+.calendrier__case--vide {
+    background: #f5e9d2;
+}
+
+.calendrier__entete-jour,
+.calendrier__jour {
+    color: var(--texte-doux);
+}
+
+.carte__apercu--document,
+.vignette__lien {
+    background: #e8dcc4;
+}
+
+/* --------------------------------------------------------------------------
+   Administration : en-tête compact (le grand titre « gazette » reste sur
+   les pages publiques ; ici on veut de la place pour le travail)
+   -------------------------------------------------------------------------- */
+.page-admin .entete {
+    border-bottom: var(--filet-double);
+}
+
+.page-admin .entete__barre {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding-top: 0.7rem;
+    padding-bottom: 0.45rem;
+}
+
+.page-admin .entete__titre {
+    text-align: left;
+    margin-bottom: 0;
+}
+
+.page-admin .entete__nom {
+    display: inline;
+    font-size: 1.3rem;
+    text-align: left;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+.page-admin .entete__sous-titre {
+    display: inline;
+    margin: 0 0 0 0.6rem;
+    font-size: 0.8rem;
+}
+
+.page-admin .nav {
+    margin-top: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    justify-content: flex-end;
+}
+
+@media (max-width: 40rem) {
+    .page-admin .entete__barre {
+        justify-content: center;
+        text-align: center;
+    }
+
+    .page-admin .nav {
+        justify-content: center;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   Impression : le papier de la gazette reste à l'écran.
+   Les règles d'impression d'origine sont écrites avant le design Gazette ;
+   on les rétablit ici, sinon le fond crème et les ombres sortiraient sur
+   l'imprimante.
+   -------------------------------------------------------------------------- */
+@media print {
+    body {
+        background: #ffffff !important;
+        background-image: none !important;
+        color: #000000 !important;
+    }
+
+    .panneau,
+    .article-carte,
+    .carte,
+    .album-carte {
+        background: #ffffff !important;
+        box-shadow: none !important;
+    }
+
+    .article-carte__image img {
+        filter: none !important;
+    }
+
+    .une__lateral {
+        border-left: 0;
+        padding-left: 0;
+    }
+
+    .une {
+        display: block;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   Accueil public : liste des rubriques réellement publiées
+   -------------------------------------------------------------------------- */
+.hero__rubriques {
+    margin: 1.2rem 0 0;
+    padding-top: 0.6rem;
+    border-top: 1px solid var(--bordure);
+}
+
+.hero__rubriques-titre {
+    margin: 0 0 0.35rem;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--texte-doux);
+}
+
+.hero__rubriques ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 1.1rem;
+    font-size: 0.86rem;
+}
+
+.hero__rubriques li {
+    margin: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Espace famille : accès rapides et listes de nouveautés
+   -------------------------------------------------------------------------- */
+.encart__liste--liens li {
+    padding: 0.28rem 0;
+}
+
+.encart__liste--liens a {
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+}
+
+.encart__liste--liens a:hover,
+.encart__liste--liens a:focus {
+    border-bottom-color: var(--accent);
+    color: var(--accent);
+}
+
+/* --------------------------------------------------------------------------
+   Téléphone (390 px et moins) : le bandeau et le menu respirent
+   -------------------------------------------------------------------------- */
+@media (max-width: 40rem) {
+    .entete__barre {
+        padding-top: 0.4rem;
+    }
+
+    .entete__nom {
+        font-size: clamp(1.7rem, 11vw, 2.6rem);
+        line-height: 1.05;
+    }
+
+    .entete__devise {
+        grid-template-columns: 1fr;
+        text-align: center;
+        font-size: 0.74rem;
+    }
+
+    .entete__devise > :last-child {
+        text-align: center;
+    }
+
+    .nav {
+        gap: 0.3rem 0.7rem;
+        font-size: 0.64rem;
+    }
+
+    .hero__chiffres {
+        font-size: 0.85rem;
+    }
+
+    .une__colonnes {
+        columns: 1;
+    }
+
+    .encart__titre {
+        text-align: left;
+    }
+
+    /* Les tableaux larges (administration, arbre) défilent au lieu de
+       déborder de l'écran : les trois tableaux qui ne sont pas déjà dans un
+       cadre « tableau-defilant » sont traités ici, une fois pour toutes. */
+    .tableau-defilant {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .tableau {
+        display: block;
+        max-width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        font-size: 0.8rem;
+    }
+
+    .tableau th,
+    .tableau td {
+        white-space: normal;
+    }
+}
