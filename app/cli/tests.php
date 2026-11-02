@@ -16,6 +16,8 @@
  * La famille « rubriques » vérifie ce que voit un visiteur (menu public réduit,
  * rubriques vides masquées) : ses essais se font dans une transaction annulée,
  * la base est donc rendue intacte dans tous les cas.
+ * La famille « editions » vérifie les filtres ?branche= et ?decennie= du
+ * journal, et qu'un visiteur n'y voit jamais un article non public.
  */
 
 declare(strict_types=1);
@@ -970,6 +972,179 @@ if ($filtre === '' || $filtre === 'rubriques') {
             (int) db_value("SELECT COUNT(*) FROM articles WHERE slug LIKE '%-essai-tests' OR slug LIKE '%-tests'", [], 0) === 0
                 && (int) db_value("SELECT COUNT(*) FROM persons WHERE last_name = 'Calendrier'", [], 0) === 0,
             'des lignes d’essai sont restées en base'
+        );
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Éditions : filtre par branche et frise par décennie (lot 7)
+// ---------------------------------------------------------------------------
+if ($filtre === '' || $filtre === 'editions') {
+    echo "Éditions du journal (branche et décennie)\n";
+
+    // 1. Millésime d'un article : l'année racontée, sinon l'année de publication.
+    $article1958 = ['title' => 'Le mariage de 1958', 'summary' => '', 'published_at' => mktime(0, 0, 0, 6, 14, 2026)];
+    verifier(
+        'millésime : l’année du titre l’emporte sur la date de publication',
+        article_millesime($article1958) === 1958,
+        'obtenu : ' . article_millesime($article1958)
+    );
+
+    $articleSansAnnee = ['title' => 'Une soupe pour l’hiver', 'summary' => 'Rien à dater.', 'published_at' => mktime(0, 0, 0, 3, 2, 2019)];
+    verifier(
+        'millésime : sans année dans le texte, on prend la publication',
+        article_millesime($articleSansAnnee) === 2019,
+        'obtenu : ' . article_millesime($articleSansAnnee)
+    );
+
+    $articleResume = ['title' => 'Chronique', 'summary' => 'Souvenirs de 1928.', 'published_at' => time()];
+    verifier(
+        'millésime : une année dans le résumé suffit',
+        article_millesime($articleResume) === 1928,
+        'obtenu : ' . article_millesime($articleResume)
+    );
+
+    verifier(
+        'millésime : un nombre à quatre chiffres hors bornes est ignoré',
+        article_millesime(['title' => 'Numéro 1500 et 2150', 'summary' => '', 'published_at' => mktime(0, 0, 0, 1, 1, 2005)]) === 2005,
+        'obtenu : ' . article_millesime(['title' => 'Numéro 1500 et 2150', 'summary' => '', 'published_at' => mktime(0, 0, 0, 1, 1, 2005)])
+    );
+
+    // 2. Décennie et liste des décennies.
+    verifier(
+        'décennie : 1958 → 1950',
+        article_decennie($article1958) === 1950,
+        'obtenu : ' . article_decennie($article1958)
+    );
+
+    $liste = [
+        ['title' => 'A 1958', 'summary' => '', 'published_at' => time()],
+        ['title' => 'B 1965', 'summary' => '', 'published_at' => time()],
+        ['title' => 'C 1969', 'summary' => '', 'published_at' => time()],
+        ['title' => 'D 1928', 'summary' => '', 'published_at' => time()],
+    ];
+    $decennies = editions_decennies($liste);
+    verifier(
+        'frise : les décennies sont comptées et triées de la plus récente à la plus ancienne',
+        $decennies === [1960 => 2, 1950 => 1, 1920 => 1],
+        'obtenu : ' . json_encode($decennies)
+    );
+
+    verifier(
+        'filtre décennie : ne garde que les articles de la décennie demandée',
+        array_column(editions_filtrer_decennie($liste, 1960), 'title') === ['B 1965', 'C 1969'],
+        'obtenu : ' . implode(', ', array_column(editions_filtrer_decennie($liste, 1960), 'title'))
+    );
+
+    verifier(
+        'filtre décennie : sans filtre, tout est conservé',
+        count(editions_filtrer_decennie($liste, 0)) === 4
+    );
+
+    // 3. Filtre par branche (à partir d'une carte article → branches).
+    $avecBranches = [
+        ['id' => 10, 'title' => 'Article de la branche 2'],
+        ['id' => 11, 'title' => 'Article sans branche'],
+    ];
+    $carte = [10 => [2, 3], 11 => []];
+    verifier(
+        'filtre branche : garde les articles rattachés à la branche',
+        array_column(editions_filtrer_branche($avecBranches, 2, $carte), 'title') === ['Article de la branche 2'],
+        'obtenu : ' . implode(', ', array_column(editions_filtrer_branche($avecBranches, 2, $carte), 'title'))
+    );
+    verifier(
+        'filtre branche : une branche sans article ne renvoie rien',
+        editions_filtrer_branche($avecBranches, 9, $carte) === []
+    );
+    verifier(
+        'filtre branche : sans filtre, tout est conservé',
+        count(editions_filtrer_branche($avecBranches, 0, $carte)) === 2
+    );
+
+    // 4. Visibilité : un visiteur ne voit jamais un article non public,
+    //    même en forçant ?branche= ou ?decennie= dans l'adresse.
+    $basePrete = (int) db_value(
+        "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name IN ('articles', 'content_branches')",
+        [],
+        0
+    ) === 2;
+
+    if (!$basePrete) {
+        echo "  (base incomplète : migrations à lancer, contrôles de visibilité ignorés)\n";
+    } else {
+        $resultats = null;
+        try {
+            db_transaction(static function () use (&$resultats): void {
+                // Trois articles qui racontent 1965 : un public, un pour les
+                // familles, un privé. Le compte courant est un visiteur (aucun
+                // compte connecté en ligne de commande).
+                foreach ([
+                    ['essai-public-1965', 'public', null],
+                    ['essai-famille-1965', 'famille', null],
+                    ['essai-prive-1975', 'prive', null],
+                ] as [$slug, $visibilite, $branche]) {
+                    $id = db_insert('articles', [
+                        'slug'         => $slug,
+                        'title'        => 'Essai 1965 (' . $visibilite . ')',
+                        'summary'      => '',
+                        'body'         => 'Texte de test.',
+                        'category'     => 'Essai',
+                        'visibility'   => $visibilite,
+                        'status'       => 'publie',
+                        'published_at' => time() - 60,
+                        'created_at'   => time(),
+                        'updated_at'   => time(),
+                    ]);
+                    if ($branche !== null) {
+                        set_content_branches('article', $id, [$branche]);
+                    }
+                }
+
+                $params = [];
+                $clause = article_visible_clause('a', $params);
+                // On sélectionne les colonnes que lit article_millesime() :
+                // le titre et le résumé (c'est là qu'est l'année racontée).
+                $visibles = db_all(
+                    "SELECT a.slug, a.title, a.summary, a.published_at FROM articles a
+                     WHERE {$clause} AND a.slug LIKE 'essai-%-1965'
+                     ORDER BY a.slug",
+                    $params
+                );
+
+                $resultats = [
+                    'slugs'     => array_column($visibles, 'slug'),
+                    'decennies' => editions_decennies($visibles),
+                    'branches'  => array_column(editions_branches(), 'nom'),
+                ];
+
+                // On annule tout : la base doit rester intacte.
+                throw new RuntimeException('fin du test, annulation');
+            });
+        } catch (RuntimeException $e) {
+            if ($e->getMessage() !== 'fin du test, annulation') {
+                throw $e;
+            }
+        }
+
+        verifier(
+            'visiteur : seul l’article public apparaît dans une décennie',
+            $resultats !== null && $resultats['slugs'] === ['essai-public-1965'],
+            'obtenu : ' . json_encode($resultats['slugs'] ?? null)
+        );
+        verifier(
+            'visiteur : la frise ne compte que les articles publics',
+            $resultats !== null && ($resultats['decennies'][1960] ?? 0) === 1,
+            'obtenu : ' . json_encode($resultats['decennies'] ?? null)
+        );
+        verifier(
+            'visiteur : le filtre par branche ne révèle aucune branche',
+            $resultats !== null && $resultats['branches'] === [],
+            'obtenu : ' . json_encode($resultats['branches'] ?? null)
+        );
+        verifier(
+            'les essais d’édition ne laissent aucune trace',
+            (int) db_value("SELECT COUNT(*) FROM articles WHERE slug LIKE 'essai-%-19%'", [], 0) === 0,
+            'des articles de test sont restés en base'
         );
     }
 }
