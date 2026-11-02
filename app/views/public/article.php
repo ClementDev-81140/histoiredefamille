@@ -1,13 +1,27 @@
 <?php
 /**
- * Lecture d'un article.
+ * Lecture d'un article, mise en page d'article de presse.
  *
- * @var array      $article, $branches, $others
+ * @var array      $article, $branches, $branchesNoms, $others
  * @var array|null $image
+ * @var string     $auteur
+ * @var int        $millesime, $decennie
  */
 $publie = $article['status'] === 'publie' && (int) $article['published_at'] <= time();
-?>
-<nav class="fil" aria-label="Fil d’Ariane">
+
+$surtitre = [];
+if (trim((string) $article['category']) !== '') {
+    $surtitre[] = (string) $article['category'];
+}
+foreach ($branchesNoms ?? [] as $nom) {
+    if (trim((string) $nom) !== '') {
+        $surtitre[] = (string) $nom;
+    }
+}
+if ((int) $decennie > 0) {
+    $surtitre[] = 'Années ' . decennie_libelle((int) $decennie);
+}
+?><nav class="fil" aria-label="Fil d’Ariane">
     <a href="/articles">Articles</a>
     <span aria-hidden="true">/</span>
     <span><?= e($article['title']) ?></span>
@@ -20,22 +34,25 @@ $publie = $article['status'] === 'publie' && (int) $article['published_at'] <= t
     </p>
 <?php endif; ?>
 
-<article class="section article">
+<article class="section article article--presse">
     <header class="article__entete">
-        <p class="article__meta">
-            <?php if ($article['category'] !== ''): ?>
-                <a class="article__rubrique" href="/articles?categorie=<?= rawurlencode((string) $article['category']) ?>"><?= e($article['category']) ?></a> ·
+        <p class="article__meta article__surtitre">
+            <?= e(implode(' · ', $surtitre)) ?>
+        </p>
+        <h1 class="article__titre"><?= e($article['title']) ?></h1>
+        <p class="article__signature">
+            <?php if (trim((string) $auteur) !== ''): ?>
+                Par <?= e((string) $auteur) ?> —
             <?php endif; ?>
             <?= e(french_long_date((int) $article['published_at'])) ?>
         </p>
-        <h1><?= e($article['title']) ?></h1>
         <?php if (trim((string) $article['summary']) !== ''): ?>
             <?php /* Le chapô est un texte simple : on retire la mise en forme
                      légère éventuellement saisie (astérisques, titres). */ ?>
             <p class="article__chapo"><?= e(text_to_plain((string) $article['summary'])) ?></p>
         <?php endif; ?>
         <?php if (is_logged_in()): ?>
-            <p>
+            <p class="article__visibilite">
                 <span class="<?= e(visibility_class((string) $article['visibility'])) ?>">
                     <?= e(visibility_label((string) $article['visibility'])) ?>
                 </span>
@@ -49,9 +66,13 @@ $publie = $article['status'] === 'publie' && (int) $article['published_at'] <= t
         </figure>
     <?php endif; ?>
 
-    <div class="texte article__texte">
+    <?php /* Corps du journal : justifié, avec césure et lettrine (style.css).
+             Sur grand écran seulement, il passe en deux colonnes. */ ?>
+    <div class="texte article__texte texte--presse">
         <?= render_text($article['body']) ?>
     </div>
+
+    <p class="article__fin" aria-hidden="true"></p>
 
     <?php if (is_admin()): ?>
         <?php if ($branches !== []): ?>
@@ -71,10 +92,10 @@ $publie = $article['status'] === 'publie' && (int) $article['published_at'] <= t
 
 <?php if ($others !== []): ?>
     <section class="section">
-        <h2>À lire aussi</h2>
-        <div class="articles-liste">
+        <h2 class="encart__titre encart__titre--section">À lire aussi</h2>
+        <div class="articles-colonnes">
             <?php foreach ($others as $article): ?>
-                <?php require __DIR__ . '/../partials/carte_article.php'; ?>
+                <?php $grand = false; require __DIR__ . '/../partials/carte_article.php'; ?>
             <?php endforeach; ?>
         </div>
     </section>

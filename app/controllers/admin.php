@@ -130,6 +130,8 @@ function admin_settings(): void
             'subtitle'    => site_setting('subtitle'),
             'description' => site_setting('description'),
             'contact'     => site_setting('contact'),
+            'devise'      => site_setting('devise'),
+            'fondee'      => site_setting('fondee'),
             'tchat_actif' => tchat_actif() ? '1' : '0',
             'tchat_conservation_mois' => (string) tchat_conservation_mois(),
         ],
@@ -147,6 +149,9 @@ function admin_settings_save(): void
         'subtitle'    => post('subtitle'),
         'description' => post('description'),
         'contact'     => post('contact'),
+        // Ligne de conduite du journal (facultatif).
+        'devise'      => post('devise'),
+        'fondee'      => post('fondee'),
         // Case à cocher : absente de l'envoi quand elle est décochée.
         'tchat_actif' => post('tchat_actif') === '1' ? '1' : '0',
         'tchat_conservation_mois' => (string) post('tchat_conservation_mois', '12'),
@@ -161,6 +166,12 @@ function admin_settings_save(): void
     }
     if ($values['contact'] !== '' && !filter_var($values['contact'], FILTER_VALIDATE_EMAIL)) {
         $errors[] = 'L’adresse de contact n’est pas valide.';
+    }
+    if (mb_strlen($values['devise']) > 120) {
+        $errors[] = 'La devise est trop longue (120 caractères maximum).';
+    }
+    if ($values['fondee'] !== '' && preg_match('/^\d{4}$/', $values['fondee']) !== 1) {
+        $errors[] = 'L’année de fondation doit s’écrire en quatre chiffres (par exemple 1889).';
     }
     if (!in_array($values['tchat_conservation_mois'], ['0', '3', '6', '12'], true)) {
         $errors[] = 'La durée de conservation du tchat n’est pas valide.';

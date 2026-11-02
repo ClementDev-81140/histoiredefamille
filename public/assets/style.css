@@ -3211,3 +3211,1225 @@ code,
         white-space: normal;
     }
 }
+
+
+/* ==========================================================================
+   GAZETTE 1.9.2 — LE MOULE DU JOURNAL
+   --------------------------------------------------------------------------
+   Reprise point par point de la maquette de l'IA de design : papier vieilli,
+   en-tête de journal, titres de une, colonnes, filets doubles, lettrines,
+   encarts en tirets, filtres d'édition.
+
+   Rien n'est renommé : ces règles arrivent après tout le reste et
+   surchargent les classes existantes. Les deux blocs « DESIGN GAZETTE »
+   ci-dessus restent intacts, y compris le :root de palette (le supprimer
+   ramène au bleu). Aucun arrondi, aucune ombre portée moderne, aucune
+   ressource externe : tout est dessiné en CSS.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Papier vieilli
+   -------------------------------------------------------------------------- */
+:root {
+    /* Couleur d'alerte de la maquette (rouge plus vif que le brique). */
+    --alerte: #b3241f;
+    /* La police du titre : gothique si le fichier est déposé, sinon le
+       repli défini plus bas. */
+    --police-gothique: "UnifrakturMaguntia", "Old Standard TT", Georgia, serif;
+}
+
+/* Le papier : deux halos fixes (cercle en haut à gauche, un plus bas à
+   droite) pour imiter le grain d'une feuille ancienne. Deux dégradés radiaux
+   seulement : aucune image à télécharger, aucun filtre coûteux (le Pi 3B+
+   n'a que 1 Go de mémoire).
+   Les halos sont fixés (background-attachment: fixed) : la feuille reste en
+   place et c'est le texte qui défile, comme sur du papier posé sur la table.
+   Sur un écran étroit, on repasse en défilement normal (voir la fin du
+   fichier) : le rendu est le même et c'est plus doux pour le processeur. */
+html {
+    background-color: #f3e7ce;
+}
+
+body {
+    background-color: #f3e7ce;
+    background-image:
+        radial-gradient(circle at 20% 10%, rgba(215, 184, 148, 0.30), transparent 55%),
+        radial-gradient(circle at 85% 70%, rgba(208, 164, 129, 0.30), transparent 55%);
+    background-repeat: no-repeat;
+    background-size: 100% 100%, 100% 100%;
+    /* Les halos restent en place quand on fait défiler : c'est ce qui donne
+       l'impression d'une feuille plutôt que d'un fond qui glisse. Sur
+       téléphone, on repasse en défilement normal (plus fluide, et le rendu
+       est identique à l'œil sur un écran étroit). */
+    background-attachment: fixed;
+    color: var(--texte);
+    /* Le papier : ombre interne brune sur toute la page. */
+    box-shadow: inset 0 0 120px rgba(148, 102, 64, 0.30);
+}
+
+/* Aucun arrondi nulle part : les composants datent d'avant la mode des
+   pilules. (Les points de la frise des décennies restent ronds : ce sont des
+   points, pas des boutons.) */
+.panneau,
+.carte,
+.article-carte,
+.bouton,
+.encart,
+.tableau,
+input,
+select,
+textarea,
+fieldset,
+.badge,
+.etiquette,
+.note,
+.message,
+.encart__liste li {
+    border-radius: 0;
+}
+
+/* --------------------------------------------------------------------------
+   2. En-tête : le bandeau du journal
+   -------------------------------------------------------------------------- */
+
+/* Ligne du haut : date · édition · prix. */
+.entete {
+    background: transparent;
+    box-shadow: none;
+}
+
+.entete__barre {
+    padding-top: 0.9rem;
+    padding-bottom: 0;
+}
+
+body:not(.page-admin) .entete__date {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin: 0 0 0.5rem;
+    padding-bottom: 0.35rem;
+    border-bottom: 1px solid var(--bordure);
+    font-size: 0.68rem;
+    font-style: normal;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--texte);
+}
+
+.entete__edition {
+    font-style: italic;
+    letter-spacing: 0.12em;
+    color: var(--texte-doux);
+}
+
+/* Le titre : très grand, centré, gothique. */
+body:not(.page-admin) .entete__titre {
+    margin: 0.15rem 0 0.2rem;
+    color: var(--texte);
+}
+
+body:not(.page-admin) .entete__nom {
+    display: block;
+    font-size: clamp(2.8rem, 9vw, 6rem);
+    line-height: 0.95;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+    text-transform: none;
+    text-align: center;
+}
+
+/* Repli élégant quand la police gothique n'est pas déposée : Old Standard TT
+   en gras et petites capitales, un peu espacée. */
+html:not(.police-titre) body:not(.page-admin) .entete__nom {
+    font-family: var(--serif);
+    font-weight: 700;
+    font-variant-caps: small-caps;
+    letter-spacing: 0.06em;
+    font-size: clamp(2.4rem, 7.5vw, 4.6rem);
+    line-height: 1.02;
+}
+
+.police-titre body:not(.page-admin) .entete__nom {
+    font-family: var(--police-gothique);
+    font-weight: 400;
+}
+
+/* Ligne de conduite : fondation · devise · numéro, entre un filet fin et
+   une règle double. */
+.entete__devise {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 0.5rem;
+    align-items: baseline;
+    margin: 0.1rem 0 0.55rem;
+    padding: 0.3rem 0 0.35rem;
+    border-top: 1px solid var(--bordure);
+    border-bottom: 3px double var(--bordure);
+    font-size: 0.78rem;
+    font-style: normal;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--texte-doux);
+}
+
+.entete__fondee { text-align: left; }
+
+.entete__devise-texte {
+    text-align: center;
+    font-style: italic;
+    text-transform: none;
+    letter-spacing: 0.02em;
+    font-size: 0.95rem;
+    color: var(--texte);
+}
+
+.entete__numero {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Menu : majuscules espacées, filets haut et bas, actif en rouge brique. */
+body:not(.page-admin) .nav {
+    background: transparent;
+    border-top: 0;
+    border-bottom: 3px double var(--bordure);
+    gap: 0.15rem 1rem;
+    padding: 0.42rem 0 0.4rem;
+}
+
+body:not(.page-admin) .nav a {
+    font-size: 0.7rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--texte);
+    border-bottom: 2px solid transparent;
+    padding: 0.1rem 0;
+}
+
+body:not(.page-admin) .nav a:hover,
+body:not(.page-admin) .nav a:focus {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+}
+
+body:not(.page-admin) .nav a.actif,
+body:not(.page-admin) .nav a[aria-current="page"] {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+    font-weight: 700;
+}
+
+body:not(.page-admin) .nav__accent {
+    color: var(--accent) !important;
+    border-bottom-color: transparent;
+    box-shadow: none;
+}
+
+body:not(.page-admin) .nav .lien-bouton {
+    font-size: 0.7rem;
+    letter-spacing: 0.16em;
+}
+
+/* Bandeau du compte connecté : discret, sur filet fin. */
+.bandeau-compte {
+    padding-top: 0.4rem;
+    padding-bottom: 0.4rem;
+    font-size: 0.76rem;
+    color: var(--texte-doux);
+    border-bottom: 1px solid var(--bordure);
+}
+
+/* --------------------------------------------------------------------------
+   3. Typographie du journal
+   -------------------------------------------------------------------------- */
+
+/* Surtitres : « rubrique · branche · décennie ». */
+.article-carte__surtitre,
+.article__surtitre {
+    margin: 0 0 0.35rem;
+    font-size: 11px;
+    line-height: 1.5;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 700;
+}
+
+.article-carte__surtitre .badge {
+    letter-spacing: 0.08em;
+    margin-left: 0.35rem;
+}
+
+/* Titre « à la une ». */
+.article-carte--une .article-carte__titre {
+    margin: 0.15rem 0 0.5rem;
+    font-size: clamp(2.75rem, 6vw, 4.5rem);
+    font-weight: 700;
+    line-height: 1.02;
+    letter-spacing: -0.01em;
+}
+
+/* Titres d'articles (listes, colonnes). */
+.article-carte__titre {
+    font-size: clamp(1.5rem, 2.5vw, 1.875rem);
+    font-weight: 700;
+    line-height: 1.16;
+    letter-spacing: -0.005em;
+}
+
+.article-carte__titre a {
+    color: var(--texte);
+    text-decoration: none;
+}
+
+.article-carte__titre a:hover,
+.article-carte__titre a:focus {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 0.12em;
+}
+
+/* Signature « Par … » en italique ; dans les colonnes, elle passe à droite
+   (« — Auteur »), comme dans un vrai journal. */
+.article-carte__signature,
+.article__signature {
+    margin: 0 0 0.5rem;
+    font-size: 0.82rem;
+    font-style: italic;
+    color: var(--texte-doux);
+}
+
+.une__colonnes .article-carte__signature,
+.articles-colonnes .article-carte__signature {
+    text-align: right;
+    margin-bottom: 0.35rem;
+}
+
+/* Corps justifié avec césure (la page est en lang="fr"). */
+.article__texte,
+.article__texte p,
+.article-carte__resume,
+.article__chapo,
+.page-info .texte {
+    text-align: justify;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+    line-height: 1.6;
+}
+
+/* Lettrine : la première lettre du premier paragraphe de l'article à la une
+   et de chaque article ouvert. */
+.article-carte--une .article-carte__resume::first-letter,
+.article__texte > p:first-of-type::first-letter {
+    float: left;
+    font-family: var(--serif);
+    font-size: 3.4em;
+    line-height: 0.78;
+    font-weight: 700;
+    margin: 0.06em 0.09em 0 0;
+    color: var(--texte);
+}
+
+/* Chapô : légèrement plus grand, en italique. */
+.article__chapo {
+    margin: 0 0 1.1rem;
+    font-size: 1.06rem;
+    font-style: italic;
+    color: var(--texte-doux);
+}
+
+/* --------------------------------------------------------------------------
+   4. La « une » : grille journal, colonne latérale de 280 px
+   -------------------------------------------------------------------------- */
+.une {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.5rem;
+}
+
+@media (min-width: 62rem) {
+    .une {
+        grid-template-columns: minmax(0, 1fr) 280px;
+        gap: 1.8rem;
+    }
+
+    .une__lateral {
+        border-left: 1px solid var(--bordure);
+        padding-left: 1.4rem;
+    }
+}
+
+.une-intro {
+    margin-bottom: 1.4rem;
+    padding-bottom: 0.7rem;
+    border-bottom: 4px double var(--bordure);
+}
+
+.une-intro__titre {
+    margin: 0 0 0.35rem;
+    font-size: clamp(1.4rem, 3vw, 2rem);
+    font-weight: 700;
+    border: 0;
+    padding: 0;
+}
+
+.une-intro .note {
+    background: transparent;
+    border: 0;
+    padding: 0;
+    font-size: 0.9rem;
+    color: var(--texte-doux);
+}
+
+/* L'article à la une : plaque d'image 4/3, texte, règle double épaisse. */
+.article-carte--une {
+    padding-bottom: 1rem;
+    margin-bottom: 1.4rem;
+    border-bottom: 4px double var(--bordure);
+}
+
+.article-carte--une .article-carte__image {
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    margin-bottom: 0.9rem;
+    background: #e8dcc4;
+}
+
+.article-carte--une .article-carte__image img {
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    object-fit: cover;
+}
+
+.article-carte--une .article-carte__resume {
+    font-size: 1.02rem;
+    margin-bottom: 0.6rem;
+}
+
+/* Les articles suivants : colonnes de journal (2 dès 40 rem, 3 dès 80 rem),
+   filet vertical entre les colonnes, filet fin sous chaque article. */
+.une__colonnes,
+.articles-colonnes {
+    display: block;
+    column-rule: 1px solid var(--bordure);
+    column-gap: 1.6rem;
+}
+
+@media (min-width: 40rem) {
+    .une__colonnes,
+    .articles-colonnes { columns: 2; }
+}
+
+@media (min-width: 80rem) {
+    .une__colonnes,
+    .articles-colonnes { columns: 3; }
+}
+
+.une__colonnes .article-carte,
+.articles-colonnes .article-carte {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: 1.1rem;
+    padding-bottom: 0.9rem;
+    border-bottom: 1px solid var(--bordure);
+}
+
+.une__colonnes .article-carte:last-child,
+.articles-colonnes .article-carte:last-child {
+    border-bottom: 0;
+}
+
+.une__colonnes .article-carte__image,
+.articles-colonnes .article-carte__image {
+    margin-bottom: 0.5rem;
+}
+
+.une__colonnes .article-carte__titre,
+.articles-colonnes .article-carte__titre {
+    font-size: clamp(1.25rem, 2vw, 1.5rem);
+}
+
+/* Les vignettes des colonnes restent sobres : résumé plus court. */
+.une__colonnes .article-carte__resume,
+.articles-colonnes .article-carte__resume {
+    font-size: 0.94rem;
+}
+
+.une__suite,
+.encart__suite {
+    text-align: right;
+    font-style: italic;
+    margin: 0.4rem 0 0;
+}
+
+/* Plaque d'image de repli : dégradé sépia et initiale en gothique. */
+.article-carte__plaque {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background:
+        radial-gradient(circle at 50% 42%, #d7af88 0%, #a57a5a 55%, #704b36 100%);
+    filter: sepia(0.35);
+    /* Le même grain de papier que la page, en plus petit. */
+    box-shadow: inset 0 0 60px rgba(148, 102, 64, 0.35);
+}
+
+.article-carte:not(.article-carte--une) .article-carte__plaque {
+    aspect-ratio: 16 / 9;
+}
+
+.plaque__lettre {
+    font-family: var(--police-gothique);
+    font-size: clamp(3rem, 9vw, 6rem);
+    line-height: 1;
+    color: rgba(243, 231, 206, 0.42);
+    letter-spacing: 0;
+    user-select: none;
+}
+
+html:not(.police-titre) .plaque__lettre {
+    font-family: var(--serif);
+    font-weight: 700;
+}
+
+/* Les vraies photos : sépia doux, rendu normal au survol et à l'ouverture. */
+.article-carte__image img,
+.article__image img,
+.album-carte__apercu img,
+.vignette__image img {
+    filter: sepia(0.35) contrast(1.05);
+}
+
+.article-carte__image:hover img,
+.article-carte__image:focus img,
+.article__image:hover img,
+.article__image:focus img,
+.album-carte__apercu:hover img,
+.vignette__image:hover img {
+    filter: none;
+}
+
+/* --------------------------------------------------------------------------
+   5. Les encarts de la colonne latérale
+   -------------------------------------------------------------------------- */
+.encart {
+    margin-bottom: 1.6rem;
+}
+
+/* Titre d'encart : majuscules très espacées, entre deux règles doubles. */
+.encart__titre {
+    margin: 0 0 0.7rem;
+    padding: 0.3rem 0;
+    border-top: 3px double var(--bordure);
+    border-bottom: 3px double var(--bordure);
+    font-size: 1.06rem;
+    font-weight: 700;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    text-align: center;
+    color: var(--texte);
+}
+
+.encart__titre--section {
+    margin-bottom: 1.1rem;
+}
+
+/* « Petites annonces » : chaque annonce dans un cadre en tirets. */
+.encart__liste {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.encart__liste li {
+    margin: 0 0 0.5rem;
+    padding: 0.4rem 0.55rem;
+    border: 1px dashed var(--bordure);
+    background: var(--surface);
+    font-size: 0.88rem;
+    line-height: 1.45;
+}
+
+.encart__date {
+    display: inline-block;
+    min-width: 2.9rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--accent);
+}
+
+.encart__liste--liens li,
+.encart__liste--editions li {
+    padding: 0.22rem 0;
+    border: 0;
+    background: transparent;
+    border-bottom: 1px dotted var(--bordure);
+}
+
+.encart__nombre {
+    float: right;
+    font-size: 0.78rem;
+    color: var(--texte-doux);
+    font-variant-numeric: tabular-nums;
+}
+
+/* « Courrier des lecteurs » : citations en italique, signature à droite. */
+.encart__lettre {
+    margin: 0 0 0.9rem;
+    padding: 0 0 0.6rem;
+    border-bottom: 1px dotted var(--bordure);
+    font-style: italic;
+    font-size: 0.9rem;
+}
+
+.encart__lettre p {
+    margin: 0 0 0.3rem;
+    text-align: justify;
+    hyphens: auto;
+}
+
+.encart__lettre p::before { content: "« "; }
+.encart__lettre p::after { content: " »"; }
+
+.encart__lettre footer {
+    font-size: 0.78rem;
+    font-style: normal;
+    text-align: right;
+    color: var(--texte-doux);
+}
+
+/* Chiffres du site, dans l'encart : alignés sur la largeur. */
+.encart .hero__chiffres {
+    display: block;
+    margin: 0 0 0.6rem;
+    font-size: 0.84rem;
+    text-align: left;
+}
+
+.encart .hero__chiffres span {
+    display: block;
+    padding: 0.18rem 0;
+    border-bottom: 1px dotted var(--bordure);
+}
+
+.encart .actions {
+    display: block;
+    margin-top: 0.7rem;
+}
+
+.encart .bouton {
+    display: block;
+    margin: 0 0 0.4rem;
+    text-align: center;
+}
+
+/* --------------------------------------------------------------------------
+   6. Filtres d'édition : branches et frise des décennies
+   -------------------------------------------------------------------------- */
+.editions {
+    margin: 0 0 1rem;
+}
+
+.editions__titre {
+    margin: 0 0 0.45rem;
+    padding-bottom: 0.2rem;
+    border-bottom: 1px solid var(--bordure);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.25em;
+    color: var(--texte-doux);
+}
+
+.editions__branches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.editions__branches a {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border: 1px solid var(--bordure);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    text-decoration: none;
+    color: var(--texte);
+    background: transparent;
+}
+
+.editions__branches a:hover,
+.editions__branches a:focus {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.editions__branches a.actif {
+    background: var(--texte);
+    border-color: var(--texte);
+    color: #f3e7ce;
+}
+
+/* Frise : une ligne fine, des points, l'actif en rouge brique. */
+.editions__frise {
+    margin: 0 0 1.6rem;
+}
+
+.editions__decennies {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.2rem;
+    list-style: none;
+    margin: 0;
+    padding: 0.5rem 0 0;
+}
+
+.editions__decennies::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 1.05rem;
+    border-top: 1px solid var(--bordure);
+}
+
+.editions__decennies li {
+    flex: 1 1 auto;
+    text-align: center;
+}
+
+.editions__point {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+    padding: 0 0.3rem;
+    font-size: 0.7rem;
+    text-decoration: none;
+    color: var(--texte-doux);
+    letter-spacing: 0.04em;
+}
+
+.editions__rond {
+    display: block;
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 50%;
+    background: var(--fond);
+    border: 1px solid var(--bordure);
+    position: relative;
+    z-index: 1;
+}
+
+.editions__nombre {
+    font-size: 0.62rem;
+    color: var(--texte-doux);
+    font-variant-numeric: tabular-nums;
+}
+
+.editions__point:hover .editions__libelle,
+.editions__point:focus .editions__libelle {
+    color: var(--accent);
+    text-decoration: underline;
+}
+
+.editions__point.actif .editions__rond {
+    background: var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(143, 49, 38, 0.18);
+}
+
+.editions__point.actif .editions__libelle {
+    color: var(--accent);
+    font-weight: 700;
+}
+
+/* Message d'édition sans nouvelle. */
+.vide-edition {
+    font-size: 1.1rem;
+    font-style: italic;
+    color: var(--texte-doux);
+    margin: 1.2rem 0;
+}
+
+/* Sous-titre de la page Articles. */
+.gazette-sous-titre {
+    margin: 0.1rem 0 0;
+    font-size: 0.86rem;
+    font-style: italic;
+    color: var(--texte-doux);
+}
+
+.section__entete--gazette {
+    border-bottom: 4px double var(--bordure);
+    padding-bottom: 0.5rem;
+}
+
+/* --------------------------------------------------------------------------
+   7. Article ouvert : mise en page de presse
+   -------------------------------------------------------------------------- */
+.article--presse {
+    max-width: 62rem;
+}
+
+.article__entete {
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid var(--bordure);
+    margin-bottom: 1.4rem;
+}
+
+.article__titre {
+    margin: 0.1rem 0 0.45rem;
+    font-size: clamp(2rem, 5vw, 3.4rem);
+    font-weight: 700;
+    line-height: 1.02;
+    letter-spacing: -0.01em;
+    border: 0;
+    padding: 0;
+}
+
+.article__signature {
+    border-bottom: 0;
+    margin-bottom: 0.9rem;
+}
+
+.article__image {
+    margin: 0 0 1.4rem;
+    padding: 0.4rem;
+    border: 1px solid var(--bordure);
+    background: var(--surface);
+    box-shadow: inset 0 0 18px rgba(148, 102, 64, 0.30);
+}
+
+.article__image img {
+    display: block;
+    width: 100%;
+    max-height: 32rem;
+    object-fit: cover;
+}
+
+.article__texte {
+    max-width: none;
+    columns: 1;
+}
+
+@media (min-width: 64rem) {
+    .article__texte.texte--presse {
+        columns: 2;
+        column-gap: 2.4rem;
+        column-rule: 1px solid var(--bordure);
+    }
+
+    .article__texte.texte--presse h2,
+    .article__texte.texte--presse h3 {
+        break-after: avoid;
+    }
+}
+
+/* Règle double de fin d'article. */
+.article__fin {
+    margin: 1.8rem 0 1.2rem;
+    border-bottom: 4px double var(--bordure);
+}
+
+/* --------------------------------------------------------------------------
+   8. Panneaux, formulaires et boutons
+   -------------------------------------------------------------------------- */
+.panneau,
+.formulaire,
+.carte,
+.article-carte {
+    background: var(--surface);
+}
+
+.panneau,
+.formulaire {
+    border: 1px solid var(--bordure);
+    box-shadow: inset 0 0 40px rgba(148, 102, 64, 0.22);
+}
+
+.panneau {
+    padding: 1.2rem 1.3rem;
+}
+
+/* Les cartes d'article restent sur le papier : pas de cadre, seulement des
+   filets. */
+.article-carte {
+    background: transparent;
+    border-left: 0;
+    border-right: 0;
+    border-top: 0;
+    box-shadow: none;
+}
+
+.formulaire {
+    padding: 1.2rem 1.3rem;
+    margin-bottom: 1.4rem;
+}
+
+/* Bouton plein : rouge brique, texte crème. */
+.bouton {
+    background: var(--accent);
+    border: 1px solid var(--texte);
+    color: #f3e7ce;
+    font-size: 0.74rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    padding: 0.5rem 1rem;
+    box-shadow: none;
+}
+
+.bouton:hover,
+.bouton:focus {
+    background: var(--accent-fonce);
+    border-color: var(--texte);
+    color: #f3e7ce;
+}
+
+/* Bouton contour : filet encre, papier. */
+.bouton--secondaire {
+    background: transparent;
+    border: 1px solid var(--texte);
+    color: var(--texte);
+}
+
+.bouton--secondaire:hover,
+.bouton--secondaire:focus {
+    background: var(--texte);
+    border-color: var(--texte);
+    color: #f3e7ce;
+}
+
+.bouton--danger {
+    background: var(--alerte);
+    border-color: var(--texte);
+    color: #f3e7ce;
+}
+
+.bouton--danger:hover,
+.bouton--danger:focus {
+    background: #8d1a16;
+    color: #f3e7ce;
+}
+
+/* Champs : papier plus clair, filet encre, aucune ombre. */
+input[type="text"],
+input[type="search"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="url"],
+input[type="date"],
+input[type="tel"],
+select,
+textarea {
+    background: #fdf6e6;
+    border: 1px solid var(--bordure);
+    color: var(--texte);
+    box-shadow: none;
+}
+
+label,
+legend {
+    letter-spacing: 0.12em;
+    font-size: 0.74rem;
+}
+
+/* Formulaire d'article : la « feuille de soumission » de la maquette.
+   Le titre s'écrit gros, le texte respire, tout reste sur le papier. */
+.formulaire .champ + .champ {
+    padding-top: 0.9rem;
+    border-top: 1px solid rgba(54, 44, 36, 0.25);
+}
+
+.formulaire input[name="title"],
+.formulaire input[name="name"] {
+    font-family: var(--serif);
+    font-size: 1.3rem;
+    padding: 0.5rem 0.6rem;
+}
+
+.formulaire textarea {
+    font-family: var(--serif);
+    font-size: 1rem;
+    line-height: 1.6;
+    min-height: 11rem;
+}
+
+.formulaire .aide {
+    font-size: 0.78rem;
+}
+
+/* Encadrés d'information : même papier, filet encre. */
+.note,
+.message {
+    border: 1px solid var(--bordure);
+    background: var(--info-fond);
+    color: var(--texte);
+}
+
+.hero .note {
+    background: transparent;
+    border: 0;
+    border-top: 1px solid var(--bordure);
+    border-bottom: 1px solid var(--bordure);
+}
+
+/* --------------------------------------------------------------------------
+   9. Autres pages : tableaux, badges, pagination, fil d'Ariane
+   -------------------------------------------------------------------------- */
+.tableau {
+    background: var(--surface);
+    border: 1px solid var(--bordure);
+}
+
+.tableau thead th {
+    background: #e7dcc9;
+    border-bottom: 1px solid var(--bordure);
+    letter-spacing: 0.12em;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+}
+
+.tableau td,
+.tableau th {
+    border-bottom: 1px solid var(--bordure);
+}
+
+.badge {
+    border-width: 1px;
+}
+
+.pagination {
+    border-top: 3px double var(--bordure);
+}
+
+.fil {
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--texte-doux);
+    border-bottom: 1px solid var(--bordure);
+    padding-bottom: 0.35rem;
+}
+
+.fil a {
+    color: var(--accent);
+}
+
+/* Titres de section : filet simple, comme les intertitres du journal. */
+.section > h2 {
+    font-size: 0.86rem;
+    letter-spacing: 0.2em;
+    border-bottom: 1px solid var(--bordure);
+}
+
+/* --------------------------------------------------------------------------
+   10. Pied de page
+   -------------------------------------------------------------------------- */
+.pied {
+    border-top: 4px double var(--bordure);
+    text-align: center;
+    font-style: italic;
+    color: var(--texte-doux);
+    padding-top: 1.1rem;
+}
+
+.pied p:first-child {
+    font-size: 0.95rem;
+    font-style: normal;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--texte);
+}
+
+.pied__note {
+    font-size: 0.78rem;
+}
+
+/* --------------------------------------------------------------------------
+   11. Téléphone (390 px) : une seule colonne, rien ne déborde
+   -------------------------------------------------------------------------- */
+@media (max-width: 40rem) {
+    body {
+        box-shadow: inset 0 0 70px rgba(148, 102, 64, 0.22);
+        background-attachment: scroll;
+    }
+
+    .entete__barre {
+        padding-top: 0.5rem;
+    }
+
+    body:not(.page-admin) .entete__date {
+        justify-content: center;
+        text-align: center;
+        gap: 0.15rem 0.5rem;
+        font-size: 0.62rem;
+        letter-spacing: 0.1em;
+    }
+
+    /* Sur téléphone, la ligne du haut garde la date et l'édition ; le prix
+       n'apporte rien et prenait une ligne entière. */
+    body:not(.page-admin) .entete__date > :last-child {
+        display: none;
+    }
+
+    body:not(.page-admin) .entete__nom,
+    html:not(.police-titre) body:not(.page-admin) .entete__nom {
+        font-size: clamp(1.9rem, 11vw, 2.8rem);
+        line-height: 1.02;
+    }
+
+    .entete__devise {
+        grid-template-columns: 1fr;
+        gap: 0.15rem;
+        text-align: center;
+        font-size: 0.66rem;
+        letter-spacing: 0.12em;
+    }
+
+    .entete__fondee,
+    .entete__numero {
+        text-align: center;
+    }
+
+    .entete__devise-texte {
+        font-size: 0.85rem;
+    }
+
+    body:not(.page-admin) .nav {
+        gap: 0.25rem 0.7rem;
+        font-size: 0.62rem;
+    }
+
+    body:not(.page-admin) .nav a {
+        font-size: 0.62rem;
+        letter-spacing: 0.1em;
+    }
+
+    /* Une seule colonne : aucune colonne CSS sur téléphone. */
+    .une,
+    .une__colonnes,
+    .articles-colonnes,
+    .article__texte,
+    .article__texte.texte--presse {
+        columns: auto;
+        column-count: auto;
+        column-rule: 0;
+    }
+
+    .une__lateral {
+        border-left: 0;
+        padding-left: 0;
+        border-top: 3px double var(--bordure);
+        padding-top: 1rem;
+    }
+
+    .article-carte--une .article-carte__titre {
+        font-size: clamp(1.75rem, 8.5vw, 2.4rem);
+    }
+
+    .article-carte--une .article-carte__image {
+        aspect-ratio: 3 / 2;
+    }
+
+    .encart__titre {
+        text-align: left;
+        letter-spacing: 0.18em;
+        font-size: 0.95rem;
+    }
+
+    .editions__decennies {
+        flex-wrap: wrap;
+        justify-content: flex-start;
+        gap: 0.5rem 0.9rem;
+    }
+
+    .editions__decennies::before {
+        display: none;
+    }
+
+    .editions__point {
+        flex-direction: row;
+        gap: 0.3rem;
+    }
+
+    .article__titre {
+        font-size: clamp(1.6rem, 8vw, 2.2rem);
+    }
+
+    .article-carte__titre {
+        font-size: clamp(1.2rem, 5.5vw, 1.5rem);
+    }
+
+    /* Aucun débordement horizontal : les mots très longs se coupent. */
+    .contenu-principal,
+    .article,
+    .article-carte {
+        overflow-wrap: break-word;
+    }
+
+    .pied {
+        padding-top: 0.9rem;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   12. Très petits écrans : la frise des décennies passe à la ligne
+   -------------------------------------------------------------------------- */
+@media (max-width: 26rem) {
+    .editions__branches a {
+        font-size: 0.62rem;
+        padding: 0.16rem 0.45rem;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   13. Impression : du papier blanc, rien d'autre
+   -------------------------------------------------------------------------- */
+@media print {
+    html,
+    body {
+        background: #ffffff !important;
+        background-image: none !important;
+        box-shadow: none !important;
+        color: #000000 !important;
+    }
+
+    .panneau,
+    .formulaire,
+    .carte,
+    .article-carte,
+    .article__image {
+        background: #ffffff !important;
+        box-shadow: none !important;
+        border-color: #000000 !important;
+    }
+
+    .article-carte__image img,
+    .article__image img {
+        filter: none !important;
+    }
+
+    .une {
+        display: block;
+    }
+
+    .une__colonnes,
+    .articles-colonnes {
+        columns: 1;
+    }
+}
+

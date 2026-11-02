@@ -3,7 +3,7 @@
  * Espace famille.
  *
  * @var array $account, $documents, $personnes, $pages, $articles, $annonces, $courrier
- * @var array $videos, $albums, $acces
+ * @var array $videos, $albums, $acces, $branchesEdition, $decenniesEdition
  * @var int   $nbDocuments, $nbPersonnes, $nbPages
  */
 $isBranchAccount = ($account['role'] === 'famille');
@@ -55,6 +55,25 @@ $isBranchAccount = ($account['role'] === 'famille');
             <?php endif; ?>
             <p class="encart__suite"><a href="/calendrier">Calendrier →</a></p>
         </section>
+
+        <?php if ($branchesEdition !== [] || $decenniesEdition !== []): ?>
+            <section class="encart">
+                <h2 class="encart__titre">Les éditions</h2>
+                <?php if ($branchesEdition !== []): ?>
+                    <ul class="encart__liste encart__liste--editions">
+                        <?php foreach ($branchesEdition as $brancheEdition): ?>
+                            <li>
+                                <a href="/articles?branche=<?= (int) $brancheEdition['id'] ?>"><?= e($brancheEdition['nom']) ?></a>
+                                <span class="encart__nombre"><?= (int) $brancheEdition['nb'] ?></span>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+                <?php endif; ?>
+                <?php if ($decenniesEdition !== []): ?>
+                    <p class="encart__suite"><a href="/articles">Toutes les décennies →</a></p>
+                <?php endif; ?>
+            </section>
+        <?php endif; ?>
 
         <?php if ($courrier !== []): ?>
             <section class="encart">

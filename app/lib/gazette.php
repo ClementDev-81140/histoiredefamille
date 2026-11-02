@@ -16,6 +16,17 @@ function gazette_devise(): string
     return $devise !== '' ? $devise : trim(site_setting('subtitle'));
 }
 
+/**
+ * Numéro de l'édition, à droite sous le titre : « N° 44 — 2026 ».
+ * C'est le numéro de la semaine (norme ISO), suivi de l'année : il change
+ * chaque semaine sans rien demander à personne.
+ */
+function gazette_numero(?int $horodatage = null): string
+{
+    $quand = $horodatage ?? time();
+    return 'N° ' . date('W', $quand) . ' — ' . date('Y', $quand);
+}
+
 /** Année de fondation (« Fondée en 1889 »), vide si non renseignée. */
 function gazette_fondee(): string
 {

@@ -10,7 +10,14 @@ declare(strict_types=1);
 // Partie publique
 // ---------------------------------------------------------------------------
 
-/** Liste des articles (/articles). */
+/**
+ * Liste des articles (/articles), avec deux filtres d'édition :
+ *   ?branche=3       articles rattachés à une branche
+ *   ?decennie=1960   articles qui racontent cette décennie
+ *
+ * Les deux filtres sont de simples liens : aucun JavaScript, et la
+ * visibilité est toujours appliquée par article_visible_clause().
+ */
 function public_articles(): void
 {
     $params = [];
@@ -22,16 +29,43 @@ function public_articles(): void
         $params[':categorie'] = $category;
     }
 
-    $whereSql = implode(' AND ', $where);
-    $total    = (int) db_value("SELECT COUNT(*) FROM articles a WHERE {$whereSql}", $params, 0);
-    $pg       = pagination($total, 10, max(1, query_int('page', 1)));
+    $branche = query_int('branche');
+    if ($branche > 0) {
+        $where[] = "EXISTS (
+            SELECT 1 FROM content_branches cb
+            WHERE cb.kind = 'article' AND cb.content_id = a.id AND cb.branch_id = :branche
+        )";
+        $params[':branche'] = $branche;
+    }
 
-    $articles = db_all(
-        "SELECT a.* FROM articles a WHERE {$whereSql}
-         ORDER BY a.published_at DESC, a.id DESC
-         LIMIT {$pg['perPage']} OFFSET {$pg['offset']}",
+    // Le filtre par branche est fait en SQL ; celui par décennie dépend du
+    // millésime raconté par l'article, donc du texte : on liste d'abord une
+    // version légère des articles (quatre colonnes), puis on découpe.
+    $whereSql = implode(' AND ', $where);
+
+    $legers = db_all(
+        "SELECT a.id, a.title, a.summary, a.published_at FROM articles a
+         WHERE {$whereSql}
+         ORDER BY a.published_at DESC, a.id DESC",
         $params
     );
+
+    $decennies = editions_decennies($legers);
+    $decennie  = query_int('decennie');
+    if ($decennie > 0 && !array_key_exists($decennie, $decennies)) {
+        $decennie = 0; // décennie inconnue : on n'invente pas de filtre
+    }
+    $legers = editions_filtrer_decennie($legers, $decennie);
+
+    $total = count($legers);
+    $pg    = pagination($total, 10, max(1, query_int('page', 1)));
+
+    // Les lignes complètes ne sont chargées que pour la page affichée.
+    $idsPage  = array_map(
+        static fn (array $ligne): int => (int) $ligne['id'],
+        array_slice($legers, (int) $pg['offset'], (int) $pg['perPage'])
+    );
+    $articles = articles_par_ids($idsPage);
 
     $catParams = [];
     $catClause = article_visible_clause('a', $catParams);
@@ -43,13 +77,54 @@ function public_articles(): void
     );
 
     render('public/articles', [
-        'titre'      => 'Articles',
-        'articles'   => $articles,
-        'categories' => $categories,
-        'categorie'  => $category,
-        'pagination' => $pg,
-        'total'      => $total,
+        'titre'        => 'Articles',
+        'articles'     => $articles,
+        'categories'   => $categories,
+        'categorie'    => $category,
+        'pagination'   => $pg,
+        'total'        => $total,
+        'branche'      => $branche,
+        'decennie'     => $decennie,
+        'decennies'    => $decennies,
+        'branches'     => editions_branches(),
+        'filtreVide'   => $total === 0 && ($branche > 0 || $decennie > 0),
     ]);
+}
+
+/**
+ * Les articles d'une page, dans l'ordre demandé, avec le nom de leur auteur.
+ *
+ * @param list<int> $ids
+ * @return list<array>
+ */
+function articles_par_ids(array $ids): array
+{
+    if ($ids === []) {
+        return [];
+    }
+
+    $marques = implode(',', array_fill(0, count($ids), '?'));
+    $lignes  = db_all(
+        "SELECT a.*, COALESCE(NULLIF(TRIM(u.display_name), ''), u.username) AS auteur
+         FROM articles a
+         LEFT JOIN accounts u ON u.id = a.author_id
+         WHERE a.id IN ({$marques})",
+        array_map('intval', $ids)
+    );
+
+    $parId = [];
+    foreach ($lignes as $ligne) {
+        $parId[(int) $ligne['id']] = $ligne;
+    }
+
+    $ordonnes = [];
+    foreach ($ids as $id) {
+        if (isset($parId[$id])) {
+            $ordonnes[] = $parId[$id];
+        }
+    }
+
+    return articles_avec_branches($ordonnes);
 }
 
 /** Lecture d'un article (/articles/{slug}). */
@@ -68,17 +143,38 @@ function public_article_detail(array $params): void
     $otherParams = [];
     $otherClause = article_visible_clause('a', $otherParams);
     $others = db_all(
-        "SELECT a.* FROM articles a WHERE a.id <> :id AND {$otherClause}
+        "SELECT a.*, COALESCE(NULLIF(TRIM(u.display_name), ''), u.username) AS auteur
+         FROM articles a LEFT JOIN accounts u ON u.id = a.author_id
+         WHERE a.id <> :id AND {$otherClause}
          ORDER BY a.published_at DESC, a.id DESC LIMIT 3",
         $otherParams + [':id' => (int) $article['id']]
     );
 
+    $articleIds = content_branch_ids('article', (int) $article['id']);
+    $noms       = [];
+    foreach ($articleIds as $branchId) {
+        $branch = find_branch($branchId);
+        if ($branch) {
+            $noms[] = (string) $branch['name'];
+        }
+    }
+
+    $auteur = db_value(
+        "SELECT COALESCE(NULLIF(TRIM(display_name), ''), username) FROM accounts WHERE id = ?",
+        [(int) ($article['author_id'] ?? 0)],
+        ''
+    );
+
     render('public/article', [
-        'titre'    => $article['title'],
-        'article'  => $article,
-        'image'    => article_image($article),
-        'branches' => content_branch_ids('article', (int) $article['id']),
-        'others'   => $others,
+        'titre'         => $article['title'],
+        'article'       => $article,
+        'image'         => article_image($article),
+        'branches'      => $articleIds,
+        'branchesNoms'  => $noms,
+        'auteur'        => (string) $auteur,
+        'millesime'     => article_millesime($article),
+        'decennie'      => article_decennie($article),
+        'others'        => $others,
     ]);
 }
 

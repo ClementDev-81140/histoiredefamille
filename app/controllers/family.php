@@ -52,6 +52,8 @@ function family_home(): void
         'pages'     => $pages,
         'articles'  => recent_articles(5),
         'videos'    => videos_visible(4),
+        'branchesEdition'  => editions_branches(),
+        'decenniesEdition' => editions_decennies_visibles(),
         'albums'    => albums_visible(4),
         'acces'     => $acces,
         'annonces'  => gazette_annonces(5),

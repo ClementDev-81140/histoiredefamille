@@ -31,6 +31,21 @@ $val = static fn (string $key, string $default = ''): string => (string) old_val
     </div>
 
     <div class="champ">
+        <label for="devise">Devise du journal (facultatif)</label>
+        <input type="text" id="devise" name="devise" maxlength="120" value="<?= e($val('devise')) ?>">
+        <p class="aide">
+            Affichée entre guillemets sous le titre, au centre (par exemple
+            « Mémoire des Bertillon et des Vasseur »). Vide, elle reprend le sous-titre.
+        </p>
+    </div>
+
+    <div class="champ">
+        <label for="fondee">Année de fondation (facultatif)</label>
+        <input type="text" id="fondee" name="fondee" maxlength="4" inputmode="numeric" value="<?= e($val('fondee')) ?>">
+        <p class="aide">Quatre chiffres, affichés à gauche sous le titre : « Fondée en 1889 ».</p>
+    </div>
+
+    <div class="champ">
         <label for="description">Description (page d’accueil)</label>
         <textarea id="description" name="description" rows="3" maxlength="500"><?= e($val('description')) ?></textarea>
     </div>

@@ -749,9 +749,14 @@ function recent_articles(int $limit = 4): array
 {
     $params = [];
     $clause = article_visible_clause('a', $params);
-    return db_all(
-        "SELECT a.* FROM articles a WHERE {$clause}
+    $lignes = db_all(
+        "SELECT a.*, COALESCE(NULLIF(TRIM(u.display_name), ''), u.username) AS auteur
+         FROM articles a LEFT JOIN accounts u ON u.id = a.author_id
+         WHERE {$clause}
          ORDER BY a.published_at DESC, a.id DESC LIMIT " . max(1, $limit),
         $params
     );
+
+    // Nom de la branche pour les articles réservés (surtitre de la carte).
+    return articles_avec_branches($lignes);
 }

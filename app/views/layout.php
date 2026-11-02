@@ -60,14 +60,18 @@ $navClass = static function (string $href) use ($currentPath): string {
             <span class="entete__nom"><?= e($siteName) ?></span>
         </a>
 
-        <?php $devise = gazette_devise(); $fondee = gazette_fondee(); ?>
-        <?php if ($devise !== '' || $fondee !== ''): ?>
-            <p class="entete__devise">
-                <span><?= $fondee !== '' ? 'Fondée en ' . e($fondee) : '' ?></span>
-                <span class="entete__devise-texte"><?= $devise !== '' ? '« ' . e($devise) . ' »' : '' ?></span>
-                <span></span>
-            </p>
-        <?php endif; ?>
+        <?php
+        // Ligne de conduite du journal : fondation à gauche, devise au
+        // centre, numéro d'édition à droite (filet fin au-dessus, règle
+        // double en dessous : voir style.css).
+        $devise = gazette_devise();
+        $fondee = gazette_fondee();
+        ?>
+        <p class="entete__devise">
+            <span class="entete__fondee"><?= $fondee !== '' ? 'Fondée en ' . e($fondee) : '' ?></span>
+            <span class="entete__devise-texte"><?= $devise !== '' ? '« ' . e($devise) . ' »' : '' ?></span>
+            <span class="entete__numero"><?= e(gazette_numero()) ?></span>
+        </p>
 
         <?php
         // Menu : réduit pour un visiteur (seulement ce qui a du contenu

@@ -779,6 +779,164 @@ if ((int) db_value('SELECT COUNT(*) FROM recipes', [], 0) === 0) {
 }
 
 // ---------------------------------------------------------------------------
+// Articles : huit textes fictifs pour juger la mise en page du journal
+// ---------------------------------------------------------------------------
+// Trois branches, des longueurs différentes, avec et sans photo : de quoi
+// voir la une, les colonnes et les lettrines comme sur le vrai site.
+if ((int) db_value('SELECT COUNT(*) FROM articles', [], 0) === 0) {
+    $adminId = db_value("SELECT id FROM accounts WHERE role = 'admin' ORDER BY id LIMIT 1", [], null);
+
+    $photos = [];
+    foreach ([
+        'portrait' => 'Portrait de Jean Martin%',
+        'mariage'  => 'Mariage de Paul et Suzanne%',
+        'reunion'  => 'Réunion de famille 1965%',
+    ] as $cle => $motif) {
+        $photos[$cle] = db_value(
+            "SELECT id FROM documents WHERE kind = 'photo' AND title LIKE ? LIMIT 1",
+            [$motif],
+            null
+        );
+    }
+
+    $textes = [
+        [
+            'slug'       => 'mariage-de-paul-et-suzanne-1958',
+            'title'      => 'Le mariage de Paul et Suzanne, un 14 juin 1958',
+            'summary'    => 'Deux cents invités, un accordéon, et une averse mémorable : le récit reconstitué de la noce, à partir des photos retrouvées dans le grenier.',
+            'category'   => 'Souvenirs',
+            'visibility' => 'public',
+            'branche'    => null,
+            'photo'      => 'mariage',
+            'jours'      => 1,
+            'body'       => "On avait sorti les chaises de la salle des fêtes dès le matin. La mairie ouvrait à dix heures et la famille était déjà là depuis une heure, à s'occuper les mains comme on pouvait : les hommes portaient les tables, les femmes disposaient les fleurs coupées la veille dans le jardin de la tante Berthe.\n\n"
+                . "## Une averse et un accordéon\n\n"
+                . "La cérémonie fut courte. À la sortie, le ciel tomba d'un coup, et tout le monde se retrouva serré sous l'auvent du café, en riant, les chapeaux dégoulinants. C'est là que le photographe prit la photo que nous avons retrouvée : on y voit Paul qui protège Suzanne d'un pan de sa veste, geste qu'il répéta, paraît-il, pendant cinquante-deux ans.\n\n"
+                . "Le repas dura jusqu'à la nuit. L'accordéoniste, un cousin de la branche maternelle, joua la même valse quatre fois de suite parce que personne ne savait plus quoi demander. On servit le gâteau avec les fraises du jardin, et comme il n'y avait pas assez d'assiettes, les enfants mangèrent debout, dehors, sous les platanes.\n\n"
+                . "## Ce que racontent les photos\n\n"
+                . "Sur les huit clichés qui nous restent, trois seulement sont nets. Ce sont pourtant ceux qui disent le plus : la table des grands-parents, la danse, et cette voiture décorée de rubans qui n'a jamais voulu démarrer. La légende familiale assure qu'on est rentrés à pied, en chantant, sur les trois kilomètres.",
+        ],
+        [
+            'slug'       => 'une-lettre-de-marie-1950',
+            'title'      => 'Une lettre de Marie, retrouvée dans un livre de comptes',
+            'summary'    => 'Glissée entre deux pages, une lettre de 1950 raconte le quotidien d’une ferme au sortir de la guerre.',
+            'category'   => 'Correspondance',
+            'visibility' => 'famille',
+            'branche'    => null,
+            'photo'      => null,
+            'jours'      => 3,
+            'body'       => "Ma chère Anne,\n\n"
+                . "Le foin est rentré avant la pluie, ce qui nous a valu deux jours de dos cassé et une bonne soupe. Les enfants ont repris l'école lundi, avec des sabots neufs qui font un bruit d'enfer sur les pavés.\n\n"
+                . "Je t'écris sur le dos du livre de comptes, parce que le papier à lettres est resté chez la mercière. Ne le dis pas à ton frère, il dirait encore que je ne range rien.\n\n"
+                . "Dis-moi si tu viens à la Toussaint : on gardera la chambre du haut, celle qui a la cheminée. Embrasse les petits pour moi.",
+        ],
+        [
+            'slug'       => 'reunion-de-famille-1965',
+            'title'      => 'La réunion de 1965, en trois souvenirs',
+            'summary'    => 'Trois témoins, trois versions de la même journée d’août.',
+            'category'   => 'Souvenirs',
+            'visibility' => 'branches',
+            'branche'    => 'MARTIN',
+            'photo'      => 'reunion',
+            'jours'      => 6,
+            'body'       => "Il y a eu la version courte, celle des albums : une belle journée, beaucoup de monde, on a mangé dehors.\n\n"
+                . "Puis la version longue, racontée par ceux qui étaient là : la voiture en panne à mi-chemin, la glacière oubliée, et le cousin qui avait apporté son projecteur sans les bobines.\n\n"
+                . "Enfin la version des enfants, la plus juste : on avait le droit de courir dans le pré, et personne ne nous a grondés avant le soir.",
+        ],
+        [
+            'slug'       => 'le-portrait-de-jean-1928',
+            'title'      => 'Le portrait de Jean, 1928 : ce qu’il ne montre pas',
+            'summary'    => 'Un portrait d’atelier, une chemise trop grande, et l’histoire de ceux qui ont posé avant lui.',
+            'category'   => 'Portraits',
+            'visibility' => 'public',
+            'branche'    => null,
+            'photo'      => 'portrait',
+            'jours'      => 9,
+            'body'       => "Sur la photo, il a vingt-trois ans et il regarde légèrement à gauche, comme on le demandait alors. La chemise est trop grande aux épaules : c'était celle du père, et l'atelier prêtait le reste.\n\n"
+                . "## L'atelier du bas de la rue\n\n"
+                . "Le photographe s'appelait Monsieur R. Il travaillait à la lumière du jour, sous une verrière, et facturait trois poses pour le prix d'une. Les familles y passaient en fin de matinée, quand la lumière était la plus douce. On gardait une épreuve, on en donnait une, la troisième restait chez lui.\n\n"
+                . "C'est sans doute pour cela que le même visage se retrouve, à vingt ans d'écart, dans des albums qui ne se connaissaient pas.\n\n"
+                . "## Ce que la photo ne dit pas\n\n"
+                . "Ce jour-là, sa sœur attendait un enfant. Il ne le saura qu'en rentrant, deux mois plus tard, et c'est cette nouvelle — pas le portrait — qui fut conservée dans les papiers de la famille.",
+        ],
+        [
+            'slug'       => 'une-soupe-pour-l-hiver',
+            'title'      => 'Une soupe pour l’hiver',
+            'summary'    => 'La recette qu’on se passait de ferme en ferme, et les deux détails qui changent tout.',
+            'category'   => 'La table',
+            'visibility' => 'public',
+            'branche'    => null,
+            'photo'      => null,
+            'jours'      => 14,
+            'body'       => "Trois légumes, un oignon, et un peu de patience. La recette est courte, mais on ne la réussit qu'après l'avoir ratée une fois.\n\n"
+                . "Le premier détail : ne jamais faire bouillir tout de suite. Le second : couper les légumes gros, ils tiendront mieux au chaud et la soupe sera meilleure le lendemain.",
+        ],
+        [
+            'slug'       => 'vacances-a-arcachon-1980',
+            'title'      => 'Vacances à Arcachon, août 1980',
+            'summary'    => 'Une semaine de pluie, trois parties de cartes, et la photo que tout le monde réclame.',
+            'category'   => 'Vacances',
+            'visibility' => 'famille',
+            'branche'    => 'DURAND',
+            'photo'      => null,
+            'jours'      => 21,
+            'body'       => "On avait loué la maison à deux familles, ce qui voulait dire deux cuisines et une seule salle de bain. L'organisation tenait du chef-d'œuvre.\n\n"
+                . "Il a plu cinq jours sur sept. On a joué aux cartes, on a refait le monde, on a mangé des huîtres sous l'auvent en regardant la mer grise. Sur la photo que tout le monde réclame, personne ne regarde l'objectif : c'est bien pour cela qu'elle est la meilleure.",
+        ],
+        [
+            'slug'       => 'les-carnets-de-leon-1931',
+            'title'      => 'Les carnets de Léon, 1931',
+            'summary'    => 'Quatre pages arrachées, une écriture serrée, et le récit d’un hiver passé à réparer des toits.',
+            'category'   => 'Carnets',
+            'visibility' => 'branches',
+            'branche'    => 'LEROY',
+            'photo'      => null,
+            'jours'      => 12,
+            'body'       => "Le carnet commence au milieu d'une phrase : « …et comme la tuile manquait, on a mis une ardoise. » On ne saura jamais ce qui précède.\n\n"
+                . "Quatre pages suivent, très serrées, où il est question de pluie, de clous, et d'un voisin qui prêtait son échelle contre un litre de vin. C'est tout l'hiver 1931, et c'est déjà beaucoup.",
+        ],
+        [
+            'slug'       => 'chronique-du-mois',
+            'title'      => 'Chronique du mois : ce qui a changé sur le site',
+            'summary'    => 'Nouveaux albums, une vidéo restaurée, et un appel à témoignages pour le numéro de Noël.',
+            'category'   => 'Nouvelles',
+            'visibility' => 'famille',
+            'branche'    => null,
+            'photo'      => null,
+            'jours'      => 30,
+            'body'       => "Trois albums ont été complétés ce mois-ci, dont un consacré aux portraits de l'atelier du bas de la rue.\n\n"
+                . "Nous cherchons des témoignages sur l'hiver 1954 : si vous avez des souvenirs écrits ou enregistrés, la rédaction attend vos plis.",
+        ],
+    ];
+
+    $crees = 0;
+    foreach ($textes as $texte) {
+        $articleId = db_insert('articles', [
+            'slug'         => $texte['slug'],
+            'title'        => $texte['title'],
+            'summary'      => $texte['summary'],
+            'body'         => $texte['body'],
+            'category'     => $texte['category'],
+            'image_id'     => $texte['photo'] !== null ? ($photos[$texte['photo']] ?? null) : null,
+            'visibility'   => $texte['visibility'],
+            'status'       => 'publie',
+            'published_at' => $now - ($texte['jours'] * 86400),
+            'author_id'    => $adminId !== null ? (int) $adminId : null,
+            'created_at'   => $now - ($texte['jours'] * 86400),
+            'updated_at'   => $now - ($texte['jours'] * 86400),
+        ]);
+
+        if ($texte['branche'] !== null && isset($branchIds[$texte['branche']])) {
+            set_content_branches('article', $articleId, [$branchIds[$texte['branche']]]);
+        }
+
+        $crees++;
+    }
+
+    echo "  · " . $crees . " articles de démonstration créés\n";
+}
+
+// ---------------------------------------------------------------------------
 // Tchat : trois messages fictifs (pour voir l'onglet en démonstration)
 // ---------------------------------------------------------------------------
 if ((int) db_value('SELECT COUNT(*) FROM chat_messages', [], 0) === 0) {
