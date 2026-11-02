@@ -154,6 +154,19 @@ nouvelles de la famille, les souvenirs, les annonces.
 - Administration → **Articles** : liste de tous les articles (brouillons et
   programmés compris), création, modification, suppression. Un administrateur
   peut relire un brouillon en cliquant dessus.
+- **Filtrer l'édition** : en haut de la page Articles, deux rangées de liens
+  servent de sommaire de journal.
+  - **Édition** : « Toutes », puis une entrée par branche familiale. Une
+    personne ne voit que les branches auxquelles elle a droit.
+  - **Années** : une frise par décennie (`1950`, `1960`…). L'année est celle
+    racontée dans l'article (« Mariage de 1958 » → 1958), pas la date de mise
+    en ligne ; à défaut, on prend l'année de publication.
+  - Chaque clic recharge la page avec `?branche=…` ou `?decennie=…` : aucun
+    JavaScript, le lien se partage par courriel. Les deux filtres peuvent se
+    combiner, et les règles de visibilité restent les mêmes (un article
+    réservé ne sort jamais pour un visiteur).
+  - Si rien ne correspond : « Aucune nouvelle pour cette édition. La rédaction
+    attend vos plis ! ».
 
 ### Vidéos
 
@@ -412,11 +425,21 @@ encre brune, rouge brique, bandeau « date · édition · prix » et, dans l'esp
 famille, une mise en page de « une » (article à la une, colonnes, encarts
 « Petites annonces » et « Courrier des lecteurs »).
 
-Deux blocs de `public/assets/style.css` s'en occupent, à la fin du fichier :
+Trois blocs de `public/assets/style.css` s'en occupent, à la fin du fichier :
 
 1. `DESIGN « GAZETTE »` : la palette et l'en-tête de journal ;
 2. `DESIGN « GAZETTE » — COMPLÉMENTS` : les couleurs des champs, encadrés,
-   badges et tableaux, plus les réglages du téléphone.
+   badges et tableaux, plus les réglages du téléphone ;
+3. `GAZETTE 1.9.2 — LE MOULE DU JOURNAL` : la mise en page de journal
+   (papier vieilli, titre de « une », colonnes, lettrines, encarts, plaques de
+   repli, page d'article). Ce bloc ne renomme rien : il arrive après les deux
+   autres et les surcharge.
+
+Depuis la 1.9.2, le fond est une **feuille de papier** : crème (`#f3e7ce`) avec
+deux halos bruns et une ombre intérieure, tenue en place pendant que le texte
+défile. Sur un téléphone, le fond redevient fixe par rapport à la page (même
+aspect, moins de travail pour le processeur). L'administration garde un
+en-tête compact : le grand titre de journal est réservé aux pages publiques.
 
 **Pour revenir à l'ancienne palette bleue** : supprimer le bloc `:root` du
 design Gazette (les couleurs suivent alors les variables, tout reste

@@ -3,6 +3,59 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.9.2] — 2026-11-02
+
+### La maquette « gazette » appliquée à tout le site
+
+- **Le papier** : fond crème `#f3e7ce`, deux halos bruns fixes (haut gauche,
+  bas droite) et une ombre intérieure brune sur toute la page. Les plaques
+  d'image de repli reçoivent la même ombre, en plus petit.
+- **L'en-tête devient une manchette de journal** : titre en gothique
+  `clamp(2.8rem, 9vw, 6rem)`, avec repli Old Standard TT 700 en petites
+  capitales quand le fichier `UnifrakturMaguntia.woff2` n'est pas déposé (cas
+  actuel). Ligne du haut « date · Édition des familles réunies · Prix : un
+  sourire », puis « Fondée en 1889 », la devise en italique entre guillemets et
+  le numéro d'édition, entre un filet fin et un filet double.
+- **Deux réglages facultatifs de plus** (Administration → Réglages) : `devise`
+  (120 caractères au plus, à défaut le sous-titre du site) et `fondee` (quatre
+  chiffres). Ils s'affichent dans l'en-tête et n'altèrent rien s'ils sont
+  vides.
+- **Mise en page journal** : une à la une (titre `clamp(2.75rem, 6vw, 4.5rem)`,
+  « Par … » en italique, plaque 4/3, filet double), les suivants en colonnes
+  CSS (2 dès 40 rem, 3 dès 80 rem) avec filet vertical et signature « — Auteur »
+  à droite, et une colonne latérale de 280 px avec filet.
+- **Typographie** : titre de rubrique en majuscules espacées (`0.25em`)
+  centré entre deux règles doubles, surtitres rouges en `0.3em`, corps justifié
+  avec césure, interligne 1.6 et **lettrine** de 3.4em sur l'article à la une
+  et sur chaque article ouvert.
+- **Encarts** : « Petites annonces » en tirets, « Courrier des lecteurs » en
+  italiques signées, « Les éditions », « Accès rapides », « En chiffres ».
+- **Filtres d'édition** : `/articles` gagne une rangée « Édition » (branche
+  familiale) et une frise par décennie, en simples liens `?branche=` et
+  `?decennie=`. Aucun JavaScript, la visibilité s'applique comme partout :
+  un visiteur ne voit jamais un article réservé, et les branches qui lui sont
+  interdites n'apparaissent même pas. Message dédié quand rien ne sort :
+  « Aucune nouvelle pour cette édition. La rédaction attend vos plis ! ».
+- L'année d'un article est celle **racontée** dans son titre ou son résumé
+  (`Mariage de 1958` → 1950), sinon celle de la publication.
+- **Pages d'article** : surtitre, titre, signature, chapô, image, deux
+  intertitres, marque de fin — et le même papier partout (documents, arbre,
+  calendrier, vidéos, albums, tchat, recherche, connexion, administration).
+  Formulaires en « panneau » de papier, boutons rectangulaires (plein brique
+  ou contour encre), pied de page en filet double italique centré.
+- **Téléphone (390 px)** : une seule colonne, aucune colonne CSS, aucun
+  débordement horizontal, menu qui passe à la ligne, prix retiré de la ligne
+  du haut, fond de page en défilement normal.
+- **Accessibilité** : contrastes vérifiés (texte 14,8:1 ; texte atténué 7:1 ;
+  brique sur papier 6,5:1 ; crème sur brique 6,5:1 ; alerte 5,4:1 — tous au-delà
+  de 4,5:1). Aucun `style=` ni gestionnaire en ligne : la CSP ne bouge pas.
+- **Jeu d'essai** : huit articles de démonstration (avec et sans photo, trois
+  branches, visibilités public / famille / branches), ajoutés par
+  `app/cli/demo.php` — **uniquement sur une base de démonstration**.
+- 15 vérifications automatiques de plus (`editions`, 141 au total) : millésime,
+  décennie, frise, filtres branche et décennie, et un visiteur qui ne voit
+  jamais un article non public. Elles tournent dans une transaction annulée.
+
 ## [1.9.1] — 2026-11-02
 
 ### Accueil public simplifié, et design Gazette mené jusqu'au bout
