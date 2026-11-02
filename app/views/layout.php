@@ -33,7 +33,7 @@ $navClass = static function (string $href) use ($currentPath): string {
 };
 ?>
 <!doctype html>
-<html lang="fr">
+<html lang="fr"<?= gazette_police_titre() ? ' class="police-titre"' : '' ?>>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -48,16 +48,26 @@ $navClass = static function (string $href) use ($currentPath): string {
 
 <header class="entete">
     <div class="conteneur entete__barre">
-        <?php /* Ligne de date : « dimanche 1er novembre 2026 », écrite par PHP
-                 (aucune dépendance à l'extension intl). */ ?>
-        <p class="entete__date"><?= e(french_long_date()) ?></p>
+        <?php /* Bandeau supérieur façon gazette : date écrite par PHP (aucune
+                 dépendance à l'extension intl), édition, prix. */ ?>
+        <p class="entete__date">
+            <span><?= e(french_long_date()) ?></span>
+            <span class="entete__edition">Édition des familles réunies</span>
+            <span>Prix : un sourire</span>
+        </p>
 
         <a class="entete__titre" href="/">
             <span class="entete__nom"><?= e($siteName) ?></span>
-            <?php if ($siteSub !== ''): ?>
-                <span class="entete__sous-titre"><?= e($siteSub) ?></span>
-            <?php endif; ?>
         </a>
+
+        <?php $devise = gazette_devise(); $fondee = gazette_fondee(); ?>
+        <?php if ($devise !== '' || $fondee !== ''): ?>
+            <p class="entete__devise">
+                <span><?= $fondee !== '' ? 'Fondée en ' . e($fondee) : '' ?></span>
+                <span class="entete__devise-texte"><?= $devise !== '' ? '« ' . e($devise) . ' »' : '' ?></span>
+                <span></span>
+            </p>
+        <?php endif; ?>
 
         <nav class="nav" aria-label="Navigation principale">
             <a href="/"<?= $navClass('/') ?>>Accueil</a>

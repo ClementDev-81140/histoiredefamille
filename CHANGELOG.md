@@ -3,6 +3,22 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.9.0] — 2026-11-02
+
+### Design « Gazette » (papier ancien, façon journal)
+
+- Nouvelle palette (papier crème, encre brune, rouge brique) : bloc `:root`
+  en fin de `public/assets/style.css`, à supprimer pour revenir au bleu.
+- En-tête de journal : date · édition · prix, titre, devise et « Fondée en »
+  (réglages facultatifs `devise` et `fondee`).
+- Titre en lettres gothiques si le fichier
+  `public/assets/fonts/UnifrakturMaguntia.woff2` est présent (police libre
+  OFL, à ajouter à la main) ; sinon Old Standard TT.
+- Espace famille en « une » de journal : article à la une, colonnes, encarts
+  « Petites annonces » (anniversaires des 30 jours à venir) et « Courrier des
+  lecteurs » (derniers messages du tchat).
+- Aucune règle d'accès modifiée.
+
 ## [1.8.0] — 2026-11-01
 
 ### Journal des connexions et alertes pour les administrateurs

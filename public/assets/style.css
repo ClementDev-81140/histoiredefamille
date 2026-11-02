@@ -2742,3 +2742,141 @@ legend {
 .alerte-connexion form {
     margin: 0;
 }
+
+
+/* ==========================================================================
+   DESIGN « GAZETTE » (papier ancien, encre brune, rouge brique)
+   --------------------------------------------------------------------------
+   Ce bloc surcharge la palette et l'en-tête ci-dessus.
+   Pour revenir à la palette bleue d'origine, supprimez simplement le bloc
+   « :root » ci-dessous : tout le reste du design reste en place.
+   ========================================================================== */
+:root {
+    --fond: #f3e7ce;
+    --surface: #f8edd8;
+    --texte: #1d140d;
+    --texte-doux: #5a493d;
+    --accent: #8f3126;
+    --accent-fonce: #6e231a;
+    --accent-clair: #e6d5bb;
+    --bordure: #362c24;
+    --info-fond: #ecdcc0;
+    --info-texte: #4a3526;
+    --succes-fond: #e4ead2;
+    --erreur-fond: #f4d9cf;
+    --police-titre: "UnifrakturMaguntia", "Old Standard TT", Georgia, serif;
+}
+
+@font-face {
+    font-family: "UnifrakturMaguntia";
+    src: url("/assets/fonts/UnifrakturMaguntia.woff2") format("woff2");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+body {
+    background-color: var(--fond);
+    background-image: radial-gradient(ellipse at top, rgba(215, 184, 148, .35), transparent 70%);
+}
+
+/* Bandeau supérieur : date · édition · prix */
+.entete { background: transparent; }
+.entete__date {
+    display: flex;
+    justify-content: space-between;
+    gap: .75rem;
+    flex-wrap: wrap;
+    font-size: .72rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--bordure);
+    padding-bottom: .35rem;
+}
+.entete__edition { font-style: italic; }
+.note { border-color: #b89c78; }
+@media (max-width: 40rem) {
+    .entete__date { justify-content: center; text-align: center; font-size: .65rem; }
+    .entete__date > :last-child { display: none; }
+}
+
+/* Titre : gothique si la police est présente, sinon Old Standard TT */
+.entete__nom {
+    display: block;
+    text-align: center;
+    font-size: clamp(2rem, 7vw, 3.6rem);
+    line-height: 1.1;
+    letter-spacing: .02em;
+    text-transform: none;
+}
+.police-titre .entete__nom { font-family: var(--police-titre); font-weight: 400; }
+
+/* Devise et année de fondation */
+.entete__devise {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: .5rem;
+    align-items: center;
+    margin: .25rem 0 .6rem;
+    padding: .3rem 0;
+    border-top: 1px solid var(--bordure);
+    border-bottom: 3px double var(--bordure);
+    font-size: .8rem;
+    font-style: italic;
+}
+.entete__devise > :last-child { text-align: right; }
+.entete__devise-texte { text-align: center; }
+
+/* Menu */
+.nav { background: var(--surface); }
+
+/* Cartes et panneaux : papier légèrement plus clair, liseré encre */
+.panneau, .article-carte, .carte {
+    background: var(--surface);
+    box-shadow: inset 0 0 18px rgba(148, 102, 64, .35);
+}
+
+/* Image de repli : plaque sépia */
+.article-carte__image:not(:has(img)) { background: linear-gradient(135deg, #d7af88, #704b36); }
+.article-carte__image img { filter: sepia(.35) contrast(.97); }
+
+/* Page d'accueil de l'espace famille = « une » de journal */
+.une {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.5rem;
+}
+@media (min-width: 62rem) {
+    .une { grid-template-columns: minmax(0, 2.2fr) minmax(16rem, 1fr); }
+    .une__lateral { border-left: 1px solid var(--bordure); padding-left: 1.25rem; }
+}
+.une-intro__titre { margin-bottom: .25rem; }
+.une__colonnes {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--bordure);
+    column-gap: 1.5rem;
+    column-rule: 1px solid var(--bordure);
+}
+@media (min-width: 40rem) { .une__colonnes { columns: 2; } }
+.une__colonnes .article-carte { break-inside: avoid; margin-bottom: 1.25rem; }
+.une__suite { margin-top: 1rem; text-align: right; font-style: italic; }
+
+/* Encarts latéraux */
+.encart { margin-bottom: 1.5rem; }
+.encart__titre {
+    margin: 0 0 .6rem;
+    padding-bottom: .25rem;
+    border-bottom: 3px double var(--bordure);
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    text-align: center;
+}
+.encart__liste { list-style: none; margin: 0; padding: 0; }
+.encart__liste li { padding: .5rem 0; border-bottom: 1px dotted var(--bordure); font-size: .9rem; }
+.encart__date { display: inline-block; min-width: 3rem; font-weight: 700; color: var(--accent); }
+.encart__lettre { margin: 0 0 .9rem; padding: 0 0 .6rem; border-bottom: 1px dotted var(--bordure); font-style: italic; }
+.encart__lettre p { margin: 0 0 .25rem; }
+.encart__lettre footer { font-size: .8rem; font-style: normal; color: var(--texte-doux); }
+.encart__suite { text-align: right; font-style: italic; margin: .5rem 0 0; }

@@ -31,6 +31,7 @@ require_once __DIR__ . '/lib/calendrier.php';
 require_once __DIR__ . '/lib/recettes.php';
 require_once __DIR__ . '/lib/recherche.php';
 require_once __DIR__ . '/lib/journal.php';
+require_once __DIR__ . '/lib/gazette.php';
 
 /**
  * Le script tourne-t-il en ligne de commande ?
