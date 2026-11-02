@@ -449,10 +449,10 @@ Deux réglages facultatifs donnent la devise sous le titre et l'année de
 fondation : `devise` et `fondee` (dans la table `settings`, comme les autres
 réglages). S'ils sont absents, la devise reprend le sous-titre du site.
 
-La police gothique du titre (UnifrakturMaguntia, libre) n'est **pas** fournie :
-le titre s'affiche donc en Old Standard TT. Pour l'activer, déposer le fichier
-`public/assets/fonts/UnifrakturMaguntia.woff2` ; le site s'en sert
-automatiquement.
+La police gothique du titre (UnifrakturMaguntia, licence libre OFL) est
+fournie dans `public/assets/fonts/` (`UnifrakturMaguntia.woff`, licence dans
+`OFL-UnifrakturMaguntia.txt`). Si le fichier disparaît, le titre revient tout
+seul à Old Standard TT.
 
 La police à empattements (**Old Standard TT**, licence OFL) est **hébergée sur
 le site** dans `public/assets/fonts/` (3 fichiers `woff2` : normal, italique,

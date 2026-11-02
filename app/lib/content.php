@@ -734,8 +734,14 @@ function article_image(array $article): ?array
     if (empty($article['image_id'])) {
         return null;
     }
-    $doc = db_one("SELECT id, thumb_path FROM documents WHERE id = ? AND kind = 'photo'", [(int) $article['image_id']]);
+    $doc = db_one("SELECT id, thumb_path, visibility FROM documents WHERE id = ? AND kind = 'photo'", [(int) $article['image_id']]);
     if (!$doc) {
+        return null;
+    }
+    // Un article public peut illustrer une photo réservée aux familles : le
+    // visiteur n'a pas le droit de la charger (le serveur la refuserait),
+    // donc on ne lui montre pas d'image cassée, mais la plaque de repli.
+    if (!can_view((string) $doc['visibility'], content_branch_ids('document', (int) $doc['id']))) {
         return null;
     }
     return [

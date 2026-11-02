@@ -115,5 +115,6 @@ function gazette_courrier(int $limite = 3): array
 /** Le fichier de la police gothique du titre est-il présent ? (sinon repli sur Old Standard TT) */
 function gazette_police_titre(): bool
 {
-    return is_file(HDF_ROOT . '/public/assets/fonts/UnifrakturMaguntia.woff2');
+    $dossier = HDF_ROOT . '/public/assets/fonts/';
+    return is_file($dossier . 'UnifrakturMaguntia.woff2') || is_file($dossier . 'UnifrakturMaguntia.woff');
 }

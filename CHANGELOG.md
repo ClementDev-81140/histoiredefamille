@@ -3,6 +3,19 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.9.3] — 2026-11-02
+
+### Finitions du design Gazette
+
+- Police gothique du titre (UnifrakturMaguntia, licence libre OFL) incluse
+  dans `public/assets/fonts/` : le titre est maintenant en lettres gothiques.
+- Article « à la une » plus compact, comme dans la maquette : titre sur toute
+  la largeur, puis la photo (à gauche, 20 rem au plus) et le texte (à droite).
+- Correction : un article public illustré par une photo réservée aux familles
+  n'affiche plus d'image cassée aux visiteurs (plaque de remplacement).
+  Aucune règle d'accès modifiée.
+- 3 essais de plus (144 au total).
+
 ## [1.9.2] — 2026-11-02
 
 ### La maquette « gazette » appliquée à tout le site

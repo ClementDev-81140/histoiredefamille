@@ -1152,6 +1152,38 @@ if ($filtre === '' || $filtre === 'editions') {
 // ---------------------------------------------------------------------------
 // Résumé
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Photo d'un article : jamais d'image cassée pour un visiteur
+// ---------------------------------------------------------------------------
+if ($filtre === '' || $filtre === 'editions') {
+    echo "Photo d'un article (visibilité)\n";
+
+    $maintenant = time();
+    $idPhoto    = db_insert('documents', [
+        'title' => 'Photo essai', 'kind' => 'photo', 'visibility' => 'famille',
+        'rel_path' => 'essai/essai.jpg', 'original_name' => 'essai.jpg', 'mime' => 'image/jpeg',
+        'ext' => 'jpg', 'size' => 1, 'created_at' => $maintenant, 'updated_at' => $maintenant,
+    ]);
+    $articleEssai = ['image_id' => $idPhoto];
+
+    verifier(
+        'photo réservée aux familles : un visiteur ne reçoit pas d’image (plaque de repli)',
+        current_account() !== null || article_image($articleEssai) === null
+    );
+
+    db_exec("UPDATE documents SET visibility = 'public' WHERE id = ?", [$idPhoto]);
+    verifier(
+        'photo publique : l’image est proposée au visiteur',
+        article_image($articleEssai) !== null
+    );
+
+    db_exec('DELETE FROM documents WHERE id = ?', [$idPhoto]);
+    verifier(
+        'le test ne laisse aucune trace',
+        (int) db_value('SELECT COUNT(*) FROM documents WHERE id = ?', [$idPhoto], 0) === 0
+    );
+}
+
 $total = $reussis + count($echecs);
 echo "\n", $total, " test(s) — ", $reussis, " ok, ", count($echecs), " échec(s).\n";
 

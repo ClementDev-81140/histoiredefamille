@@ -2769,7 +2769,8 @@ legend {
 
 @font-face {
     font-family: "UnifrakturMaguntia";
-    src: url("/assets/fonts/UnifrakturMaguntia.woff2") format("woff2");
+    src: url("/assets/fonts/UnifrakturMaguntia.woff2") format("woff2"),
+         url("/assets/fonts/UnifrakturMaguntia.woff") format("woff");
     font-weight: 400;
     font-style: normal;
     font-display: swap;
@@ -4433,3 +4434,44 @@ legend {
     }
 }
 
+
+
+/* ==========================================================================
+   FINITIONS 1.9.3 : l'article « à la une » comme dans la maquette
+   Titre sur toute la largeur, puis la photo (à gauche) et le texte (à droite).
+   La photo ne dépasse plus ~ 20 rem de haut au lieu de remplir la colonne.
+   ========================================================================== */
+@media (min-width: 48rem) {
+    .article-carte--une {
+        display: grid;
+        grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+        grid-template-areas:
+            "surtitre  surtitre"
+            "titre     titre"
+            "signature signature"
+            "image     resume"
+            "image     suite";
+        grid-template-rows: auto auto auto auto 1fr;
+        column-gap: 1.5rem;
+    }
+    .article-carte--une .article-carte__corps { display: contents; }
+    .article-carte--une .article-carte__surtitre   { grid-area: surtitre; }
+    .article-carte--une .article-carte__titre      { grid-area: titre; }
+    .article-carte--une .article-carte__signature  { grid-area: signature; }
+    .article-carte--une .article-carte__resume     { grid-area: resume; align-self: start; }
+    .article-carte--une .article-carte__suite      { grid-area: suite; align-self: end; }
+    .article-carte--une .article-carte__image {
+        grid-area: image;
+        align-self: start;
+        aspect-ratio: 4 / 3;
+        max-height: 20rem;
+        margin-bottom: 0;
+    }
+}
+/* Sur téléphone : une seule colonne, photo moins haute. */
+@media (max-width: 47.99rem) {
+    .article-carte--une .article-carte__image { max-height: 14rem; }
+}
+.article-carte--une .article-carte__plaque {
+    background: radial-gradient(ellipse at center, #c9a07a, #6f4c37);
+}
