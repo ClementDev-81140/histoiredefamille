@@ -3,6 +3,39 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.9.1] — 2026-11-02
+
+### Accueil public simplifié, et design Gazette mené jusqu'au bout
+
+- **Le site public tient en trois entrées** : Parcourir les documents, Voir
+  l'arbre généalogique, Espace famille. Les autres rubriques (Articles,
+  Vidéos, Albums, Calendrier, Recherche) n'apparaissent dans le menu et sur
+  l'accueil que si quelque chose de **public** y a été publié : un visiteur ne
+  tombe plus sur une page vide.
+- Nouvelle fonction `rubriques_publiques()` (`app/lib/rubriques.php`) : une
+  requête légère par rubrique, résultat gardé en mémoire pour la requête, et
+  une seule règle pour le menu (`menu_rubriques()`) et pour l'accueil.
+  - articles : un article publié, public, dont la date n'est pas future
+    (un article programmé ne compte pas) ;
+  - vidéos, albums : au moins un élément public ;
+  - calendrier : seulement si des personnes publiques ont des dates ;
+  - tchat : jamais en public.
+- **Compte de famille et administration** : menu complet, comme avant (rien ne
+  change pour eux ; l'ordre des onglets est identique).
+- Une adresse de rubrique appelée directement par un visiteur continue de
+  filtrer par visibilité : page vide ou 404, jamais de contenu privé, jamais
+  d'erreur 500.
+- **Espace famille** enrichi : dernières vidéos, albums photos, et un encart
+  « Accès rapides » vers toutes les rubriques, dans la mise en page « une de
+  journal ».
+- **Design Gazette mené jusqu'au bout** : plus rien de bleu ni de blanc froid
+  (champs de formulaire, encadrés, badges, tableaux, calendrier, vignettes),
+  en-tête compact dans l'administration, et tableaux qui défilent sur
+  téléphone (390 px). Le bloc `:root` de palette d'origine est conservé : le
+  supprimer ramène au bleu.
+- 16 vérifications automatiques de plus (`rubriques`, 126 au total). Elles
+  tournent dans une transaction annulée : la base reste intacte.
+
 ## [1.9.0] — 2026-11-02
 
 ### Design « Gazette » (papier ancien, façon journal)

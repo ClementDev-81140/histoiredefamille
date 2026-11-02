@@ -3,6 +3,20 @@
 Ce fichier liste ce qui reste à faire, classé par priorité. Il n'y a pas de
 suivi automatique : cochez au fur et à mesure.
 
+## Fait (2026-11-02, lot 7)
+
+- [x] **Design « Gazette »** intégré (palette papier ancien, en-tête de
+  journal, espace famille en « une »).
+- [x] Reste du design corrigé : champs, encadrés, badges, tableaux, calendrier,
+  vignettes ; en-tête compact dans l'administration ; tableaux défilants sur
+  téléphone. Rien n'est bleu, et le bloc `:root` d'origine est conservé.
+- [x] **Accueil public réduit à trois entrées** ; les autres rubriques
+  n'apparaissent que si elles contiennent quelque chose de public
+  (`rubriques_publiques()`, `menu_rubriques()`).
+- [x] **Espace famille enrichi** : dernières vidéos, albums, encart « Accès
+  rapides » vers toutes les rubriques.
+- [x] 16 vérifications de plus (126 au total).
+
 ## Fait (2026-11-01, lot 6)
 
 - [x] **Journal des connexions** (`/admin/connexions`) : identifiant essayé,

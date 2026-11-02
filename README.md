@@ -36,8 +36,14 @@ et une installation qui tient en quelques commandes à copier-coller.
 
 ### Partie publique (visible par tous)
 
-- Une page d'accueil sobre : présentation, derniers documents publics, pages
-  d'information.
+- Une page d'accueil qui tient en **trois entrées** : *Parcourir les
+  documents*, *Voir l'arbre généalogique* et *Espace famille* (la connexion).
+  C'est voulu : le site se consulte d'abord en privé, avec le compte de sa
+  branche.
+- Les autres rubriques (Articles, Vidéos, Albums, Calendrier, Recherche)
+  n'apparaissent dans le menu et sur l'accueil **que si quelque chose y a été
+  publié en « Public »**. Un visiteur ne tombe jamais sur une rubrique vide.
+  Dès qu'un article public paraît, l'onglet Articles revient de lui-même.
 - Les documents marqués « Public » : photos avec miniature, PDF consultables
   dans le navigateur, sons écoutables directement, autres fichiers
   téléchargeables.
@@ -358,7 +364,8 @@ histoiredefamille/
 │   ├── controllers/         une fonction par page
 │   ├── lib/                 base de données, sécurité, stockage, images, vidéos,
 │   │                        GEDCOM, visibilité, textes, tchat, recherche,
-│   │                        albums, calendrier, recettes, journal des connexions…
+│   │                        albums, calendrier, recettes, journal des connexions,
+│   │                        gazette, rubriques publiques…
 │   ├── views/               gabarits PHP (public, famille, admin)
 │   ├── migrations/          fichiers SQL numérotés
 │   │                        (001_init … 007_journal_connexions)
@@ -400,8 +407,29 @@ arrondi, aucune ombre, titres de rubriques en majuscules espacées, texte
 justifié (aligné à gauche sur téléphone), en-tête « une » avec la date en
 français écrite par PHP (aucune dépendance à l'extension `intl`).
 
-Les couleurs n'ont pas changé : elles restent définies une seule fois dans le
-bloc `:root` de `public/assets/style.css`.
+Depuis la version 1.9, le site est habillé en **« gazette »** : papier crème,
+encre brune, rouge brique, bandeau « date · édition · prix » et, dans l'espace
+famille, une mise en page de « une » (article à la une, colonnes, encarts
+« Petites annonces » et « Courrier des lecteurs »).
+
+Deux blocs de `public/assets/style.css` s'en occupent, à la fin du fichier :
+
+1. `DESIGN « GAZETTE »` : la palette et l'en-tête de journal ;
+2. `DESIGN « GAZETTE » — COMPLÉMENTS` : les couleurs des champs, encadrés,
+   badges et tableaux, plus les réglages du téléphone.
+
+**Pour revenir à l'ancienne palette bleue** : supprimer le bloc `:root` du
+design Gazette (les couleurs suivent alors les variables, tout reste
+cohérent). Les classes CSS n'ont pas changé de nom.
+
+Deux réglages facultatifs donnent la devise sous le titre et l'année de
+fondation : `devise` et `fondee` (dans la table `settings`, comme les autres
+réglages). S'ils sont absents, la devise reprend le sous-titre du site.
+
+La police gothique du titre (UnifrakturMaguntia, libre) n'est **pas** fournie :
+le titre s'affiche donc en Old Standard TT. Pour l'activer, déposer le fichier
+`public/assets/fonts/UnifrakturMaguntia.woff2` ; le site s'en sert
+automatiquement.
 
 La police à empattements (**Old Standard TT**, licence OFL) est **hébergée sur
 le site** dans `public/assets/fonts/` (3 fichiers `woff2` : normal, italique,
@@ -874,7 +902,23 @@ sur le Raspberry Pi.
 
 ---
 
-### 6.12 Vérifier qui s'est connecté
+### 6.12 Choisir ce que voit un visiteur
+
+Rien à cocher : le site s'en occupe.
+
+- Un visiteur non connecté ne voit que **trois entrées** : documents, arbre et
+  connexion. Les autres onglets apparaissent **seulement** quand leur rubrique
+  contient au moins un élément public (un article publié et daté d'aujourd'hui
+  ou du passé, une vidéo publique, un album public, une personne publique avec
+  des dates).
+- Pour faire apparaître une rubrique : publier quelque chose dedans en
+  visibilité « **Public** » (Administration → Articles / Vidéos / Albums, ou
+  l'arbre pour le calendrier). Pour la faire disparaître : repasser ce contenu
+  en « Famille » ou « Privé ».
+- Le tchat reste toujours privé : il n'apparaît jamais dans le menu public.
+- Un compte de famille ou d'administration garde, lui, **tout** le menu.
+
+### 6.13 Vérifier qui s'est connecté
 
 Une fois par semaine, ou dès qu'une alerte apparaît sur le tableau de bord :
 
@@ -911,9 +955,9 @@ précédente reste disponible sur la clé USB.
 
 Après une mise à jour, les petits tests automatiques (mise en forme des
 messages du tchat, préparation du texte cherché, chronologie d'une fiche de
-personne, albums, calendrier, GEDCOM, recettes, journal des connexions) se
-lancent en une commande. Le nom d'une famille peut être ajouté pour ne lancer
-qu'elle (`php app/cli/tests.php journal`) :
+personne, albums, calendrier, GEDCOM, recettes, journal des connexions,
+rubriques publiques et menu) se lancent en une commande. Le nom d'une famille
+peut être ajouté pour ne lancer qu'elle (`php app/cli/tests.php rubriques`) :
 
 ```bash
 cd /home/votre-utilisateur/histoiredefamille
