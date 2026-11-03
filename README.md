@@ -63,8 +63,12 @@ et une installation qui tient en quelques commandes à copier-coller.
 
 - Tout ce que voit le public, **plus** les documents réservés à la famille ou
   à une branche précise.
-- Un compte par branche familiale (un identifiant et un mot de passe partagés
-  par les membres de cette branche).
+- Un **compte de branche** (identifiant en majuscules, un mot de passe partagé
+  par les membres de cette branche) ou un **compte personnel** (identifiant
+  `prenom.nom`, un mot de passe par personne). Les deux donnent exactement les
+  mêmes droits ; le compte personnel signe le tchat à son nom.
+- Une page **« Mon compte »** (menu, à côté de « Déconnexion ») pour changer
+  son propre mot de passe.
 - Un **tchat** privé : un seul salon commun à toutes les branches et aux
   administrateurs. Les messages sont signés « BRANCHE/Prénom » et ne sont
   visibles que des personnes connectées. Aucune application à installer :
@@ -89,6 +93,12 @@ et une installation qui tient en quelques commandes à copier-coller.
   du mot de passe en un clic** (mot de passe lisible affiché une seule fois),
   désactivation/réactivation du compte. Case à cocher
   « **voit toutes les branches** » pour un compte qui doit tout voir.
+- **Comptes de la famille** : une personne ou toute une liste d'un coup (100
+  au plus par envoi), identifiant `prenom.nom` proposé automatiquement et
+  modifiable, **aperçu obligatoire** avant création, mot de passe provisoire
+  affiché **une seule fois** avec un message prêt à copier pour un SMS ou
+  WhatsApp. Ensuite : modifier, désactiver/réactiver, réinitialiser le mot de
+  passe, supprimer (les messages du tchat restent lisibles).
 - Comptes administrateurs : 3 comptes personnels, mot de passe modifiable.
 - Pages d'information : texte simple (markdown léger) avec visibilité.
 - Arbre généalogique : saisie manuelle des personnes et des couples, ou import
@@ -202,9 +212,12 @@ Un onglet **Tchat** apparaît dans le menu **uniquement pour les personnes
 connectées**. C'est un seul salon commun : toutes les branches et les
 administrateurs y écrivent, tout le monde lit tout.
 
-- Au premier passage, on indique le **prénom** qui signera les messages
-  (1 à 30 caractères, lettres, espace et tiret). La signature devient
-  « **MARTIN/Jean** » ; un administrateur signe « **ADMIN/Clément** ».
+- **Compte personnel** : la signature est automatique, c'est le prénom du
+  compte — « **MARTIN/Élise** » —, sans rien demander à la connexion.
+- **Compte de branche** : au premier passage, on indique le **prénom** qui
+  signera les messages (1 à 30 caractères, lettres, espace et tiret). La
+  signature devient « **MARTIN/Jean** » ; un administrateur signe
+  « **ADMIN/Clément** ».
   Le prénom est gardé le temps de la session (le compte d'une branche est
   partagé : chacun met le sien sur son appareil) et se change à tout moment
   via « Changer mon prénom ». Les messages déjà envoyés gardent leur signature
@@ -340,22 +353,34 @@ Chaque document, page, personne et article a un niveau de visibilité :
 | Administrateur | `votre-identifiant`, plus deux autres (3 comptes personnels) | personnel, modifiable | tout : documents, branches, comptes, arbre, pages, réglages |
 | Branche familiale | `MARTIN`, `DURAND`… (en majuscules) | un mot de passe partagé par la branche | lecture des documents de la branche (+ publics) |
 | Branche « voit tout » | par exemple `RAVIART` | idem | lecture de tous les documents « famille » et « branches » (mais pas des documents privés) |
+| Personne | `prenom.nom` (`elise.martin`) | un mot de passe par personne | ceux de sa branche (+ les mêmes options) ; signe le tchat à son nom |
 
 Points importants :
 
 - **Aucune inscription publique** : seuls les administrateurs créent des comptes.
-- Un compte de famille est rattaché à **une branche**. Toute la branche partage
-  le même mot de passe : c'est simple pour les cousins, qui n'ont qu'un
-  identifiant à retenir.
+- Un compte de famille est rattaché à **une branche**, et il en existe de deux
+  sortes :
+  - le **compte de branche**, partagé par toute la famille (un seul mot de
+    passe : simple pour les cousins qui n'ont qu'un identifiant à retenir) ;
+  - le **compte personnel**, un par personne (`elise.martin`), avec son propre
+    mot de passe et son prénom sur le tchat. Il donne **exactement les mêmes
+    droits** que le compte de sa branche, jamais plus.
+- Un compte personnel (ou de branche) ne peut **pas** administrer le site : les
+  administrateurs se créent uniquement en ligne de commande
+  (`php app/cli/create-admin.php`).
 - « Voit toutes les branches » est une **case à cocher sur la branche**, pas un
   nom en dur dans le code : aucune famille n'est privilégiée par le programme.
 - Après 5 échecs de connexion, l'identifiant **et** l'adresse IP sont bloqués
   15 minutes.
 - Les mots de passe sont stockés hachés (Argon2id si disponible, sinon bcrypt).
   Personne, pas même un administrateur, ne peut les relire.
-- Un administrateur peut réinitialiser le mot de passe d'une branche : un mot
-  de passe lisible du type `shxn-2qb6-5et5` est généré et affiché **une seule
-  fois**. Notez-le et transmettez-le à la branche.
+- Un administrateur peut réinitialiser le mot de passe d'une branche ou d'une
+  personne : un mot de passe lisible du type `shxn-2qb6-5et5` est généré et
+  affiché **une seule fois**, avec un message prêt à copier. Notez-le et
+  transmettez-le.
+- Le mot de passe d'un compte personnel **ne s'affiche jamais** ailleurs : ni
+  dans la base (seule l'empreinte est gardée), ni dans les journaux, ni dans
+  une adresse web.
 
 ---
 
@@ -378,10 +403,10 @@ histoiredefamille/
 │   ├── lib/                 base de données, sécurité, stockage, images, vidéos,
 │   │                        GEDCOM, visibilité, textes, tchat, recherche,
 │   │                        albums, calendrier, recettes, journal des connexions,
-│   │                        gazette, rubriques publiques…
+│   │                        gazette, rubriques publiques, comptes de la famille…
 │   ├── views/               gabarits PHP (public, famille, admin)
 │   ├── migrations/          fichiers SQL numérotés
-│   │                        (001_init … 007_journal_connexions)
+│   │                        (001_init … 008_comptes_personnels)
 │   └── cli/                 commandes : migrate, create-admin, demo, maintenance, tests
 ├── deploy/
 │   ├── install.sh           installation complète sur le Pi
@@ -775,7 +800,92 @@ fichier est vérifié : renommer un fichier n'aide pas à contourner la règle.
 3. Un mot de passe est généré : **notez-le tout de suite**, il ne sera plus
    affiché. En cas d'oubli, utilisez le bouton **Réinitialiser le mot de passe**.
 
-### 6.3 Ajouter une vidéo
+### 6.3 Créer les comptes de la famille
+
+Il y a **deux sortes de comptes**, et elles cohabitent très bien :
+
+| Compte | Qui l'utilise | Identifiant |
+|---|---|---|
+| **Compte de branche** | une famille entière, avec un seul mot de passe partagé | en majuscules : `MARTIN` |
+| **Compte personnel** | une personne, avec son propre mot de passe | `prenom.nom` : `elise.martin` |
+
+Les deux voient la même chose : les documents publics, ceux ouverts à toutes
+les familles, et ceux de leur branche. Un compte personnel n'a aucun droit de
+plus (et ne peut pas administrer le site).
+
+**a. Ajouter une personne**
+
+1. **Administration → Comptes → « Ajouter des personnes »**.
+2. Bloc **« Une personne »** : nom, prénom, branche. Cochez « Voit toutes les
+   branches » seulement si cette personne doit voir les autres branches.
+3. **« Voir l'aperçu »** : le site propose un identifiant (`elise.martin`) que
+   vous pouvez corriger à la main, à condition qu'il soit libre.
+4. **« Créer les comptes cochés »** : le mot de passe provisoire s'affiche
+   **une seule fois**.
+
+**b. Ajouter toute une liste d'un coup**
+
+1. Même page, bloc **« Plusieurs personnes »**.
+2. Collez la liste, **une personne par ligne**. Trois écritures possibles :
+   - `Martin;Élise` — le plus sûr, à conseiller ;
+   - `Élise Martin` ou `Martin Élise` — deux mots : le site comprend
+     « prénom puis nom » et le rappelle dans l'aperçu ;
+   - dès qu'un nom ou un prénom compte plusieurs mots (`Le Gall`, `Jean-Paul`),
+     écrivez `Le Gall;Jean-Paul`.
+3. Choisissez la branche commune, puis **« Voir l'aperçu »**.
+4. L'aperçu montre chaque personne, son identifiant (modifiable) et signale en
+   rouge les lignes à corriger (vide, trop long, caractères bizarres, plus de
+   deux mots sans `;`). Une personne déjà présente dans la branche est
+   décochée : cochez-la si vous voulez vraiment un second compte.
+5. **« Créer les comptes cochés »**. 100 personnes au maximum par envoi.
+
+**c. Transmettre les mots de passe**
+
+L'écran de résultat affiche, pour chaque personne, un message prêt à envoyer :
+
+```
+Bonjour Élise, voici ton accès au site de la famille :
+Adresse : https://histoiredefamille.eu
+Identifiant : elise.martin
+Mot de passe : k7fd-3mqp-9xte
+(Tu pourras le changer dans « Mon compte ».)
+```
+
+- **« Copier le message »** copie celui de la personne ; **« Tout copier »**
+  copie la série entière. Il ne reste qu'à coller dans un SMS, WhatsApp ou un
+  courriel.
+- L'adresse du message vient du réglage **Administration → Réglages → Adresse
+  publique du site**.
+- **Les mots de passe ne sont plus affichés après cet écran.** Ils ne sont
+  enregistrés nulle part en clair : ni dans la base, ni dans le journal
+  d'activité, ni dans les fichiers de log.
+
+**d. Quelqu'un a oublié son mot de passe ?**
+
+1. **Administration → Comptes**, retrouvez la personne (recherche par nom, ou
+   filtre par branche).
+2. **« Nouveau mot de passe »** : un mot de passe provisoire s'affiche une
+   seule fois, avec le même bouton **« Copier le message »**. L'ancien ne
+   fonctionne plus.
+
+La personne peut aussi changer son mot de passe elle-même : menu
+**« Mon compte »**, à côté de « Déconnexion » (ancien mot de passe, nouveau
+mot de passe de 10 caractères minimum, confirmation).
+
+**e. Modifier, désactiver, supprimer**
+
+- **Modifier** : nom, prénom, identifiant, branche et « voit toutes les
+  branches ».
+- **Désactiver** : la personne ne peut plus se connecter, et sa session en
+  cours est fermée à la page suivante (rien n'est supprimé).
+- **Supprimer** : le compte disparaît ; ses messages du tchat restent lisibles
+  avec la signature qu'ils avaient.
+
+Toutes ces actions sont enregistrées dans le journal d'activité (qui a créé,
+modifié, réinitialisé ou désactivé quel compte), **sans jamais y écrire un mot
+de passe**.
+
+### 6.4 Ajouter une vidéo
 
 Deux façons, selon la taille du fichier :
 
@@ -804,7 +914,7 @@ puis **Administration → Vidéos**, section « Depuis le dossier arrivée »
 fichier est **déplacé** sur le disque, jamais chargé en mémoire : un film
 volumineux passe sans problème.
 
-### 6.4 Remplir l'arbre généalogique
+### 6.5 Remplir l'arbre généalogique
 
 **Administration → Arbre** :
 
@@ -816,7 +926,7 @@ L'arbre se consulte sur `/arbre` (vue par défaut) ou depuis la fiche d'une
 personne. Le déplacement dans l'arbre est fait par un petit script maison,
 sans bibliothèque externe.
 
-### 6.5 Écrire un article
+### 6.6 Écrire un article
 
 **Administration → Articles → Écrire un article** :
 
@@ -842,14 +952,14 @@ sans bibliothèque externe.
 > partie de la famille. C'est le seul contenu du site dans ce cas (avec les
 > pages et les documents marqués « Public »).
 
-### 6.6 Pages d'information
+### 6.7 Pages d'information
 
 **Administration → Pages** : texte simple, avec quelques mises en forme
 (`## titre`, `**gras**`, `*italique*`, `- liste`, `[lien](adresse)`), une
 visibilité par page. Exemple de contenu : l'histoire de la famille, les
 annonces de réunion, une page « qui contacter ».
 
-### 6.7 Utiliser le tchat
+### 6.8 Utiliser le tchat
 
 1. Se connecter avec l'identifiant de sa branche (ou son compte
    administrateur), puis cliquer sur **Tchat** dans le menu.
@@ -876,7 +986,7 @@ Réglages utiles (Administration → Réglages, bloc « Tchat de la famille ») 
 > courriel ou par notification. C'est volontaire : aucun service à maintenir
 > sur le Raspberry Pi.
 
-### 6.8 Ranger des photos dans un album
+### 6.9 Ranger des photos dans un album
 
 1. Envoyer d'abord les photos normalement (Administration → Documents).
 2. Ouvrir **Administration → Albums photos → Nouvel album** : titre,
@@ -887,7 +997,7 @@ Réglages utiles (Administration → Réglages, bloc « Tchat de la famille ») 
    **Ajouter**. Le nom apparaît sous la photo, dans l'album et sur la fiche de
    la personne.
 
-### 6.9 Suivre le calendrier et la frise
+### 6.10 Suivre le calendrier et la frise
 
 - **Calendrier** : le mois en cours s'affiche ; les flèches permettent de
   revenir au mois précédent ou d'aller au suivant. Les dates des personnes
@@ -898,7 +1008,7 @@ Réglages utiles (Administration → Réglages, bloc « Tchat de la famille ») 
   (Administration → Arbre généalogique) : le calendrier et la frise suivent
   automatiquement.
 
-### 6.10 Envoyer un témoignage sonore ou écrire une recette
+### 6.11 Envoyer un témoignage sonore ou écrire une recette
 
 - **Témoignage** : Administration → Documents → **Ajouter un document**, choisir
   un fichier MP3, M4A ou OGG, puis, sur la ligne du document, le bouton
@@ -908,7 +1018,7 @@ Réglages utiles (Administration → Réglages, bloc « Tchat de la famille ») 
   titre, les ingrédients (un par ligne) et la préparation ; choisir une photo
   déjà envoyée si on veut. La recette s'imprime avec le bouton **Imprimer**.
 
-### 6.11 Chercher dans le site
+### 6.12 Chercher dans le site
 
 1. Cliquer sur **Recherche** dans le menu.
 2. Taper un nom, un mot ou une année, puis **Chercher**. Par exemple
@@ -925,7 +1035,7 @@ sur le Raspberry Pi.
 
 ---
 
-### 6.12 Choisir ce que voit un visiteur
+### 6.13 Choisir ce que voit un visiteur
 
 Rien à cocher : le site s'en occupe.
 
@@ -941,7 +1051,7 @@ Rien à cocher : le site s'en occupe.
 - Le tchat reste toujours privé : il n'apparaît jamais dans le menu public.
 - Un compte de famille ou d'administration garde, lui, **tout** le menu.
 
-### 6.13 Vérifier qui s'est connecté
+### 6.14 Vérifier qui s'est connecté
 
 Une fois par semaine, ou dès qu'une alerte apparaît sur le tableau de bord :
 
@@ -976,10 +1086,19 @@ Si une migration échoue, la base n'est pas modifiée à moitié : chaque
 migration est appliquée dans une transaction. La sauvegarde de la nuit
 précédente reste disponible sur la clé USB.
 
+Sans passer par `install.sh`, la seule commande à connaître pour une nouvelle
+version est celle des migrations (elles sont numérotées, appliquées une seule
+fois, et n'effacent jamais de données) :
+
+```bash
+php app/cli/migrate.php
+```
+
 Après une mise à jour, les petits tests automatiques (mise en forme des
 messages du tchat, préparation du texte cherché, chronologie d'une fiche de
 personne, albums, calendrier, GEDCOM, recettes, journal des connexions,
-rubriques publiques et menu) se lancent en une commande. Le nom d'une famille
+rubriques publiques, menu et comptes de la famille) se lancent en une
+commande. Le nom d'une famille
 peut être ajouté pour ne lancer qu'elle (`php app/cli/tests.php rubriques`) :
 
 ```bash
@@ -1279,6 +1398,16 @@ le dossier `storage/` sont listés dans `.gitignore`.
 - **Mots de passe** : `password_hash` (Argon2id si disponible, sinon bcrypt
   coût 12) ; jamais de mot de passe en clair, jamais de mot de passe dans un
   fichier.
+- **Mots de passe provisoires** (comptes de la famille) : affichés **une seule
+  fois**, dans une page qui interdit la mise en cache (`Cache-Control:
+  no-store`), jamais dans une adresse web, jamais dans un cookie, jamais dans
+  le journal d'activité. Seule l'empreinte Argon2id est enregistrée : un mot
+  de passe oublié ne se retrouve pas, il se **réinitialise**.
+- **Comptes personnels** : une page « Mon compte » permet de changer son mot
+  de passe (ancien mot de passe exigé, 10 caractères minimum, refus si le mot
+  de passe est l'identifiant) ; l'identifiant de session est régénéré aussitôt.
+- **Comptes désactivés** : la connexion est refusée **et** la session en cours
+  est fermée à la page suivante.
 - **Formulaires** : jeton CSRF sur toutes les actions qui modifient quelque
   chose ; message « Session expirée » si le jeton manque.
 - **Base de données** : requêtes préparées PDO partout (aucune concaténation

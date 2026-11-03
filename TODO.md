@@ -3,6 +3,24 @@
 Ce fichier liste ce qui reste à faire, classé par priorité. Il n'y a pas de
 suivi automatique : cochez au fur et à mesure.
 
+## Fait (2026-11-03, lot 8)
+
+- [x] **Comptes de la famille** : un compte par personne (`prenom.nom`), à
+  côté des comptes de branche partagés ; mêmes droits, jamais plus.
+- [x] Création à l'unité ou par liste collée (100 lignes au plus) avec
+  **aperçu obligatoire** : identifiants proposés et modifiables, lignes
+  fautives signalées, doublons nom + prénom + branche décochés.
+- [x] Mot de passe provisoire affiché **une seule fois**, avec « Copier le
+  message » / « Tout copier » ; jamais en base en clair, jamais dans un
+  journal.
+- [x] **Mon compte** : chaque personne change son propre mot de passe (10
+  caractères minimum, refus si c'est l'identifiant, session régénérée).
+- [x] Actions d'administration : modifier, désactiver/réactiver, réinitialiser,
+  supprimer (messages du tchat conservés) ; filtre par branche et recherche.
+- [x] Tchat : signature automatique `MARTIN/Élise` pour un compte personnel.
+- [x] Migration `008_comptes_personnels.sql`, 40 vérifications de plus
+  (184 au total).
+
 ## Fait (2026-11-02, lot 7)
 
 - [x] **Design « Gazette »** intégré (palette papier ancien, en-tête de
@@ -155,8 +173,6 @@ voir « Idées à étudier » plus bas.)
 - [ ] Purge automatique des fichiers orphelins (fichiers présents dans
       `medias/` mais absents de la base).
 - [ ] Aperçu des PDF dans les listes (première page en miniature).
-- [ ] Bouton « copier le mot de passe » après réinitialisation d'une branche.
-- [ ] Afficher la dernière connexion d'une branche dans la liste des comptes.
 
 ### Moyen terme
 

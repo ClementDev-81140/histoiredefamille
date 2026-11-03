@@ -3,6 +3,74 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.10.0] — 2026-11-03
+
+### Les comptes de la famille
+
+Chaque personne peut maintenant avoir **son propre compte**, à côté des
+comptes de branche partagés. Mêmes droits, mais un mot de passe par personne
+et une signature à son nom sur le tchat.
+
+- **Deux sortes de comptes** : « personne » (`elise.martin`) et « branche »
+  (`MARTIN`, inchangé). Les comptes existants deviennent « branche », les
+  administrateurs « administrateur » : rien à refaire, la migration le fait.
+- **Créer une personne** : nom, prénom, branche, case « voit toutes les
+  branches ». L'identifiant est proposé automatiquement — `prenom.nom`, en
+  minuscules, sans accents ni espaces (`Jean-Paul Le Gall` → `jean-paul.legall`),
+  avec `2`, `3`… en cas de doublon — et reste modifiable avant la création.
+- **Créer toute une liste** : une personne par ligne, au format
+  `Nom;Prénom`, `Prénom Nom` ou `Nom Prénom`. Une branche commune, puis un
+  **aperçu obligatoire** : identifiants modifiables, lignes fautives signalées,
+  personnes déjà présentes décochées. 100 lignes au maximum.
+- **Mot de passe provisoire** généré pour chacun (aucun changement imposé à la
+  première connexion), affiché **une seule fois** sur un écran de résultat, avec
+  « Copier le message » et « Tout copier » : un message prêt pour un SMS ou
+  WhatsApp, adresse comprise. L'avertissement « Les mots de passe ne seront
+  plus affichés après cet écran : copiez-les maintenant. » est en haut de page.
+- **Administration → Comptes** : liste (nom, prénom, identifiant, branche, type,
+  actif, dernière connexion), filtre par branche, recherche par nom. Actions :
+  modifier, désactiver/réactiver, réinitialiser le mot de passe, supprimer
+  (les messages du tchat restent lisibles avec leur signature).
+- **Page « Mon compte »**, à côté de « Déconnexion », pour tous les comptes
+  (personne, branche, administrateur) : ancien mot de passe, nouveau mot de
+  passe de 10 caractères minimum et confirmation. Refus si le nouveau mot de
+  passe est l'identifiant, ou s'il est trop court. L'identifiant de session est
+  régénéré, un message confirme l'enregistrement.
+- **Tchat** : un compte personnel signe automatiquement `MARTIN/Élise` ; la
+  question du prénom ne reste que pour les comptes de branche.
+- **Accueil** : « Bonjour Élise » pour un compte personnel.
+
+### Sécurité et corrections
+
+- Le mot de passe provisoire n'est **jamais** conservé : seule l'empreinte
+  Argon2id est enregistrée. Il n'apparaît ni dans l'adresse web, ni dans un
+  cookie, ni dans le journal d'activité (qui note seulement « mot de passe
+  réinitialisé pour … »), ni après rechargement de la page.
+- Tout est en **POST + jeton CSRF**, réservé aux administrateurs ; les entrées
+  sont validées (longueurs, caractères, branche existante, identifiant libre,
+  identifiant interdit).
+- Un compte désactivé ne peut plus se connecter **et** sa session en cours est
+  fermée à la page suivante.
+- Corrections trouvées en chemin :
+  - un doublon « même nom, même prénom, même branche » n'était pas détecté
+    (comparaison texte/nombre dans SQLite) ;
+  - `db_transaction()` imbriquée validait la transaction extérieure : les
+    appels internes rejoignent maintenant la transaction en cours ;
+  - vérification du jeton CSRF centralisée dans `csrf_valide()` (comparaison à
+    temps constant) ;
+  - deux fonctions du contrôleur des comptes ont été renommées pour que le
+    contrôle « un administrateur est exigé dès la première ligne » passe.
+- `app/cli/demo.php` crée aussi trois comptes « personne » fictifs (Élise
+  Martin, Jean-Paul Le Gall, Paul Durand) pour voir les écrans sans toucher à
+  la vraie base.
+- **40 essais de plus** (184 au total), dont : identifiants accentués, tirets,
+  apostrophes, doublons, très longs ; les trois formats de liste, les lignes
+  vides, ambiguës, la 101ᵉ ligne ; le hachage seul en base ; les droits d'un
+  compte personnel et « voit tout » ; la désactivation (connexion + session) ;
+  la réinitialisation ; le changement de mot de passe ; la signature du tchat.
+- Aucune règle d'accès modifiée, aucune classe CSS existante renommée.
+- **À faire sur le Pi** : `php app/cli/migrate.php` (migration 008).
+
 ## [1.9.3] — 2026-11-02
 
 ### Finitions du design Gazette
