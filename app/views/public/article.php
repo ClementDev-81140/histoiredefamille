@@ -34,7 +34,8 @@ if ((int) $decennie > 0) {
     </p>
 <?php endif; ?>
 
-<article class="section article article--presse">
+<?php $modeleArticle = article_modele($article); ?>
+<article class="section article article--presse<?= e(article_modele_classe($modeleArticle)) ?>">
     <header class="article__entete">
         <p class="article__meta article__surtitre">
             <?= e(implode(' · ', $surtitre)) ?>

@@ -12,54 +12,76 @@ function family_home(): void
 
     $account = current_account();
 
-    $params = [];
-    $clause = visibility_clause('page', 'p', $params);
-    $pages  = db_all(
-        "SELECT p.slug, p.title, p.body FROM pages p
-         WHERE p.is_published = 1 AND {$clause}
-         ORDER BY p.position, p.title LIMIT 6",
-        $params
-    );
+    // Composition réglée dans « Administration → Composition des pages » :
+    // un bloc masqué n'est pas calculé du tout (aucune requête).
+    $visible = static fn (string $cle): bool => composition_visible('famille', $cle);
+
+    $pages = [];
+    if ($visible('pages')) {
+        $params = [];
+        $clause = visibility_clause('page', 'p', $params);
+        $pages  = db_all(
+            "SELECT p.slug, p.title, p.body FROM pages p
+             WHERE p.is_published = 1 AND {$clause}
+             ORDER BY p.position, p.title LIMIT 6",
+            $params
+        );
+    }
 
     // Accès rapides : toutes les rubriques que ce compte peut ouvrir.
     // Les pages elles-mêmes filtrent selon les droits ; on n'affiche pas les
     // onglets qui n'existent pas (recettes, témoignages, tchat fermé).
-    $acces = [
-        ['/articles', 'Articles'],
-        ['/documents', 'Documents'],
-        ['/videos', 'Vidéos'],
-        ['/albums', 'Albums'],
-        ['/arbre', 'Arbre généalogique'],
-        ['/calendrier', 'Calendrier'],
-        ['/frise', 'Frise chronologique'],
-        ['/recherche', 'Recherche'],
-    ];
-    if (recipes_exist()) {
-        $acces[] = ['/recettes', 'Recettes'];
+    $acces = [];
+    if ($visible('acces')) {
+        $acces = [
+            ['/articles', 'Articles'],
+            ['/documents', 'Documents'],
+            ['/videos', 'Vidéos'],
+            ['/albums', 'Albums'],
+            ['/arbre', 'Arbre généalogique'],
+            ['/calendrier', 'Calendrier'],
+            ['/frise', 'Frise chronologique'],
+            ['/recherche', 'Recherche'],
+        ];
+        if (recipes_exist()) {
+            $acces[] = ['/recettes', 'Recettes'];
+        }
+        if (audio_exist()) {
+            $acces[] = ['/temoignages', 'Témoignages'];
+        }
+        if (tchat_actif()) {
+            $acces[] = ['/tchat', 'Tchat'];
+        }
     }
-    if (audio_exist()) {
-        $acces[] = ['/temoignages', 'Témoignages'];
+
+    $articles = [];
+    if ($visible('une') || $visible('colonnes')) {
+        $articles = recent_articles(composition_nb_articles());
     }
-    if (tchat_actif()) {
-        $acces[] = ['/tchat', 'Tchat'];
+
+    $nbDocuments = $nbPersonnes = $nbPages = 0;
+    if ($visible('chiffres')) {
+        $nbDocuments = count_visible('documents', 'document');
+        $nbPersonnes = count_visible('persons', 'person');
+        $nbPages     = count_visible('pages', 'page');
     }
 
     render('famille/accueil', [
-        'titre'    => 'Espace famille',
-        'account'  => $account,
-        'documents' => recent_documents(8),
-        'personnes' => recent_persons(6),
+        'titre'     => 'Espace famille',
+        'account'   => $account,
+        'documents' => $visible('documents') ? recent_documents(8) : [],
+        'personnes' => $visible('personnes') ? recent_persons(6) : [],
         'pages'     => $pages,
-        'articles'  => recent_articles(5),
-        'videos'    => videos_visible(4),
-        'branchesEdition'  => editions_branches(),
-        'decenniesEdition' => editions_decennies_visibles(),
-        'albums'    => albums_visible(4),
+        'articles'  => $articles,
+        'videos'    => $visible('videos') ? videos_visible(4) : [],
+        'branchesEdition'  => $visible('editions') ? editions_branches() : [],
+        'decenniesEdition' => $visible('editions') ? editions_decennies_visibles() : [],
+        'albums'    => $visible('albums') ? albums_visible(4) : [],
         'acces'     => $acces,
-        'annonces'  => gazette_annonces(5),
-        'courrier'  => gazette_courrier(3),
-        'nbDocuments' => count_visible('documents', 'document'),
-        'nbPersonnes' => count_visible('persons', 'person'),
-        'nbPages'     => count_visible('pages', 'page'),
+        'annonces'  => $visible('annonces') ? gazette_annonces(5) : [],
+        'courrier'  => $visible('courrier') ? gazette_courrier(3) : [],
+        'nbDocuments' => $nbDocuments,
+        'nbPersonnes' => $nbPersonnes,
+        'nbPages'     => $nbPages,
     ]);
 }

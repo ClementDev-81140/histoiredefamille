@@ -4948,3 +4948,149 @@ legend {
     .apercu-journal__ligne > :nth-child(2) { text-align: center; }
     .couleur-champ input[type="text"] { width: 7rem; }
 }
+
+
+/* ==========================================================================
+   COMPOSITION DES PAGES (1.11.0) — administration
+   --------------------------------------------------------------------------
+   La page « Composition des pages » liste les blocs de chaque colonne avec
+   trois boutons (monter, descendre, masquer). Rien n'est renommé : ces
+   classes sont nouvelles et arrivent après tous les autres blocs.
+   ========================================================================== */
+
+.bouton--petit {
+    padding: 0.3rem 0.7rem;
+    font-size: 0.82rem;
+    letter-spacing: 0.04em;
+}
+
+.composition-page {
+    margin-bottom: 2rem;
+}
+
+.composition-colonne {
+    margin: 1.4rem 0 0.5rem;
+    padding-bottom: 0.25rem;
+    border-bottom: 1px solid var(--bordure-douce);
+    font-size: 0.86rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--texte-doux);
+}
+
+.composition-liste {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border: 1px solid var(--bordure);
+    background: var(--surface);
+}
+
+.composition-bloc {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+    padding: 0.7rem 0.9rem;
+    border-bottom: 1px solid var(--bordure-douce);
+}
+
+.composition-bloc:last-child {
+    border-bottom: 0;
+}
+
+.composition-bloc:nth-child(even) {
+    background: var(--tableau-fond-doux);
+}
+
+.composition-bloc--masque .composition-bloc__nom {
+    color: var(--desactive-texte);
+    text-decoration: line-through;
+    text-decoration-thickness: 1px;
+}
+
+.composition-bloc__texte {
+    min-width: 16rem;
+    flex: 1 1 18rem;
+}
+
+.composition-bloc__nom {
+    margin: 0 0 0.15rem;
+    font-weight: 700;
+}
+
+.composition-bloc__texte .aide {
+    margin: 0;
+}
+
+.composition-bloc__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.composition-bloc__actions .formulaire-en-ligne {
+    margin: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Modèles d'article (1.11.0)
+   --------------------------------------------------------------------------
+   « Journal » garde la mise en page d'aujourd'hui (aucune règle ici : c'est
+   `.article--presse`). « Simple » retire les ornements et la seconde colonne ;
+   « Grande photo » met l'image en pleine largeur avant le texte.
+   -------------------------------------------------------------------------- */
+
+.article--modele-simple {
+    max-width: 44rem;
+}
+
+.article--modele-simple .article__entete {
+    border-bottom: 1px solid var(--bordure-douce);
+}
+
+.article--modele-simple .article__titre {
+    font-size: clamp(1.6rem, 3.4vw, 2.4rem);
+}
+
+.article--modele-simple .article__texte {
+    columns: 1 !important;
+    column-rule: 0;
+}
+
+.article--modele-simple .article__image {
+    border: 0;
+    padding: 0;
+    background: none;
+    box-shadow: none;
+}
+
+.article--modele-simple .article__fin {
+    border-bottom: 1px solid var(--bordure-douce);
+}
+
+.article--modele-photo .article__image {
+    margin: 0 0 1.8rem;
+    padding: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
+}
+
+.article--modele-photo .article__image img {
+    max-height: 42rem;
+    object-fit: cover;
+}
+
+.article--modele-photo .article__titre {
+    font-size: clamp(2.2rem, 5.6vw, 3.8rem);
+}
+
+@media (min-width: 64rem) {
+    .article--modele-photo .article__texte.texte--presse {
+        columns: 1;
+    }
+}

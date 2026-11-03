@@ -10,18 +10,33 @@ declare(strict_types=1);
 /** Page d'accueil. */
 function public_accueil(): void
 {
-    $documents = recent_documents(6);
-    $photos    = recent_documents(4, 'photo');
-    $articles  = recent_articles(4);
+    // Un bloc masqué dans « Composition des pages » n'est pas calculé : ni
+    // requête, ni travail pour le Pi.
+    $visible = static fn (string $cle): bool => composition_visible('public', $cle);
 
-    $params = [];
-    $clause = visibility_clause('page', 'p', $params);
-    $pages  = db_all(
-        "SELECT p.slug, p.title, p.body FROM pages p
-         WHERE p.is_published = 1 AND {$clause}
-         ORDER BY p.show_in_nav DESC, p.position, p.title LIMIT 3",
-        $params
-    );
+    $documents = $visible('documents') ? recent_documents(6) : [];
+    $photos    = $visible('documents') ? recent_documents(4, 'photo') : [];
+    $articles  = $visible('une') ? recent_articles(4) : [];
+    $personnes = $visible('arbre') ? recent_persons(4) : [];
+
+    $pages = [];
+    if ($visible('lire')) {
+        $params = [];
+        $clause = visibility_clause('page', 'p', $params);
+        $pages  = db_all(
+            "SELECT p.slug, p.title, p.body FROM pages p
+             WHERE p.is_published = 1 AND {$clause}
+             ORDER BY p.show_in_nav DESC, p.position, p.title LIMIT 3",
+            $params
+        );
+    }
+
+    $nbDocs = $nbPages = $nbPersonnes = 0;
+    if ($visible('chiffres')) {
+        $nbDocs      = count_visible('documents', 'document');
+        $nbPages     = count_visible('pages', 'page');
+        $nbPersonnes = count_visible('persons', 'person');
+    }
 
     render('public/accueil', [
         'titre'      => null,
@@ -29,10 +44,10 @@ function public_accueil(): void
         'photos'     => $photos,
         'articles'   => $articles,
         'pages'      => $pages,
-        'personnes'  => recent_persons(4),
-        'nbDocs'     => count_visible('documents', 'document'),
-        'nbPages'    => count_visible('pages', 'page'),
-        'nbPersonnes' => count_visible('persons', 'person'),
+        'personnes'  => $personnes,
+        'nbDocs'     => $nbDocs,
+        'nbPages'    => $nbPages,
+        'nbPersonnes' => $nbPersonnes,
     ]);
 }
 

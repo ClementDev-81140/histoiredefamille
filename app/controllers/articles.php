@@ -247,6 +247,7 @@ function admin_article_save(array $params = []): void
         'body'         => post('body'),
         'category'     => post('category'),
         'image_id'     => (int) post('image_id'),
+        'modele'       => post('modele'),
         'visibility'   => post('visibility'),
         'branches'     => array_map('intval', post_array('branches')),
         'status'       => post('status'),
@@ -295,6 +296,13 @@ function admin_article_save(array $params = []): void
         }
     }
 
+    // Modèle de mise en page : une valeur inconnue n'est jamais enregistrée
+    // (elle retombe sur « comme le site »).
+    $modele = array_key_exists($old['modele'], article_modeles()) ? $old['modele'] : '';
+    if ($modele !== $old['modele']) {
+        $errors[] = 'Modèle de mise en page inconnu : choisissez-en un dans la liste.';
+    }
+
     $imageId = $old['image_id'] > 0 ? $old['image_id'] : null;
     if ($imageId !== null && !db_one("SELECT id FROM documents WHERE id = ? AND kind = 'photo'", [$imageId])) {
         $errors[] = 'L’image choisie n’existe pas.';
@@ -311,6 +319,7 @@ function admin_article_save(array $params = []): void
         'body'         => $old['body'],
         'category'     => $old['category'],
         'image_id'     => $imageId,
+        'modele'       => $modele,
         'visibility'   => $visibility,
         'status'       => $status,
         'published_at' => $publishedAt,

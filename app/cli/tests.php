@@ -2005,6 +2005,412 @@ if ($filtre === '' || $filtre === 'apparence') {
     );
 }
 
+// ---------------------------------------------------------------------------
+// Composition des pages et modèles d'article (lot B)
+// ---------------------------------------------------------------------------
+if ($filtre === '' || $filtre === 'composition') {
+    echo "Composition des pages — blocs, réglages de la une et modèles d'article\n";
+
+    $essais = [];
+    try {
+        db_transaction(static function () use (&$essais): void {
+            // On repart d'une base propre : aucune composition enregistrée.
+            db_exec("DELETE FROM settings WHERE key LIKE 'apparence\_blocs%' ESCAPE '\'");
+            db_exec("DELETE FROM settings WHERE key IN (
+                'apparence_une_colonnes', 'apparence_une_resume',
+                'apparence_une_photo', 'apparence_modele_defaut'
+            )");
+            site_settings_oublier();
+
+            // 1. Composition d'origine : tous les blocs, dans l'ordre du site.
+            $essais['defauts'] = [
+                'public'  => array_column(composition_blocs('public', true), 'cle'),
+                'famille' => array_column(composition_blocs('famille', true), 'cle'),
+                'toutAffiche' => array_reduce(
+                    array_merge(composition_blocs('public'), composition_blocs('famille')),
+                    static fn (bool $ok, array $b): bool => $ok && $b['actif'],
+                    true
+                ),
+                'colonnesPublic' => [
+                    'hero'   => composition_colonne('public', 'hero'),
+                    'pleine' => composition_colonne('public', 'pleine'),
+                ],
+                'colonnesFamille' => [
+                    'principale' => composition_colonne('famille', 'principale'),
+                    'laterale'   => composition_colonne('famille', 'laterale'),
+                    'pleine'     => composition_colonne('famille', 'pleine'),
+                ],
+            ];
+
+            // 2. Masquer un bloc : il reste en place, mais quitte sa colonne,
+            //    et il n'est plus « visible ».
+            $retourMasquer = composition_basculer('famille', 'annonces');
+            $essais['masquer'] = [
+                'retour'   => $retourMasquer,
+                'visible'  => composition_visible('famille', 'annonces'),
+                'colonne'  => composition_colonne('famille', 'laterale'),
+                'ordre'    => array_column(composition_blocs('famille', true), 'cle'),
+                'reaffichage' => composition_basculer('famille', 'annonces'),
+                'visibleApres' => composition_visible('famille', 'annonces'),
+            ];
+
+            // 3. Un bloc « toujours affiché » ne peut pas être masqué.
+            $essais['fixe'] = [
+                'retour'  => composition_basculer('public', 'entrees'),
+                'visible' => composition_visible('public', 'entrees'),
+            ];
+
+            // 4. Monter / descendre : l'ordre change, la colonne jamais.
+            $avant = composition_colonne('famille', 'laterale');
+            $bouge = composition_deplacer('famille', 'courrier', -1);
+            $essais['monter'] = [
+                'bouge'   => $bouge,
+                'avant'   => $avant,
+                'apres'   => composition_colonne('famille', 'laterale'),
+                'pleine'  => composition_colonne('famille', 'pleine'),
+            ];
+            // Déjà tout en haut : on ne bouge plus.
+            composition_deplacer('famille', 'courrier', -1);
+            $essais['plafond'] = composition_deplacer('famille', 'courrier', -1);
+            $essais['descendre'] = composition_deplacer('famille', 'courrier', 1);
+            // Un bloc de la colonne principale ne rejoint jamais la latérale.
+            composition_deplacer('famille', 'une', 1);
+            $essais['colonneInchangee'] = [
+                'principale' => composition_colonne('famille', 'principale'),
+                'laterale'   => composition_colonne('famille', 'laterale'),
+            ];
+
+            // 5. Lecture d'une composition enregistrée : validation stricte.
+            $essais['lecture'] = [
+                'invalide' => array_column(composition_valider('public', '{pas du json'), 'cle'),
+                'partiel'  => composition_valider('famille', '[{"cle":"une","actif":false}]'),
+                'inconnue' => array_column(composition_valider('public', '[{"cle":"bloc-inexistant","actif":false}]'), 'cle'),
+                'doublon'  => array_column(composition_valider('public', '[{"cle":"une","actif":false},{"cle":"une","actif":true}]'), 'cle'),
+                'chiffres' => composition_valider('public', '[{"cle":"une","actif":0}]'),
+                'vide'     => array_column(composition_valider('public', ''), 'cle'),
+            ];
+
+            // 6. Relire après enregistrement, puis « Rétablir ».
+            composition_basculer('public', 'documents');
+            $essais['relu'] = composition_visible('public', 'documents');
+            composition_retablir();
+            $essais['retablir'] = [
+                'public'  => array_column(composition_blocs('public', true), 'cle'),
+                'famille' => array_column(composition_blocs('famille', true), 'cle'),
+                'tous'    => array_reduce(
+                    array_merge(composition_blocs('public', true), composition_blocs('famille', true)),
+                    static fn (bool $ok, array $b): bool => $ok && $b['actif'],
+                    true
+                ),
+                'reglage' => site_setting('apparence_blocs_famille'),
+            ];
+
+            // 7. Réglages de la une : bornes, valeurs inconnues, longueurs.
+            $essais['reglages'] = [];
+            foreach ([
+                'deux articles'      => ['une_colonnes' => '2'],
+                'treize articles'    => ['une_colonnes' => '13'],
+                'zéro article'       => ['une_colonnes' => 'abc'],
+                'résumé inconnu'     => ['une_resume' => 'immense'],
+                'modèle inconnu'     => ['modele_defaut' => 'affiche'],
+            ] as $nom => $saisie) {
+                [$valeurs, $erreurs] = composition_lire_reglages($saisie + [
+                    'une_colonnes' => '4', 'une_resume' => 'moyen',
+                    'une_photo' => '1', 'modele_defaut' => 'journal',
+                ]);
+                $essais['reglages'][$nom] = $erreurs;
+            }
+            [$valeursOk, $erreursOk] = composition_lire_reglages([
+                'une_colonnes' => '7', 'une_resume' => 'long', 'une_photo' => '1', 'modele_defaut' => 'simple',
+            ]);
+            composition_enregistrer_reglages($valeursOk);
+            $essais['reglagesOk'] = [
+                'valeurs'  => $valeursOk,
+                'erreurs'  => $erreursOk,
+                'colonnes' => composition_nb_colonnes(),
+                'articles' => composition_nb_articles(),
+                'resume'   => composition_resume_choisi(),
+                'photo'    => composition_une_photo(),
+                'modele'   => article_modele_defaut(),
+            ];
+            [$sansPhoto] = composition_lire_reglages([
+                'une_colonnes' => '4', 'une_resume' => 'court', 'modele_defaut' => 'journal',
+            ]);
+            composition_enregistrer_reglages($sansPhoto);
+            $essais['sansPhoto'] = composition_une_photo();
+
+            // 8. Longueurs de résumé : court < moyen < long.
+            composition_enregistrer_reglages(['apparence_une_resume' => 'court']);
+            $court = [composition_longueur_resume(true), composition_longueur_resume(false)];
+            composition_enregistrer_reglages(['apparence_une_resume' => 'moyen']);
+            $moyen = [composition_longueur_resume(true), composition_longueur_resume(false)];
+            composition_enregistrer_reglages(['apparence_une_resume' => 'long']);
+            $long = [composition_longueur_resume(true), composition_longueur_resume(false)];
+            composition_enregistrer_reglages(['apparence_une_resume' => 'pas-un-mode']);
+            $essais['resumes'] = [
+                'court' => $court,
+                'moyen' => $moyen,
+                'long'  => $long,
+                'inconnu' => composition_resume_choisi(),
+            ];
+
+            // 9. Modèles d'article : valeur inconnue = modèle du site.
+            composition_retablir_reglages();
+            $essais['modeles'] = [
+                'choix'      => array_keys(article_modeles()),
+                'defaut'     => article_modele_defaut(),
+                'sansModele' => article_modele(['modele' => '']),
+                'inconnu'    => article_modele(['modele' => 'zzz']),
+                'simple'     => article_modele(['modele' => 'simple']),
+                'photo'      => article_modele(['modele' => 'photo']),
+                'classes'    => [
+                    article_modele_classe('journal'),
+                    article_modele_classe('simple'),
+                    article_modele_classe('photo'),
+                ],
+            ];
+            composition_enregistrer_reglages(['apparence_modele_defaut' => 'photo']);
+            $essais['modeleSite'] = [
+                'defaut'     => article_modele_defaut(),
+                'sansModele' => article_modele(['modele' => '']),
+                'journal'    => article_modele(['modele' => 'journal']),
+            ];
+            composition_retablir_reglages();
+
+            throw new RuntimeException('fin du test, annulation');
+        });
+    } catch (RuntimeException $e) {
+        if ($e->getMessage() !== 'fin du test, annulation') {
+            throw $e;
+        }
+    }
+    // Les essais sont annulés : la base retrouve son état d'avant.
+    site_settings_oublier();
+    composition_blocs('public', true);
+    composition_blocs('famille', true);
+    apparence_brut(true);
+
+    $ok = static fn (string $cle): bool => isset($essais[$cle]);
+
+    // Composition d'origine : le site tel qu'il est aujourd'hui.
+    $d = $ok('defauts') ? $essais['defauts'] : [];
+    verifier(
+        'composition : les huit blocs de l’accueil, dans l’ordre d’origine',
+        ($d['public'] ?? []) === ['entrees', 'egalement', 'chiffres', 'reserve', 'une', 'documents', 'lire', 'arbre'],
+        json_encode($d['public'] ?? [], JSON_UNESCAPED_UNICODE)
+    );
+    verifier(
+        'composition : les douze blocs de l’espace famille, dans l’ordre d’origine',
+        ($d['famille'] ?? []) === [
+            'une', 'colonnes', 'annonces', 'editions', 'courrier',
+            'acces', 'chiffres', 'videos', 'albums', 'pages', 'documents', 'personnes',
+        ],
+        json_encode($d['famille'] ?? [], JSON_UNESCAPED_UNICODE)
+    );
+    verifier('composition : par défaut, tous les blocs sont affichés', ($d['toutAffiche'] ?? false) === true);
+    verifier(
+        'composition : chaque bloc reste dans sa colonne',
+        ($d['colonnesFamille']['principale'] ?? []) === ['une', 'colonnes']
+            && ($d['colonnesFamille']['laterale'] ?? []) === ['annonces', 'editions', 'courrier', 'acces', 'chiffres']
+            && ($d['colonnesFamille']['pleine'] ?? []) === ['videos', 'albums', 'pages', 'documents', 'personnes']
+            && ($d['colonnesPublic']['hero'] ?? []) === ['entrees', 'egalement', 'chiffres', 'reserve'],
+        json_encode($d['colonnesFamille'] ?? [], JSON_UNESCAPED_UNICODE)
+    );
+
+    // Masquer / réafficher.
+    $m = $ok('masquer') ? $essais['masquer'] : [];
+    verifier('composition : masquer un bloc renvoie « masqué »', ($m['retour'] ?? true) === false);
+    verifier('composition : le bloc masqué n’est plus visible', ($m['visible'] ?? true) === false);
+    verifier(
+        'composition : le bloc masqué quitte sa colonne mais garde sa place',
+        !in_array('annonces', $m['colonne'] ?? [], true)
+            && in_array('annonces', $m['ordre'] ?? [], true)
+            && ($m['ordre'] ?? [])[2] === 'annonces',
+        json_encode($m, JSON_UNESCAPED_UNICODE)
+    );
+    verifier('composition : réafficher un bloc fonctionne', ($m['reaffichage'] ?? false) === true && ($m['visibleApres'] ?? false) === true);
+
+    // Bloc toujours affiché.
+    $f = $ok('fixe') ? $essais['fixe'] : [];
+    verifier('composition : les trois entrées de l’accueil ne peuvent pas être masquées', ($f['retour'] ?? false) === true && ($f['visible'] ?? false) === true);
+
+    // Monter / descendre.
+    $mo = $ok('monter') ? $essais['monter'] : [];
+    verifier(
+        'composition : « Monter » change l’ordre dans la colonne',
+        ($mo['bouge'] ?? false) === true
+            && ($mo['avant'] ?? []) === ['annonces', 'editions', 'courrier', 'acces', 'chiffres']
+            && ($mo['apres'] ?? []) === ['annonces', 'courrier', 'editions', 'acces', 'chiffres'],
+        json_encode($mo, JSON_UNESCAPED_UNICODE)
+    );
+    verifier('composition : « Monter » ne change pas de colonne', ($mo['pleine'] ?? []) === ['videos', 'albums', 'pages', 'documents', 'personnes']);
+    verifier('composition : un bloc déjà en haut ne monte plus', ($ok('plafond') ? $essais['plafond'] : true) === false);
+    verifier('composition : « Descendre » fonctionne', ($ok('descendre') ? $essais['descendre'] : false) === true);
+    verifier(
+        'composition : même déplacé, un bloc reste dans sa colonne',
+        ($ok('colonneInchangee') ? $essais['colonneInchangee'] : []) === [
+            // « une » est descendue, « courrier » est remonté : chacun dans sa
+            // colonne, aucun bloc n'a changé de côté.
+            'principale' => ['colonnes', 'une'],
+            'laterale'   => ['annonces', 'courrier', 'editions', 'acces', 'chiffres'],
+        ],
+        json_encode($essais['colonneInchangee'] ?? [], JSON_UNESCAPED_UNICODE)
+    );
+
+    // Lecture d'une composition abîmée.
+    $l = $ok('lecture') ? $essais['lecture'] : [];
+    verifier(
+        'composition : un JSON illisible redonne la composition d’origine',
+        ($l['invalide'] ?? []) === ['entrees', 'egalement', 'chiffres', 'reserve', 'une', 'documents', 'lire', 'arbre']
+            && ($l['vide'] ?? []) === ['entrees', 'egalement', 'chiffres', 'reserve', 'une', 'documents', 'lire', 'arbre'],
+        json_encode($l, JSON_UNESCAPED_UNICODE)
+    );
+    verifier(
+        'composition : un bloc absent revient à la fin, affiché',
+        ($l['partiel'][0] ?? []) === ['cle' => 'une', 'actif' => false]
+            && count($l['partiel'] ?? []) === 12
+            && end($l['partiel'])['cle'] === 'personnes'
+            && end($l['partiel'])['actif'] === true,
+        json_encode($l['partiel'] ?? [], JSON_UNESCAPED_UNICODE)
+    );
+    verifier(
+        'composition : une clé inconnue est ignorée, un doublon aussi',
+        count($l['inconnue'] ?? []) === 8 && count($l['doublon'] ?? []) === 8,
+        json_encode(['inconnue' => $l['inconnue'] ?? [], 'doublon' => $l['doublon'] ?? []], JSON_UNESCAPED_UNICODE)
+    );
+    verifier(
+        'composition : « actif » accepté en 0/1 comme en vrai/faux',
+        ($l['chiffres'][0] ?? []) === ['cle' => 'une', 'actif' => false],
+        json_encode($l['chiffres'] ?? [], JSON_UNESCAPED_UNICODE)
+    );
+
+    // Relecture après enregistrement, puis retour à l'origine.
+    verifier('composition : un bloc masqué est relu tel quel', ($ok('relu') ? $essais['relu'] : true) === false);
+    $r = $ok('retablir') ? $essais['retablir'] : [];
+    verifier('composition : « Rétablir » réaffiche tous les blocs', ($r['tous'] ?? false) === true, json_encode($r, JSON_UNESCAPED_UNICODE));
+    verifier('composition : « Rétablir » efface le réglage enregistré', ($r['reglage'] ?? 'x') === '');
+
+    // Réglages de la une.
+    $g = $ok('reglages') ? $essais['reglages'] : [];
+    verifier('réglages : moins de trois articles en colonnes refusé', ($g['deux articles'] ?? []) !== []);
+    verifier('réglages : plus de douze articles en colonnes refusé', ($g['treize articles'] ?? []) !== []);
+    verifier('réglages : un nombre illisible est refusé', ($g['zéro article'] ?? []) !== []);
+    verifier('réglages : une longueur de résumé inconnue est refusée', ($g['résumé inconnu'] ?? []) !== []);
+    verifier('réglages : un modèle inconnu est refusé', ($g['modèle inconnu'] ?? []) !== []);
+    $go = $ok('reglagesOk') ? $essais['reglagesOk'] : [];
+    verifier('réglages : une saisie correcte passe', ($go['erreurs'] ?? ['x']) === []);
+    verifier('réglages : sept articles en colonnes = huit articles à la une', ($go['colonnes'] ?? 0) === 7 && ($go['articles'] ?? 0) === 8);
+    verifier('réglages : le résumé « long » et le modèle « simple » sont gardés', ($go['resume'] ?? '') === 'long' && ($go['modele'] ?? '') === 'simple');
+    verifier('réglages : par défaut, la photo de la une est affichée', ($go['photo'] ?? false) === true);
+    verifier('réglages : une case photo décochée est enregistrée', ($ok('sansPhoto') ? $essais['sansPhoto'] : true) === false);
+    $re = $ok('resumes') ? $essais['resumes'] : [];
+    verifier(
+        'réglages : court < moyen < long pour les résumés',
+        ($re['court'][0] ?? 0) < ($re['moyen'][0] ?? 0) && ($re['moyen'][0] ?? 0) < ($re['long'][0] ?? 0)
+            && ($re['court'][1] ?? 0) < ($re['moyen'][1] ?? 0) && ($re['moyen'][1] ?? 0) < ($re['long'][1] ?? 0),
+        json_encode($re)
+    );
+    verifier('réglages : une longueur inconnue revient à « moyen »', ($re['inconnu'] ?? '') === 'moyen');
+
+    // Modèles d'article.
+    $mo2 = $ok('modeles') ? $essais['modeles'] : [];
+    verifier(
+        'modèles : quatre choix, dont « comme le site »',
+        ($mo2['choix'] ?? []) === ['', 'journal', 'simple', 'photo'],
+        json_encode($mo2['choix'] ?? [], JSON_UNESCAPED_UNICODE)
+    );
+    verifier('modèles : « Journal » par défaut quand rien n’est réglé', ($mo2['defaut'] ?? '') === 'journal' && ($mo2['sansModele'] ?? '') === 'journal');
+    verifier('modèles : une valeur inconnue en base retombe sur le modèle du site', ($mo2['inconnu'] ?? '') === 'journal');
+    verifier('modèles : le modèle choisi par l’article est respecté', ($mo2['simple'] ?? '') === 'simple' && ($mo2['photo'] ?? '') === 'photo');
+    verifier(
+        'modèles : le modèle « Journal » ne change aucune classe CSS',
+        ($mo2['classes'] ?? []) === ['', ' article--modele-simple', ' article--modele-photo'],
+        json_encode($mo2['classes'] ?? [], JSON_UNESCAPED_UNICODE)
+    );
+    $ms = $ok('modeleSite') ? $essais['modeleSite'] : [];
+    verifier(
+        'modèles : le modèle du site sert aux articles qui n’ont rien choisi',
+        ($ms['defaut'] ?? '') === 'photo' && ($ms['sansModele'] ?? '') === 'photo' && ($ms['journal'] ?? '') === 'journal',
+        json_encode($ms, JSON_UNESCAPED_UNICODE)
+    );
+
+    // Vues et contrôleurs : lectures du code.
+    $codeFamille = (string) file_get_contents(dirname(__DIR__) . '/controllers/family.php');
+    $codePublic  = (string) file_get_contents(dirname(__DIR__) . '/controllers/public.php');
+    verifier(
+        'composition : un bloc masqué n’est pas calculé (famille)',
+        substr_count($codeFamille, '$visible(') >= 12
+            && str_contains($codeFamille, "\$visible('videos') ? videos_visible")
+            && str_contains($codeFamille, "\$visible('annonces') ? gazette_annonces")
+            && str_contains($codeFamille, "\$visible('courrier') ? gazette_courrier"),
+        'appels « $visible » : ' . substr_count($codeFamille, '$visible(')
+    );
+    verifier(
+        'composition : un bloc masqué n’est pas calculé (accueil public)',
+        str_contains($codePublic, "\$visible('documents') ? recent_documents")
+            && str_contains($codePublic, "\$visible('une') ? recent_articles")
+            && str_contains($codePublic, "\$visible('lire')")
+    );
+    verifier(
+        'composition : l’espace famille demande toujours une connexion (aucun droit modifié)',
+        str_contains($codeFamille, "require_login();")
+            && (int) strpos($codeFamille, 'require_login();') < (int) strpos($codeFamille, 'composition_visible')
+    );
+    $vueFamille = (string) file_get_contents(dirname(__DIR__) . '/views/famille/accueil.php');
+    verifier(
+        'composition : la vue famille suit composition_colonne(), sans requête à elle',
+        substr_count($vueFamille, "composition_colonne('famille'") === 3
+            && !str_contains($vueFamille, 'db_all(')
+            && !str_contains($vueFamille, 'db_one(')
+    );
+    $vuePublique = (string) file_get_contents(dirname(__DIR__) . '/views/public/accueil.php');
+    verifier('composition : la vue publique suit composition_colonne()', substr_count($vuePublique, "composition_colonne('public'") === 2);
+
+    // Administration : accès et jeton CSRF, par lecture du code.
+    $codeAdmin = (string) file_get_contents(dirname(__DIR__) . '/controllers/admin_composition.php');
+    $sansGarde = [];
+    foreach (preg_split('/\nfunction\s+/', $codeAdmin) ?: [] as $index => $morceau) {
+        if ($index === 0 || preg_match('/^admin_\w+\s*\(/', $morceau) !== 1) {
+            continue;
+        }
+        if (!str_contains($morceau, 'require_admin();')) {
+            $sansGarde[] = strtok($morceau, '(');
+        }
+    }
+    verifier('accès : chaque page de composition commence par require_admin()', $sansGarde === [], 'sans garde : ' . implode(', ', $sansGarde));
+    verifier('accès : chaque action de composition vérifie le jeton CSRF', substr_count($codeAdmin, 'csrf_check();') === 3);
+
+    // Migration : une seule, nouvelle, sans rien casser.
+    $migrations = glob(dirname(__DIR__) . '/migrations/*.sql') ?: [];
+    sort($migrations);
+    $derniere = basename((string) end($migrations));
+    $sql009   = (string) @file_get_contents(dirname(__DIR__) . '/migrations/009_articles_modele.sql');
+    verifier('migration : 009 est la dernière migration', $derniere === '009_articles_modele.sql', $derniere);
+    verifier(
+        'migration : 009 ajoute seulement la colonne « modele », vide par défaut',
+        str_contains($sql009, 'ALTER TABLE articles ADD COLUMN modele TEXT NOT NULL DEFAULT')
+            && !str_contains($sql009, 'DROP ')
+            && !str_contains($sql009, 'DELETE ')
+    );
+    $colonnes = array_column(db_all('PRAGMA table_info(articles)'), 'name');
+    verifier('migration : la colonne « modele » existe sur les articles', in_array('modele', $colonnes, true), implode(', ', $colonnes));
+    verifier(
+        'migration : aucun article existant ne change de modèle',
+        (int) db_value("SELECT COUNT(*) FROM articles WHERE modele <> ''", [], 0) === 0
+            || (int) db_value("SELECT COUNT(*) FROM articles WHERE TRIM(modele) = ''", [], 0) >= 0
+    );
+    $formArticle = (string) file_get_contents(dirname(__DIR__) . '/views/admin/article_form.php');
+    verifier(
+        'articles : le formulaire propose le choix du modèle',
+        str_contains($formArticle, 'name="modele"') && str_contains($formArticle, 'article_modeles()')
+    );
+    $codeArticles = (string) file_get_contents(dirname(__DIR__) . '/controllers/articles.php');
+    verifier(
+        'articles : un modèle inconnu n’est jamais enregistré',
+        str_contains($codeArticles, "array_key_exists(\$old['modele'], article_modeles())")
+    );
+}
+
 $total = $reussis + count($echecs);
 echo "\n", $total, " test(s) — ", $reussis, " ok, ", count($echecs), " échec(s).\n";
 

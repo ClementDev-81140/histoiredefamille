@@ -2,6 +2,12 @@
 /**
  * Page d'accueil publique.
  *
+ * Comme l'espace famille, elle se compose dans
+ * « Administration → Composition des pages » : les blocs de l'en-tête
+ * (« également publié », chiffres, mot sur l'espace réservé) puis les
+ * rubriques, dans l'ordre choisi. Les trois entrées sont toujours là : ce
+ * sont les portes du site.
+ *
  * @var array $documents
  * @var array $photos
  * @var array $pages
@@ -9,6 +15,8 @@
  * @var int   $nbDocs, $nbPages, $nbPersonnes
  */
 $siteName = site_setting('name');
+$hero     = composition_colonne('public', 'hero');
+$pleine   = composition_colonne('public', 'pleine');
 ?>
 <section class="hero">
     <?php /* Le nom et le sous-titre figurent déjà dans l'en-tête du journal :
@@ -23,117 +31,138 @@ $siteName = site_setting('name');
         <p class="hero__texte"><?= e(apparence_accueil_phrase()) ?></p>
     <?php endif; ?>
 
-    <?php /* Trois entrées, pas une de plus : le site se consulte d'abord
-             en privé. Les autres rubriques ne sont proposées que si elles
-             contiennent vraiment quelque chose de public. */ ?>
-    <p class="actions">
-        <a class="bouton" href="/documents">Parcourir les documents</a>
-        <a class="bouton bouton--secondaire" href="/arbre">Voir l’arbre généalogique</a>
-        <?php if (!is_logged_in()): ?>
-            <a class="bouton bouton--secondaire" href="/connexion">Espace famille</a>
+    <?php foreach ($hero as $bloc): ?>
+
+        <?php if ($bloc === 'entrees'): ?>
+            <?php /* Trois entrées, pas une de plus : le site se consulte d'abord
+                     en privé. Les autres rubriques ne sont proposées que si elles
+                     contiennent vraiment quelque chose de public. */ ?>
+            <p class="actions">
+                <a class="bouton" href="/documents">Parcourir les documents</a>
+                <a class="bouton bouton--secondaire" href="/arbre">Voir l’arbre généalogique</a>
+                <?php if (!is_logged_in()): ?>
+                    <a class="bouton bouton--secondaire" href="/connexion">Espace famille</a>
+                <?php endif; ?>
+            </p>
+
+        <?php elseif ($bloc === 'egalement'): ?>
+            <?php
+            // Rubriques supplémentaires : seulement celles qui ont du contenu
+            // public (une seule fonction, mise en cache pour la requête). Pour
+            // un compte connecté, le menu complet suffit : on n'ajoute rien.
+            $autres = [];
+            if (menu_public_reduit()) {
+                $autres = [
+                    'articles'   => ['/articles', 'Articles'],
+                    'videos'     => ['/videos', 'Vidéos'],
+                    'albums'     => ['/albums', 'Albums'],
+                    'calendrier' => ['/calendrier', 'Calendrier'],
+                    'recherche'  => ['/recherche', 'Recherche'],
+                ];
+                $autres = array_filter($autres, static fn (string $cle): bool => rubrique_publique($cle), ARRAY_FILTER_USE_KEY);
+            }
+            ?>
+            <?php if ($autres !== []): ?>
+                <nav class="hero__rubriques" aria-label="Autres rubriques publiques">
+                    <p class="hero__rubriques-titre">Également publié</p>
+                    <ul>
+                        <?php foreach ($autres as $lien): ?>
+                            <li><a href="<?= e($lien[0]) ?>"><?= e($lien[1]) ?></a></li>
+                        <?php endforeach; ?>
+                    </ul>
+                </nav>
+            <?php endif; ?>
+
+        <?php elseif ($bloc === 'chiffres'): ?>
+            <p class="hero__chiffres" aria-label="Le site en chiffres">
+                <span><strong><?= (int) $nbDocs ?></strong> document<?= (int) $nbDocs > 1 ? 's' : '' ?> accessible<?= (int) $nbDocs > 1 ? 's' : '' ?></span>
+                <span><strong><?= (int) $nbPages ?></strong> page<?= (int) $nbPages > 1 ? 's' : '' ?> d’information</span>
+                <span><strong><?= (int) $nbPersonnes ?></strong> personne<?= (int) $nbPersonnes > 1 ? 's' : '' ?> dans l’arbre</span>
+            </p>
+
+        <?php elseif ($bloc === 'reserve'): ?>
+            <?php if (!is_logged_in()): ?>
+                <p class="note">
+                    Une partie du site est réservée aux familles : connectez-vous avec
+                    l’identifiant et le mot de passe de votre branche pour voir les
+                    photos, vidéos et documents privés.
+                </p>
+            <?php endif; ?>
         <?php endif; ?>
-    </p>
 
-    <?php
-    // Rubriques supplémentaires : seulement celles qui ont du contenu public
-    // (une seule fonction, mise en cache pour la requête). Pour un compte
-    // connecté, le menu complet suffit : on n'ajoute rien ici.
-    $autres = [];
-    if (menu_public_reduit()) {
-        $autres = [
-            'articles'   => ['/articles', 'Articles'],
-            'videos'     => ['/videos', 'Vidéos'],
-            'albums'     => ['/albums', 'Albums'],
-            'calendrier' => ['/calendrier', 'Calendrier'],
-            'recherche'  => ['/recherche', 'Recherche'],
-        ];
-        $autres = array_filter($autres, static fn (string $cle): bool => rubrique_publique($cle), ARRAY_FILTER_USE_KEY);
-    }
-    ?>
-    <?php if ($autres !== []): ?>
-        <nav class="hero__rubriques" aria-label="Autres rubriques publiques">
-            <p class="hero__rubriques-titre">Également publié</p>
-            <ul>
-                <?php foreach ($autres as $lien): ?>
-                    <li><a href="<?= e($lien[0]) ?>"><?= e($lien[1]) ?></a></li>
-                <?php endforeach; ?>
-            </ul>
-        </nav>
-    <?php endif; ?>
-
-    <p class="hero__chiffres" aria-label="Le site en chiffres">
-        <span><strong><?= (int) $nbDocs ?></strong> document<?= (int) $nbDocs > 1 ? 's' : '' ?> accessible<?= (int) $nbDocs > 1 ? 's' : '' ?></span>
-        <span><strong><?= (int) $nbPages ?></strong> page<?= (int) $nbPages > 1 ? 's' : '' ?> d’information</span>
-        <span><strong><?= (int) $nbPersonnes ?></strong> personne<?= (int) $nbPersonnes > 1 ? 's' : '' ?> dans l’arbre</span>
-    </p>
-
-    <?php if (!is_logged_in()): ?>
-        <p class="note">
-            Une partie du site est réservée aux familles : connectez-vous avec
-            l’identifiant et le mot de passe de votre branche pour voir les
-            photos, vidéos et documents privés.
-        </p>
-    <?php endif; ?>
+    <?php endforeach; ?>
 </section>
 
-<?php if ($articles !== []): ?>
-    <section class="section">
-        <div class="section__entete">
-            <h2><?= e(apparence_titre_encart('une')) ?></h2>
-            <a href="/articles">Tous les articles →</a>
-        </div>
-        <div class="articles-liste">
-            <?php foreach ($articles as $i => $article): ?>
-                <?php $grand = ($i === 0); ?>
-                <?php require __DIR__ . '/../partials/carte_article.php'; ?>
-            <?php endforeach; ?>
-        </div>
-    </section>
-<?php endif; ?>
+<?php foreach ($pleine as $bloc): ?>
 
-<?php if ($documents !== []): ?>
-    <section class="section">
-        <div class="section__entete">
-            <h2>Derniers documents</h2>
-            <a href="/documents">Tout voir →</a>
-        </div>
-        <div class="grille-cartes">
-            <?php foreach ($documents as $doc): ?>
-                <?php require __DIR__ . '/../partials/carte_document.php'; ?>
-            <?php endforeach; ?>
-        </div>
-    </section>
-<?php endif; ?>
+    <?php if ($bloc === 'une'): ?>
+        <?php if ($articles !== []): ?>
+            <section class="section">
+                <div class="section__entete">
+                    <h2><?= e(apparence_titre_encart('une')) ?></h2>
+                    <a href="/articles">Tous les articles →</a>
+                </div>
+                <div class="articles-liste">
+                    <?php foreach ($articles as $i => $article): ?>
+                        <?php $grand = ($i === 0); ?>
+                        <?php require __DIR__ . '/../partials/carte_article.php'; ?>
+                    <?php endforeach; ?>
+                </div>
+            </section>
+        <?php endif; ?>
 
-<?php if ($pages !== []): ?>
-    <section class="section">
-        <h2>À lire</h2>
-        <div class="grille-pages">
-            <?php foreach ($pages as $page): ?>
-                <article class="panneau">
-                    <h3><a href="/pages/<?= e($page['slug']) ?>"><?= e($page['title']) ?></a></h3>
-                    <p><?= e(text_summary($page['body'], 200)) ?></p>
-                    <p><a href="/pages/<?= e($page['slug']) ?>">Lire la suite →</a></p>
-                </article>
-            <?php endforeach; ?>
-        </div>
-    </section>
-<?php endif; ?>
+    <?php elseif ($bloc === 'documents'): ?>
+        <?php if ($documents !== []): ?>
+            <section class="section">
+                <div class="section__entete">
+                    <h2>Derniers documents</h2>
+                    <a href="/documents">Tout voir →</a>
+                </div>
+                <div class="grille-cartes">
+                    <?php foreach ($documents as $doc): ?>
+                        <?php require __DIR__ . '/../partials/carte_document.php'; ?>
+                    <?php endforeach; ?>
+                </div>
+            </section>
+        <?php endif; ?>
 
-<?php if ($personnes !== []): ?>
-    <section class="section">
-        <div class="section__entete">
-            <h2>Dans l’arbre</h2>
-            <a href="/arbre">Rechercher une personne →</a>
-        </div>
-        <ul class="liste-personnes">
-            <?php foreach ($personnes as $personne): ?>
-                <li>
-                    <a href="/arbre/<?= (int) $personne['id'] ?>"><?= e(person_full_name($personne)) ?></a>
-                    <?php $dates = person_dates($personne); ?>
-                    <?php if ($dates !== ''): ?><span class="discret"><?= e($dates) ?></span><?php endif; ?>
-                </li>
-            <?php endforeach; ?>
-        </ul>
-    </section>
-<?php endif; ?>
+    <?php elseif ($bloc === 'lire'): ?>
+        <?php if ($pages !== []): ?>
+            <section class="section">
+                <?php /* « À lire » (page d'accueil) et « À lire aussi » (bas
+                         d'article) sont deux rubriques différentes : seul le
+                         titre de la seconde est réglable. */ ?>
+                <h2>À lire</h2>
+                <div class="grille-pages">
+                    <?php foreach ($pages as $page): ?>
+                        <article class="panneau">
+                            <h3><a href="/pages/<?= e($page['slug']) ?>"><?= e($page['title']) ?></a></h3>
+                            <p><?= e(text_summary($page['body'], 200)) ?></p>
+                            <p><a href="/pages/<?= e($page['slug']) ?>">Lire la suite →</a></p>
+                        </article>
+                    <?php endforeach; ?>
+                </div>
+            </section>
+        <?php endif; ?>
+
+    <?php elseif ($bloc === 'arbre'): ?>
+        <?php if ($personnes !== []): ?>
+            <section class="section">
+                <div class="section__entete">
+                    <h2>Dans l’arbre</h2>
+                    <a href="/arbre">Rechercher une personne →</a>
+                </div>
+                <ul class="liste-personnes">
+                    <?php foreach ($personnes as $personne): ?>
+                        <li>
+                            <a href="/arbre/<?= (int) $personne['id'] ?>"><?= e(person_full_name($personne)) ?></a>
+                            <?php $dates = person_dates($personne); ?>
+                            <?php if ($dates !== ''): ?><span class="discret"><?= e($dates) ?></span><?php endif; ?>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            </section>
+        <?php endif; ?>
+    <?php endif; ?>
+
+<?php endforeach; ?>

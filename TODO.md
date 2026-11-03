@@ -3,6 +3,23 @@
 Ce fichier liste ce qui reste à faire, classé par priorité. Il n'y a pas de
 suivi automatique : cochez au fur et à mesure.
 
+## Fait (2026-11-03, lot 10 — composition des pages)
+
+- [x] **Administration → Composition des pages** (administrateurs seulement,
+  POST + jeton CSRF, journalisé « composition »).
+- [x] **Afficher / masquer** et **monter / descendre** chaque bloc de `/` et de
+  `/famille`, sans JavaScript ; un bloc ne quitte jamais sa colonne.
+- [x] **Bloc masqué jamais calculé** : ni requête, ni travail pour le Pi.
+- [x] **Réglages de la une** : 3 à 12 articles en colonnes, longueur du résumé
+  (court/moyen/long), photo de la une oui/non, valeurs bornées.
+- [x] **Modèles d'article** : Journal (actuel), Simple, Grande photo ; défaut
+  du site + choix par article (« Comme le site »), via la **migration 009**
+  (`articles.modele`, vide par défaut).
+- [x] **« Rétablir la composition d'origine »** avec confirmation.
+- [x] Stockage en `settings`, JSON strictement validé (JSON abîmé → origine).
+- [x] 52 vérifications de plus (296 au total) ; aucune règle d'accès modifiée,
+  aucune classe CSS renommée, aucune migration existante touchée.
+
 ## Fait (2026-11-03, lot 9 — apparence du journal)
 
 - [x] **Administration → Apparence du journal**, à côté de « Réglages »
@@ -159,12 +176,6 @@ suivi automatique : cochez au fur et à mesure.
 - [x] Ménage des fichiers envoyés par erreur à la racine du dépôt.
 
 ## Prochains lots (un par un, après accord)
-
-- [ ] **Lot 10 — Composition des pages** (prochaine étape prévue) :
-  afficher/masquer et monter/descendre les blocs de `/` et de `/famille`,
-  modèles d'article (« Journal », « Simple », « Grande photo »), réglages de
-  la une (nombre d'articles, longueur du résumé, photo), « Rétablir la
-  composition d'origine ». Stockage en `settings`, migration `009`.
 
 (Tous les autres lots prévus sont terminés. La suite dépend des envies de la
 famille : voir « Idées à étudier » plus bas.)

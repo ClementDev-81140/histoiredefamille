@@ -18,6 +18,7 @@ require_once __DIR__ . '/controllers/recherche.php';
 require_once __DIR__ . '/controllers/admin_journal.php';
 require_once __DIR__ . '/controllers/admin.php';
 require_once __DIR__ . '/controllers/admin_apparence.php';
+require_once __DIR__ . '/controllers/admin_composition.php';
 require_once __DIR__ . '/controllers/admin_documents.php';
 require_once __DIR__ . '/controllers/admin_branches.php';
 require_once __DIR__ . '/controllers/admin_comptes.php';
@@ -103,6 +104,10 @@ route('GET', '/admin/reglages', 'admin_settings');
 route('POST', '/admin/reglages', 'admin_settings_save');
 route('GET', '/admin/apparence', 'admin_apparence');
 route('POST', '/admin/apparence', 'admin_apparence_save');
+route('GET', '/admin/composition', 'admin_composition');
+route('POST', '/admin/composition', 'admin_composition_action');
+route('POST', '/admin/composition/reglages', 'admin_composition_reglages');
+route('POST', '/admin/composition/retablir', 'admin_composition_retablir');
 // Même page, présentée dans l'administration quand on vient de là.
 route('GET', '/admin/mon-compte', 'mon_compte');
 route('POST', '/admin/mon-compte', 'mon_compte_save');

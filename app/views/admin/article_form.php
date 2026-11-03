@@ -63,6 +63,25 @@ $publishedAt = (string) old_value($old, 'published_at', date('Y-m-d\TH:i', $ts))
             </datalist>
         </div>
         <div class="champ">
+            <label for="modele">Modèle de mise en page</label>
+            <?php $modeleChoisi = (string) $v('modele', ''); ?>
+            <select id="modele" name="modele">
+                <?php foreach (article_modeles() as $cleModele => $libelleModele): ?>
+                    <option value="<?= e($cleModele) ?>"<?= selected($modeleChoisi === $cleModele) ?>>
+                        <?= e($libelleModele) ?><?= $cleModele === '' ? ' (' . e(article_modeles()[article_modele_defaut()]) . ')' : '' ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+            <p class="aide">
+                « Journal » : la mise en page d’aujourd’hui. « Simple » : une seule colonne,
+                sans ornement. « Grande photo » : la photo en pleine largeur, puis le texte.
+                « Comme le site » suit le réglage de « Composition des pages ».
+            </p>
+        </div>
+    </div>
+
+    <div class="ligne-champs">
+        <div class="champ">
             <label for="image_id">Image à la une</label>
             <select id="image_id" name="image_id">
                 <option value="0">Aucune</option>
@@ -74,7 +93,6 @@ $publishedAt = (string) old_value($old, 'published_at', date('Y-m-d\TH:i', $ts))
             </select>
             <p class="aide">Une photo déjà ajoutée aux documents. Elle doit être au moins aussi visible que l’article.</p>
         </div>
-    </div>
 
     <div class="champ">
         <label for="summary">Résumé (chapô)</label>

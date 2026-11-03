@@ -7,11 +7,17 @@
  */
 $grand   = !empty($grand);
 $image   = article_image($article);
+// La photo de l'article à la une peut être masquée (réglage « Composition des
+// pages ») : la carte reste, sans image ni plaque de repli.
+if ($grand && !composition_une_photo()) {
+    $image = null;
+}
 // Le résumé est nettoyé de sa mise en forme légère : un aperçu ne doit pas
 // afficher « **gras** » ni « ## Titre » (même règle que les documents).
+// Sa longueur suit le réglage « Réglages de la une » (court, moyen, long).
 $resume  = trim((string) $article['summary']) !== ''
     ? text_to_plain((string) $article['summary'])
-    : text_summary((string) $article['body'], $grand ? 320 : 180);
+    : text_summary((string) $article['body'], composition_longueur_resume($grand));
 
 // Surtitre : rubrique, branche (si l'article est réservé à des branches) et
 // décennie racontée. Les trois informations restent séparées par « · ».
@@ -40,7 +46,7 @@ if ($lettre === '') {
         <a class="article-carte__image" href="/articles/<?= e($article['slug']) ?>" tabindex="-1" aria-hidden="true">
             <img src="<?= e($image['thumb']) ?>" alt="" loading="lazy">
         </a>
-    <?php else: ?>
+    <?php elseif (!$grand || composition_une_photo()): ?>
         <?php /* Plaque de repli : papier sépia et initiale en gothique, comme
                  une vignette de journal quand la photo manque. */ ?>
         <a class="article-carte__image article-carte__plaque" href="/articles/<?= e($article['slug']) ?>" tabindex="-1" aria-hidden="true">

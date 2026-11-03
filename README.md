@@ -124,6 +124,10 @@ et une installation qui tient en quelques commandes à copier-coller.
   masquer, le titre en gothique et les **couleurs** — palette d'origine,
   bleu d'avant, ou quatre couleurs choisies, avec contrôle des contrastes et
   correction automatique en un clic.
+- **Composition des pages** : afficher ou masquer les blocs de l'accueil et de
+  l'espace famille, les faire monter ou descendre, régler la une (nombre
+  d'articles, longueur du résumé, photo) et choisir le **modèle d'article**
+  par défaut (Journal, Simple, Grande photo).
 
 ### Journal des connexions et alertes
 
@@ -409,10 +413,11 @@ histoiredefamille/
 │   │                        GEDCOM, visibilité, textes, tchat, recherche,
 │   │                        albums, calendrier, recettes, journal des connexions,
 │   │                        gazette, rubriques publiques, comptes de la famille,
-│   │                        apparence du journal (textes et couleurs)…
+│   │                        apparence du journal (textes et couleurs),
+│   │                        composition des pages et modèles d'article…
 │   ├── views/               gabarits PHP (public, famille, admin)
 │   ├── migrations/          fichiers SQL numérotés
-│   │                        (001_init … 008_comptes_personnels)
+│   │                        (001_init … 009_articles_modele)
 │   └── cli/                 commandes : migrate, create-admin, demo, maintenance, tests
 ├── deploy/
 │   ├── install.sh           installation complète sur le Pi
@@ -465,6 +470,14 @@ Trois blocs de `public/assets/style.css` s'en occupent, à la fin du fichier :
    (papier vieilli, titre de « une », colonnes, lettrines, encarts, plaques de
    repli, page d'article). Ce bloc ne renomme rien : il arrive après les deux
    autres et les surcharge.
+
+Depuis la 1.11, un article peut prendre trois allures (bloc
+`COMPOSITION DES PAGES (1.11.0)`, à la fin du fichier) : « Journal » (la mise en
+page décrite ci-dessus), « Simple » (une colonne, sans ornement) et
+« Grande photo » (l'image en pleine largeur avant le texte). Ces règles
+n'existent que sous les classes `.article--modele-simple` et
+`.article--modele-photo` : un article resté en « Journal » n'a aucune classe de
+modèle et s'affiche exactement comme avant.
 
 Depuis la 1.9.2, le fond par défaut est une **feuille de papier** : crème (`#f3e7ce`) avec
 deux halos bruns et une ombre intérieure, tenue en place pendant que le texte
@@ -957,7 +970,63 @@ autre palette. Tant que vous ne touchez à rien, elle ne change rien.
 les boutons sont un simple formulaire ; seuls l'aperçu et le calcul des
 contrastes en direct ne s'animent pas.
 
-### 6.5 Ajouter une vidéo
+### 6.5 Composer les pages d'accueil
+
+**Administration → Composition des pages** (menu de gauche, juste sous
+« Apparence du journal »). Deux pages se règlent ici : l'accueil public
+(`/`, visible par tous) et l'espace famille (`/famille`, après connexion).
+
+**Afficher, masquer, monter, descendre.** Chaque bloc de la page est listé avec
+trois boutons :
+
+- **↑ Monter** et **↓ Descendre** : le bloc change de place **dans sa
+  colonne**, jamais de colonne ;
+- **Masquer** (ou **Afficher**) : le bloc disparaît de la page, ou revient.
+
+Ce sont de vrais boutons : **aucun JavaScript n'est nécessaire**. Un bloc
+masqué **n'est pas calculé du tout** — le site ne va même pas chercher les
+vidéos ou les annonces, ce qui allège le Raspberry Pi. Les trois entrées de
+l'accueil (Parcourir les documents, Voir l'arbre, Espace famille) restent
+toujours affichées : ce sont les portes du site.
+
+Les blocs de **l'espace famille** :
+
+| Colonne | Blocs |
+| --- | --- |
+| Principale | Article à la une, Articles en colonnes |
+| Colonne de droite | Petites annonces, Les éditions, Courrier des lecteurs, Accès rapides, En chiffres |
+| Toute la largeur | Dernières vidéos, Albums photos, Pages d'information, Derniers documents, Personnes récemment mises à jour |
+
+Ceux de **l'accueil public** : les trois entrées, « Également publié », les
+chiffres, le mot sur l'espace réservé, « À la une » (les articles), les
+derniers documents, « À lire » (les pages d'information) et l'arbre.
+
+**Réglages de la une.** Sur la même page :
+
+- **Articles en colonnes** : de 3 à 12 (4 aujourd'hui). Le dernier article
+  s'affiche en grand, les autres en colonnes.
+- **Longueur du résumé** : court, moyen ou long.
+- **Photo de l'article à la une** : affichée ou non.
+- **Modèle d'article par défaut** : voir plus bas.
+
+**Les modèles d'article.** Chaque article peut avoir sa présentation, choisie
+dans le formulaire d'article (champ « Modèle de mise en page ») :
+
+- **Journal** : la mise en page d'aujourd'hui (chapô, photo, texte en deux
+  colonnes sur grand écran) ;
+- **Simple** : une seule colonne, sans ornement, pour un texte court ;
+- **Grande photo** : la photo en pleine largeur, puis le texte ;
+- **Comme le site** : suit le modèle par défaut choisi dans cette page.
+
+Un article qui n'a rien choisi garde la présentation d'aujourd'hui : **rien ne
+change tant que vous ne touchez à rien**.
+
+Le bouton **« Rétablir la composition d'origine »** (avec une confirmation)
+réaffiche tous les blocs dans leur ordre d'origine et remet les réglages de la
+une comme au premier jour. Les articles, les photos et les droits ne sont pas
+touchés.
+
+### 6.6 Ajouter une vidéo
 
 Deux façons, selon la taille du fichier :
 
@@ -986,7 +1055,7 @@ puis **Administration → Vidéos**, section « Depuis le dossier arrivée »
 fichier est **déplacé** sur le disque, jamais chargé en mémoire : un film
 volumineux passe sans problème.
 
-### 6.6 Remplir l'arbre généalogique
+### 6.7 Remplir l'arbre généalogique
 
 **Administration → Arbre** :
 
@@ -998,7 +1067,7 @@ L'arbre se consulte sur `/arbre` (vue par défaut) ou depuis la fiche d'une
 personne. Le déplacement dans l'arbre est fait par un petit script maison,
 sans bibliothèque externe.
 
-### 6.7 Écrire un article
+### 6.8 Écrire un article
 
 **Administration → Articles → Écrire un article** :
 
@@ -1024,14 +1093,14 @@ sans bibliothèque externe.
 > partie de la famille. C'est le seul contenu du site dans ce cas (avec les
 > pages et les documents marqués « Public »).
 
-### 6.8 Pages d'information
+### 6.9 Pages d'information
 
 **Administration → Pages** : texte simple, avec quelques mises en forme
 (`## titre`, `**gras**`, `*italique*`, `- liste`, `[lien](adresse)`), une
 visibilité par page. Exemple de contenu : l'histoire de la famille, les
 annonces de réunion, une page « qui contacter ».
 
-### 6.9 Utiliser le tchat
+### 6.10 Utiliser le tchat
 
 1. Se connecter avec l'identifiant de sa branche (ou son compte
    administrateur), puis cliquer sur **Tchat** dans le menu.
@@ -1058,7 +1127,7 @@ Réglages utiles (Administration → Réglages, bloc « Tchat de la famille ») 
 > courriel ou par notification. C'est volontaire : aucun service à maintenir
 > sur le Raspberry Pi.
 
-### 6.10 Ranger des photos dans un album
+### 6.11 Ranger des photos dans un album
 
 1. Envoyer d'abord les photos normalement (Administration → Documents).
 2. Ouvrir **Administration → Albums photos → Nouvel album** : titre,
@@ -1069,7 +1138,7 @@ Réglages utiles (Administration → Réglages, bloc « Tchat de la famille ») 
    **Ajouter**. Le nom apparaît sous la photo, dans l'album et sur la fiche de
    la personne.
 
-### 6.11 Suivre le calendrier et la frise
+### 6.12 Suivre le calendrier et la frise
 
 - **Calendrier** : le mois en cours s'affiche ; les flèches permettent de
   revenir au mois précédent ou d'aller au suivant. Les dates des personnes
@@ -1080,7 +1149,7 @@ Réglages utiles (Administration → Réglages, bloc « Tchat de la famille ») 
   (Administration → Arbre généalogique) : le calendrier et la frise suivent
   automatiquement.
 
-### 6.12 Envoyer un témoignage sonore ou écrire une recette
+### 6.13 Envoyer un témoignage sonore ou écrire une recette
 
 - **Témoignage** : Administration → Documents → **Ajouter un document**, choisir
   un fichier MP3, M4A ou OGG, puis, sur la ligne du document, le bouton
@@ -1090,7 +1159,7 @@ Réglages utiles (Administration → Réglages, bloc « Tchat de la famille ») 
   titre, les ingrédients (un par ligne) et la préparation ; choisir une photo
   déjà envoyée si on veut. La recette s'imprime avec le bouton **Imprimer**.
 
-### 6.13 Chercher dans le site
+### 6.14 Chercher dans le site
 
 1. Cliquer sur **Recherche** dans le menu.
 2. Taper un nom, un mot ou une année, puis **Chercher**. Par exemple
@@ -1107,7 +1176,7 @@ sur le Raspberry Pi.
 
 ---
 
-### 6.14 Choisir ce que voit un visiteur
+### 6.15 Choisir ce que voit un visiteur
 
 Rien à cocher : le site s'en occupe.
 
@@ -1123,7 +1192,7 @@ Rien à cocher : le site s'en occupe.
 - Le tchat reste toujours privé : il n'apparaît jamais dans le menu public.
 - Un compte de famille ou d'administration garde, lui, **tout** le menu.
 
-### 6.15 Vérifier qui s'est connecté
+### 6.16 Vérifier qui s'est connecté
 
 Une fois par semaine, ou dès qu'une alerte apparaît sur le tableau de bord :
 

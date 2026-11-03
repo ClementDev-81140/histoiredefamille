@@ -3,6 +3,54 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.12.0] — 2026-11-03
+
+### La composition des pages et les modèles d'article
+
+Une nouvelle page **Administration → Composition des pages**, juste sous
+« Apparence du journal » : les administrateurs décident de ce qui s'affiche
+sur l'accueil public (`/`) et dans l'espace famille (`/famille`), et dans quel
+ordre. **Tant que rien n'est modifié, les deux pages s'affichent exactement
+comme avant** (vérifié page par page avec la version précédente).
+
+- **Afficher, masquer, monter, descendre** : chaque bloc de chaque page a trois
+  boutons (« ↑ Monter », « ↓ Descendre », « Masquer »/« Afficher »). Ce sont de
+  vrais formulaires POST avec un jeton CSRF : **aucun JavaScript n'est
+  nécessaire**, et le site fonctionne même sans script.
+- **Chaque bloc reste dans sa colonne** : les flèches ne font que le glisser
+  parmi ses voisins. Douze blocs pour l'espace famille (article à la une,
+  articles en colonnes, petites annonces, éditions, courrier, accès rapides,
+  chiffres, vidéos, albums, pages d'information, documents, personnes), huit
+  pour l'accueil public.
+- **Les trois entrées de l'accueil** (Parcourir les documents, Voir l'arbre,
+  Espace famille) ne peuvent pas être masquées : ce sont les portes du site.
+- **Un bloc masqué n'est pas calculé** : le contrôleur ne lance ni la requête
+  des vidéos, ni celle des annonces, ni celle des albums. Sur un Raspberry Pi
+  3B+, c'est du temps gagné à chaque affichage.
+- **Réglages de la une** : nombre d'articles en colonnes (3 à 12), longueur du
+  résumé (court, moyen, long) et photo de l'article à la une (oui ou non).
+  Toute valeur hors bornes est refusée avec un message clair.
+- **Modèles d'article** : « Journal » (la mise en page d'aujourd'hui),
+  « Simple » (une colonne, sans ornement), « Grande photo » (l'image en pleine
+  largeur avant le texte). Chaque article choisit le sien dans son formulaire
+  (« Comme le site » par défaut) ; le site a aussi son modèle par défaut.
+  Une valeur inconnue en base retombe sur le modèle du site, jamais sur une
+  page cassée.
+- **« Rétablir la composition d'origine »** (avec confirmation) réaffiche tous
+  les blocs dans leur ordre d'origine et remet les réglages de la une comme au
+  premier jour.
+- **Stockage** : table `settings`, en JSON strictement validé. Un JSON abîmé,
+  une clé inconnue, un doublon ou un bloc disparu ne cassent rien : les blocs
+  manquants reviennent à la fin, affichés.
+- **Migration 009** : une seule colonne ajoutée, `articles.modele`, vide par
+  défaut (« comme avant »). Aucune migration existante n'est modifiée, aucune
+  donnée n'est déplacée. Les articles déjà publiés ne changent pas d'allure.
+- **Aucune règle d'accès modifiée** : l'espace famille demande toujours une
+  connexion, et les blocs affichés continuent de filtrer avec les mêmes règles
+  de visibilité que le reste du site.
+- **52 vérifications de plus** (296 au total).
+- **À faire sur le Pi** : `php app/cli/migrate.php` (migration 009).
+
 ## [1.11.0] — 2026-11-03
 
 ### L'apparence du journal (textes et couleurs)
