@@ -1003,8 +1003,8 @@ derniers documents, « À lire » (les pages d'information) et l'arbre.
 
 **Réglages de la une.** Sur la même page :
 
-- **Articles en colonnes** : de 3 à 12 (4 aujourd'hui). Le dernier article
-  s'affiche en grand, les autres en colonnes.
+- **Articles en colonnes** : de 3 à 12 (4 aujourd'hui). L'article le plus
+  récent s'affiche en grand, les suivants en colonnes.
 - **Longueur du résumé** : court, moyen ou long.
 - **Photo de l'article à la une** : affichée ou non.
 - **Modèle d'article par défaut** : voir plus bas.

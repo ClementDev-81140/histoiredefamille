@@ -110,8 +110,8 @@ $photo  = (string) $val('une_photo', $unePhoto ? '1' : '0') === '1';
             <input type="number" id="une_colonnes" name="une_colonnes" min="3" max="12" step="1"
                    value="<?= (int) $nbUne ?>" required>
             <p class="aide">
-                De 3 à 12, sur l’espace famille. Le dernier article s’affiche en grand,
-                les autres en colonnes (aujourd’hui : 4).
+                De 3 à 12, sur l’espace famille. L’article le plus récent s’affiche en
+                grand, les suivants en colonnes (aujourd’hui : 4).
             </p>
         </div>
 
