@@ -124,6 +124,7 @@ db_insert('accounts', [
     'display_name'  => mb_substr($display, 0, 100),
     'password_hash' => password_make($password),
     'role'          => 'admin',
+    'account_type'  => 'admin',
     'branch_id'     => null,
     'is_active'     => 1,
     'created_at'    => $now,

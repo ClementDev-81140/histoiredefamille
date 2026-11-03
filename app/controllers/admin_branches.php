@@ -372,6 +372,7 @@ function admin_admin_create(): void
         'display_name'  => $display !== '' ? $display : $username,
         'password_hash' => password_make($plain),
         'role'          => 'admin',
+        'account_type'  => 'admin',
         'branch_id'     => null,
         'is_active'     => 1,
         'created_at'    => $now,

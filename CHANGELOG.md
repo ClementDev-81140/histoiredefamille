@@ -3,6 +3,18 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.12.1] — 2026-11-03
+
+### Correctifs
+
+- Un administrateur créé (commande `create-admin` ou page « Administrateurs »)
+  est bien classé « administrateur » : le compteur et le filtre par type de
+  la page « Comptes » étaient faussés (il était compté comme compte de branche).
+- La police gothique n'est plus demandée au format `.woff2` absent : plus de
+  page introuvable (404) à chaque affichage.
+- Reprise des finitions d'affichage de la 1.10.1 (messages à copier lisibles,
+  aperçu des comptes non coupé).
+
 ## [1.12.0] — 2026-11-03
 
 ### La composition des pages et les modèles d'article
