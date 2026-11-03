@@ -2420,6 +2420,10 @@ if ($filtre === '' || $filtre === 'sauvegarde') {
     tests_sauvegarde();
 }
 
+if ($filtre === '' || $filtre === 'restauration') {
+    tests_restauration();
+}
+
 $total = $reussis + count($echecs);
 echo "\n", $total, " test(s) — ", $reussis, " ok, ", count($echecs), " échec(s).\n";
 

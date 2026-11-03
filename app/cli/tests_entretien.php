@@ -444,3 +444,169 @@ function tests_sauvegarde(): void
         'message de refus absent'
     );
 }
+
+// ---------------------------------------------------------------------------
+// Lot 2 — Restauration
+// ---------------------------------------------------------------------------
+function tests_restauration(): void
+{
+    echo "Restauration — essai séparé, remplacement confirmé, comparaison\n";
+
+    $site    = tests_preparer_site_temp('hdf-restauration-');
+    $options = $site['options'];
+
+    try {
+        // 1. Sauvegarde de référence.
+        $sauvegarde = sauvegarde_executer($options);
+        verifier('restauration : sauvegarde de référence réussie', $sauvegarde['ok'], $sauvegarde['message']);
+
+        $compteursSauvegardes = tests_compteurs_base($site['base']);
+        $empreinteSauvegardee = restauration_empreinte_fichiers($site['cle'] . '/fichiers');
+
+        // 2. Le site vit après la sauvegarde : nouvelles lignes, fichier
+        //    modifié, fichier supprimé, fichier ajouté après coup.
+        $pdo = new PDO('sqlite:' . $site['base'], null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+        $pdo->exec('PRAGMA journal_mode = WAL');
+        $pdo->exec("INSERT INTO comptes (nom) VALUES ('APRES-SAUVERGARDE')");
+        $pdo->exec("UPDATE documents SET titre = 'Modifié après sauvegarde' WHERE id = 1");
+        $pdo = null;
+        tests_ecrire($site['donnees'] . '/medias/2026/11/photo.jpg', 'PHOTO-D-APRES');
+        unlink($site['donnees'] . '/medias/2026/11/photo.jpg');
+        tests_ecrire($site['donnees'] . '/medias/2026/11/nouveau.jpg', 'NOUVEAU-FICHIER');
+
+        $compteursAvant = tests_compteurs_base($site['base']);
+        verifier(
+            'restauration : le site a bien changé depuis la sauvegarde',
+            $compteursAvant !== $compteursSauvegardes,
+            'compteurs identiques : ' . json_encode($compteursAvant)
+        );
+
+        // 3. Restauration d'ESSAI dans un dossier séparé.
+        $essai = $site['racine'] . '/essai-restauration';
+        $resultatEssai = restauration_essai($site['cle'], $essai);
+        verifier('restauration : l’essai réussit', $resultatEssai['ok'], $resultatEssai['message']);
+        verifier(
+            'restauration : l’essai recrée la base et les fichiers dans un dossier séparé',
+            is_file($essai . '/histoire.sqlite') && is_file($essai . '/LISEZ-MOI.txt')
+                && is_file($essai . '/storage/medias/2026/11/photo.jpg')
+        );
+        verifier(
+            'restauration : le nombre de lignes par table est identique à la sauvegarde',
+            $resultatEssai['compteurs'] === $compteursSauvegardes,
+            'sauvegarde : ' . json_encode($compteursSauvegardes) . ' — essai : ' . json_encode($resultatEssai['compteurs'])
+        );
+        verifier(
+            'restauration : la somme de contrôle des fichiers restaurés est identique',
+            restauration_empreinte_fichiers($essai . '/storage') === $empreinteSauvegardee,
+            'empreintes différentes'
+        );
+        verifier(
+            'restauration : l’essai ne touche pas au site en service',
+            tests_compteurs_base($site['base']) === $compteursAvant
+                && !is_file($site['donnees'] . '/medias/2026/11/photo.jpg'),
+            'la base en service a été modifiée'
+        );
+
+        // 4. Aucune restauration ne se fait sans « OUI ».
+        verifier('restauration : « OUI » est exigé', restauration_confirmation_valide('OUI'));
+        foreach (['', 'oui', 'Oui', 'ok', 'OUI svp'] as $fausse) {
+            verifier(
+                'restauration : « ' . $fausse . ' » n’autorise pas le remplacement',
+                !restauration_confirmation_valide($fausse)
+            );
+        }
+        $codeCli = (string) file_get_contents(dirname(__DIR__) . '/cli/restauration.php');
+        verifier(
+            'restauration : la commande demande la confirmation avant de remplacer',
+            str_contains($codeCli, 'restauration_confirmation_valide')
+                && strpos($codeCli, 'restauration_confirmation_valide') < strpos($codeCli, 'restauration_remplacer'),
+            'ordre des appels incorrect'
+        );
+
+        // 5. Remplacement réel (la confirmation est testée ci-dessus ; ici la
+        //    fonction de bibliothèque est appelée directement, comme après un OUI).
+        $remplacement = restauration_remplacer($options, $site['cle']);
+        verifier('restauration : le remplacement réussit', $remplacement['ok'], $remplacement['message']);
+        verifier(
+            'restauration : la base du site est revenue à l’état sauvegardé',
+            tests_compteurs_base($site['base']) === $compteursSauvegardes,
+            'obtenu : ' . json_encode(tests_compteurs_base($site['base']))
+        );
+        verifier(
+            'restauration : l’ancienne base est mise de côté, pas effacée',
+            $remplacement['ancienne_base'] !== '' && is_file($remplacement['ancienne_base'])
+                && (int) (tests_compteurs_base($remplacement['ancienne_base'])['comptes'] ?? 0) === 4,
+            $remplacement['ancienne_base']
+        );
+        verifier(
+            'restauration : un fichier absent de la sauvegarde est déplacé, jamais supprimé',
+            !is_file($site['donnees'] . '/medias/2026/11/nouveau.jpg')
+                && is_file($site['cle'] . '/avant-restauration/' . basename(dirname($remplacement['ancienne_base'])) . '/fichiers-retires/medias/2026/11/nouveau.jpg')
+        );
+        verifier(
+            'restauration : le fichier restauré a le contenu de la sauvegarde',
+            (string) @file_get_contents($site['donnees'] . '/medias/2026/11/photo.jpg') === 'PHOTO-FICTIVE'
+        );
+        $identique = true;
+        foreach (['medias', 'miniatures', 'arrivee'] as $sous) {
+            if (restauration_empreinte_fichiers($site['donnees'] . '/' . $sous)
+                !== restauration_empreinte_fichiers($site['cle'] . '/fichiers/' . $sous)) {
+                $identique = false;
+            }
+        }
+        verifier(
+            'restauration : l’empreinte des fichiers du site est celle de la sauvegarde',
+            $identique,
+            'empreintes différentes'
+        );
+        verifier(
+            'restauration : la base en service n’a pas été déplacée par la restauration',
+            is_file($site['base'])
+        );
+
+        // 6. Une archive abîmée est refusée avant tout remplacement.
+        $abime = $site['racine'] . '/sauvegarde-abimee';
+        @mkdir($abime . '/base', 0700, true);
+        file_put_contents($abime . '/base/histoire-2000-01-01_000000.sqlite.gz', 'ceci n’est pas une archive gzip');
+
+        $compteursAvantAbime = tests_compteurs_base($site['base']);
+        $refus = restauration_remplacer($options, $abime);
+        verifier('restauration : archive abîmée — refusée', $refus['ok'] === false, $refus['message']);
+        verifier(
+            'restauration : archive abîmée — le site n’est pas modifié',
+            tests_compteurs_base($site['base']) === $compteursAvantAbime
+        );
+
+        // 7. Contrôle en lecture seule et date du dernier contrôle.
+        $optionsControle = array_replace($options, ['restore_state' => $site['cle'] . '/derniere-restauration.json']);
+        $controle = restauration_verifier($optionsControle, $site['cle']);
+        verifier('restauration : contrôle de la dernière sauvegarde réussi', $controle['ok'], $controle['message']);
+        $etatControle = restauration_etat_lire($site['cle'] . '/derniere-restauration.json');
+        verifier(
+            'restauration : la date du contrôle est enregistrée',
+            is_array($etatControle) && ($etatControle['status'] ?? '') === 'ok'
+                && (int) ($etatControle['date'] ?? 0) > time() - 120,
+            json_encode($etatControle, JSON_UNESCAPED_UNICODE)
+        );
+        verifier(
+            'restauration : le contrôle ne modifie pas la base en service',
+            tests_compteurs_base($site['base']) === $compteursAvantAbime
+        );
+    } finally {
+        tests_supprimer_dossier($site['racine']);
+    }
+
+    $commande = dirname(__DIR__) . '/cli/restauration.php';
+    verifier('restauration : la commande php app/cli/restauration.php existe', is_file($commande));
+    $codeCommande = is_file($commande) ? (string) file_get_contents($commande) : '';
+    verifier(
+        'restauration : par défaut, la commande restaure dans un dossier séparé',
+        str_contains($codeCommande, 'restauration_essai') && str_contains($codeCommande, 'RIEN n’a été remplacé'),
+        'comportement par défaut incorrect'
+    );
+    verifier(
+        'restauration : le message de refus dit que rien n’a été modifié',
+        str_contains($codeCommande, 'Le site n’a pas été modifié'),
+        'message de refus absent'
+    );
+}

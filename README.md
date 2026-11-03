@@ -1329,48 +1329,238 @@ ls -lh /mnt/sauvegarde/histoiredefamille/base | tail -5
 ls -lh /mnt/sauvegarde/histoiredefamille/hebdo /mnt/sauvegarde/histoiredefamille/mensuel
 du -sh /mnt/sauvegarde/histoiredefamille/fichiers
 
+# 3. vérifier que la dernière copie est lisible (ne modifie rien)
+sudo -u www-data php /var/www/histoiredefamille/app/cli/restauration.php \
+    /mnt/sauvegarde/histoiredefamille --verifier
 ```
 
 Chaque archive porte la date et l'heure de son début : `histoire-2026-11-03_033000.sqlite.gz`.
 La page **État du site** rappelle aussi combien de copies sont conservées dans
-chaque dossier (quotidiennes, hebdomadaires, mensuelles).
+chaque dossier (quotidiennes, hebdomadaires, mensuelles), et la date du dernier
+contrôle de restauration.
 
 ### 8.3 Restaurer (en cas de perte du SSD ou de fausse manœuvre)
 
+La restauration est aussi une commande, et elle est **prudente** : par défaut
+elle ne remplace rien, elle reconstitue la sauvegarde dans un **dossier
+séparé** pour que vous puissiez regarder avant.
+
+**Étape 1 — vérifier la sauvegarde (ne modifie rien, 10 secondes) :**
+
 ```bash
-# 1. arrêter le site
-sudo systemctl stop apache2
-
-# 2. garder l'ancienne base de côté (au cas où)
-sudo mv /mnt/ssd/histoiredefamille/histoire.sqlite /mnt/ssd/histoiredefamille/histoire.sqlite.avant-restauration 2>/dev/null || true
-sudo rm -f /mnt/ssd/histoiredefamille/histoire.sqlite-wal /mnt/ssd/histoiredefamille/histoire.sqlite-shm
-
-# 3. remettre la dernière sauvegarde
-ls -1t /mnt/sauvegarde/histoiredefamille/base/histoire-*.sqlite.gz | head -1
-sudo gzip -dc "$(ls -1t /mnt/sauvegarde/histoiredefamille/base/histoire-*.sqlite.gz | head -1)" \
-  | sudo tee /mnt/ssd/histoiredefamille/histoire.sqlite >/dev/null
-sudo chown www-data:www-data /mnt/ssd/histoiredefamille/histoire.sqlite
-sudo chmod 640 /mnt/ssd/histoiredefamille/histoire.sqlite
-
-# 4. vérifier puis redémarrer
-sudo -u www-data sqlite3 /mnt/ssd/histoiredefamille/histoire.sqlite 'PRAGMA integrity_check;'
-sudo systemctl start apache2
+sudo -u www-data php /var/www/histoiredefamille/app/cli/restauration.php \
+    /mnt/sauvegarde/histoiredefamille --verifier
 ```
 
-Pour restaurer **aussi les fichiers** (photos, vidéos) :
+**Étape 2 — essai dans un dossier séparé (2 à 10 minutes) :**
+
+```bash
+sudo -u www-data php /var/www/histoiredefamille/app/cli/restauration.php \
+    /mnt/sauvegarde/histoiredefamille
+```
+
+Le résultat s'écrit dans `/mnt/ssd/restauration-AAAA-MM-JJ_HHMM` :
+
+```
+restauration-2026-11-03_1530/
+├── histoire.sqlite    la base restaurée
+├── storage/           les photos, vidéos et documents restaurés
+└── LISEZ-MOI.txt      ce qu'il faut faire ensuite
+```
+
+**Rien n'a été remplacé.** Le site continue de fonctionner normalement.
+
+**Étape 3 — remplacer le site (10 à 30 minutes selon le volume) :**
+
+```bash
+# le site doit être arrêté
+sudo systemctl stop apache2
+
+sudo -u www-data php /var/www/histoiredefamille/app/cli/restauration.php \
+    /mnt/sauvegarde/histoiredefamille --remplacer
+```
+
+La commande affiche ce qu'elle va faire, puis demande :
+
+```
+Pour confirmer, tapez OUI puis Entrée (autre chose annule) :
+```
+
+Tapez **OUI** en majuscules. Autre chose annule tout : le site n'est pas
+modifié. Avant de remplacer, elle :
+
+- vérifie l'intégrité de la sauvegarde (`PRAGMA integrity_check`) ;
+- **copie l'ancienne base** dans `/mnt/sauvegarde/histoiredefamille/avant-restauration/AAAA-MM-JJ_HHMMSS/` ;
+- **déplace** (sans les effacer) les fichiers qui n'existent pas dans la
+  sauvegarde vers `…/avant-restauration/…/fichiers-retires/` ;
+- réinstalle la base et les fichiers, puis affiche le nombre de lignes par table.
+
+Puis redémarrez et vérifiez :
+
+```bash
+sudo systemctl start apache2
+curl -I http://localhost/
+```
+
+> **Rien n'est jamais effacé** : l'ancienne base et les fichiers retirés restent
+> sur la clé. Si vous vous êtes trompé de sauvegarde, vous pouvez revenir en
+> arrière en rejouant la même commande avec le dossier
+> `avant-restauration/AAAA-MM-JJ_HHMMSS`.
+
+> La page **État du site** rappelle la date du dernier contrôle de restauration
+> (commande `--verifier`) : si elle date de plus de six mois, refaites-en un.
+
+### 8.4 Que faire si…
+
+Cinq pannes, de la plus grave à la plus bénigne. Pour chacune : ce qu'il faut
+avoir sous la main, les commandes, le temps approximatif.
+
+#### La carte SD est morte (le Pi ne démarre plus, ou s'arrête au logo)
+
+> C'est la panne la plus fréquente sur un Raspberry Pi. **Le SSD et la clé ne
+> sont pas concernés** : photos, vidéos et base sont dessus.
+
+**À avoir sous la main :** une carte microSD neuve (32 Go suffisent), le
+lecteur de cartes, un ordinateur, la clé USB de sauvegarde, et une copie de
+`config.local.php` (gestionnaire de mots de passe ou feuille imprimée).
+
+**Temps : 1 h 30 environ** (dont 20 min de copie de l'image système).
+
+```bash
+# 1. sur votre ordinateur : écrire Ubuntu Server sur la carte neuve
+#    (Raspberry Pi Imager : choisir Ubuntu Server 24.04 LTS 64 bits,
+#     régler le nom d'hôte, l'utilisateur et le Wi-Fi)
+
+# 2. remettre la carte dans le Pi, démarrer, puis se connecter en SSH
+ssh votre-utilisateur@IP-DU-PI
+
+# 3. remonter le SSD et la clé (voir deploy/montage-disques.md)
+sudo mkdir -p /mnt/ssd /mnt/sauvegarde
+sudo mount -a
+df -h /mnt/ssd /mnt/sauvegarde        # les deux doivent apparaître
+
+# 4. récupérer le code et installer
+cd /home/votre-utilisateur
+git clone https://github.com/VOTRE-COMPTE/histoiredefamille.git
+cd histoiredefamille
+sudo bash deploy/install.sh
+
+# 5. remettre votre configuration (celle gardée de côté)
+sudo nano /var/www/histoiredefamille/config.local.php
+
+# 6. restaurer les données depuis la clé
+sudo systemctl stop apache2
+sudo -u www-data php /var/www/histoiredefamille/app/cli/restauration.php \
+    /mnt/sauvegarde/histoiredefamille --remplacer      # taper OUI
+sudo systemctl start apache2
+
+# 7. vérifier
+curl -I http://localhost/
+```
+
+#### Le SSD est mort (le site répond, mais les photos manquent ou la base est illisible)
+
+**À avoir sous la main :** un SSD USB neuf, la clé de sauvegarde,
+`config.local.php`.
+
+**Temps : 1 h environ** (dont la copie des fichiers).
 
 ```bash
 sudo systemctl stop apache2
-sudo rsync -a --delete /mnt/sauvegarde/histoiredefamille/fichiers/ /mnt/ssd/histoiredefamille/
+
+# 1. brancher le SSD neuf, le monter (deploy/montage-disques.md)
+lsblk -o NAME,SIZE,MODEL        # repérer le disque
+sudo mkdir -p /mnt/ssd
+# … voir deploy/montage-disques.md pour l'entrée /etc/fstab définitive
+
+# 2. recréer les dossiers de données
+sudo mkdir -p /mnt/ssd/histoiredefamille/{medias,miniatures,arrivee,tmp,verrous}
 sudo chown -R www-data:www-data /mnt/ssd/histoiredefamille
+
+# 3. restaurer la base ET les fichiers depuis la clé (taper OUI)
+sudo -u www-data php /var/www/histoiredefamille/app/cli/restauration.php \
+    /mnt/sauvegarde/histoiredefamille --remplacer
+
 sudo systemctl start apache2
 ```
 
-> Si la carte SD est morte : réinstallez Ubuntu, remontez le SSD et la clé
-> (§ 4.2), réinstallez le site (§ 4.3 à 4.6), puis restaurez la base comme
-> ci-dessus. La base contient les comptes : inutile de les recréer.
+#### Un document a été supprimé par erreur
 
-### 8.4 Alertes en cas d'échec
+**Temps : 10 minutes**, et le site peut rester ouvert.
+
+```bash
+# 1. restaurer dans un dossier séparé (rien n'est remplacé)
+sudo -u www-data php /var/www/histoiredefamille/app/cli/restauration.php \
+    /mnt/sauvegarde/histoiredefamille
+
+# 2. retrouver le fichier : il est dans
+#    /mnt/ssd/restauration-AAAA-MM-JJ_HHMM/storage/medias/…
+
+# 3. si c'est une photo ou un document, il suffit de le réimporter par
+#    l'administration (Documents → Ajouter). Sinon, refermez le dossier :
+sudo rm -rf /mnt/ssd/restauration-AAAA-MM-JJ_HHMM
+```
+
+Si c'est le **texte** qui a été vidé (article, page, fiche de personne),
+l'import ne suffit pas : remontez à hier (§ ci-dessous) ou copiez le texte
+depuis la base restaurée.
+
+#### Remonter à hier (fausse manœuvre : suppression en masse, mauvais import)
+
+**Temps : 20 minutes.** Vous perdez les modifications faites depuis la
+sauvegarde de la nuit précédente (3 h 30).
+
+```bash
+sudo systemctl stop apache2
+sudo -u www-data php /var/www/histoiredefamille/app/cli/restauration.php \
+    /mnt/sauvegarde/histoiredefamille --remplacer      # taper OUI
+sudo systemctl start apache2
+```
+
+Pour choisir une sauvegarde **plus ancienne** (par exemple celle d'il y a trois
+jours), indiquez son fichier au lieu du dossier :
+
+```bash
+ls -1t /mnt/sauvegarde/histoiredefamille/base/
+sudo -u www-data php /var/www/histoiredefamille/app/cli/restauration.php \
+    /mnt/sauvegarde/histoiredefamille/base/histoire-2026-11-01_033000.sqlite.gz --remplacer
+```
+
+> La restauration d'un fichier ne réinstalle que la base : les fichiers de
+> `fichiers/` (photos, vidéos) restent ceux de la clé, ce qui est voulu.
+
+#### Changer de Raspberry Pi (pièce de rechange, déménagement, don)
+
+**À avoir sous la main :** le nouveau Pi, la carte SD du nouveau Pi (ou
+l'ancienne si elle est saine), le SSD et la clé. **Temps : 1 h à 2 h.**
+
+1. Sur le nouveau Pi, installez Ubuntu Server et le site (§ 4.1 à 4.6 du
+   README) — **inutile de créer un administrateur**, la base restaurée contient
+   déjà les comptes.
+2. Remontez le SSD et la clé (`deploy/montage-disques.md`).
+3. Si le SSD a changé de nom (`/dev/sda` → `/dev/sdb`), utilisez les **UUID**
+   dans `/etc/fstab` : c'est déjà ce que recommande le guide.
+4. Restaurez la base et les fichiers (taper OUI) :
+   `sudo -u www-data php /var/www/histoiredefamille/app/cli/restauration.php /mnt/sauvegarde/histoiredefamille --remplacer`
+5. Remettez `config.local.php`, le tunnel Cloudflare (§ 5), puis vérifiez que
+   le site s'ouvre (§ 5.6).
+6. Vérifiez que le minuteur de sauvegarde est actif :
+   `systemctl list-timers histoiredefamille-sauvegarde.timer`.
+
+#### Le Pi répond mais la page affiche une erreur 500
+
+Ce n'est pas une panne de données. Regardez le journal avant de restaurer :
+
+```bash
+sudo tail -50 /var/log/apache2/histoiredefamille-error.log
+sudo systemctl status apache2
+df -h /mnt/ssd /mnt/sauvegarde        # disque plein ?
+```
+
+Une restauration ne se justifie que si la base est réellement abîmée
+(`sqlite3 … 'PRAGMA integrity_check;'` renvoie autre chose que `ok`).
+
+### 8.5 Alertes en cas d'échec
 
 Deux mécanismes, tous les deux consultables sans ligne de commande :
 
@@ -1385,7 +1575,7 @@ La page **État du site** donne le détail : date, résultat, taille de la base,
 nombre de fichiers copiés, espace libre sur la clé et sur le disque des
 données, nombre de copies conservées.
 
-### 8.5 Chiffrer la clé USB (facultatif)
+### 8.6 Chiffrer la clé USB (facultatif)
 
 Une clé perdue, c'est toute l'histoire de la famille lisible par un inconnu.
 Le chiffrement LUKS protège contre cela, mais **le mot de passe devient la clé
@@ -1394,7 +1584,7 @@ de tout** : oublié, les sauvegardes sont perdues.
 Avantages, risques et commandes : **[docs/chiffrement-cle-usb.md](docs/chiffrement-cle-usb.md)**.
 Ne chiffrez pas la clé si personne ne peut retrouver le mot de passe.
 
-### 8.6 Surveiller l'espace disque
+### 8.7 Surveiller l'espace disque
 
 ```bash
 df -h /mnt/ssd /mnt/sauvegarde
@@ -1403,7 +1593,7 @@ du -sh /mnt/ssd/histoiredefamille/medias
 
 La page **État du site** affiche aussi l'espace libre du SSD.
 
-### 8.7 Repartir d'une base vierge (développement seulement)
+### 8.8 Repartir d'une base vierge (développement seulement)
 
 > ⚠️ Efface tous les documents, comptes et personnes.
 

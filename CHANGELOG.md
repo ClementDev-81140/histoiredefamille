@@ -3,6 +3,47 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.14.0] — 2026-11-03
+
+### Restaurer sans risque, et savoir quoi faire en cas de panne
+
+Une seule commande, trois usages, et jamais de remplacement sans accord
+explicite :
+
+```bash
+# 1. contrôler la dernière sauvegarde (ne modifie rien)
+sudo -u www-data php /var/www/histoiredefamille/app/cli/restauration.php \
+    /mnt/sauvegarde/histoiredefamille --verifier
+
+# 2. restaurer dans un dossier séparé (essai)
+sudo -u www-data php /var/www/histoiredefamille/app/cli/restauration.php \
+    /mnt/sauvegarde/histoiredefamille
+
+# 3. remplacer le site (le site doit être arrêté)
+sudo -u www-data php /var/www/histoiredefamille/app/cli/restauration.php \
+    /mnt/sauvegarde/histoiredefamille --remplacer
+```
+
+- **Par défaut, rien n'est remplacé** : la sauvegarde est reconstituée dans un
+  dossier séparé (`histoire.sqlite`, `storage/`, `LISEZ-MOI.txt`), pour regarder
+  avant d'agir.
+- **`--remplacer` exige de taper « OUI »** en majuscules. « oui », « Oui », une
+  ligne vide : la commande annule et le site n'est pas modifié.
+- **Avant de remplacer**, la sauvegarde est contrôlée (`PRAGMA
+  integrity_check`), l'**ancienne base est copiée** dans
+  `avant-restauration/AAAA-MM-JJ_HHMMSS/`, et les fichiers absents de la
+  sauvegarde sont **déplacés** dans `fichiers-retires/` — jamais effacés.
+- **Comparaison vérifiée** : le nombre de lignes de chaque table et la somme de
+  contrôle des fichiers restaurés sont identiques à la sauvegarde.
+- **Contrôle en lecture seule** (`--verifier`) : date notée dans
+  `derniere-restauration.json` pour la page « État du site ».
+- **README « Que faire si… »** : carte SD morte, SSD mort, document supprimé par
+  erreur, remonter à hier, changer de Raspberry Pi — avec ce qu'il faut avoir
+  sous la main, les commandes et le temps approximatif.
+- **Test de bout en bout** dans `tests.php` sur base et dossiers **temporaires** :
+  données fictives, sauvegarde, modifications, essai, comparaison, remplacement,
+  archive abîmée refusée, confirmation exigée.
+
 ## [1.13.0] — 2026-11-03
 
 ### Des sauvegardes fiables, tous les soirs à 3 h 30
