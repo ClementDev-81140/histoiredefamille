@@ -150,9 +150,21 @@ function db_update(string $table, int $id, array $data): void
     db_query($sql, $params);
 }
 
-/** Exécute une fonction dans une transaction (avec nouvelles tentatives). */
+/**
+ * Exécute une fonction dans une transaction (avec nouvelles tentatives).
+ *
+ * Un appel imbriqué (une fonction qui ouvre sa propre transaction alors
+ * qu'une autre est déjà en cours) rejoint la transaction en cours au lieu
+ * d'en ouvrir une seconde : SQLite n'en connaît qu'une, et une seconde
+ * tentative ferait tout annuler sans le dire.
+ */
 function db_transaction(callable $callback): mixed
 {
+    $pdo = db();
+    if ($pdo->inTransaction()) {
+        return $callback($pdo);
+    }
+
     return db_retry(static function () use ($callback): mixed {
         $pdo = db();
         $pdo->beginTransaction();

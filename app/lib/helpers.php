@@ -141,13 +141,25 @@ function csrf_field(): string
 }
 
 /**
+ * Le jeton CSRF reçu est-il le bon ?
+ *
+ * La comparaison est à temps constant (hash_equals) : on ne laisse pas
+ * deviner le jeton caractère par caractère. Fonction séparée de
+ * csrf_check() pour pouvoir la tester sans arrêter le script.
+ */
+function csrf_valide(mixed $envoye): bool
+{
+    return is_string($envoye) && $envoye !== '' && hash_equals(csrf_token(), $envoye);
+}
+
+/**
  * Vérifie le jeton CSRF de la requête POST courante.
  * En cas d'échec : erreur 403 et arrêt immédiat.
  */
 function csrf_check(): void
 {
     $sent = $_POST['_csrf'] ?? '';
-    if (!is_string($sent) || !hash_equals(csrf_token(), $sent)) {
+    if (!csrf_valide($sent)) {
         http_response_code(403);
         render('erreur', [
             'titre'   => 'Session expirée',

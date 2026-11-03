@@ -69,7 +69,12 @@ function tchat_prenom(): string
 
 /**
  * Signature d'un message : « BRANCHE/Prénom », ou « ADMIN/nom affiché »
- * pour un administrateur. Chaîne vide si le prénom n'est pas encore choisi.
+ * pour un administrateur.
+ *
+ * Un compte « personne » n'a pas à choisir son prénom : il est déjà connu
+ * (MARTIN/Élise). La question du prénom ne reste donc que pour les comptes
+ * de branche, où plusieurs personnes partagent le même identifiant.
+ * Chaîne vide si le prénom n'est pas encore choisi.
  */
 function tchat_signature(array $account): string
 {
@@ -85,9 +90,18 @@ function tchat_signature(array $account): string
     if ($code === '') {
         $code = (string) ($account['username'] ?? '');
     }
-    $prenom = tchat_prenom();
+
+    $prenom = compte_type($account) === 'personne'
+        ? compte_prenom($account)
+        : tchat_prenom();
 
     return $prenom !== '' ? mb_strtoupper($code, 'UTF-8') . '/' . $prenom : '';
+}
+
+/** Un compte personnel signe-t-il tout seul ? (alors on ne demande pas le prénom) */
+function tchat_signe_tout_seul(array $account): bool
+{
+    return compte_type($account) === 'personne' && compte_prenom($account) !== '';
 }
 
 /**

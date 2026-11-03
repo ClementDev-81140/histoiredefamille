@@ -134,7 +134,7 @@ function can_view(string $visibility, array $contentBranchIds = []): bool
         return true;
     }
     if ($level === 'branches') {
-        if ((int) ($account['branch_see_all'] ?? 0) === 1) {
+        if (account_sees_all($account)) {
             return true;
         }
         return $account['branch_id'] !== null

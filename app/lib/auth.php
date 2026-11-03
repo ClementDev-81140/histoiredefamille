@@ -4,8 +4,15 @@
  *
  * Deux rôles :
  *  - « admin »   : comptes personnels, voient et gèrent tout ;
- *  - « famille » : un compte par branche familiale, mot de passe partagé
- *                  par la branche, visibilité limitée aux contenus autorisés.
+ *  - « famille » : comptes de famille. Deux types coexistent :
+ *                  « branche » (un identifiant partagé par la branche) et
+ *                  « personne » (un compte par personne, avec son nom, son
+ *                  prénom et son propre mot de passe).
+ *
+ * Les deux types de comptes « famille » ont exactement les mêmes droits :
+ * public + toutes les familles + les contenus de leur branche. Seule la case
+ * « voit toutes les branches » diffère dans sa source : elle est portée par
+ * la branche pour un compte de branche, et par le compte pour une personne.
  */
 
 declare(strict_types=1);
@@ -13,18 +20,28 @@ declare(strict_types=1);
 /** Compte connecté (ligne accounts + branche éventuelle), ou null. */
 function current_account(): ?array
 {
-    static $cached = false;
-    static $account = null;
-
-    if ($cached) {
-        return $account;
-    }
-    $cached = true;
+    static $cachedId = null;
+    static $cached   = false;
+    static $account  = null;
 
     $id = $_SESSION['account_id'] ?? null;
     if (!is_int($id) && !ctype_digit((string) $id)) {
+        // Visiteur : la mémoire est remise à zéro pour une éventuelle
+        // connexion plus tard dans la même requête (tests, changement de
+        // compte).
+        $cachedId = null;
+        $cached   = false;
+        $account  = null;
         return null;
     }
+
+    // La mémoire suit le compte demandé : si la session change de compte
+    // (connexion, tests), on relit la base.
+    if ($cached && $cachedId === (int) $id) {
+        return $account;
+    }
+    $cached   = true;
+    $cachedId = (int) $id;
 
     $account = db_one(
         'SELECT a.*, b.code AS branch_code, b.name AS branch_name, b.see_all AS branch_see_all,
@@ -36,13 +53,52 @@ function current_account(): ?array
     );
 
     // Compte supprimé, désactivé ou branche désactivée : on déconnecte.
-    if (!$account || (int) $account['is_active'] !== 1
-        || ($account['branch_id'] !== null && (int) ($account['branch_active'] ?? 0) !== 1)) {
+    if (!$account || !account_can_login($account)) {
         auth_logout();
         $account = null;
     }
 
     return $account;
+}
+
+/**
+ * Ce compte a-t-il le droit d'être connecté ?
+ *
+ * Trois refus : compte désactivé, compte supprimé, branche désactivée.
+ * La règle est ici, à un seul endroit, pour la connexion et pour la
+ * vérification à chaque requête (une session ouverte est coupée si le
+ * compte est désactivé entre-temps).
+ */
+function account_can_login(?array $account): bool
+{
+    if ($account === null) {
+        return false;
+    }
+    if ((int) ($account['is_active'] ?? 0) !== 1) {
+        return false;
+    }
+    if (($account['branch_id'] ?? null) !== null && (int) ($account['branch_active'] ?? 0) !== 1) {
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ * La personne voit-elle tous les contenus ?
+ * (administrateur, compte de branche « voit tout », ou personne cochée
+ * « voit toutes les branches »).
+ */
+function account_sees_all(array $account): bool
+{
+    if (($account['role'] ?? '') === 'admin') {
+        return true;
+    }
+    if (compte_type($account) === 'personne') {
+        return (int) ($account['see_all'] ?? 0) === 1;
+    }
+
+    return (int) ($account['branch_see_all'] ?? 0) === 1;
 }
 
 /** Force le rechargement du compte (après modification). */
@@ -68,17 +124,12 @@ function is_admin(): bool
     return $account !== null && $account['role'] === 'admin';
 }
 
-/** L'utilisateur voit-il tous les contenus (admin ou branche « voit tout ») ? */
+/** L'utilisateur voit-il tous les contenus (admin, branche ou personne) ? */
 function can_see_all(): bool
 {
     $account = current_account();
-    if ($account === null) {
-        return false;
-    }
-    if ($account['role'] === 'admin') {
-        return true;
-    }
-    return (int) ($account['branch_see_all'] ?? 0) === 1;
+
+    return $account !== null && account_sees_all($account);
 }
 
 /** Branches auxquelles l'utilisateur a accès (vide si visiteur). */
@@ -88,7 +139,7 @@ function accessible_branch_ids(): array
     if ($account === null) {
         return [];
     }
-    if ($account['role'] === 'admin' || (int) ($account['branch_see_all'] ?? 0) === 1) {
+    if (account_sees_all($account)) {
         $ids = db_all('SELECT id FROM branches WHERE is_active = 1 ORDER BY code');
         return array_map(static fn ($r) => (int) $r['id'], $ids);
     }
@@ -126,6 +177,29 @@ function home_for_account(): string
 }
 
 /**
+ * Compte correspondant à un identifiant, sans tenir compte des majuscules
+ * (« ELISE.MARTIN », « Elise.Martin » et « elise.martin » ouvrent le même
+ * compte). La comparaison se fait en minuscules des deux côtés : la casse
+ * n'est jamais une raison d'échec.
+ */
+function find_account_by_username(string $username): ?array
+{
+    $identifiant = mb_strtolower(trim($username), 'UTF-8');
+    if ($identifiant === '') {
+        return null;
+    }
+
+    return db_one(
+        "SELECT a.*, b.is_active AS branch_active, b.code AS branch_code, b.name AS branch_name
+         FROM accounts a
+         LEFT JOIN branches b ON b.id = a.branch_id
+         WHERE lower(a.username) = ?
+         LIMIT 1",
+        [$identifiant]
+    );
+}
+
+/**
  * Tente une connexion.
  *
  * @return array{ok:bool, message:string, account:?array}
@@ -155,20 +229,14 @@ function auth_attempt(string $username, string $password): array
         ];
     }
 
-    // 2. Recherche du compte (admin ou branche).
-    $account = db_one(
-        'SELECT a.*, b.is_active AS branch_active, b.code AS branch_code
-         FROM accounts a
-         LEFT JOIN branches b ON b.id = a.branch_id
-         WHERE a.username = ? COLLATE NOCASE',
-        [$username]
-    );
+    // 2. Recherche du compte (personne, branche ou administrateur), sans
+    //    tenir compte des majuscules.
+    $account = find_account_by_username($username);
 
     $hash = $account['password_hash'] ?? '';
     $ok   = password_check($password, $hash); // compare toujours un hachage (temps constant)
 
-    if (!$account || !$ok || (int) $account['is_active'] !== 1
-        || ($account['branch_id'] !== null && (int) ($account['branch_active'] ?? 0) !== 1)) {
+    if (!$account || !$ok || !account_can_login($account)) {
         login_record_attempt($username, $ip, false);
         journal_enregistrer(
             $username,

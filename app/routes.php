@@ -19,6 +19,8 @@ require_once __DIR__ . '/controllers/admin_journal.php';
 require_once __DIR__ . '/controllers/admin.php';
 require_once __DIR__ . '/controllers/admin_documents.php';
 require_once __DIR__ . '/controllers/admin_branches.php';
+require_once __DIR__ . '/controllers/admin_comptes.php';
+require_once __DIR__ . '/controllers/compte.php';
 require_once __DIR__ . '/controllers/admin_pages.php';
 require_once __DIR__ . '/controllers/admin_persons.php';
 require_once __DIR__ . '/controllers/admin_import.php';
@@ -74,6 +76,10 @@ route('POST', '/deconnexion', 'auth_logout_action');
 // ---------------------------------------------------------------------------
 route('GET', '/famille', 'family_home');
 
+// Mon compte : changement de son propre mot de passe, pour tous les comptes.
+route('GET', '/mon-compte', 'mon_compte');
+route('POST', '/mon-compte', 'mon_compte_save');
+
 // Tchat privé : un seul salon, réservé aux personnes connectées.
 route('GET', '/tchat', 'tchat_page');
 route('GET', '/tchat/messages.json', 'tchat_messages_json');
@@ -91,8 +97,9 @@ route('POST', '/admin/connexions/conservation', 'admin_connexions_reglage');
 route('POST', '/admin/alertes/acquitter', 'admin_alertes_acquitter');
 route('GET', '/admin/reglages', 'admin_settings');
 route('POST', '/admin/reglages', 'admin_settings_save');
-route('GET', '/admin/mon-compte', 'admin_account');
-route('POST', '/admin/mon-compte', 'admin_account_save');
+// Même page, présentée dans l'administration quand on vient de là.
+route('GET', '/admin/mon-compte', 'mon_compte');
+route('POST', '/admin/mon-compte', 'mon_compte_save');
 
 // Documents
 route('GET', '/admin/documents', 'admin_documents');
@@ -149,6 +156,18 @@ route('GET', '/admin/categories', 'admin_categories');
 route('POST', '/admin/categories/nouvelle', 'admin_category_create');
 route('POST', '/admin/categories/{id}/modifier', 'admin_category_update');
 route('POST', '/admin/categories/{id}/supprimer', 'admin_category_delete');
+
+// Comptes de la famille : personnes, comptes de branche, administrateurs.
+route('GET', '/admin/comptes', 'admin_comptes');
+route('GET', '/admin/comptes/nouvelle', 'admin_comptes_form');
+route('POST', '/admin/comptes/apercu', 'admin_comptes_apercu');
+route('POST', '/admin/comptes/creer', 'admin_comptes_creer');
+route('GET', '/admin/comptes/resultat/{slug}', 'admin_comptes_resultat');
+route('GET', '/admin/comptes/{id}', 'admin_compte_form');
+route('POST', '/admin/comptes/{id}', 'admin_compte_save');
+route('POST', '/admin/comptes/{id}/mot-de-passe', 'admin_compte_password');
+route('POST', '/admin/comptes/{id}/activer', 'admin_compte_toggle');
+route('POST', '/admin/comptes/{id}/supprimer', 'admin_compte_delete');
 
 // Branches et comptes de famille
 route('GET', '/admin/branches', 'admin_branches');
