@@ -257,9 +257,15 @@ function send_file(array $doc, bool $forceDownload = false): void
         register_shutdown_function(static fn () => stream_lock_release($token));
     }
 
+    // Les tests d'accès appellent les pages dans le même processus : ils
+    // gardent la sortie en tampon au lieu de l'envoyer au navigateur.
+    $enTest = class_exists('HdfTestArret', false);
+
     // Aucune mise en tampon : les octets partent au fur et à mesure.
-    while (ob_get_level() > 0) {
-        @ob_end_clean();
+    if (!$enTest) {
+        while (ob_get_level() > 0) {
+            @ob_end_clean();
+        }
     }
     @set_time_limit(0);
     ignore_user_abort(false);
@@ -285,7 +291,9 @@ function send_file(array $doc, bool $forceDownload = false): void
             break;
         }
         echo $data;
-        flush();
+        if (!$enTest) {
+            flush();
+        }
         $remaining -= strlen($data);
 
         // Battement de cœur du verrou toutes les ~2 Mo.

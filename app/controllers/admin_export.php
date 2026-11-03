@@ -16,8 +16,12 @@ function admin_export_gedcom(): void
 
     $fichier = 'histoire-famille-' . date('Y-m-d') . '.ged';
 
-    while (ob_get_level() > 0) {
-        ob_end_clean();
+    // Les tests d'accès appellent la page dans le même processus : ils
+    // gardent la sortie en tampon au lieu de l'envoyer au navigateur.
+    if (!class_exists('HdfTestArret', false)) {
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
     }
 
     header('Content-Type: text/plain; charset=UTF-8');
@@ -33,5 +37,5 @@ function admin_export_gedcom(): void
         $fichier . ' — ' . (int) db_value('SELECT COUNT(*) FROM persons', [], 0) . ' personnes'
     );
 
-    exit;
+    hdf_terminer();
 }

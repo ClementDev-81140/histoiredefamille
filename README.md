@@ -391,6 +391,29 @@ Points importants :
   dans la base (seule l'empreinte est gardée), ni dans les journaux, ni dans
   une adresse web.
 
+### La matrice d'accès (preuve, pas promesse)
+
+Le fichier **[docs/matrice-acces.md](docs/matrice-acces.md)** liste **toutes**
+les adresses du site (136) et ce que chacune répond aux cinq profils : visiteur,
+branche A, personne de la branche B, compte « voit toutes les branches »,
+administrateur.
+
+Il est **engendré par les tests**, pas écrit à la main : il décrit ce que le
+site répond vraiment. Pour le régénérer après une modification :
+
+```bash
+php app/cli/tests.php matrice
+```
+
+Le même test vérifie les cas sensibles : un identifiant de fichier ne donne pas
+accès à un document d'une autre branche, une recherche ne fait jamais sortir un
+contenu privé, l'export GEDCOM reste réservé aux administrateurs, le tchat est
+fermé aux visiteurs, et **toutes** les actions d'administration en POST sont
+refusées sans jeton CSRF comme pour un compte non administrateur.
+
+> Si une route est ajoutée dans `app/routes.php` sans que sa règle d'accès soit
+> connue, le test **échoue** : il faut décider explicitement qui peut l'ouvrir.
+
 ---
 
 ## 3. Comment le code est organisé
@@ -434,6 +457,8 @@ histoiredefamille/
 ├── config.local.php         VOTRE configuration (jamais dans Git)
 ├── storage/                 stockage local de développement (jamais dans Git)
 ├── docs/captures/           captures d'écran du site (ordinateur et mobile)
+├── docs/matrice-acces.md    qui peut ouvrir quoi (engendré par les tests)
+├── docs/chiffrement-cle-usb.md  chiffrer la clé de sauvegarde (facultatif)
 ├── CHANGELOG.md             historique des versions
 └── TODO.md                  ce qui reste à faire
 ```

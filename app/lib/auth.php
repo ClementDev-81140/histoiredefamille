@@ -166,7 +166,7 @@ function require_admin(): void
             'titre'   => 'Accès refusé',
             'message' => 'Cette page est réservée aux administrateurs.',
         ]);
-        exit;
+        hdf_terminer();
     }
 }
 

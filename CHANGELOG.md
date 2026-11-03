@@ -3,6 +3,39 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.15.0] — 2026-11-03
+
+### La matrice d’accès : 136 routes × 5 profils, vérifiées
+
+Un test lit **toutes** les routes dans `app/routes.php` (elles ne sont jamais
+recopiées) et appelle chaque page avec cinq profils : visiteur, compte de la
+branche A, personne de la branche B, compte « voit toutes les branches »,
+administrateur. Soit **680 vérifications**, plus **213 contrôles ciblés**.
+
+- **Codes vérifiés** : 200 (page), 303 (renvoi vers la connexion), 403 (refusé),
+  404 (introuvable — y compris pour un contenu non autorisé, sans révéler son
+  existence), 405 (méthode refusée).
+- **Contenus fictifs créés puis supprimés** (transaction annulée) : documents
+  public / famille / branche A / branche B / privé (photo, vidéo, audio, PDF),
+  album, article, page, personne, couple, recette, témoignage, message de tchat,
+  avec miniature et fichiers réels sur le disque.
+- **Contrôles ciblés** : identifiants de fichiers (`/f/{id}`, téléchargement,
+  miniature), flux vidéo et audio avec `Range` (206, plage invalide 416),
+  export GEDCOM, recherche (un visiteur ne fait jamais sortir un contenu
+  privé), calendrier, album (une photo privée reste invisible), tchat (visiteur
+  refusé), « Mon compte », **toutes** les actions d'administration en POST
+  (refus sans jeton CSRF et pour un compte non administrateur), `/theme.css` et
+  `/maintenance` sans fuite.
+- **Rapport** : `docs/matrice-acces.md`, régénérable par
+  `php app/cli/tests.php matrice`, avec profils en colonnes, routes en lignes,
+  points examinés et anomalies. **Aucune anomalie** ni défaut d'accès constaté :
+  les règles de visibilité n'ont pas été modifiées.
+- **Une route nouvelle sans règle connue fait échouer le test** : impossible
+  d'ajouter une adresse sans décider qui peut l'ouvrir.
+- Les tests appellent désormais les pages dans le même processus (aucun serveur
+  web nécessaire) : `hdf_terminer()` remplace `exit` pour les redirections et
+  les refus, sans changer le comportement du site.
+
 ## [1.14.0] — 2026-11-03
 
 ### Restaurer sans risque, et savoir quoi faire en cas de panne

@@ -39,7 +39,7 @@ function tchat_refus(string $message, int $statut = 400): never
     }
     http_response_code($statut);
     render('erreur', ['titre' => 'Tchat', 'message' => $message]);
-    exit;
+    hdf_terminer();
 }
 
 /** Page du tchat. */

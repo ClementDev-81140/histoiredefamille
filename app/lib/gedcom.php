@@ -631,7 +631,7 @@ function gedcom_export_stream(): void
             echo gedcom_export_line(1, 'NOTE', gedcom_export_text((string) $personne['notes']));
         }
 
-        if (++$compteur % 200 === 0) {
+        if (++$compteur % 200 === 0 && !class_exists('HdfTestArret', false)) {
             flush();
         }
     }

@@ -11,6 +11,10 @@
 
 declare(strict_types=1);
 
+// Les fonctions de la matrice d'accès vivent dans app/lib/ : elles servent
+// uniquement aux tests, donc elles ne sont pas chargées par le site.
+require_once dirname(__DIR__) . '/lib/matrice_acces.php';
+
 /** Crée un dossier temporaire vide et renvoie son chemin. */
 function tests_dossier_temp(string $prefixe = 'hdf-essai-'): string
 {
@@ -609,4 +613,109 @@ function tests_restauration(): void
         str_contains($codeCommande, 'Le site n’a pas été modifié'),
         'message de refus absent'
     );
+}
+
+// ---------------------------------------------------------------------------
+// Lot 3 — Matrice d'accès
+// ---------------------------------------------------------------------------
+
+/**
+ * Exception levée à la place de `exit` quand une page se termine
+ * (redirection, refus, réponse JSON). Voir hdf_terminer().
+ */
+class HdfTestArret extends Exception
+{
+}
+
+function tests_matrice(bool $ecrireRapport = false): void
+{
+    echo "Matrice d’accès — toutes les routes × cinq profils\n";
+
+    $problemes = matrice_routes_problemes();
+    verifier(
+        'matrice : toutes les routes de app/routes.php sont reconnues',
+        $problemes === [],
+        implode("\n", $problemes)
+    );
+
+    $routes = matrice_routes();
+    verifier(
+        'matrice : les routes sont lues dans le fichier (aucune recopie)',
+        count($routes) >= 100,
+        count($routes) . ' route(s) lues'
+    );
+
+    $f      = [];
+    $lignes = [];
+    $anomalies = [];
+    $controles = [];
+    $pdo = db();
+    $transaction = false;
+
+    try {
+        // Tout est créé puis annulé : la base du site n'est pas modifiée.
+        $pdo->beginTransaction();
+        $transaction = true;
+
+        $f         = matrice_fixtures();
+        $lignes    = matrice_executer($f);
+        $anomalies = matrice_anomalies($lignes);
+        $controles = matrice_controles($f);
+    } finally {
+        if ($transaction && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        matrice_supprimer_fichiers($f);
+    }
+
+    // Les données de test ont bien disparu.
+    $restes = 0;
+    if (!empty($f['compte_branche_a'])) {
+        $restes = (int) db_value('SELECT COUNT(*) FROM accounts WHERE id IN (?, ?, ?, ?)', [
+            (int) $f['compte_branche_a'], (int) $f['compte_personne_b'],
+            (int) $f['compte_voit_tout'], (int) $f['account_admin'],
+        ], 0);
+    }
+    verifier('matrice : les comptes de test ont été supprimés', $restes === 0, $restes . ' compte(s) restant(s)');
+    verifier(
+        'matrice : les fichiers de test ont été supprimés',
+        empty($f['dossier_fichiers']) || !is_dir((string) $f['dossier_fichiers'])
+    );
+
+    verifier(
+        'matrice : chaque route répond comme le prévoit la règle d’accès',
+        $anomalies === [],
+        count($anomalies) . " anomalie(s) :\n"
+            . implode("\n", array_map(
+                static fn (array $a): string => $a['route'] . ' — ' . $a['profil']
+                    . ' : attendu ' . $a['attendu'] . ', obtenu ' . $a['obtenu'],
+                array_slice($anomalies, 0, 15)
+            ))
+    );
+
+    $controlesKo = array_values(array_filter($controles, static fn (array $c): bool => !$c['ok']));
+    verifier(
+        'matrice : les contrôles ciblés (fichiers, recherche, album, tchat, POST) passent',
+        $controlesKo === [],
+        count($controlesKo) . " contrôle(s) en échec :\n"
+            . implode("\n", array_map(
+                static fn (array $c): string => $c['controle'] . ' : attendu ' . $c['attendu']
+                    . ', obtenu ' . $c['obtenu'],
+                array_slice($controlesKo, 0, 15)
+            ))
+    );
+
+    verifier(
+        'matrice : tous les profils ont un code attendu pour chaque route',
+        count($lignes) === count($routes)
+            && count(array_filter($lignes, static fn (array $l): bool => count($l['obtenu']) === 5)) === count($routes)
+    );
+
+    if ($ecrireRapport) {
+        $rapport = matrice_rapport($lignes, $anomalies, $controles);
+        $cible   = dirname(__DIR__, 2) . '/docs/matrice-acces.md';
+        $ecrit   = @file_put_contents($cible, $rapport) !== false;
+        verifier('matrice : rapport écrit dans docs/matrice-acces.md', $ecrit, $cible);
+        echo '  rapport : ', $cible, "\n";
+    }
 }

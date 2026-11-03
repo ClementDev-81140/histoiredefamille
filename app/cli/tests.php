@@ -26,6 +26,13 @@
 
 declare(strict_types=1);
 
+// La sortie du test est mise en tampon : ainsi aucun en-tête HTTP n'est
+// envoyé pendant l'exécution. C'est indispensable à la matrice d'accès, qui
+// appelle les pages du site dans le même processus et lit leur code de
+// réponse (302, 403, 404…) : dès qu'un octet est envoyé, PHP refuse de
+// modifier les en-têtes.
+ob_start();
+
 require dirname(__DIR__) . '/bootstrap.php';
 
 if (!is_cli()) {
@@ -2422,6 +2429,10 @@ if ($filtre === '' || $filtre === 'sauvegarde') {
 
 if ($filtre === '' || $filtre === 'restauration') {
     tests_restauration();
+}
+
+if ($filtre === '' || $filtre === 'matrice') {
+    tests_matrice($filtre === 'matrice');
 }
 
 $total = $reussis + count($echecs);

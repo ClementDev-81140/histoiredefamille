@@ -68,7 +68,7 @@ function safe_next_path(string $path): string
 function redirect(string $path, int $code = 303): never
 {
     header('Location: ' . url($path), true, $code);
-    exit;
+    hdf_terminer();
 }
 
 /** Valeur d'un paramètre GET (chaîne nettoyée). */
@@ -166,13 +166,29 @@ function csrf_check(): void
             'message' => 'Le formulaire a expiré ou la requête est invalide. '
                 . 'Rechargez la page et réessayez.',
         ]);
-        exit;
+        hdf_terminer();
     }
 }
 
 // ---------------------------------------------------------------------------
 // Affichage
 // ---------------------------------------------------------------------------
+
+/**
+ * Arrête la requête (redirection, page d'erreur, réponse JSON…).
+ *
+ * En production, c'est un arrêt immédiat. Les tests d'accès appellent les
+ * pages directement dans le même processus : ils définissent la classe
+ * HdfTestArret, et l'arrêt devient alors une exception qu'ils peuvent
+ * rattraper pour passer à la page suivante.
+ */
+function hdf_terminer(): never
+{
+    if (class_exists('HdfTestArret', false)) {
+        throw new HdfTestArret();
+    }
+    exit;
+}
 
 /**
  * Affiche une vue (app/views/xxx.php) dans une mise en page.
@@ -405,5 +421,5 @@ function json_response(array $data, int $status = 200): never
     header('Content-Type: application/json; charset=utf-8');
     header('Cache-Control: private, no-store');
     echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    exit;
+    hdf_terminer();
 }
