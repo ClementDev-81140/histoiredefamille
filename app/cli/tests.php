@@ -18,6 +18,9 @@
  * la base est donc rendue intacte dans tous les cas.
  * La famille « editions » vérifie les filtres ?branche= et ?decennie= du
  * journal, et qu'un visiteur n'y voit jamais un article non public.
+ * La famille « verification » rejoue les contrôles de la vérification avant
+ * ouverture (HTTPS, comptes, en-têtes HTTP, sauvegarde) et l'affichage du
+ * résultat dans la page « État du site ».
  * La famille « comptes » vérifie les comptes « personne » : identifiants,
  * analyse d'une liste collée, création (seul le hachage est stocké), droits,
  * désactivation, réinitialisation, changement de son mot de passe, signature
@@ -2433,6 +2436,10 @@ if ($filtre === '' || $filtre === 'restauration') {
 
 if ($filtre === '' || $filtre === 'matrice') {
     tests_matrice($filtre === 'matrice');
+}
+
+if ($filtre === '' || $filtre === 'verification') {
+    tests_verification();
 }
 
 $total = $reussis + count($echecs);

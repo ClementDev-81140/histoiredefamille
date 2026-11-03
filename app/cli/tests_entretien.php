@@ -616,6 +616,308 @@ function tests_restauration(): void
 }
 
 // ---------------------------------------------------------------------------
+// Lot 4 — Vérification avant ouverture
+// ---------------------------------------------------------------------------
+
+function tests_verification(): void
+{
+    echo "Vérification avant ouverture — mêmes contrôles que la commande\n";
+
+    $option = static function (array $controles, string $cle): ?array {
+        foreach ($controles as $controle) {
+            if ($controle['cle'] === $cle) {
+                return $controle;
+            }
+        }
+        return null;
+    };
+
+    // 1. La liste elle-même.
+    $controles = mise_en_ligne_controles(['http' => false, 'systeme' => false]);
+    $cles = array_column($controles, 'cle');
+    $valides = ['ok', 'corriger', 'info'];
+    $bienFormes = array_filter($controles, static fn (array $c): bool =>
+        $c['titre'] !== '' && $c['detail'] !== '' && in_array($c['statut'], $valides, true));
+    verifier(
+        'vérification : chaque contrôle a un titre, un état et une explication',
+        count($bienFormes) === count($controles) && count($controles) >= 15,
+        count($controles) . ' contrôle(s)'
+    );
+    verifier('vérification : aucun contrôle en double', count($cles) === count(array_unique($cles)));
+    verifier(
+        'vérification : chaque point à corriger indique quoi faire',
+        array_filter($controles, static fn (array $c): bool => $c['statut'] === 'corriger' && $c['remede'] === '') === [],
+        implode(', ', array_map(static fn (array $c): string => $c['cle'],
+            array_filter($controles, static fn (array $c): bool => $c['statut'] === 'corriger' && $c['remede'] === '')))
+    );
+
+    // 2. Les points bloquants sont vus comme bloquants.
+    $ko = mise_en_ligne_controles([
+        'https_only' => false,
+        'adresse'    => 'http://exemple.test',
+        'http' => false, 'systeme' => false,
+    ]);
+    verifier('vérification : https_only à false est un point à corriger',
+        ($option($ko, 'https_only')['statut'] ?? '') === 'corriger');
+    verifier('vérification : une adresse publique en http est un point à corriger',
+        ($option($ko, 'adresse')['statut'] ?? '') === 'corriger');
+
+    $ok = mise_en_ligne_controles([
+        'https_only' => true,
+        'adresse'    => 'https://exemple.test',
+        'http' => false, 'systeme' => false,
+    ]);
+    verifier('vérification : https_only à true et adresse en https sont au vert',
+        ($option($ok, 'https_only')['statut'] ?? '') === 'ok'
+        && ($option($ok, 'adresse')['statut'] ?? '') === 'ok');
+
+    // 3. Clé de sauvegarde absente / présente.
+    $racine = tests_dossier_temp('hdf-verif-');
+    try {
+        $absente = mise_en_ligne_controles([
+            'http' => false, 'systeme' => false,
+            'sauvegarde' => [
+                'backup_dir' => $racine . '/cle-absente',
+                'state' => $racine . '/cle-absente/dernier-etat.json',
+                'restore_state' => $racine . '/cle-absente/derniere-restauration.json',
+                'exiger_montage' => true,
+            ],
+        ]);
+        verifier('vérification : clé absente → « à corriger »',
+            ($option($absente, 'sauvegarde_support')['statut'] ?? '') === 'corriger',
+            (string) ($option($absente, 'sauvegarde_support')['detail'] ?? ''));
+        verifier('vérification : clé absente → aucune sauvegarde enregistrée n’est signalée comme récente',
+            ($option($absente, 'sauvegarde_recente')['statut'] ?? '') === 'corriger');
+
+        $dossierCle = $racine . '/cle';
+        mkdir($dossierCle, 0700, true);
+        $presente = mise_en_ligne_controles([
+            'http' => false, 'systeme' => false,
+            'sauvegarde' => [
+                'backup_dir' => $dossierCle,
+                'state' => $dossierCle . '/dernier-etat.json',
+                'restore_state' => $dossierCle . '/derniere-restauration.json',
+                'exiger_montage' => false,
+            ],
+        ]);
+        verifier('vérification : clé présente et inscriptible → au vert',
+            ($option($presente, 'sauvegarde_support')['statut'] ?? '') === 'ok',
+            (string) ($option($presente, 'sauvegarde_support')['detail'] ?? ''));
+
+        // 4. Sauvegarde et restauration datées.
+        sauvegarde_etat_ecrire([
+            'date' => time(), 'date_humain' => date('d/m/Y à H:i'),
+            'status' => 'ok', 'message' => '',
+        ], $dossierCle . '/dernier-etat.json');
+        sauvegarde_etat_ecrire([
+            'date' => time(), 'date_humain' => date('d/m/Y à H:i'),
+            'status' => 'ok', 'mode' => 'controle',
+        ], $dossierCle . '/derniere-restauration.json');
+        $recentes = mise_en_ligne_controles([
+            'http' => false, 'systeme' => false,
+            'sauvegarde' => [
+                'backup_dir' => $dossierCle,
+                'state' => $dossierCle . '/dernier-etat.json',
+                'restore_state' => $dossierCle . '/derniere-restauration.json',
+                'exiger_montage' => false,
+            ],
+        ]);
+        verifier('vérification : sauvegarde du jour → au vert',
+            ($option($recentes, 'sauvegarde_recente')['statut'] ?? '') === 'ok');
+        verifier('vérification : test de restauration du jour → au vert',
+            ($option($recentes, 'restauration')['statut'] ?? '') === 'ok');
+
+        sauvegarde_etat_ecrire([
+            'date' => time() - 5 * 86400, 'date_humain' => date('d/m/Y à H:i'),
+            'status' => 'ok', 'message' => '',
+        ], $dossierCle . '/dernier-etat.json');
+        $vieille = mise_en_ligne_controles([
+            'http' => false, 'systeme' => false,
+            'sauvegarde' => [
+                'backup_dir' => $dossierCle,
+                'state' => $dossierCle . '/dernier-etat.json',
+                'restore_state' => $dossierCle . '/derniere-restauration.json',
+                'exiger_montage' => false,
+            ],
+        ]);
+        verifier('vérification : sauvegarde vieille de cinq jours → « à corriger »',
+            ($option($vieille, 'sauvegarde_recente')['statut'] ?? '') === 'corriger');
+
+        // 5. En-têtes HTTP et cookies, sur une réponse réelle simulée.
+        $reponseOk = mise_en_ligne_analyser_reponse(
+            "HTTP/1.1 200 OK\r\n"
+            . "Content-Security-Policy: default-src 'self'; frame-ancestors 'none'\r\n"
+            . "X-Frame-Options: DENY\r\n"
+            . "X-Content-Type-Options: nosniff\r\n"
+            . "Referrer-Policy: strict-origin-when-cross-origin\r\n"
+            . "Strict-Transport-Security: max-age=31536000; includeSubDomains\r\n"
+            . "Set-Cookie: HDF_SESSION=abc; path=/; secure; HttpOnly; SameSite=Lax\r\n"
+            . "\r\n<html>ok</html>"
+        );
+        verifier('vérification : la réponse HTTP est bien décodée (code, en-têtes, corps)',
+            $reponseOk['statut'] === 200
+            && str_contains($reponseOk['entetes']['content-security-policy'] ?? '', "default-src 'self'")
+            && $reponseOk['corps'] === '<html>ok</html>');
+
+        $entetes = mise_en_ligne_controles([
+            'http' => true, 'systeme' => false, 'https_only' => true,
+            'reponse_http' => $reponseOk,
+        ]);
+        verifier('vérification : en-têtes complets et cookie sûr → au vert',
+            ($option($entetes, 'entetes')['statut'] ?? '') === 'ok'
+            && ($option($entetes, 'cookies')['statut'] ?? '') === 'ok'
+            && ($option($entetes, 'signature')['statut'] ?? '') === 'ok',
+            (string) ($option($entetes, 'entetes')['detail'] ?? '')
+            . ' / ' . (string) ($option($entetes, 'cookies')['detail'] ?? ''));
+
+        $reponseFaible = mise_en_ligne_analyser_reponse(
+            "HTTP/1.1 200 OK\r\n"
+            . "Server: Apache/2.4.62 (Raspbian)\r\n"
+            . "X-Powered-By: PHP/8.2.29\r\n"
+            . "Set-Cookie: HDF_SESSION=abc; path=/\r\n"
+            . "\r\n<html>pas d’en-têtes</html>"
+        );
+        $faibles = mise_en_ligne_controles([
+            'http' => true, 'systeme' => false, 'https_only' => true,
+            'reponse_http' => $reponseFaible,
+        ]);
+        verifier('vérification : en-têtes manquants → « à corriger »',
+            ($option($faibles, 'entetes')['statut'] ?? '') === 'corriger');
+        verifier('vérification : cookie sans Secure ni HttpOnly → « à corriger »',
+            ($option($faibles, 'cookies')['statut'] ?? '') === 'corriger');
+        verifier('vérification : version d’Apache et de PHP annoncée → « à corriger »',
+            ($option($faibles, 'signature')['statut'] ?? '') === 'corriger');
+
+        $sansVersion = mise_en_ligne_analyser_reponse(
+            "HTTP/1.1 200 OK\r\n"
+            . "Server: Apache\r\n"
+            . "Content-Security-Policy: default-src 'self'\r\n"
+            . "X-Frame-Options: DENY\r\n"
+            . "X-Content-Type-Options: nosniff\r\n"
+            . "Referrer-Policy: strict-origin-when-cross-origin\r\n"
+            . "Set-Cookie: HDF_SESSION=abc; path=/; secure; HttpOnly; SameSite=Lax\r\n"
+            . "\r\n<html>ok</html>"
+        );
+        $propre = mise_en_ligne_controles([
+            'http' => true, 'systeme' => false, 'https_only' => false,
+            'reponse_http' => $sansVersion,
+        ]);
+        verifier('vérification : « Server: Apache » sans numéro de version n’est pas une fuite',
+            ($option($propre, 'signature')['statut'] ?? '') === 'ok',
+            (string) ($option($propre, 'signature')['detail'] ?? ''));
+
+        // 6. Apache injoignable : message clair, pas de plantage.
+        $muet = mise_en_ligne_controles([
+            'http' => true, 'systeme' => false,
+            'reponse_http' => ['ok' => false, 'erreur' => 'Apache ne répond pas sur 127.0.0.1:80 (essai).',
+                'statut' => 0, 'entetes' => [], 'corps' => ''],
+        ]);
+        verifier('vérification : Apache muet → « à corriger » avec la marche à suivre',
+            ($option($muet, 'entetes')['statut'] ?? '') === 'corriger'
+            && str_contains((string) ($option($muet, 'entetes')['remede'] ?? ''), 'systemctl status apache2'));
+
+        // 7. Fichiers sensibles dans public/.
+        $public = $racine . '/public';
+        mkdir($public . '/.git', 0700, true);
+        tests_ecrire($public . '/.git/config', '[core]');
+        tests_ecrire($public . '/config.local.php', '<?php return [];');
+        tests_ecrire($public . '/histoire.sqlite', 'SQLITE');
+        tests_ecrire($public . '/app.js', 'console.log(1);');
+        tests_ecrire($public . '/.htaccess', 'RewriteEngine On');
+        $trouves = mise_en_ligne_fichiers_sensibles($public);
+        sort($trouves);
+        verifier(
+            'vérification : configuration, base et .git dans public/ sont signalés',
+            $trouves === ['.git/config', 'config.local.php', 'histoire.sqlite'],
+            implode(', ', $trouves)
+        );
+        verifier(
+            'vérification : .htaccess et les fichiers du site ne sont pas signalés',
+            !in_array('.htaccess', $trouves, true) && !in_array('app.js', $trouves, true)
+        );
+
+        // 8. Enregistrement du résultat et relecture par la page.
+        $fichierEtat = $racine . '/mise-en-ligne.json';
+        $enregistre = mise_en_ligne_enregistrer($recentes, $fichierEtat);
+        $relu = mise_en_ligne_dernier($fichierEtat);
+        verifier('vérification : le résultat est enregistré puis relu',
+            $enregistre && is_array($relu) && count((array) ($relu['controles'] ?? [])) === count($recentes));
+        $contenu = (string) @file_get_contents($fichierEtat);
+        verifier(
+            'vérification : le fichier de résultat ne contient aucun mot de passe',
+            !str_contains($contenu, 'password') && !str_contains($contenu, 'motdepasse')
+            && !str_contains($contenu, 'password_hash')
+        );
+        verifier('vérification : le fichier de résultat est lisible par le seul propriétaire et le groupe',
+            (substr(sprintf('%o', fileperms($fichierEtat)), -4)) === '0640',
+            substr(sprintf('%o', fileperms($fichierEtat)), -4));
+
+        // 9. Verdict.
+        $pret = mise_en_ligne_verdict([
+            ['cle' => 'a', 'titre' => 'A', 'statut' => 'ok', 'detail' => 'x', 'remede' => ''],
+            ['cle' => 'b', 'titre' => 'B', 'statut' => 'info', 'detail' => 'y', 'remede' => ''],
+        ]);
+        verifier('vérification : tout au vert → « PRÊT À OUVRIR »',
+            $pret['pret'] && $pret['texte'] === 'PRÊT À OUVRIR');
+        $pasPret = mise_en_ligne_verdict([
+            ['cle' => 'a', 'titre' => 'A', 'statut' => 'corriger', 'detail' => 'x', 'remede' => 'z'],
+            ['cle' => 'b', 'titre' => 'B', 'statut' => 'corriger', 'detail' => 'y', 'remede' => 'z'],
+        ]);
+        verifier('vérification : deux points à corriger → « PAS PRÊT : 2 point(s) à corriger »',
+            !$pasPret['pret'] && $pasPret['texte'] === 'PAS PRÊT : 2 point(s) à corriger',
+            $pasPret['texte']);
+
+        // 10. La page « État du site » reprend le résultat.
+        ob_start();
+        render('admin/etat', [
+            'titre'    => 'État du site',
+            'checks'   => [['label' => 'Fichier de configuration', 'value' => 'config.local.php', 'ok' => true]],
+            'ini'      => [
+                'upload_max_filesize' => '50M', 'post_max_size' => '52M', 'memory_limit' => '256M',
+                'max_execution_time' => '30', 'output_buffering' => '4096',
+            ],
+            'backup'   => null,
+            'logTail'  => [],
+            'logFile'  => '',
+            'dbSize'   => 0,
+            'walSize'  => 0,
+            'free'     => null,
+            'streams'  => 0,
+            'php'      => PHP_VERSION,
+            'alerte'   => null,
+            'sauvegarde' => [
+                'dossier' => '/mnt/sauvegarde/histoiredefamille',
+                'libre_cle' => null,
+                'support' => ['ok' => false, 'montage' => '', 'raison' => 'La clé USB n’est pas montée.'],
+                'rotation' => ['quotidiennes' => 0, 'hebdomadaires' => 0, 'mensuelles' => 0],
+            ],
+            'verification' => [
+                'date' => time(), 'date_humain' => '01/01/2026 à 10:00',
+                'verdict' => 'PAS PRÊT : 1 point(s) à corriger', 'pret' => false,
+                'controles' => [
+                    ['cle' => 'https_only', 'titre' => 'HTTPS obligatoire', 'statut' => 'corriger',
+                        'detail' => 'Le réglage https_only est à false.', 'remede' => 'Mettez https_only à true.'],
+                    ['cle' => 'admins', 'titre' => 'Administrateurs actifs', 'statut' => 'ok',
+                        'detail' => '3 comptes administrateur actifs.', 'remede' => ''],
+                ],
+            ],
+        ]);
+        $page = (string) ob_get_clean();
+
+        verifier('page « État du site » : la section de vérification est présente',
+            str_contains($page, 'Vérification avant ouverture'));
+        verifier('page « État du site » : le verdict enregistré est affiché',
+            str_contains($page, 'PAS PRÊT : 1 point(s) à corriger'));
+        verifier('page « État du site » : le point à corriger et son remède sont affichés',
+            str_contains($page, 'À CORRIGER') && str_contains($page, 'Mettez https_only à true.'));
+        verifier('page « État du site » : la date de la vérification est affichée',
+            str_contains($page, '01/01/2026 à 10:00'));
+    } finally {
+        tests_supprimer_dossier($racine);
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Lot 3 — Matrice d'accès
 // ---------------------------------------------------------------------------
 

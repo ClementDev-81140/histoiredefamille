@@ -103,6 +103,7 @@ function admin_status(): void
         'streams'  => stream_active_count(),
         'php'      => PHP_VERSION,
         'alerte'   => sauvegarde_alerte(),
+        'verification' => mise_en_ligne_dernier(),
         'sauvegarde' => [
             'dossier'     => (string) config('maintenance.backup_dir'),
             'libre_cle'   => sauvegarde_espace_libre((string) config('maintenance.backup_dir')),

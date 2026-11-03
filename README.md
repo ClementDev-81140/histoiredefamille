@@ -29,6 +29,7 @@ et une installation qui tient en quelques commandes à copier-coller.
 10. [Arbre généalogique et GEDCOM](#10-arbre-généalogique-et-gedcom)
 11. [En cas de problème](#11-en-cas-de-problème)
 12. [Confidentialité et sécurité](#12-confidentialité-et-sécurité)
+13. [Ouvrir le site au public : liste de contrôle du jour J](#13-ouvrir-le-site-au-public--liste-de-contrôle-du-jour-j)
 
 ---
 
@@ -437,12 +438,13 @@ histoiredefamille/
 │   │                        albums, calendrier, recettes, journal des connexions,
 │   │                        gazette, rubriques publiques, comptes de la famille,
 │   │                        apparence du journal (textes et couleurs),
-│   │                        composition des pages et modèles d'article…
+│   │                        composition des pages et modèles d'article,
+│   │                        vérification avant ouverture (mise_en_ligne)…
 │   ├── views/               gabarits PHP (public, famille, admin)
 │   ├── migrations/          fichiers SQL numérotés
 │   │                        (001_init … 009_articles_modele)
 │   └── cli/                 commandes : migrate, create-admin, demo, maintenance,
-│                            sauvegarde, tests
+│                            sauvegarde, restauration, verifier-mise-en-ligne, tests
 ├── deploy/
 │   ├── install.sh           installation complète sur le Pi
 │   ├── systemd/             minuteur de sauvegarde (tous les jours à 3 h 30)
@@ -807,6 +809,9 @@ sudo journalctl -u cloudflared -n 50 --no-pager   # tunnel
 sudo tail -20 /var/log/apache2/histoiredefamille-error.log
 curl -I https://histoiredefamille.eu              # doit répondre 200
 ```
+
+Avant d'ouvrir le site à la famille, suivez la liste complète :
+[13. Ouvrir le site au public](#13-ouvrir-le-site-au-public--liste-de-contrôle-du-jour-j).
 
 ### 5.7 Réglages conseillés dans Cloudflare
 
@@ -1859,6 +1864,200 @@ le dossier `storage/` sont listés dans `.gitignore`.
 Le site est un projet familial. En cas de doute sur une page qui affiche un
 contenu de trop, commencez par vérifier la visibilité du document dans
 **Administration → Documents** : c'est presque toujours là qu'est la cause.
+
+---
+
+## 13. Ouvrir le site au public : liste de contrôle du jour J
+
+Cette liste se suit **dans l'ordre**, sans sauter d'étape. Chaque étape indique
+le temps à prévoir, ce qu'il faut avoir sous la main et la commande exacte.
+**Si une étape ne se passe pas comme prévu, arrêtez-vous** : réglez-la avant de
+passer à la suivante.
+
+À avoir sous la main : le Raspberry Pi allumé et connecté à la box, le SSD, la
+clé USB, un ordinateur avec un navigateur et un téléphone en 4G (pour l'essai
+depuis l'extérieur).
+
+> Toutes les commandes se font sur le Raspberry Pi, en SSH :
+> `ssh votre-utilisateur@histoiredefamille.local`.
+> Le code installé est dans `/var/www/histoiredefamille` ; c'est le dossier de
+> travail du serveur web. Les commandes qui écrivent dans les données se
+> lancent avec `sudo -u www-data` (l'utilisateur du site), sinon les fichiers
+> risquent d'appartenir au mauvais compte.
+
+### 1. Monter le SSD et la clé USB — 10 min
+
+**Matériel** : SSD, clé USB, les deux câbles.
+
+Les deux disques doivent apparaître, et **séparément** (deux lignes, deux
+tailles différentes) :
+
+```bash
+df -h /mnt/ssd /mnt/sauvegarde
+```
+
+Le guide détaillé (fstab, droits, UUID) est ici :
+[`deploy/montage-disques.md`](deploy/montage-disques.md).
+
+⚠️ Tant que cette commande n'affiche pas deux lignes distinctes, **ne
+continuez pas** : les données iraient sur la carte SD, et la sauvegarde avec
+elles.
+
+### 2. Déplacer les données sur le SSD — 5 min + le temps de copie
+
+**Matériel** : rien de plus.
+
+Si le site tournait déjà sur la carte SD, copiez la base et les fichiers vers
+le SSD, puis indiquez les nouveaux chemins dans `/var/www/histoiredefamille/config.local.php` :
+
+```php
+'database' => '/mnt/ssd/histoiredefamille/histoire.sqlite',
+'storage'  => [ 'root' => '/mnt/ssd/histoiredefamille', /* … */ ],
+```
+
+```bash
+sudo systemctl reload apache2
+```
+
+Vérifiez ensuite que le site s'ouvre toujours : une page blanche ou une erreur
+503 signifie que le chemin est faux.
+
+### 3. Créer trois administrateurs — 10 min
+
+**Matériel** : les noms des trois personnes de confiance.
+
+```bash
+sudo -u www-data php /var/www/histoiredefamille/app/cli/create-admin.php
+```
+
+La commande demande un identifiant et un mot de passe : rien ne s'affiche
+pendant la saisie, c'est normal. Répétez pour les trois personnes. Un seul
+administrateur ne suffit pas : en cas d'oubli de mot de passe ou d'absence, plus
+personne ne pourrait gérer le site.
+
+### 4. Créer les comptes de la famille — 5 min par branche
+
+**Matériel** : la liste des personnes et de leur branche.
+
+Dans **Administration → Branches & comptes**, créez une branche par famille,
+puis les comptes. Chaque personne reçoit son identifiant et un mot de passe
+provisoire, à changer à la première connexion.
+
+### 5. Mettre `https_only` à `true` — 2 min
+
+**Matériel** : rien.
+
+Dans `/var/www/histoiredefamille/config.local.php` :
+
+```php
+'https_only' => true,
+```
+
+```bash
+sudo systemctl reload apache2
+```
+
+Cela met le drapeau « Secure » sur le cookie de session et active HSTS : le
+navigateur refuse toute connexion non chiffrée.
+
+### 6. Ouvrir le tunnel Cloudflare — 15 min
+
+**Matériel** : l'accès au compte Cloudflare du domaine.
+
+Suivez [5. Mettre le site en ligne (Cloudflare)](#5-mettre-le-site-en-ligne-cloudflare),
+puis vérifiez depuis un téléphone en 4G que l'adresse du site répond.
+
+### 7. Lancer la vérification — 2 min
+
+**Matériel** : rien.
+
+```bash
+sudo -u www-data php /var/www/histoiredefamille/app/cli/verifier-mise-en-ligne.php
+```
+
+La commande passe tout en revue et rend un verdict :
+
+- **`PRÊT À OUVRIR`** : vous pouvez continuer ;
+- **`PAS PRÊT : N point(s) à corriger`** : chaque ligne `À CORRIGER` indique
+  **ce qui ne va pas et quoi faire** (la flèche `→`). Corrigez, puis relancez
+  la commande jusqu'à obtenir `PRÊT À OUVRIR`.
+
+Les lignes `INFO` sont des informations : elles ne bloquent pas.
+
+Ce qui est contrôlé, et pourquoi :
+
+| Contrôle | Ce que cela évite |
+|---|---|
+| HTTPS obligatoire, adresse publique en `https://` | un mot de passe qui circule en clair |
+| Aucun contenu marqué « (démo) », aucun compte fictif | ouvrir le site avec des données qui ne sont pas les vôtres |
+| Deux administrateurs actifs au moins, aucun mot de passe d'essai connu | un site que personne ne peut plus administrer |
+| `config.local.php` en 600 ou 640, base et données hors de `public/` | des données familiales téléchargeables par n'importe qui |
+| `public/` sans fichier sensible (`.git`, base, sauvegarde, configuration) | la même chose, par un chemin détourné |
+| PHP 8.1 ou plus, extensions SQLite, GD, mbstring, fileinfo, sodium/Argon2id | des photos sans miniature, des mots de passe mal protégés |
+| Clé montée et inscriptible, dernière sauvegarde de moins de 3 jours, minuteur actif, test de restauration daté | découvrir le problème le jour où l'on a besoin de la sauvegarde |
+| Espace libre sur le SSD et sur la clé | un site qui tombe en panne parce que le disque est plein |
+| Purge planifiée | des tables de journal qui grossissent sans fin |
+| En-têtes HTTP réellement envoyés par Apache (CSP, X-Frame-Options, nosniff, HSTS) et signature masquée | une page piégée qui lit les données de la famille |
+| Cookies `Secure`, `HttpOnly`, `SameSite` | un cookie volé par un script |
+| `CF-Connecting-IP` ignoré hors du tunnel | un visiteur qui falsifie son adresse IP pour contourner le blocage après 5 essais |
+
+Le résultat est enregistré pour la page **Administration → État du site**, qui
+l'affiche en lecture seule (aucune commande n'est exécutée depuis le
+navigateur). Pour l'actualiser, relancez la commande.
+
+### 8. Faire la première sauvegarde — 2 min
+
+**Matériel** : la clé USB branchée.
+
+```bash
+sudo -u www-data php /var/www/histoiredefamille/app/cli/sauvegarde.php
+```
+
+Le résumé doit afficher une base « ok », les fichiers copiés et zéro erreur.
+Vérifiez ensuite que le minuteur est actif :
+
+```bash
+systemctl list-timers histoiredefamille-sauvegarde.timer
+```
+
+La ligne doit indiquer la prochaine exécution (tous les jours à 3 h 30).
+
+### 9. Tester la restauration — 5 min
+
+**Matériel** : rien.
+
+```bash
+sudo -u www-data php /var/www/histoiredefamille/app/cli/restauration.php /mnt/sauvegarde/histoiredefamille --verifier
+```
+
+Cette commande **ne touche à rien** : elle relit la dernière sauvegarde, vérifie
+qu'elle s'ouvre et compte les lignes de chaque table. Une sauvegarde jamais
+relue n'est pas une sauvegarde.
+
+### 10. Ouvrir — 5 min
+
+**Matériel** : un téléphone en 4G.
+
+1. Ouvrez l'adresse du site depuis le téléphone (hors du Wi-Fi de la maison).
+2. Connectez-vous avec un compte de la famille, puis avec un compte
+   administrateur.
+3. Vérifiez qu'une page non autorisée renvoie bien « page introuvable »
+   (par exemple un document privé, avec un compte de branche).
+4. Dans **Administration → État du site**, l'encadré « Vérification avant
+   ouverture » doit afficher `PRÊT À OUVRIR`, et aucune alerte rouge ne doit
+   apparaître en haut de l'administration.
+
+C'est fait. Envoyez l'adresse et les identifiants à la famille.
+
+### Si quelque chose ne va pas
+
+| Symptôme | Où regarder |
+|---|---|
+| Le site ne répond pas du tout | `sudo systemctl status apache2` et `sudo systemctl status cloudflared` |
+| Erreur 503 « installation à terminer » | `config.local.php` absent ou chemins faux (étapes 2 et 5) |
+| Alerte rouge « sauvegarde » en haut de l'administration | `journalctl -u histoiredefamille-sauvegarde.service -n 50` |
+| La vérification dit « Apache ne répond pas » | Apache n'est pas lancé, ou le site n'écoute pas sur `127.0.0.1:80` |
+| Un point reste « À CORRIGER » | la flèche `→` de la ligne donne la commande ou le réglage à faire |
 
 ---
 

@@ -10,6 +10,7 @@
  * @var string $php
  * @var array|null $alerte
  * @var array  $sauvegarde (dossier, libre_cle, support, rotation)
+ * @var array|null $verification dernier résultat de app/cli/verifier-mise-en-ligne.php
  */
 ?>
 <?php $aDecocher = array_values(array_filter($checks, static fn ($c) => !$c['ok'])); ?>
@@ -36,6 +37,84 @@
         <?= e(implode(', ', array_map(static fn ($c) => $c['label'], $aDecocher))) ?>.
     </div>
 <?php endif; ?>
+
+<section class="panneau" id="verification">
+    <h2>Vérification avant ouverture</h2>
+
+    <?php if ($verification === null): ?>
+        <p>
+            Aucune vérification n’a encore été enregistrée. Sur le Raspberry Pi, lancez une fois :
+        </p>
+        <pre class="journal-technique">sudo -u www-data php /var/www/histoiredefamille/app/cli/verifier-mise-en-ligne.php</pre>
+        <p class="note">
+            Cette commande contrôle tout ce qui doit être vrai avant d’ouvrir le site à la famille :
+            HTTPS, comptes, données de démonstration, permissions, sauvegarde, en-têtes HTTP réellement
+            envoyés par Apache. Elle affiche « PRÊT À OUVRIR » ou la liste des points à corriger.
+        </p>
+    <?php else: ?>
+        <?php
+        $aCorriger = array_values(array_filter((array) ($verification['controles'] ?? []), static fn ($c) => ($c['statut'] ?? '') === 'corriger'));
+        $ageJours  = (int) floor((time() - (int) ($verification['date'] ?? 0)) / 86400);
+        ?>
+        <div class="message <?= $verification['pret'] ? 'message--succes' : 'message--erreur' ?>" role="alert">
+            <strong><?= e((string) ($verification['verdict'] ?? 'Vérification enregistrée')) ?></strong>
+            — <?= e((string) ($verification['date_humain'] ?? '')) ?>
+            (<?= $ageJours === 0 ? 'aujourd’hui' : 'il y a ' . $ageJours . ' jour(s)' ?>).
+        </div>
+
+        <?php if ($ageJours >= 7): ?>
+            <div class="message message--info">
+                Ce résultat a plus d’une semaine : relancez la vérification pour être sûr de l’état du site.
+            </div>
+        <?php endif; ?>
+
+        <?php if ($aCorriger !== []): ?>
+            <h3>À corriger avant d’ouvrir</h3>
+            <table class="tableau">
+                <thead>
+                    <tr><th scope="col">Point</th><th scope="col">Ce qui ne va pas</th><th scope="col">Quoi faire</th></tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($aCorriger as $controle): ?>
+                        <tr>
+                            <td><?= e((string) ($controle['titre'] ?? '')) ?></td>
+                            <td><?= e((string) ($controle['detail'] ?? '')) ?></td>
+                            <td><?= e((string) ($controle['remede'] ?? '')) ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        <?php endif; ?>
+
+        <h3>Détail des contrôles</h3>
+        <table class="tableau">
+            <thead>
+                <tr><th scope="col">Point</th><th scope="col">État</th><th scope="col">Détail</th></tr>
+            </thead>
+            <tbody>
+                <?php foreach ((array) ($verification['controles'] ?? []) as $controle): ?>
+                    <tr>
+                        <td><?= e((string) ($controle['titre'] ?? '')) ?></td>
+                        <td>
+                            <?php if (($controle['statut'] ?? '') === 'ok'): ?>
+                                OK
+                            <?php elseif (($controle['statut'] ?? '') === 'corriger'): ?>
+                                À CORRIGER
+                            <?php else: ?>
+                                INFO
+                            <?php endif; ?>
+                        </td>
+                        <td><?= e((string) ($controle['detail'] ?? '')) ?></td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+
+        <p class="note">
+            Pour refaire cette vérification : <code>sudo -u www-data php /var/www/histoiredefamille/app/cli/verifier-mise-en-ligne.php</code>
+        </p>
+    <?php endif; ?>
+</section>
 
 <section class="panneau">
     <h2>Contrôles</h2>

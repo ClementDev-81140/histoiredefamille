@@ -3,6 +3,68 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.16.0] — 2026-11-03
+
+### Vérification avant ouverture : « PRÊT À OUVRIR » ou la liste de ce qui bloque
+
+Une seule commande, à lancer la veille et le jour de l'ouverture :
+
+```bash
+sudo -u www-data php /var/www/histoiredefamille/app/cli/verifier-mise-en-ligne.php
+```
+
+Elle rend une ligne par contrôle, avec trois états seulement :
+
+- **OK** : c'est bon ;
+- **À CORRIGER** : il faut agir **avant** d'ouvrir le site ; la flèche `→`
+  donne la commande ou le réglage à faire ;
+- **INFO** : à savoir, sans bloquer.
+
+Et un verdict global : **`PRÊT À OUVRIR`** ou **`PAS PRÊT : N point(s) à
+corriger`** (code de sortie 0 ou 1, utilisable dans un script).
+
+Ce qui est contrôlé :
+
+- `https_only` à `true` et adresse publique en `https://` ;
+- **aucune donnée de démonstration** (contenus et comptes marqués « (démo) ») ;
+- **au moins deux administrateurs actifs**, et **aucun mot de passe d'essai
+  connu** (seul le résultat est affiché, jamais le mot de passe) ;
+- `config.local.php` en 600 ou 640 ; base et données **hors** de `public/` ;
+- `public/` sans fichier sensible (configuration, base, `.git`, sauvegardes) ;
+- version de PHP et extensions indispensables (SQLite, GD ou Imagick, mbstring,
+  fileinfo, sodium ou Argon2id) ;
+- sauvegarde : clé montée et inscriptible, dernière sauvegarde réussie de moins
+  de 3 jours, minuteur systemd actif, **test de restauration daté** ;
+- espace libre sur le SSD **et** sur la clé ;
+- purge planifiée (maintenance hebdomadaire) ;
+- **en-têtes HTTP réellement envoyés par Apache**, par une requête locale :
+  CSP, `X-Frame-Options`, `nosniff`, `Referrer-Policy`, HSTS si `https_only`,
+  et aucune version d'Apache ou de PHP annoncée ;
+- cookies de session `Secure`, `HttpOnly`, `SameSite=Lax` ;
+- `CF-Connecting-IP` ignoré hors du tunnel (essai à l'envers : l'en-tête est
+  posé, la fonction doit le refuser depuis le réseau local).
+
+- **Page « État du site »** : nouvel encadré « Vérification avant ouverture »,
+  en **lecture seule** — elle affiche le dernier résultat enregistré (date,
+  verdict, points à corriger et remèdes), sans lancer la moindre commande
+  système et sans délai d'attente. Un résultat de plus d'une semaine est
+  signalé.
+- **README** : nouvelle section **13. Ouvrir le site au public : liste de
+  contrôle du jour J**, dans l'ordre exact — monter SSD et clé, déplacer les
+  données, trois administrateurs, comptes de la famille, `https_only`, tunnel
+  Cloudflare, vérification, première sauvegarde, test de restauration,
+  ouverture — avec le temps à prévoir, le matériel, les commandes et un tableau
+  « si quelque chose ne va pas ».
+- **30 nouveaux tests** (404 au total) : contrôles présents et bien formés,
+  chaque point à corriger accompagné d'un remède, clé absente et clé présente,
+  sauvegarde du jour et sauvegarde vieille de cinq jours, en-têtes complets et
+  en-têtes manquants (sur une réponse HTTP réelle simulée), cookies faibles,
+  signature du serveur, Apache muet, fichiers sensibles dans `public/`,
+  enregistrement du résultat (aucun mot de passe dedans, droits 640), verdict,
+  et affichage du résultat dans la page « État du site ».
+
+Aucune règle d'accès modifiée, aucune migration, aucune nouvelle dépendance.
+
 ## [1.15.0] — 2026-11-03
 
 ### La matrice d’accès : 136 routes × 5 profils, vérifiées
