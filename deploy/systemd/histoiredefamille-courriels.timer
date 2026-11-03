@@ -1,0 +1,14 @@
+[Unit]
+Description=Histoire de famille — courriels toutes les 5 minutes
+
+[Timer]
+# Toutes les 5 minutes : la file est vidée par petits lots.
+OnBootSec=3min
+OnUnitActiveSec=5min
+# Rien ne se perd si le Pi était éteint : le passage suivant rattrape la file.
+# (Pas de « Persistent= » : il ne concerne que les minuteurs calendaires.)
+AccuracySec=30s
+Unit=histoiredefamille-courriels.service
+
+[Install]
+WantedBy=timers.target

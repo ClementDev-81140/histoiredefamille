@@ -5124,3 +5124,61 @@ legend {
 @media (min-width: 62rem) {
     .tableau-defilant .comptes-apercu { min-width: 0; }
 }
+
+/* --------------------------------------------------------------------------
+   Courriels : compteurs, étapes, encadré d'alerte
+   Ajouté en fin de feuille pour ne rien déplacer (bloc 1.17.0).
+   -------------------------------------------------------------------------- */
+.grille-compteurs {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+    gap: 0.75rem;
+    margin: 1rem 0 1.5rem;
+}
+
+.compteur {
+    margin: 0;
+    padding: 0.75rem 0.9rem;
+    border: 1px solid var(--bordure);
+    border-radius: 0.5rem;
+    background: var(--surface-douce);
+    text-align: center;
+}
+
+.compteur__valeur {
+    display: block;
+    font-family: var(--police-titre);
+    font-size: 1.6em;
+    line-height: 1.1;
+    color: var(--accent-fonce);
+}
+
+.compteur__libelle {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.85em;
+    color: var(--texte-doux);
+}
+
+.liste-etapes {
+    margin: 0.75rem 0 1rem 1.25rem;
+    padding: 0;
+}
+
+.liste-etapes li { margin-bottom: 0.35rem; }
+
+.message--alerte {
+    background: var(--attention-fond);
+    border-color: var(--attention-bordure-2);
+    color: var(--attention-texte);
+}
+
+/* Vérification avant ouverture : le tableau des contrôles. */
+.controles td:first-child { white-space: nowrap; }
+.controles .controle--corriger { color: var(--erreur-texte); font-weight: 600; }
+.controles .controle--ok { color: var(--succes-texte); }
+.controles .controle--info { color: var(--texte-doux); }
+
+@media print {
+    .grille-compteurs { break-inside: avoid; }
+}

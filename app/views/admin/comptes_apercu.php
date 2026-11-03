@@ -56,6 +56,7 @@ $lignes = $bloc['lignes'] ?? [];
                     <th scope="col">Ligne</th>
                     <th scope="col">Nom</th>
                     <th scope="col">Prénom</th>
+                    <th scope="col">Adresse</th>
                     <th scope="col">Identifiant proposé</th>
                     <th scope="col">Remarque</th>
                 </tr>
@@ -76,6 +77,7 @@ $lignes = $bloc['lignes'] ?? [];
                         <td><?= (int) $ligne['numero'] ?></td>
                         <td><?= $ligne['nom'] !== '' ? e((string) $ligne['nom']) : '—' ?></td>
                         <td><?= $ligne['prenom'] !== '' ? e((string) $ligne['prenom']) : '—' ?></td>
+                        <td><?= ($ligne['email'] ?? '') !== '' ? e((string) $ligne['email']) : '—' ?></td>
                         <td>
                             <?php if ($ligne['erreur'] === ''): ?>
                                 <input type="text" name="identifiant[<?= (int) $index ?>]"

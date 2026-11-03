@@ -117,13 +117,23 @@ function visibility_clause(string $kind, string $alias, array &$params): string
  */
 function can_view(string $visibility, array $contentBranchIds = []): bool
 {
+    return visibilite_compte(current_account(), $visibility, $contentBranchIds);
+}
+
+/**
+ * Même règle que can_view(), mais pour un compte donné (sans se connecter).
+ *
+ * Utile pour les courriels : on vérifie ce que verrait une personne avant de
+ * lui envoyer quoi que ce soit. C'est exactement la même règle, écrite une
+ * seule fois : can_view() appelle cette fonction avec le compte courant.
+ */
+function visibilite_compte(?array $account, string $visibility, array $contentBranchIds = []): bool
+{
     $level = $visibility !== '' ? $visibility : 'prive';
 
     if ($level === 'public') {
         return true;
     }
-
-    $account = current_account();
     if ($account === null) {
         return false;
     }

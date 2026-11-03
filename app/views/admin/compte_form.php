@@ -74,6 +74,45 @@ $type = compte_type($compte);
         familles et ceux de sa branche.
     </p>
 
+    <fieldset class="champ">
+        <legend>Courriels</legend>
+        <p class="aide">
+            Tout est facultatif. Ces cases ne se cochent <strong>qu’à la demande de la
+            personne</strong> : c’est elle qui décide de recevoir quelque chose, jamais
+            l’administrateur à sa place.
+        </p>
+
+        <div class="champ">
+            <label for="email">Adresse électronique</label>
+            <input type="email" id="email" name="email" maxlength="190" autocomplete="off"
+                   value="<?= e($val('email')) ?>">
+            <p class="aide">
+                Changer cette adresse remet les deux cases ci-dessous à zéro : une adresse
+                saisie par un administrateur ne vaut pas accord.
+            </p>
+        </div>
+
+        <label class="case">
+            <input type="checkbox" name="notify_articles" value="1"
+                <?= checked((int) $val('notify_articles', '0') === 1) ?>>
+            Prévenez-moi des nouveaux articles
+        </label>
+
+        <label class="case">
+            <input type="checkbox" name="notify_gazette" value="1"
+                <?= checked((int) $val('notify_gazette', '0') === 1) ?>>
+            Je veux recevoir la gazette du mois
+        </label>
+
+        <?php if ((string) ($compte['email'] ?? '') !== ''): ?>
+            <p class="aide">
+                Dernière préférence enregistrée par la personne :
+                articles <?= (int) ($compte['notify_articles'] ?? 0) === 1 ? 'oui' : 'non' ?>,
+                gazette <?= (int) ($compte['notify_gazette'] ?? 0) === 1 ? 'oui' : 'non' ?>.
+            </p>
+        <?php endif; ?>
+    </fieldset>
+
     <p class="actions">
         <button type="submit" class="bouton">Enregistrer</button>
         <a class="bouton bouton--secondaire" href="/admin/comptes">Annuler</a>

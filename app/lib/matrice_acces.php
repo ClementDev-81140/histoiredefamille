@@ -102,8 +102,14 @@ function matrice_famille(string $methode, string $motif): string
     if ($motif === '/connexion' || $motif === '/deconnexion') {
         return 'connexion';
     }
-    if ($motif === '/famille' || $motif === '/mon-compte' || str_starts_with($motif, '/tchat')) {
+    if ($motif === '/famille' || $motif === '/mon-compte' || str_starts_with($motif, '/mon-compte/')
+        || str_starts_with($motif, '/tchat')) {
         return 'famille';
+    }
+    // Désinscription par courriel : ouverte à tous (le jeton signé fait office
+    // d'authentification), mais une action se fait toujours en POST.
+    if ($motif === '/desinscription') {
+        return 'desinscription';
     }
     if (str_contains($motif, '{id}') || str_contains($motif, '{slug}')) {
         return 'contenu';
@@ -144,6 +150,11 @@ function matrice_attendu(string $methode, string $motif, string $profil): int
             }
             // POST sans jeton CSRF : refusé.
             return $methode === 'POST' ? 403 : 200;
+
+        case 'desinscription':
+            // Sans jeton dans l'adresse : « lien invalide ». Sans jeton
+            // anti-CSRF : l'action est refusée.
+            return $methode === 'POST' ? 403 : 404;
 
         case 'connexion':
             if ($methode === 'POST') {

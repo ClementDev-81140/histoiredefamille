@@ -49,6 +49,17 @@ $val = static fn (string $cle, string $defaut = ''): string => (string) old_valu
         </div>
 
         <div class="champ">
+            <label for="email">Adresse électronique (facultatif)</label>
+            <input type="email" id="email" name="email" maxlength="190"
+                   autocomplete="email" value="<?= e($val('email')) ?>">
+            <p class="aide">
+                Sert uniquement si la personne demande à être prévenue des nouveaux articles ou
+                à recevoir la gazette. Une adresse saisie ici ne vaut pas accord : c’est la
+                personne qui coche ses cases dans « Mon compte ».
+            </p>
+        </div>
+
+        <div class="champ">
             <label for="branche_une">Branche</label>
             <select id="branche_une" name="branche" required>
                 <option value="">Choisir une branche…</option>
@@ -89,9 +100,10 @@ $val = static fn (string $cle, string $defaut = ''): string => (string) old_valu
         <div class="champ">
             <label for="liste">La liste, une personne par ligne</label>
             <textarea id="liste" name="liste" rows="10" required spellcheck="false"
-                      placeholder="Martin;Élise&#10;Durand;Paul&#10;Le Gall;Jean-Paul"><?= e($val('liste')) ?></textarea>
+                      placeholder="Martin;Élise&#10;Durand;Paul&#10;Le Gall;Jean-Paul;jean-paul@exemple.fr"><?= e($val('liste')) ?></textarea>
             <p class="aide">
-                Formats acceptés : « Nom;Prénom » (le plus sûr), ou « Prénom Nom » sur deux mots.
+                Formats acceptés : « Nom;Prénom » (le plus sûr), « Nom;Prénom;adresse » pour
+                ajouter l’adresse électronique, ou « Prénom Nom » sur deux mots.
                 Dès qu’un nom ou un prénom compte plusieurs mots, écrivez « Nom;Prénom » :
                 par exemple <code>Le Gall;Jean-Paul</code>.
                 <?= (int) $maximum ?> personnes au maximum par envoi.

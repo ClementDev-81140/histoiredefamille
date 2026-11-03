@@ -94,6 +94,7 @@ $navLink = static function (string $href, string $label, bool $exact = false) us
         <?= $navLink('/admin/composition', 'Composition des pages') ?>
         <?= $navLink('/admin/admins', 'Administrateurs') ?>
         <?= $navLink('/admin/connexions', 'Journal des connexions') ?>
+        <?= $navLink('/admin/courriels', 'Courriels') ?>
         <?= $navLink('/admin/etat', 'État du site') ?>
     </aside>
 

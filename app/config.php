@@ -85,6 +85,18 @@ function config_defaults(): array
             'backup_alert_days'    => 3,
             'backup_alert_free_mb' => 512,
         ],
+        // Courriels : les paramètres du serveur d'envoi ne vivent QUE dans
+        // config.local.php (jamais en base, jamais dans les journaux).
+        'mail' => [
+            'host'       => '',
+            'port'       => 587,
+            'encryption' => 'tls',   // tls (STARTTLS) | ssl (TLS implicite) | none
+            'username'   => '',
+            'password'   => '',
+            'from_address' => '',
+            'from_name'    => '',
+            'timeout'      => 10,
+        ],
         'per_page' => 24,
     ];
 }

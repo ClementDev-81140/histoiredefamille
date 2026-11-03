@@ -157,6 +157,17 @@ systemctl enable --now histoiredefamille-sauvegarde.timer >/dev/null 2>&1
 vert "Minuteur installé et activé : tous les jours à 3 h 30."
 vert "Vérification : systemctl list-timers histoiredefamille-sauvegarde.timer"
 
+# --- 8 bis. Envoi des courriels (minuteur systemd, toutes les 5 minutes) ---
+bleu "Envoi des courriels en attente (minuteur systemd, toutes les 5 minutes)"
+
+install -m 644 "${SITE_DIR}/deploy/systemd/histoiredefamille-courriels.service" /etc/systemd/system/
+install -m 644 "${SITE_DIR}/deploy/systemd/histoiredefamille-courriels.timer" /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable --now histoiredefamille-courriels.timer >/dev/null 2>&1
+vert "Minuteur installé et activé : toutes les 5 minutes."
+vert "Vérification : systemctl list-timers histoiredefamille-courriels.timer"
+vert "Sans configuration d'envoi (config.local.php), la commande ne fait rien : les messages attendent."
+
 # Ancien cron : la ligne de sauvegarde est retirée (le minuteur la remplace).
 # La maintenance hebdomadaire reste dans /etc/cron.d.
 cat >/etc/cron.d/histoiredefamille <<CRON

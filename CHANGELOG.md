@@ -3,6 +3,65 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.17.0] — 2026-11-03
+
+### Courriels : prévenir la famille d'un nouvel article
+
+**Un socle complet, sans bibliothèque et sans dépendance** : un petit client
+SMTP écrit à la main (sockets), STARTTLS ou TLS implicite, authentification
+LOGIN/PLAIN, délais courts. Les paramètres du serveur d'envoi ne vivent que
+dans `config.local.php` (jamais en base, jamais dans les journaux, jamais
+affichés). Sans configuration, tout le reste du site fonctionne et les
+messages attendent dans la file.
+
+- **Adresse facultative** sur les comptes (`accounts.email`, migration 010) :
+  validation stricte, 190 caractères au plus, minuscules, une seule fois parmi
+  les comptes actifs. Saisie dans « Ajouter des personnes » (formulaire
+  individuel **et** colonne facultative « Nom;Prénom;adresse »), dans la fiche
+  d'un compte et dans « Mon compte » — avec le **mot de passe actuel** exigé
+  pour changer ou retirer son adresse.
+- **Deux accords explicites**, décochés par défaut : « Prévenez-moi des
+  nouveaux articles » et « Je veux recevoir la gazette du mois ». Une adresse
+  saisie par un administrateur **ne vaut pas accord** (les cases repassent à
+  zéro) ; l'administrateur ne les coche qu'« à la demande de la personne ».
+- **Désinscription en un clic, sans connexion** : jeton long (64 caractères)
+  propre à la personne et au type d'envoi, dont seule l'empreinte SHA-256 est
+  stockée, sans date d'expiration. La page demande une confirmation en **POST**
+  (un simple GET ne change rien) et les en-têtes `List-Unsubscribe` /
+  `List-Unsubscribe-Post` sont envoyés (réponse « One-Click » prise en charge).
+- **File d'envoi** (`email_queue`) : sujet, corps texte et HTML, destinataire,
+  état, essais, date. Vidée par `app/cli/envoyer-courriels.php`, appelée par un
+  minuteur systemd **toutes les 5 minutes** installé par `deploy/install.sh` :
+  lots de 10, pause d'une seconde, nouvel essai plus tard (3 essais puis
+  abandon), **plafond quotidien** réglable (50 par défaut), purge à 90 jours.
+  **Jamais d'envoi pendant une requête web.**
+- **Confidentialité** : un message par personne (jamais de copie multiple),
+  adresses masquées (`m***@exemple.fr`) dans l'administration et dans le
+  journal d'activité, aucun contenu réservé envoyé à qui n'a pas le droit de le
+  voir — `can_view()` et l'envoi partagent désormais la même fonction
+  (`visibilite_compte()`), donc la même règle, écrite une seule fois.
+- **Notification à la publication** : titre, résumé, rubrique, date et lien
+  (la connexion d'abord pour un article réservé), jamais le texte intégral ni
+  la photo. Case « Prévenir les inscrits » dans le formulaire (cochée à la
+  première publication, absente pour un brouillon), **un seul message par
+  article et par personne**, article programmé prévenu **le jour de la
+  publication**, article repassé en brouillon → envois en attente **annulés**.
+- **Administration → Courriels** : état de la configuration (sans le mot de
+  passe), bouton d'essai à soi-même, compteurs (en attente, envoyés du jour,
+  échecs, inscrits), réglage du plafond et de l'adresse de réponse, 50 derniers
+  envois avec l'erreur lisible.
+- **En-tête et pied de chaque message** : nom du site, lien de désinscription,
+  « gérer mes préférences », couleurs de la palette courante, HTML simple à
+  styles en ligne, version texte lisible.
+- **57 nouveaux tests** (461 au total) : adresses, unicité, jetons, file et
+  doublons, conversation SMTP complète et ses échecs (mot de passe refusé,
+  adresse inconnue, STARTTLS absent), mise en page, destinataires pour chaque
+  visibilité, programmation, annulation, désinscription en un clic, plafond,
+  purge, et absence d'adresse ou de mot de passe dans les journaux.
+
+Aucune règle d'accès modifiée, aucune migration existante touchée, aucune
+dépendance ajoutée.
+
 ## [1.16.0] — 2026-11-03
 
 ### Vérification avant ouverture : « PRÊT À OUVRIR » ou la liste de ce qui bloque

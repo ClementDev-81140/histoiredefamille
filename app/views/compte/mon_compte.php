@@ -4,8 +4,9 @@
  *
  * La même page sert à tous les comptes (personne, branche, administrateur).
  *
- * @var array      $erreurs, $account
+ * @var array      $erreurs, $account, $courriel
  * @var array|null $branche
+ * @var bool       $courrielOk
  */
 $type = compte_type($account);
 ?>
@@ -37,6 +38,79 @@ $type = compte_type($account);
         Pour changer de nom, de prénom, d’identifiant ou de branche, demandez à un
         administrateur : ces informations ne se modifient pas ici.
     </p>
+</section>
+
+<section class="panneau" id="courriels">
+    <h2>Mes courriels</h2>
+
+    <?php if (!$courriel['possible']): ?>
+        <p class="note">
+            Un compte de branche est partagé par plusieurs personnes : il ne peut pas recevoir
+            de courriel personnel. Demandez un compte « personne » à un administrateur si vous
+            souhaitez être prévenu des nouveaux articles.
+        </p>
+    <?php else: ?>
+        <p class="note">
+            Tout est facultatif : sans adresse, ou sans case cochée, vous ne recevez <strong>rien</strong>.
+            Votre adresse n’est jamais affichée sur le site ni transmise à quelqu’un d’autre.
+        </p>
+
+        <form method="post" action="/mon-compte/courriels" class="formulaire">
+            <?= csrf_field() ?>
+
+            <div class="champ">
+                <label for="email">Mon adresse électronique</label>
+                <input type="email" id="email" name="email" maxlength="190"
+                       autocomplete="email" value="<?= e($courriel['email']) ?>">
+                <p class="aide">
+                    Laissez vide pour ne rien recevoir. Pour changer ou retirer une adresse,
+                    votre mot de passe actuel est demandé plus bas.
+                </p>
+            </div>
+
+            <fieldset class="champ">
+                <legend>Ce que je veux recevoir</legend>
+
+                <label class="case">
+                    <input type="checkbox" name="notify_articles" value="1" <?= checked($courriel['articles']) ?>>
+                    Prévenez-moi des nouveaux articles
+                </label>
+                <p class="aide">Un seul message par article, et seulement si vous avez le droit de le lire.</p>
+
+                <label class="case">
+                    <input type="checkbox" name="notify_gazette" value="1" <?= checked($courriel['gazette']) ?>>
+                    Je veux recevoir la gazette du mois
+                </label>
+                <p class="aide">Un numéro par mois, en début de mois, avec un lien pour le lire en ligne.</p>
+            </fieldset>
+
+            <div class="champ">
+                <label for="current_password_courriel">Mot de passe actuel</label>
+                <input type="password" id="current_password_courriel" name="current_password"
+                       autocomplete="current-password">
+                <p class="aide">
+                    Nécessaire seulement si vous changez ou retirez votre adresse.
+                </p>
+            </div>
+
+            <p class="actions">
+                <button type="submit" class="bouton">Enregistrer mes courriels</button>
+            </p>
+        </form>
+
+        <?php if (!$courrielOk): ?>
+            <div class="message message--info">
+                Le serveur d’envoi n’est pas encore configuré : vos choix sont enregistrés, mais
+                aucun courriel ne partira tant que l’administrateur n’aura pas rempli
+                <code>config.local.php</code> (voir README, « Envoyer des courriels »).
+            </div>
+        <?php endif; ?>
+
+        <p class="aide">
+            Vous pouvez aussi vous désinscrire en un clic depuis n’importe quel courriel reçu.
+            Chaque message contient ce lien, sans avoir besoin de vous connecter.
+        </p>
+    <?php endif; ?>
 </section>
 
 <section class="panneau">

@@ -252,6 +252,7 @@ function admin_article_save(array $params = []): void
         'branches'     => array_map('intval', post_array('branches')),
         'status'       => post('status'),
         'published_at' => post('published_at'),
+        'notify'       => post('notify'),
     ];
 
     $errors = [];
@@ -312,6 +313,10 @@ function admin_article_save(array $params = []): void
         form_fail($errors, $old, $back);
     }
 
+    // « Prévenir les inscrits » : coché par défaut à la première publication,
+    // décochable, et sans objet pour un brouillon.
+    $prevenir = $status === 'publie' && $old['notify'] === '1';
+
     $data = [
         'title'        => $old['title'],
         'slug'         => $old['slug'],
@@ -323,6 +328,7 @@ function admin_article_save(array $params = []): void
         'visibility'   => $visibility,
         'status'       => $status,
         'published_at' => $publishedAt,
+        'notify'       => $prevenir ? 1 : 0,
         'updated_at'   => time(),
     ];
 
@@ -342,6 +348,36 @@ function admin_article_save(array $params = []): void
         $id > 0 ? 'article_modifie' : 'article_ajoute',
         $old['title']
     );
+
+    // Repasser un article en brouillon annule les envois encore en attente :
+    // personne ne reçoit un article qui n'est plus publié.
+    if ($status !== 'publie') {
+        $annules = courriel_annuler_article($articleId);
+        if ($annules > 0) {
+            log_activity((int) current_account()['id'], 'courriels_annules',
+                $annules . ' courriel(s) en attente annulé(s) pour « ' . $old['title'] . ' »');
+        }
+    }
+
+    // Publication immédiate : on met les notifications en file tout de suite.
+    // Une date future passera par la commande d'envoi, le jour venu.
+    // On ne prévient que sur une VRAIE publication : pas de courriel pour un
+    // vieil article que l'on corrige, ni à chaque enregistrement.
+    $etaitPublie = $article !== null
+        && (string) $article['status'] === 'publie'
+        && (int) $article['published_at'] <= time();
+    $transition = !$etaitPublie;
+
+    if ($status === 'publie' && $publishedAt <= time() && $prevenir && $transition) {
+        $complet = db_one('SELECT * FROM articles WHERE id = ?', [$articleId]);
+        if ($complet !== null) {
+            $mis = courriel_notifier_article($complet);
+            if ($mis > 0) {
+                log_activity((int) current_account()['id'], 'courriels_articles',
+                    $mis . ' notification(s) mise(s) en file pour « ' . $old['title'] . ' »');
+            }
+        }
+    }
 
     flash('succes', $id > 0 ? 'L’article a été mis à jour.' : 'L’article a été créé.');
     redirect('/admin/articles');

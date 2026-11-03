@@ -20,11 +20,105 @@ function mon_compte(): void
         : null;
 
     render('compte/mon_compte', [
-        'titre'   => 'Mon compte',
-        'erreurs' => form_errors(),
-        'account' => $account,
-        'branche' => $branche,
+        'titre'      => 'Mon compte',
+        'erreurs'    => form_errors(),
+        'account'    => $account,
+        'branche'    => $branche,
+        'courriel'   => courriel_resume_compte($account),
+        'courrielOk' => courriel_configure(),
     ], is_admin() ? 'layout_admin' : 'layout');
+}
+
+/**
+ * Réglages courriel d'un compte, prêts pour l'affichage.
+ *
+ * @return array{email:string, articles:bool, gazette:bool, possible:bool}
+ */
+function courriel_resume_compte(array $account): array
+{
+    return [
+        'email'    => (string) ($account['email'] ?? ''),
+        'articles' => (int) ($account['notify_articles'] ?? 0) === 1,
+        'gazette'  => (int) ($account['notify_gazette'] ?? 0) === 1,
+        'possible' => compte_type($account) !== 'branche',
+    ];
+}
+
+/**
+ * Enregistre l'adresse et les accords de la personne connectée.
+ *
+ * Changer d'adresse (ou la retirer) demande le mot de passe actuel : sans lui,
+ * quelqu'un qui emprunterait une session ouverte pourrait détourner les
+ * courriels de la famille vers une autre boîte.
+ */
+function mon_compte_courriels(): void
+{
+    require_login();
+    csrf_check();
+
+    $account = current_account();
+    if ($account === null) {
+        redirect('/connexion');
+    }
+
+    $retour = '/mon-compte';
+
+    if (compte_type($account) === 'branche') {
+        form_fail(
+            ['Un compte de branche est partagé : l’adresse électronique est réservée aux comptes personnels.'],
+            [],
+            $retour
+        );
+    }
+
+    $emailAvant = courriel_adresse_normaliser((string) ($account['email'] ?? ''));
+    $email      = courriel_adresse_normaliser(post('email'));
+    $articles   = post('notify_articles') === '1';
+    $gazette    = post('notify_gazette') === '1';
+
+    $erreurs = [];
+    if ($email !== '' && !courriel_adresse_valide($email)) {
+        $erreurs[] = 'Cette adresse électronique n’est pas valide (par exemple : prenom.nom@exemple.fr).';
+    }
+    if ($email !== '' && $email !== $emailAvant && !courriel_adresse_libre($email, (int) $account['id'])) {
+        $erreurs[] = 'Cette adresse est déjà utilisée par un autre compte.';
+    }
+
+    // Changement d'adresse : mot de passe actuel exigé.
+    if ($email !== $emailAvant) {
+        $motDePasse = (string) ($_POST['current_password'] ?? '');
+        if ($motDePasse === '' || !password_verify($motDePasse, (string) $account['password_hash'])) {
+            $erreurs[] = 'Pour changer ou retirer votre adresse, tapez votre mot de passe actuel.';
+        }
+    }
+
+    if ($erreurs !== []) {
+        form_fail($erreurs, [], $retour);
+    }
+
+    // Sans adresse, il ne peut y avoir d'accord : les deux cases retombent à zéro.
+    $articles = $email !== '' && $articles;
+    $gazette  = $email !== '' && $gazette;
+
+    db_update('accounts', (int) $account['id'], [
+        'email'           => $email,
+        'notify_articles' => $articles ? 1 : 0,
+        'notify_gazette'  => $gazette ? 1 : 0,
+        'updated_at'      => time(),
+    ]);
+
+    log_activity(
+        (int) $account['id'],
+        'courriel_preferences',
+        'Adresse ' . ($email !== '' ? courriel_masquer($email) : 'retirée')
+            . ' — articles : ' . ($articles ? 'oui' : 'non')
+            . ' — gazette : ' . ($gazette ? 'oui' : 'non')
+    );
+
+    flash('succes', $email !== ''
+        ? 'Votre adresse et vos choix sont enregistrés.'
+        : 'Votre adresse a été retirée : vous ne recevrez plus de courriels.');
+    redirect($retour);
 }
 
 /** Enregistrement du nouveau mot de passe. */

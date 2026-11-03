@@ -97,10 +97,16 @@ foreach ($branchesToCreate as $spec) {
 // Deux personnes de la branche Martin et une de la branche Durand : de quoi
 // voir la liste des comptes, l'écran d'aperçu et « Bonjour Élise ».
 if ((int) db_value("SELECT COUNT(*) FROM accounts WHERE account_type = 'personne'", [], 0) === 0) {
+    // Les adresses sont FICTIVES et utilisent le domaine réservé « exemple.fr »
+    // (norme RFC 2606) : elles ne peuvent atteindre personne, et les accords
+    // sont laissés à zéro. La démonstration ne déclenche donc aucun envoi.
     $personnes = [
-        ['prenom' => 'Élise', 'nom' => 'Martin', 'branche' => 'MARTIN', 'see_all' => 0],
-        ['prenom' => 'Jean-Paul', 'nom' => 'Le Gall', 'branche' => 'MARTIN', 'see_all' => 1],
-        ['prenom' => 'Paul', 'nom' => 'Durand', 'branche' => 'DURAND', 'see_all' => 0],
+        ['prenom' => 'Élise', 'nom' => 'Martin', 'branche' => 'MARTIN', 'see_all' => 0,
+            'email' => 'elise.martin@exemple.fr'],
+        ['prenom' => 'Jean-Paul', 'nom' => 'Le Gall', 'branche' => 'MARTIN', 'see_all' => 1,
+            'email' => 'jean-paul.legall@exemple.fr'],
+        ['prenom' => 'Paul', 'nom' => 'Durand', 'branche' => 'DURAND', 'see_all' => 0,
+            'email' => ''],
     ];
 
     $reserves = [];
@@ -128,6 +134,9 @@ if ((int) db_value("SELECT COUNT(*) FROM accounts WHERE account_type = 'personne
             'first_name'    => $personne['prenom'],
             'last_name'     => $personne['nom'],
             'see_all'       => $personne['see_all'],
+            'email'         => (string) ($personne['email'] ?? ''),
+            'notify_articles' => 0,
+            'notify_gazette'  => 0,
             'created_at'    => $now,
             'updated_at'    => $now,
         ]);

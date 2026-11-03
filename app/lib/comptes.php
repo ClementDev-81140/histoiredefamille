@@ -291,13 +291,14 @@ function compte_analyser_liste(string $texte): array
  */
 function compte_analyser_ligne(string $brute, int $numero): array
 {
-    $ligne = ['numero' => $numero, 'nom' => '', 'prenom' => '', 'remarque' => '', 'erreur' => ''];
+    $ligne = ['numero' => $numero, 'nom' => '', 'prenom' => '', 'email' => '', 'remarque' => '', 'erreur' => ''];
 
-    // 1. Forme stricte : « Nom;Prénom ».
+    // 1. Forme stricte : « Nom;Prénom » ou « Nom;Prénom;adresse ».
     if (str_contains($brute, ';')) {
         $parties = array_map('trim', explode(';', $brute));
-        if (count($parties) !== 2 || $parties[0] === '' || $parties[1] === '') {
-            $ligne['erreur'] = 'Écrivez « Nom;Prénom » (deux morceaux séparés par un point-virgule).';
+        if (count($parties) < 2 || count($parties) > 3
+            || $parties[0] === '' || $parties[1] === '') {
+            $ligne['erreur'] = 'Écrivez « Nom;Prénom » ou « Nom;Prénom;adresse » (morceaux séparés par des points-virgules).';
             return $ligne;
         }
         $nom    = compte_nettoyer_nom($parties[0]);
@@ -308,6 +309,16 @@ function compte_analyser_ligne(string $brute, int $numero): array
         }
         $ligne['nom']    = $nom;
         $ligne['prenom'] = $prenom;
+
+        // Troisième morceau facultatif : l'adresse électronique.
+        if (count($parties) === 3 && $parties[2] !== '') {
+            $adresse = courriel_adresse_normaliser($parties[2]);
+            if (!courriel_adresse_valide($adresse)) {
+                $ligne['erreur'] = 'L’adresse électronique « ' . $parties[2] . ' » n’est pas valide.';
+                return $ligne;
+            }
+            $ligne['email'] = $adresse;
+        }
 
         return $ligne;
     }
@@ -447,6 +458,20 @@ function comptes_creer(array $entrees, int $adminId): array
             continue;
         }
 
+        // Adresse électronique facultative : jamais obligatoire, et jamais
+        // deux fois la même parmi les comptes actifs.
+        $email = courriel_adresse_normaliser((string) ($entree['email'] ?? ''));
+        if ($email !== '') {
+            if (!courriel_adresse_valide($email)) {
+                $resultat['erreurs'][] = sprintf('Ligne %d : l’adresse « %s » n’est pas valide.', $numero, $email);
+                continue;
+            }
+            if (!courriel_adresse_libre($email)) {
+                $resultat['erreurs'][] = sprintf('Ligne %d : l’adresse « %s » est déjà utilisée par un compte actif.', $numero, $email);
+                continue;
+            }
+        }
+
         $brancheId = (int) ($entree['branche'] ?? 0);
         $branche   = $brancheId > 0 ? find_branch($brancheId) : null;
         if ($branche === null || (int) $branche['is_active'] !== 1) {
@@ -459,6 +484,7 @@ function comptes_creer(array $entrees, int $adminId): array
             'nom'         => $nom,
             'prenom'      => $prenom,
             'identifiant' => $iden,
+            'email'       => $email,
             'branche'     => $branche,
             'see_all'     => !empty($entree['see_all']),
         ];
@@ -486,6 +512,7 @@ function comptes_creer(array $entrees, int $adminId): array
                 'first_name'    => $prepare['prenom'],
                 'last_name'     => $prepare['nom'],
                 'see_all'       => $prepare['see_all'] ? 1 : 0,
+                'email'         => $prepare['email'],
                 'created_at'    => $now,
                 'updated_at'    => $now,
             ]);
@@ -495,6 +522,7 @@ function comptes_creer(array $entrees, int $adminId): array
                 'nom'         => $prepare['nom'],
                 'prenom'      => $prepare['prenom'],
                 'identifiant' => $prepare['identifiant'],
+                'email'       => $prepare['email'],
                 'mot_de_passe' => $motDePasse,
                 'branche_nom' => (string) $prepare['branche']['name'],
             ];

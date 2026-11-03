@@ -132,15 +132,23 @@ function admin_comptes_apercu(): void
     if ($mode === 'une') {
         $nom    = compte_nettoyer_nom(post('nom'));
         $prenom = compte_nettoyer_nom(post('prenom'));
-        $lignes[] = $nom !== '' && $prenom !== ''
-            ? ['numero' => 1, 'nom' => $nom, 'prenom' => $prenom, 'remarque' => '', 'erreur' => '']
-            : [
-                'numero'   => 1,
-                'nom'      => '',
-                'prenom'   => '',
-                'remarque' => '',
-                'erreur'   => 'Indiquez le nom et le prénom (lettres, trait d’union et apostrophe).',
-            ];
+        $email  = courriel_adresse_normaliser(post('email'));
+
+        $erreur = '';
+        if ($nom === '' || $prenom === '') {
+            $erreur = 'Indiquez le nom et le prénom (lettres, trait d’union et apostrophe).';
+        } elseif ($email !== '' && !courriel_adresse_valide($email)) {
+            $erreur = 'L’adresse électronique n’est pas valide (ou elle est trop longue).';
+        }
+
+        $lignes[] = [
+            'numero'   => 1,
+            'nom'      => $nom,
+            'prenom'   => $prenom,
+            'email'    => $email,
+            'remarque' => '',
+            'erreur'   => $erreur,
+        ];
     } else {
         $analyse = compte_analyser_liste((string) ($_POST['liste'] ?? ''));
         $lignes  = $analyse['lignes'];
@@ -179,6 +187,7 @@ function admin_comptes_apercu(): void
             'numero'      => (int) $ligne['numero'],
             'nom'         => $ligne['nom'],
             'prenom'      => $ligne['prenom'],
+            'email'       => (string) ($ligne['email'] ?? ''),
             'identifiant' => $identifiant,
             'erreur'      => $ligne['erreur'],
             'remarque'    => $remarque,
@@ -278,6 +287,7 @@ function admin_comptes_creer(): void
         $entrees[] = [
             'nom'         => $ligne['nom'],
             'prenom'      => $ligne['prenom'],
+            'email'       => (string) ($ligne['email'] ?? ''),
             'identifiant' => $identifiant,
             'branche'     => (int) $bloc['branche'],
             'see_all'     => !empty($bloc['see_all']),
@@ -470,6 +480,24 @@ function admin_compte_save(array $params): void
         $errors[] = 'Cet identifiant est déjà utilisé par un autre compte.';
     }
 
+    // Adresse électronique et accords : l'administrateur peut les corriger,
+    // mais il le fait « à la demande de la personne ». Une adresse qu'il
+    // saisit lui-même ne vaut jamais accord : les cases repassent à zéro.
+    $emailAvant = courriel_adresse_normaliser((string) ($compte['email'] ?? ''));
+    $email      = courriel_adresse_normaliser(post('email'));
+    if ($email !== '' && !courriel_adresse_valide($email)) {
+        $errors[] = 'L’adresse électronique n’est pas valide (ou dépasse 190 caractères).';
+    } elseif ($email !== '' && !courriel_adresse_libre($email, $id)) {
+        $errors[] = 'Cette adresse est déjà utilisée par un autre compte actif.';
+    }
+    $adresseNouvelle = $email !== $emailAvant;
+    $notifyArticles  = !$adresseNouvelle && post('notify_articles') === '1';
+    $notifyGazette   = !$adresseNouvelle && post('notify_gazette') === '1';
+    if ($email === '') {
+        $notifyArticles = false;
+        $notifyGazette  = false;
+    }
+
     $branche = $brancheId > 0 ? find_branch($brancheId) : null;
     if ($branche === null) {
         $errors[] = 'Choisissez une branche.';
@@ -484,6 +512,9 @@ function admin_compte_save(array $params): void
             'identifiant' => $identifiant,
             'branche'     => $brancheId,
             'see_all'     => $seeAll,
+            'email'       => $email,
+            'notify_articles' => $notifyArticles ? '1' : '',
+            'notify_gazette'  => $notifyGazette ? '1' : '',
         ], $back);
     }
 
@@ -495,6 +526,9 @@ function admin_compte_save(array $params): void
         'last_name'    => $nom,
         'branch_id'    => $brancheId,
         'see_all'      => $seeAll ? 1 : 0,
+        'email'           => $email,
+        'notify_articles' => $notifyArticles ? 1 : 0,
+        'notify_gazette'  => $notifyGazette ? 1 : 0,
         'updated_at'   => time(),
     ]);
 

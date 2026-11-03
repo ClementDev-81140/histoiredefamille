@@ -147,6 +147,30 @@ $publishedAt = (string) old_value($old, 'published_at', date('Y-m-d\TH:i', $ts))
             <input type="datetime-local" id="published_at" name="published_at" value="<?= e($publishedAt) ?>">
             <p class="aide">Une date dans le futur programme la publication : l’article apparaîtra tout seul.</p>
         </div>
+
+        <?php
+        // La case n'apparaît que pour un article publié (un brouillon ne
+        // prévient personne). À la première publication, elle est cochée.
+        $prevenir = array_key_exists('notify', $old)
+            ? (string) old_value($old, 'notify', '1') === '1'
+            : (int) ($article['notify'] ?? 1) === 1;
+        ?>
+        <?php if ($status === 'publie'): ?>
+            <label class="case">
+                <input type="checkbox" name="notify" value="1" <?= checked($prevenir) ?>>
+                Prévenir les inscrits par courriel
+            </label>
+            <p class="aide">
+                Un seul message par personne et par article, uniquement aux personnes qui ont
+                coché « Prévenez-moi des nouveaux articles » et qui ont le droit de lire cet
+                article. Si la date est dans le futur, le message part le jour de la publication.
+            </p>
+        <?php else: ?>
+            <p class="aide">
+                Un brouillon ne prévient personne. En publiant l’article, une case
+                « Prévenir les inscrits » apparaîtra.
+            </p>
+        <?php endif; ?>
     </fieldset>
 
     <p class="actions">

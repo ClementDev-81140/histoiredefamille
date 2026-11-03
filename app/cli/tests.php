@@ -2395,7 +2395,13 @@ if ($filtre === '' || $filtre === 'composition') {
     sort($migrations);
     $derniere = basename((string) end($migrations));
     $sql009   = (string) @file_get_contents(dirname(__DIR__) . '/migrations/009_articles_modele.sql');
-    verifier('migration : 009 est la dernière migration', $derniere === '009_articles_modele.sql', $derniere);
+    // Chaque lot ajoute SA migration ; les précédentes ne bougent jamais.
+    verifier('migration : 010 est la dernière migration', $derniere === '010_courriels.sql', $derniere);
+    verifier(
+        'migration : 010 ajoute des colonnes et des tables, sans rien supprimer',
+        str_contains((string) @file_get_contents(dirname(__DIR__) . '/migrations/010_courriels.sql'), 'ALTER TABLE accounts ADD COLUMN email')
+            && !str_contains((string) @file_get_contents(dirname(__DIR__) . '/migrations/010_courriels.sql'), 'DROP TABLE')
+    );
     verifier(
         'migration : 009 ajoute seulement la colonne « modele », vide par défaut',
         str_contains($sql009, 'ALTER TABLE articles ADD COLUMN modele TEXT NOT NULL DEFAULT')
@@ -2440,6 +2446,12 @@ if ($filtre === '' || $filtre === 'matrice') {
 
 if ($filtre === '' || $filtre === 'verification') {
     tests_verification();
+}
+
+require_once __DIR__ . '/tests_courriels.php';
+
+if ($filtre === '' || $filtre === 'courriels') {
+    tests_courriels();
 }
 
 $total = $reussis + count($echecs);

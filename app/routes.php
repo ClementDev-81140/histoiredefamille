@@ -22,7 +22,9 @@ require_once __DIR__ . '/controllers/admin_composition.php';
 require_once __DIR__ . '/controllers/admin_documents.php';
 require_once __DIR__ . '/controllers/admin_branches.php';
 require_once __DIR__ . '/controllers/admin_comptes.php';
+require_once __DIR__ . '/controllers/admin_courriels.php';
 require_once __DIR__ . '/controllers/compte.php';
+require_once __DIR__ . '/controllers/desinscription.php';
 require_once __DIR__ . '/controllers/admin_pages.php';
 require_once __DIR__ . '/controllers/admin_persons.php';
 require_once __DIR__ . '/controllers/admin_import.php';
@@ -83,6 +85,9 @@ route('GET', '/famille', 'family_home');
 
 // Mon compte : changement de son propre mot de passe, pour tous les comptes.
 route('GET', '/mon-compte', 'mon_compte');
+route('POST', '/mon-compte/courriels', 'mon_compte_courriels');
+route('GET', '/desinscription', 'desinscription');
+route('POST', '/desinscription', 'desinscription_confirmer');
 route('POST', '/mon-compte', 'mon_compte_save');
 
 // Tchat privé : un seul salon, réservé aux personnes connectées.
@@ -96,6 +101,9 @@ route('POST', '/tchat/{id}/supprimer', 'tchat_supprimer');
 // Administration
 // ---------------------------------------------------------------------------
 route('GET', '/admin', 'admin_dashboard');
+route('GET', '/admin/courriels', 'admin_courriels');
+route('POST', '/admin/courriels/reglages', 'admin_courriels_reglages');
+route('POST', '/admin/courriels/essai', 'admin_courriels_essai');
 route('GET', '/admin/etat', 'admin_status');
 route('GET', '/admin/connexions', 'admin_connexions');
 route('POST', '/admin/connexions/conservation', 'admin_connexions_reglage');

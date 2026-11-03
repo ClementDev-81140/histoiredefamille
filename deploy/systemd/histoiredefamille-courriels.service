@@ -1,0 +1,24 @@
+[Unit]
+Description=Histoire de famille — envoi des courriels en attente
+Documentation=file:/var/www/histoiredefamille/README.md
+After=local-fs.target network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/histoiredefamille
+# Envoie au maximum 10 messages par passage (pause d'une seconde entre deux),
+# dans la limite du plafond quotidien réglé dans l'administration.
+ExecStart=/usr/bin/php /var/www/histoiredefamille/app/cli/envoyer-courriels.php
+# Priorité basse : l'envoi ne doit jamais ralentir une visite du site.
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+# Le journal ne contient aucune adresse complète (elles sont masquées).
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

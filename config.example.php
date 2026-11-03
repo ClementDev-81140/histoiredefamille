@@ -143,6 +143,42 @@ return [
         'backup_alert_free_mb' => 512,
     ],
 
+    // ------------------------------------------------------------------
+    // Courriels (facultatif)
+    // ------------------------------------------------------------------
+    // Le site n'envoie des courriels que si ce bloc est rempli ET si la
+    // personne a coché son accord dans « Mon compte ». Sans ce bloc, tout le
+    // reste du site fonctionne : les messages attendent simplement dans la
+    // file (« Administration → Courriels »).
+    //
+    // Où trouver ces renseignements ? Voir README, section
+    // « Envoyer des courriels » : ce sont les paramètres SMTP de votre
+    // fournisseur de messagerie (Orange, Free, Gmail, OVH, Infomaniak…).
+    'mail' => [
+        // Serveur d'envoi (exemple : « smtp.exemple.fr »).
+        'host'       => '',
+
+        // Port : 587 avec STARTTLS (le plus courant), 465 avec TLS implicite.
+        'port'       => 587,
+
+        // 'tls' (STARTTLS), 'ssl' (TLS implicite, port 465) ou 'none'.
+        // « none » n'est accepté que si le serveur est sur votre réseau local.
+        'encryption' => 'tls',
+
+        // Identifiant et mot de passe fournis par le service d'envoi.
+        // Ils restent dans ce fichier, jamais dans la base ni dans les journaux.
+        'username'   => '',
+        'password'   => '',
+
+        // Adresse d'expéditeur : elle doit être autorisée par le service
+        // d'envoi (souvent la même adresse que l'identifiant ci-dessus).
+        'from_address' => '',
+        'from_name'    => 'Histoire de famille',
+
+        // Délai d'attente maximum, en secondes (3 à 30).
+        'timeout' => 10,
+    ],
+
     // Nombre d'éléments par page dans les listes.
     'per_page' => 24,
 ];

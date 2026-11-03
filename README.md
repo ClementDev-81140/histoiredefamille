@@ -30,6 +30,7 @@ et une installation qui tient en quelques commandes à copier-coller.
 11. [En cas de problème](#11-en-cas-de-problème)
 12. [Confidentialité et sécurité](#12-confidentialité-et-sécurité)
 13. [Ouvrir le site au public : liste de contrôle du jour J](#13-ouvrir-le-site-au-public--liste-de-contrôle-du-jour-j)
+14. [Envoyer des courriels](#14-envoyer-des-courriels)
 
 ---
 
@@ -2058,6 +2059,171 @@ C'est fait. Envoyez l'adresse et les identifiants à la famille.
 | Alerte rouge « sauvegarde » en haut de l'administration | `journalctl -u histoiredefamille-sauvegarde.service -n 50` |
 | La vérification dit « Apache ne répond pas » | Apache n'est pas lancé, ou le site n'écoute pas sur `127.0.0.1:80` |
 | Un point reste « À CORRIGER » | la flèche `→` de la ligne donne la commande ou le réglage à faire |
+
+---
+
+## 14. Envoyer des courriels
+
+Le site peut prévenir la famille de deux façons, **toujours avec l'accord de la
+personne** :
+
+- un message quand un **nouvel article** paraît ;
+- la **gazette du mois** (voir la section suivante).
+
+Tout le reste fonctionne sans courriel : si l'envoi n'est pas configuré, les
+messages attendent sagement dans une file, et l'administration l'explique.
+
+### 14.1 Ce qu'il faut me demander
+
+Pour configurer l'envoi, j'ai besoin de **cinq renseignements** que vous seul
+pouvez obtenir (ils viennent de votre boîte mail, pas du site) :
+
+| Ce qu'il me faut | Exemple | Où le trouver |
+|---|---|---|
+| Le **serveur d'envoi** (SMTP) | `smtp.exemple.fr` | Aide de votre fournisseur de messagerie |
+| Le **port** | `587` (le plus courant) ou `465` | Idem |
+| Le **chiffrement** | `tls` (STARTTLS) ou `ssl` | Idem |
+| L'**identifiant** | souvent votre adresse complète | Idem |
+| Le **mot de passe** | mot de passe de la boîte, ou « mot de passe d'application » | Idem |
+
+⚠️ **Ne me donnez jamais ce mot de passe dans un message public** (dépôt GitHub,
+ticket, forum). Il se met uniquement dans `config.local.php`, sur le Raspberry
+Pi, par vous.
+
+### 14.2 Les paramètres des fournisseurs courants
+
+Ces valeurs sont publiques et changent rarement. Vérifiez toujours sur le site
+d'aide du fournisseur : c'est lui qui fait foi.
+
+| Fournisseur | Serveur | Port | Chiffrement | Remarque |
+|---|---|---|---|---|
+| Orange / Wanadoo | `smtp.orange.fr` | 465 | `ssl` | Identifiant = adresse complète |
+| Free | `smtp.free.fr` | 465 | `ssl` | Identifiant = adresse complète |
+| Gmail / Google Workspace | `smtp.gmail.com` | 587 | `tls` | **Mot de passe d'application** obligatoire (validation en deux étapes) |
+| Outlook / Hotmail | `smtp-mail.outlook.com` | 587 | `tls` | Identifiant = adresse complète |
+| OVH | `ssl0.ovh.net` | 465 | `ssl` | Identifiant = adresse complète |
+| Infomaniak | `mail.infomaniak.com` | 587 | `tls` | Identifiant = adresse complète |
+| Ionos / 1&1 | `smtp.ionos.fr` | 587 | `tls` | Identifiant = adresse complète |
+
+Deux pièges fréquents :
+
+- **Gmail** refuse votre mot de passe habituel : il faut créer un « mot de passe
+  d'application » dans les réglages de sécurité du compte Google.
+- Certains fournisseurs limitent le **nombre de messages par jour** (souvent
+  100 à 300). Le plafond du site (50 par défaut) est en dessous : gardez-le.
+
+### 14.3 Le réglage, pas à pas
+
+1. Sur le Raspberry Pi, ouvrez le fichier de configuration :
+
+```bash
+sudo nano /var/www/histoiredefamille/config.local.php
+```
+
+2. Complétez le bloc `'mail'` (les autres blocs ne changent pas) :
+
+```php
+'mail' => [
+    'host'         => 'smtp.exemple.fr',   // serveur fourni par votre boîte
+    'port'         => 587,
+    'encryption'   => 'tls',               // 'tls', 'ssl' ou 'none'
+    'username'     => 'votre-adresse@exemple.fr',
+    'password'     => 'le-mot-de-passe-fourni',
+    'from_address' => 'votre-adresse@exemple.fr',
+    'from_name'    => 'Histoire de famille',
+    'timeout'      => 10,
+],
+```
+
+3. Enregistrez (`Ctrl+O`, `Entrée`, puis `Ctrl+X`) et protégez le fichier :
+
+```bash
+sudo chown root:www-data /var/www/histoiredefamille/config.local.php
+sudo chmod 640 /var/www/histoiredefamille/config.local.php
+```
+
+4. Rechargez Apache :
+
+```bash
+sudo systemctl reload apache2
+```
+
+5. Dans **Administration → Courriels**, vérifiez que la page affiche
+   « L'envoi est configuré », puis cliquez sur
+   **« Envoyer un courriel d'essai à moi-même »**.
+
+   Pour cela, votre propre compte doit avoir une adresse : ajoutez-la dans
+   **Mon compte → Mes courriels**.
+
+6. Si l'essai n'arrive pas : regardez dans les indésirables, puis vérifiez le
+   message d'erreur dans le tableau « 50 derniers envois ». Les causes
+   fréquentes sont le mot de passe (Gmail), le port et le chiffrement.
+
+### 14.4 Qui reçoit quoi, et qui décide
+
+- L'adresse électronique est **facultative**. Sans adresse, on ne reçoit rien.
+- Deux cases, **décochées par défaut**, dans **Mon compte → Mes courriels** :
+  « Prévenez-moi des nouveaux articles » et « Je veux recevoir la gazette du
+  mois ».
+- Une adresse saisie par un administrateur **ne vaut pas accord** : seules les
+  cases cochées par la personne elle-même comptent.
+- Chaque message contient un lien **« Se désinscrire »** qui fonctionne **sans
+  se connecter** (un clic, puis une confirmation), et un lien
+  **« Gérer mes préférences »** vers « Mon compte ».
+- Personne ne voit l'adresse de quelqu'un d'autre : un message par personne,
+  jamais de copie multiple, et les adresses sont masquées (`m***@exemple.fr`)
+  dans l'administration et dans le journal.
+- Un contenu réservé n'est **jamais** envoyé à quelqu'un qui n'a pas le droit
+  de le voir : la règle de visibilité du site est appliquée avant l'envoi.
+
+### 14.5 Prévenir la famille d'un nouvel article
+
+Rien à faire : c'est automatique, à deux conditions.
+
+1. Dans le formulaire de l'article, la case **« Prévenir les inscrits par
+   courriel »** est cochée à la première publication (elle est absente pour un
+   brouillon). Décochez-la pour un article que personne n'a besoin de recevoir.
+2. Les personnes concernées ont coché « Prévenez-moi des nouveaux articles ».
+
+Ce qui se passe ensuite :
+
+- **Publication immédiate** : le message est mis en file tout de suite, et
+  part à la tâche suivante (moins de 5 minutes).
+- **Publication programmée** (une date dans le futur) : le message part le
+  jour de la publication, pas au moment où vous écrivez.
+- **Article repassé en brouillon** : les messages encore en attente sont
+  annulés.
+- **Un seul message par personne et par article**, même si vous corrigez
+  l'article dix fois.
+- Le message contient le **titre**, le **résumé**, la **rubrique**, la **date**
+  et un **lien**. Jamais le texte intégral d'un article réservé, jamais la
+  photo en pièce jointe.
+- Pour un article non public, le lien mène d'abord à la connexion, puis à
+  l'article.
+
+### 14.6 Le fonctionnement technique (pour information)
+
+- Un petit client SMTP écrit à la main (aucune bibliothèque à installer) :
+  STARTTLS ou TLS implicite, authentification LOGIN, délais courts.
+- **Aucun envoi pendant une visite du site** : le navigateur ne fait que
+  remplir une file (`email_queue`). Une tâche automatique la vide toutes les
+  5 minutes, par lots de 10 maximum, avec une pause d'une seconde entre deux
+  envois et un plafond quotidien (50 par défaut, réglable).
+- Un envoi raté est réessayé plus tard ; après **3 essais**, il est abandonné
+  et l'erreur reste visible dans l'administration.
+- Les messages terminés sont purgés au bout de **90 jours**.
+- Les paramètres du serveur d'envoi ne sont **jamais** en base, jamais dans les
+  journaux, jamais affichés.
+
+### 14.7 Vérifier que la tâche d'envoi tourne
+
+```bash
+systemctl list-timers histoiredefamille-courriels.timer
+journalctl -u histoiredefamille-courriels.service -n 30
+```
+
+La première commande doit afficher une prochaine exécution (toutes les
+5 minutes). La seconde montre les derniers envois, avec les adresses masquées.
 
 ---
 

@@ -40,6 +40,7 @@ require_once __DIR__ . '/lib/comptes.php';
 require_once __DIR__ . '/lib/apparence.php';
 require_once __DIR__ . '/lib/composition.php';
 require_once __DIR__ . '/lib/mise_en_ligne.php';
+require_once __DIR__ . '/lib/courriel.php';
 
 /**
  * Le script tourne-t-il en ligne de commande ?
