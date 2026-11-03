@@ -5093,4 +5093,35 @@ legend {
     .article--modele-photo .article__texte.texte--presse {
         columns: 1;
     }
+   FINITIONS comptes 1.10.1 : lisibilité des écrans « Comptes »
+   ========================================================================== */
+/* Le message à copier doit se lire : encre pleine sur papier clair. */
+.message-acces__texte {
+    color: var(--texte);
+    opacity: 1;
+}
+
+/* Aperçu : la colonne « Remarque » passe à la ligne au lieu d'être coupée. */
+.comptes-apercu td,
+.comptes-apercu th {
+    white-space: normal;
+}
+.comptes-apercu td:last-child {
+    min-width: 12rem;
+    overflow-wrap: anywhere;
+}
+.comptes-apercu__remarque,
+.comptes-apercu__probleme {
+    display: block;
+}
+
+/* Nom et prénom côte à côte : mêmes marges, pas de filet parasite. */
+.formulaire .ligne-champs > .champ {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
+}
+.tableau-defilant .comptes-apercu { min-width: 40rem; }
+@media (min-width: 62rem) {
+    .tableau-defilant .comptes-apercu { min-width: 0; }
 }

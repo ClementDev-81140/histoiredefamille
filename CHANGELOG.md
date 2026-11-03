@@ -116,6 +116,14 @@ modifié, le site s'affiche exactement comme avant.**
 - **À faire sur le Pi** : rien de particulier (pas de migration). Vider le
   cache du navigateur si le bandeau semble figé : le numéro de version force
   déjà le rechargement.
+## [1.10.1] — 2026-11-03
+
+### Finitions des écrans « Comptes »
+
+- Les messages à copier (écran « Comptes créés ») sont lisibles : encre pleine.
+- Le tableau d'aperçu avant création n'est plus coupé à droite : la colonne
+  « Remarque » passe à la ligne.
+- Les champs Nom et Prénom sont alignés.
 
 ## [1.10.0] — 2026-11-03
 
