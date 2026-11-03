@@ -18,6 +18,10 @@
  * la base est donc rendue intacte dans tous les cas.
  * La famille « editions » vérifie les filtres ?branche= et ?decennie= du
  * journal, et qu'un visiteur n'y voit jamais un article non public.
+ * La famille « comptes » vérifie les comptes « personne » : identifiants,
+ * analyse d'une liste collée, création (seul le hachage est stocké), droits,
+ * désactivation, réinitialisation, changement de son mot de passe, signature
+ * du tchat et CSRF. Tout se passe dans une transaction annulée.
  */
 
 declare(strict_types=1);
@@ -1181,6 +1185,437 @@ if ($filtre === '' || $filtre === 'editions') {
     verifier(
         'le test ne laisse aucune trace',
         (int) db_value('SELECT COUNT(*) FROM documents WHERE id = ?', [$idPhoto], 0) === 0
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Comptes « personne » : identifiants, liste collée, droits, mot de passe
+// ---------------------------------------------------------------------------
+if ($filtre === '' || $filtre === 'comptes') {
+    echo "Comptes de la famille (personnes)\n";
+
+    // 1. Fabrication des identifiants.
+    verifier(
+        'identifiant : accents, majuscules et espace → elise.martin',
+        compte_identifiant_base('Élise', 'Martin') === 'elise.martin',
+        'obtenu : ' . compte_identifiant_base('Élise', 'Martin')
+    );
+    verifier(
+        'identifiant : prénom composé et nom en deux mots → jean-paul.legall',
+        compte_identifiant_base('Jean-Paul', 'Le Gall') === 'jean-paul.legall',
+        'obtenu : ' . compte_identifiant_base('Jean-Paul', 'Le Gall')
+    );
+    verifier(
+        'identifiant : apostrophe retirée → fatou.ndiaye',
+        compte_identifiant_base('Fatou', "N'Diaye") === 'fatou.ndiaye',
+        'obtenu : ' . compte_identifiant_base('Fatou', "N'Diaye")
+    );
+    verifier(
+        'identifiant : cédille et accent grave → francois.lefevre',
+        compte_identifiant_base('François', 'Lefèvre') === 'francois.lefevre',
+        'obtenu : ' . compte_identifiant_base('François', 'Lefèvre')
+    );
+    $identifiantLong = compte_identifiant_base('Anne-Marie', 'de La Rochefoucauld Montmorency');
+    verifier(
+        'identifiant : un nom très long est coupé à 30 caractères et reste valide',
+        mb_strlen($identifiantLong) <= 30 && compte_identifiant_valide($identifiantLong),
+        'obtenu : ' . $identifiantLong . ' (' . mb_strlen($identifiantLong) . ' caractères)'
+    );
+    verifier(
+        'identifiant : la règle refuse un point au début, une majuscule ou un accent',
+        !compte_identifiant_valide('.elise')
+            && !compte_identifiant_valide('Elise.martin')
+            && !compte_identifiant_valide('élise.martin')
+    );
+
+    // 2. Analyse d'une liste collée (aucune écriture en base).
+    $liste = compte_analyser_liste("Martin;Élise\nPaul Durand\nLe Gall Jean-Paul\n\nsolo\nJean Paul Martin\n   \n");
+    verifier(
+        'liste : les lignes vides sont ignorées',
+        count($liste['lignes']) === 5,
+        'obtenu : ' . count($liste['lignes']) . ' ligne(s)'
+    );
+    verifier(
+        'liste : « Nom;Prénom » est compris sans ambiguïté',
+        $liste['lignes'][0]['nom'] === 'Martin'
+            && $liste['lignes'][0]['prenom'] === 'Élise'
+            && $liste['lignes'][0]['erreur'] === '',
+        json_encode($liste['lignes'][0], JSON_UNESCAPED_UNICODE)
+    );
+    verifier(
+        'liste : « Prénom Nom » sur deux mots est accepté avec une remarque',
+        $liste['lignes'][1]['prenom'] === 'Paul'
+            && $liste['lignes'][1]['nom'] === 'Durand'
+            && $liste['lignes'][1]['remarque'] !== '',
+        json_encode($liste['lignes'][1], JSON_UNESCAPED_UNICODE)
+    );
+    verifier(
+        'liste : un nom en plusieurs mots sans point-virgule est refusé',
+        $liste['lignes'][2]['erreur'] !== '',
+        json_encode($liste['lignes'][2], JSON_UNESCAPED_UNICODE)
+    );
+    verifier(
+        'liste : une ligne d’un seul mot est refusée',
+        $liste['lignes'][3]['erreur'] !== ''
+    );
+    verifier(
+        'liste : trois mots sans point-virgule sont refusés (ambiguïté)',
+        $liste['lignes'][4]['erreur'] !== ''
+    );
+
+    $tropLongue = compte_analyser_liste(implode("\n", array_fill(0, 105, 'Martin;Élise')));
+    verifier(
+        'liste : au-delà de 100 lignes, l’envoi est refusé',
+        count($tropLongue['lignes']) <= 100 && $tropLongue['erreurs'] !== [],
+        count($tropLongue['lignes']) . ' ligne(s), erreurs : ' . json_encode($tropLongue['erreurs'])
+    );
+
+    // 3. Tout ce qui touche à la base, dans une transaction annulée.
+    $basePrete = (int) db_value(
+        "SELECT COUNT(*) FROM pragma_table_info('accounts') WHERE name = 'account_type'",
+        [],
+        0
+    ) === 1;
+
+    if (!$basePrete) {
+        echo "  (migration 008 non appliquée : contrôles de comptes ignorés)\n";
+    } else {
+        $resultats = null;
+        $avant     = [
+            'comptes'  => (int) db_value("SELECT COUNT(*) FROM accounts WHERE username LIKE 'elise.martin%' OR username IN ('paul.durand', 'ZZTEST')", [], 0),
+            'branches' => (int) db_value("SELECT COUNT(*) FROM branches WHERE code LIKE 'ZZ%'", [], 0),
+        ];
+
+        try {
+            db_transaction(static function () use (&$resultats): void {
+                $now = time();
+
+                // On part d'une table propre : les lignes d'un essai précédent
+                // (ou d'une base de démonstration) sont retirées, et reviendront
+                // avec l'annulation de la transaction.
+                db_exec("DELETE FROM accounts WHERE username LIKE 'elise.martin%' OR username IN ('paul.durand', 'ZZTEST')");
+                db_exec("DELETE FROM branches WHERE code LIKE 'ZZ%'");
+
+                // Deux branches d'essai : une simple, une qui « voit tout ».
+                $brancheA = db_insert('branches', [
+                    'code' => 'ZZTEST', 'name' => 'Branche d’essai', 'description' => null,
+                    'see_all' => 0, 'is_active' => 1, 'created_at' => $now, 'updated_at' => $now,
+                ]);
+                $brancheB = db_insert('branches', [
+                    'code' => 'ZZAUTRE', 'name' => 'Autre branche d’essai', 'description' => null,
+                    'see_all' => 0, 'is_active' => 1, 'created_at' => $now, 'updated_at' => $now,
+                ]);
+
+                // 3 a. Création d'une personne : mot de passe généré, haché.
+                $creation = comptes_creer([[
+                    'nom'         => 'Martin',
+                    'prenom'      => 'Élise',
+                    'identifiant' => 'elise.martin',
+                    'branche'     => $brancheA,
+                    'see_all'     => false,
+                ]], 0);
+
+                $compte   = $creation['crees'][0] ?? null;
+                if ($compte === null) {
+                    throw new RuntimeException('création impossible : ' . implode(' / ', $creation['erreurs']));
+                }
+                $motDePasse = (string) ($compte['mot_de_passe'] ?? '');
+                $ligne    = $compte !== null ? db_one('SELECT * FROM accounts WHERE id = ?', [(int) $compte['id']]) : null;
+
+                // 3 b. Un second compte du même nom : l'identifiant reçoit « 2 ».
+                $libre = compte_identifiant_libre(compte_identifiant_base('Élise', 'Martin'));
+
+                // 3 c. Doublon nom + prénom + branche.
+                $doublon = compte_doublon('Martin', 'Élise', $brancheA);
+                $pasDoublonAutreBranche = compte_doublon('Martin', 'Élise', $brancheB);
+
+                // 3 d. Droits du compte personnel, branché sur la session.
+                $_SESSION['account_id'] = (int) ($compte['id'] ?? 0);
+                $droits = [
+                    'branches'   => accessible_branch_ids(),
+                    'public'     => can_view('public'),
+                    'famille'    => can_view('famille'),
+                    'sienne'     => can_view('branches', [$brancheA]),
+                    'autre'      => can_view('branches', [$brancheB]),
+                    'prive'      => can_view('prive'),
+                    'admin'      => is_admin(),
+                    'voit_tout'  => can_see_all(),
+                    'signature'  => tchat_signature([
+                        'role'        => 'famille',
+                        'account_type' => 'personne',
+                        'first_name'  => 'Élise',
+                        'username'    => 'elise.martin',
+                        'branch_code' => 'ZZTEST',
+                    ]),
+                ];
+
+                // 3 e. « Voit toutes les branches » propre à la personne.
+                $creationLarge = comptes_creer([[
+                    'nom'         => 'Durand',
+                    'prenom'      => 'Paul',
+                    'identifiant' => 'paul.durand',
+                    'branche'     => $brancheB,
+                    'see_all'     => true,
+                ]], 0);
+                $compteLarge = $creationLarge['crees'][0] ?? null;
+                $_SESSION['account_id'] = (int) ($compteLarge['id'] ?? 0);
+                $droitsLarge = [
+                    'branches'  => accessible_branch_ids(),
+                    'autre'     => can_view('branches', [$brancheA]),
+                    'voit_tout' => can_see_all(),
+                ];
+
+                // 3 f. Un compte de branche garde son fonctionnement.
+                $compteBranche = db_insert('accounts', [
+                    'username' => 'ZZTEST', 'display_name' => 'Branche d’essai',
+                    'password_hash' => password_make('MotDePasseEssai123'),
+                    'role' => 'famille', 'branch_id' => $brancheA, 'is_active' => 1,
+                    'account_type' => 'branche', 'created_at' => $now, 'updated_at' => $now,
+                ]);
+                $_SESSION['account_id'] = $compteBranche;
+                $_SESSION['tchat_prenom'] = 'Jean';
+                $droitsBranche = [
+                    'branches'  => accessible_branch_ids(),
+                    'signature' => tchat_signature([
+                        'role'         => 'famille',
+                        'account_type' => 'branche',
+                        'username'     => 'ZZTEST',
+                        'branch_code'  => 'ZZTEST',
+                    ]),
+                    'sans_prenom' => (function (): string {
+                        $ancien = $_SESSION['tchat_prenom'] ?? '';
+                        unset($_SESSION['tchat_prenom']);
+                        $vide = tchat_signature([
+                            'role' => 'famille', 'account_type' => 'branche', 'branch_code' => 'ZZTEST',
+                        ]);
+                        $_SESSION['tchat_prenom'] = $ancien;
+                        return $vide;
+                    })(),
+                ];
+
+                // 3 g. Désactivation : connexion refusée, session coupée.
+                db_exec('UPDATE accounts SET is_active = 0 WHERE id = ?', [(int) ($compte['id'] ?? 0)]);
+                $_SESSION['account_id'] = (int) ($compte['id'] ?? 0);
+                $desactive = [
+                    'connexion' => account_can_login(db_one('SELECT a.*, b.is_active AS branch_active FROM accounts a LEFT JOIN branches b ON b.id = a.branch_id WHERE a.id = ?', [(int) ($compte['id'] ?? 0)])),
+                    'session'   => current_account(),
+                ];
+                db_exec('UPDATE accounts SET is_active = 1 WHERE id = ?', [(int) ($compte['id'] ?? 0)]);
+
+                // 3 h. Réinitialisation : l'ancien ne marche plus, le nouveau oui.
+                $nouveauMotDePasse = password_generate();
+                db_update('accounts', (int) ($compte['id'] ?? 0), [
+                    'password_hash' => password_make($nouveauMotDePasse),
+                    'updated_at'    => time(),
+                ]);
+                $hachageApres = (string) db_value('SELECT password_hash FROM accounts WHERE id = ?', [(int) ($compte['id'] ?? 0)], '');
+                $reinitialisation = [
+                    'ancien'  => password_check($motDePasse, $hachageApres),
+                    'nouveau' => password_check($nouveauMotDePasse, $hachageApres),
+                ];
+
+                // 3 i. Changement de mot de passe par la personne elle-même.
+                $compteJour = db_one('SELECT * FROM accounts WHERE id = ?', [(int) ($compte['id'] ?? 0)]);
+                $refusAncien = mot_de_passe_changer($compteJour, 'mauvais-mot-de-passe', 'UnePhraseSolide2026', 'UnePhraseSolide2026');
+                $refusCourt  = mot_de_passe_changer($compteJour, $nouveauMotDePasse, 'court', 'court');
+                $refusIdentifiant = mot_de_passe_changer($compteJour, $nouveauMotDePasse, 'elise.martin', 'elise.martin');
+                $refusConfirmation = mot_de_passe_changer($compteJour, $nouveauMotDePasse, 'UnePhraseSolide2026', 'AutrePhraseSolide2026');
+                $accepte = mot_de_passe_changer($compteJour, $nouveauMotDePasse, 'UnePhraseSolide2026', 'UnePhraseSolide2026');
+                $hachageFinal = (string) db_value('SELECT password_hash FROM accounts WHERE id = ?', [(int) ($compte['id'] ?? 0)], '');
+
+                $resultats = [
+                    'brancheA'        => $brancheA,
+                    'brancheB'        => $brancheB,
+                    'compte'          => $compte,
+                    'ligne'           => $ligne,
+                    'motDePasse'      => $motDePasse,
+                    'libre'           => $libre,
+                    'doublon'         => $doublon,
+                    'pasDoublonAutre' => $pasDoublonAutreBranche,
+                    'droits'          => $droits,
+                    'droitsLarge'     => $droitsLarge,
+                    'droitsBranche'   => $droitsBranche,
+                    'desactive'       => $desactive,
+                    'reinitialisation' => $reinitialisation,
+                    'refusAncien'     => $refusAncien,
+                    'refusCourt'      => $refusCourt,
+                    'refusIdentifiant' => $refusIdentifiant,
+                    'refusConfirmation' => $refusConfirmation,
+                    'accepte'         => $accepte,
+                    'motDePasseChange' => password_check('UnePhraseSolide2026', $hachageFinal),
+                    'rechercheMaj'    => find_account_by_username('ELISE.MARTIN'),
+                ];
+
+                // On annule tout : la base doit rester intacte.
+                throw new RuntimeException('fin du test, annulation');
+            });
+        } catch (RuntimeException $e) {
+            if ($e->getMessage() !== 'fin du test, annulation') {
+                throw $e;
+            }
+        }
+
+        // La session d'essai ne doit pas rester accrochée à un compte annulé.
+        unset($_SESSION['account_id'], $_SESSION['tchat_prenom']);
+
+        $ok = static fn (mixed $valeur): bool => is_array($resultats);
+
+        verifier(
+            'création : le compte est bien enregistré, avec son nom et son prénom',
+            $ok($resultats) && $resultats['ligne'] !== null
+                && $resultats['ligne']['account_type'] === 'personne'
+                && $resultats['ligne']['first_name'] === 'Élise'
+                && $resultats['ligne']['last_name'] === 'Martin',
+            $ok($resultats) ? json_encode($resultats['ligne'], JSON_UNESCAPED_UNICODE) : 'aucun résultat'
+        );
+        verifier(
+            'création : le nom affiché est le prénom (« Bonjour Élise »)',
+            $ok($resultats) && ($resultats['ligne']['display_name'] ?? '') === 'Élise'
+        );
+        verifier(
+            'création : seul le hachage est stocké, le mot de passe n’apparaît nulle part en clair',
+            $ok($resultats)
+                && $resultats['motDePasse'] !== ''
+                && ($resultats['ligne']['password_hash'] ?? '') !== $resultats['motDePasse']
+                && str_starts_with((string) ($resultats['ligne']['password_hash'] ?? ''), '$')
+                && password_check($resultats['motDePasse'], (string) ($resultats['ligne']['password_hash'] ?? ''))
+                && (int) db_value('SELECT COUNT(*) FROM accounts WHERE password_hash LIKE ?', ['%' . $resultats['motDePasse'] . '%'], 0) === 0,
+            'hachage : ' . substr((string) ($resultats['ligne']['password_hash'] ?? ''), 0, 12) . '…'
+        );
+        verifier(
+            'identifiant : une personne déjà prise reçoit le numéro suivant (elise.martin2)',
+            $ok($resultats) && $resultats['libre'] === 'elise.martin2',
+            $ok($resultats) ? $resultats['libre'] : ''
+        );
+        verifier(
+            'doublon : même nom, même prénom et même branche signalés',
+            $ok($resultats) && is_array($resultats['doublon'])
+        );
+        verifier(
+            'doublon : un homonyme d’une autre branche n’est pas un doublon',
+            $ok($resultats) && $resultats['pasDoublonAutre'] === null
+        );
+        verifier(
+            'droits : la personne ne voit que les branches auxquelles elle a droit',
+            $ok($resultats) && $resultats['droits']['branches'] === [$resultats['brancheA']],
+            $ok($resultats) ? json_encode($resultats['droits']['branches']) : ''
+        );
+        verifier(
+            'droits : public, familles et sa branche sont visibles ; les autres branches et le privé non',
+            $ok($resultats)
+                && $resultats['droits']['public'] === true
+                && $resultats['droits']['famille'] === true
+                && $resultats['droits']['sienne'] === true
+                && $resultats['droits']['autre'] === false
+                && $resultats['droits']['prive'] === false,
+            $ok($resultats) ? json_encode($resultats['droits']) : ''
+        );
+        verifier(
+            'droits : un compte personnel n’est pas administrateur',
+            $ok($resultats) && $resultats['droits']['admin'] === false
+        );
+        verifier(
+            '« voit toutes les branches » : la personne voit alors les autres branches',
+            $ok($resultats)
+                && $resultats['droitsLarge']['voit_tout'] === true
+                && $resultats['droitsLarge']['autre'] === true
+                && count($resultats['droitsLarge']['branches']) > 1,
+            $ok($resultats) ? json_encode($resultats['droitsLarge']) : ''
+        );
+        verifier(
+            'compte de branche : il continue de voir les autres branches s’il en a le droit',
+            $ok($resultats) && is_array($resultats['droitsBranche']['branches'])
+        );
+        verifier(
+            'tchat : une personne signe automatiquement « BRANCHE/Prénom »',
+            $ok($resultats) && $resultats['droits']['signature'] === 'ZZTEST/Élise',
+            $ok($resultats) ? $resultats['droits']['signature'] : ''
+        );
+        verifier(
+            'tchat : un compte de branche demande toujours son prénom',
+            $ok($resultats)
+                && $resultats['droitsBranche']['signature'] === 'ZZTEST/Jean'
+                && $resultats['droitsBranche']['sans_prenom'] === '',
+            $ok($resultats) ? json_encode($resultats['droitsBranche']) : ''
+        );
+        verifier(
+            'connexion : l’identifiant est retrouvé sans tenir compte des majuscules',
+            $ok($resultats)
+                && ($resultats['rechercheMaj']['id'] ?? 0) === ($resultats['compte']['id'] ?? -1),
+            $ok($resultats) ? json_encode($resultats['rechercheMaj']['username'] ?? null) : ''
+        );
+        verifier(
+            'désactivation : le compte ne peut plus se connecter',
+            $ok($resultats) && $resultats['desactive']['connexion'] === false
+        );
+        verifier(
+            'désactivation : la session en cours est coupée à la requête suivante',
+            $ok($resultats) && $resultats['desactive']['session'] === null
+        );
+        verifier(
+            'réinitialisation : l’ancien mot de passe ne fonctionne plus, le nouveau oui',
+            $ok($resultats)
+                && $resultats['reinitialisation']['ancien'] === false
+                && $resultats['reinitialisation']['nouveau'] === true,
+            $ok($resultats) ? json_encode($resultats['reinitialisation']) : ''
+        );
+        verifier(
+            'changement de mot de passe : l’ancien mot de passe incorrect est refusé',
+            $ok($resultats) && $resultats['refusAncien'] !== []
+        );
+        verifier(
+            'changement de mot de passe : moins de 10 caractères est refusé',
+            $ok($resultats) && $resultats['refusCourt'] !== []
+        );
+        verifier(
+            'changement de mot de passe : identique à l’identifiant refusé',
+            $ok($resultats) && $resultats['refusIdentifiant'] !== []
+        );
+        verifier(
+            'changement de mot de passe : confirmation différente refusée',
+            $ok($resultats) && $resultats['refusConfirmation'] !== []
+        );
+        verifier(
+            'changement de mot de passe : accepté quand tout est correct',
+            $ok($resultats) && $resultats['accepte'] === [] && $resultats['motDePasseChange'] === true,
+            $ok($resultats) ? json_encode($resultats['accepte']) : ''
+        );
+        verifier(
+            'les essais de comptes ne laissent aucune trace',
+            (int) db_value("SELECT COUNT(*) FROM accounts WHERE username LIKE 'elise.martin%' OR username IN ('paul.durand', 'ZZTEST')", [], 0) === $avant['comptes']
+                && (int) db_value("SELECT COUNT(*) FROM branches WHERE code LIKE 'ZZ%'", [], 0) === $avant['branches']
+        );
+    }
+
+    // 4. CSRF : un jeton absent, vide ou faux est refusé.
+    verifier('CSRF : le jeton de la session est accepté', csrf_valide(csrf_token()));
+    verifier(
+        'CSRF : un jeton absent, faux ou d’un autre type est refusé',
+        !csrf_valide('') && !csrf_valide(null) && !csrf_valide('faux-jeton') && !csrf_valide(['x'])
+    );
+
+    // 5. Les pages d'administration des comptes exigent un administrateur.
+    $codeControleur = (string) file_get_contents(dirname(__DIR__) . '/controllers/admin_comptes.php');
+    $sansGarde = [];
+    foreach (preg_split('/\nfunction\s+/', $codeControleur) ?: [] as $index => $morceau) {
+        if ($index === 0 || preg_match('/^admin_compte\w*\s*\(/', $morceau) !== 1) {
+            continue;
+        }
+        if (!str_contains($morceau, 'require_admin();')) {
+            $sansGarde[] = strtok($morceau, '(');
+        }
+    }
+    verifier(
+        'accès : chaque page d’administration des comptes commence par require_admin()',
+        $sansGarde === [],
+        'sans garde : ' . implode(', ', $sansGarde)
+    );
+
+    $codePost = $codeControleur;
+    verifier(
+        'accès : chaque action qui modifie un compte vérifie le jeton CSRF',
+        substr_count($codePost, 'csrf_check();') >= 6,
+        'csrf_check() trouvé ' . substr_count($codePost, 'csrf_check();') . ' fois'
     );
 }
 

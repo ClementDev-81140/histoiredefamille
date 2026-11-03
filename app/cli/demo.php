@@ -92,6 +92,56 @@ foreach ($branchesToCreate as $spec) {
 }
 
 // ---------------------------------------------------------------------------
+// Comptes « personne » (démonstration)
+// ---------------------------------------------------------------------------
+// Deux personnes de la branche Martin et une de la branche Durand : de quoi
+// voir la liste des comptes, l'écran d'aperçu et « Bonjour Élise ».
+if ((int) db_value("SELECT COUNT(*) FROM accounts WHERE account_type = 'personne'", [], 0) === 0) {
+    $personnes = [
+        ['prenom' => 'Élise', 'nom' => 'Martin', 'branche' => 'MARTIN', 'see_all' => 0],
+        ['prenom' => 'Jean-Paul', 'nom' => 'Le Gall', 'branche' => 'MARTIN', 'see_all' => 1],
+        ['prenom' => 'Paul', 'nom' => 'Durand', 'branche' => 'DURAND', 'see_all' => 0],
+    ];
+
+    $reserves = [];
+    foreach ($personnes as $personne) {
+        if (!isset($branchIds[$personne['branche']])) {
+            continue;
+        }
+
+        $identifiant = compte_identifiant_libre(
+            compte_identifiant_base($personne['prenom'], $personne['nom']),
+            0,
+            $reserves
+        );
+        $reserves[] = $identifiant;
+
+        $password = password_generate();
+        db_insert('accounts', [
+            'username'      => $identifiant,
+            'display_name'  => $personne['prenom'],
+            'password_hash' => password_make($password),
+            'role'          => 'famille',
+            'branch_id'     => $branchIds[$personne['branche']],
+            'is_active'     => 1,
+            'account_type'  => 'personne',
+            'first_name'    => $personne['prenom'],
+            'last_name'     => $personne['nom'],
+            'see_all'       => $personne['see_all'],
+            'created_at'    => $now,
+            'updated_at'    => $now,
+        ]);
+
+        $passwords[] = [
+            'username' => $identifiant,
+            'password' => $password,
+            'name'     => $personne['prenom'] . ' ' . $personne['nom'] . ' (personne)',
+        ];
+        echo "  · personne " . $identifiant . " créée\n";
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Catégories
 // ---------------------------------------------------------------------------
 $categoryIds = [];
