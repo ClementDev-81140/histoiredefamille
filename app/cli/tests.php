@@ -691,7 +691,12 @@ if ($filtre === '' || $filtre === 'journal') {
         );
 
         // 6. Seuil d'échecs : dix en une heure ne suffisent pas, onze déclenchent.
+        //    On efface d'abord tout ce qui est récent (y compris de vraies
+        //    connexions ratées dans l'heure) : le comptage part de zéro, sinon
+        //    deux essais échouent selon ce que la base a vécu dans l'heure.
+        //    Tout est annulé à la fin, rien n'est perdu.
         db_exec('DELETE FROM login_log WHERE id > ?', [$marqueur]);
+        db_exec('DELETE FROM login_log WHERE created_at > ?', [time() - 3600]);
         $ecrireReglage('journal_alertes_vues', (string) (time() - 1));
         for ($i = 1; $i <= 10; $i++) {
             journal_enregistrer('seuil-essai-tests', '203.0.113.' . (20 + $i), false, 'mot de passe incorrect');
