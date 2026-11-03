@@ -3,6 +3,15 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.10.1] — 2026-11-03
+
+### Finitions des écrans « Comptes »
+
+- Les messages à copier (écran « Comptes créés ») sont lisibles : encre pleine.
+- Le tableau d'aperçu avant création n'est plus coupé à droite : la colonne
+  « Remarque » passe à la ligne.
+- Les champs Nom et Prénom sont alignés.
+
 ## [1.10.0] — 2026-11-03
 
 ### Les comptes de la famille
