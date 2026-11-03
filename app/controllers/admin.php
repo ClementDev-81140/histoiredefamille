@@ -130,6 +130,11 @@ function admin_settings(): void
             'subtitle'    => site_setting('subtitle'),
             'description' => site_setting('description'),
             'contact'     => site_setting('contact'),
+            // Adresse publique : elle sert dans les messages d'accès envoyés
+            // aux personnes. Vide, on reprend celle du fichier de configuration.
+            'adresse'     => site_setting('adresse') !== ''
+                ? site_setting('adresse')
+                : rtrim((string) config('site.url', ''), '/'),
             'devise'      => site_setting('devise'),
             'fondee'      => site_setting('fondee'),
             'tchat_actif' => tchat_actif() ? '1' : '0',
@@ -149,6 +154,7 @@ function admin_settings_save(): void
         'subtitle'    => post('subtitle'),
         'description' => post('description'),
         'contact'     => post('contact'),
+        'adresse'     => rtrim(post('adresse'), '/'),
         // Ligne de conduite du journal (facultatif).
         'devise'      => post('devise'),
         'fondee'      => post('fondee'),
@@ -166,6 +172,13 @@ function admin_settings_save(): void
     }
     if ($values['contact'] !== '' && !filter_var($values['contact'], FILTER_VALIDATE_EMAIL)) {
         $errors[] = 'L’adresse de contact n’est pas valide.';
+    }
+    if ($values['adresse'] !== '') {
+        $parties = parse_url($values['adresse']);
+        $schema  = is_array($parties) ? strtolower((string) ($parties['scheme'] ?? '')) : '';
+        if (!in_array($schema, ['http', 'https'], true) || empty($parties['host'])) {
+            $errors[] = 'L’adresse publique doit commencer par https:// (par exemple https://histoiredefamille.eu).';
+        }
     }
     if (mb_strlen($values['devise']) > 120) {
         $errors[] = 'La devise est trop longue (120 caractères maximum).';
@@ -192,55 +205,4 @@ function admin_settings_save(): void
     );
     flash('succes', 'Les réglages ont été enregistrés.');
     redirect('/admin/reglages');
-}
-
-/** Compte personnel de l'administrateur : changement de mot de passe. */
-function admin_account(): void
-{
-    require_admin();
-
-    render('admin/mon_compte', [
-        'titre'   => 'Mon compte',
-        'erreurs' => form_errors(),
-        'account' => current_account(),
-    ], 'layout_admin');
-}
-
-/** Traitement du changement de mot de passe personnel. */
-function admin_account_save(): void
-{
-    require_admin();
-    csrf_check();
-
-    $account  = current_account();
-    $current  = (string) ($_POST['current_password'] ?? '');
-    $new      = (string) ($_POST['new_password'] ?? '');
-    $confirm  = (string) ($_POST['confirm_password'] ?? '');
-
-    $errors = [];
-    if (!password_check($current, (string) $account['password_hash'])) {
-        $errors[] = 'Le mot de passe actuel est incorrect.';
-    }
-    if (mb_strlen($new) < 10) {
-        $errors[] = 'Le nouveau mot de passe doit contenir au moins 10 caractères.';
-    }
-    if ($new !== $confirm) {
-        $errors[] = 'Les deux nouveaux mots de passe ne sont pas identiques.';
-    }
-    if ($new !== '' && $new === $current) {
-        $errors[] = 'Le nouveau mot de passe doit être différent de l’ancien.';
-    }
-
-    if ($errors !== []) {
-        form_fail($errors, [], '/admin/mon-compte');
-    }
-
-    db_update('accounts', (int) $account['id'], [
-        'password_hash' => password_make($new),
-        'updated_at'    => time(),
-    ]);
-
-    log_activity((int) $account['id'], 'mot_de_passe', 'Changement de son propre mot de passe');
-    flash('succes', 'Votre mot de passe a été modifié.');
-    redirect('/admin/mon-compte');
 }

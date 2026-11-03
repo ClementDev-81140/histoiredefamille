@@ -51,6 +51,17 @@ $val = static fn (string $key, string $default = ''): string => (string) old_val
     </div>
 
     <div class="champ">
+        <label for="adresse">Adresse publique du site</label>
+        <input type="url" id="adresse" name="adresse" maxlength="190"
+               placeholder="https://histoiredefamille.eu" value="<?= e($val('adresse')) ?>">
+        <p class="aide">
+            Elle sert dans les messages d’accès envoyés aux personnes
+            (« Adresse : https://… »). Sans valeur, l’adresse du fichier
+            <code>config.local.php</code> est utilisée.
+        </p>
+    </div>
+
+    <div class="champ">
         <label for="contact">Adresse de contact (facultatif)</label>
         <input type="email" id="contact" name="contact" maxlength="190" value="<?= e($val('contact')) ?>">
         <p class="aide">Utilisée uniquement pour indiquer à qui demander un accès.</p>
