@@ -71,6 +71,19 @@ function config_defaults(): array
             'backup_dir'   => '/mnt/sauvegarde/histoiredefamille',
             'backup_log'   => '/mnt/sauvegarde/histoiredefamille/journal-sauvegarde.log',
             'backup_state' => '/mnt/sauvegarde/histoiredefamille/dernier-etat.json',
+            'restore_state' => '/mnt/sauvegarde/histoiredefamille/derniere-restauration.json',
+            // Rotation : 7 copies quotidiennes, 4 hebdomadaires, 6 mensuelles.
+            'backup_daily'   => 7,
+            'backup_weekly'  => 4,
+            'backup_monthly' => 6,
+            // Marge libre exigée sur la clé avant de commencer (Mo).
+            'backup_min_free_mb' => 512,
+            // Refuse d'écrire si la clé n'est pas montée (carte SD protégée).
+            'backup_require_mount' => true,
+            // Alerte rouge de l'administration : sauvegarde trop ancienne,
+            // espace libre faible.
+            'backup_alert_days'    => 3,
+            'backup_alert_free_mb' => 512,
         ],
         'per_page' => 24,
     ];

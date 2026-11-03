@@ -6,13 +6,15 @@ trouve dans le [README principal](../README.md) ; ce fichier sert d'index.
 | Fichier | À quoi ça sert | Quand |
 |---|---|---|
 | [`montage-disques.md`](montage-disques.md) | monter le SSD (`/mnt/ssd`) et la clé USB (`/mnt/sauvegarde`) par UUID, avec `nofail` et les droits `www-data` | **avant** l'installation |
-| [`install.sh`](install.sh) | installe Apache + PHP, copie le site dans `/var/www`, prépare le stockage, applique les migrations, met en place le cron de sauvegarde | une fois, puis à chaque mise à jour |
+| [`install.sh`](install.sh) | installe Apache + PHP, copie le site dans `/var/www`, prépare le stockage, applique les migrations, installe le minuteur de sauvegarde | une fois, puis à chaque mise à jour |
 | [`apache/histoiredefamille.conf`](apache/histoiredefamille.conf) | VirtualHost Apache : racine web limitée à `public/`, blocage des fichiers sensibles, en-têtes de sécurité | copié par `install.sh` |
 | [`php/99-histoiredefamille.ini`](php/99-histoiredefamille.ini) | réglages PHP pour 1 Go de RAM : mémoire 128 Mo, envois 64 Mo, opcache 48 Mo | copié par `install.sh` |
 | [`cloudflared/config.yml`](cloudflared/config.yml) | tunnel Cloudflare : `histoiredefamille.eu` → `http://localhost:80`, aucun port ouvert | à l'étape « mise en ligne » |
 | [`cloudflared/cloudflared.service`](cloudflared/cloudflared.service) | service systemd du tunnel (si `cloudflared service install` échoue) | facultatif |
-| [`backup.sh`](backup.sh) | sauvegarde nocturne : `sqlite3 .backup`, 14 versions, `rsync` des fichiers, journal, alerte, test de restauration | toutes les nuits à 3 h 15 |
-| [`crontab.example`](crontab.example) | contenu de `/etc/cron.d/histoiredefamille` (sauvegarde, test hebdomadaire, maintenance) | copié par `install.sh` |
+| [`systemd/histoiredefamille-sauvegarde.timer`](systemd/histoiredefamille-sauvegarde.timer) | minuteur systemd : sauvegarde tous les jours à **3 h 30**, rattrapée après une coupure | installé et activé par `install.sh` |
+| [`systemd/histoiredefamille-sauvegarde.service`](systemd/histoiredefamille-sauvegarde.service) | lance `php app/cli/sauvegarde.php` en tant que `www-data`, compte rendu dans `journalctl` | installé par `install.sh` |
+| [`backup.sh`](backup.sh) | ancien point d'entrée, conservé : appelle la commande `app/cli/sauvegarde.php` | uniquement pour les installations anciennes |
+| [`crontab.example`](crontab.example) | contenu de `/etc/cron.d/histoiredefamille` (maintenance hebdomadaire) | copié par `install.sh` |
 | [`dossier-arrivee.md`](dossier-arrivee.md) | convertir et déposer les vidéos par le réseau local (SFTP ou Samba), puis les importer | à chaque nouveau film |
 
 ## Ordre des opérations
@@ -38,6 +40,10 @@ sudo -u www-data php /var/www/histoiredefamille/app/cli/create-admin.php
 
 # 6. vérifier
 curl -I http://localhost/
+
+# 7. première sauvegarde + minuteur
+sudo -u www-data php /var/www/histoiredefamille/app/cli/sauvegarde.php
+systemctl list-timers histoiredefamille-sauvegarde.timer
 ```
 
 Puis la mise en ligne (tunnel Cloudflare) : § 5 du README principal.
@@ -46,12 +52,13 @@ Puis la mise en ligne (tunnel Cloudflare) : § 5 du README principal.
 
 ```bash
 # lancer une sauvegarde maintenant
-sudo -u www-data /var/www/histoiredefamille/deploy/backup.sh
+sudo -u www-data php /var/www/histoiredefamille/app/cli/sauvegarde.php
 
-# tester la dernière sauvegarde (ne modifie rien)
-sudo -u www-data /var/www/histoiredefamille/deploy/backup.sh --verifier
+# voir le minuteur et le compte rendu de la dernière nuit
+systemctl list-timers histoiredefamille-sauvegarde.timer
+journalctl -u histoiredefamille-sauvegarde.service -n 30
 
-# lire le journal
+# lire le journal de sauvegarde
 sudo tail -30 /mnt/sauvegarde/histoiredefamille/journal-sauvegarde.log
 ```
 

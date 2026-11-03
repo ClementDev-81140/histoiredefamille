@@ -2411,6 +2411,15 @@ if ($filtre === '' || $filtre === 'composition') {
     );
 }
 
+// ---------------------------------------------------------------------------
+// Lots « mise en ligne » (sauvegarde, restauration, matrice, vérification)
+// ---------------------------------------------------------------------------
+require_once __DIR__ . '/tests_entretien.php';
+
+if ($filtre === '' || $filtre === 'sauvegarde') {
+    tests_sauvegarde();
+}
+
 $total = $reussis + count($echecs);
 echo "\n", $total, " test(s) — ", $reussis, " ok, ", count($echecs), " échec(s).\n";
 

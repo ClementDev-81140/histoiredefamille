@@ -418,10 +418,12 @@ histoiredefamille/
 │   ├── views/               gabarits PHP (public, famille, admin)
 │   ├── migrations/          fichiers SQL numérotés
 │   │                        (001_init … 009_articles_modele)
-│   └── cli/                 commandes : migrate, create-admin, demo, maintenance, tests
+│   └── cli/                 commandes : migrate, create-admin, demo, maintenance,
+│                            sauvegarde, tests
 ├── deploy/
 │   ├── install.sh           installation complète sur le Pi
-│   ├── backup.sh            sauvegarde quotidienne + test de restauration
+│   ├── systemd/             minuteur de sauvegarde (tous les jours à 3 h 30)
+│   ├── backup.sh            ancien point d'entrée (appelle la commande PHP)
 │   ├── crontab.example      tâches planifiées
 │   ├── apache/              VirtualHost Apache
 │   ├── php/                 réglages PHP pour le Pi
@@ -596,7 +598,8 @@ Ce script :
 6. applique les réglages PHP adaptés au Pi (mémoire, envois, opcache) ;
 7. active le VirtualHost sur le port 80 ;
 8. crée la base SQLite et applique les migrations ;
-9. installe la sauvegarde quotidienne dans `/etc/cron.d/histoiredefamille`.
+9. installe et active le minuteur de sauvegarde (tous les jours à 3 h 30) ;
+10. garde la maintenance hebdomadaire dans `/etc/cron.d/histoiredefamille`.
 
 ### 4.5 Adapter la configuration
 
@@ -1256,47 +1259,81 @@ dans la base ni dans les dossiers.
 
 ### 8.1 Ce qui est sauvegardé
 
-Chaque nuit à 3 h 15, `deploy/backup.sh` :
+Une seule commande fait tout :
 
-1. copie la base avec `sqlite3 .backup` — **jamais `cp`**, qui produirait un
-   fichier corrompu sur une base en cours d'utilisation ;
-2. conserve les **14 dernières copies** de la base (deux semaines) ;
-3. synchronise les fichiers (photos, vidéos, PDF) avec `rsync` : seuls les
-   nouveaux fichiers sont copiés, c'est rapide même avec 50 Go ;
-4. écrit un journal dans `/mnt/sauvegarde/histoiredefamille/journal-sauvegarde.log` ;
-5. écrit un fichier d'état lu par la page **État du site** ;
-6. signale les échecs (clé USB absente, espace insuffisant, base illisible).
+```bash
+sudo -u www-data php /var/www/histoiredefamille/app/cli/sauvegarde.php
+```
+
+Elle est lancée **automatiquement tous les jours à 3 h 30** par le minuteur
+systemd `histoiredefamille-sauvegarde.timer` (installé par `deploy/install.sh`).
+Vous pouvez la relancer à la main quand vous voulez : elle ne recopie que ce
+qui a changé.
+
+Ce qu'elle fait, dans l'ordre :
+
+1. **Vérifie que la clé USB est montée.** Si la clé est absente, elle s'arrête
+   et **n'écrit rien du tout** : sans cette précaution, la sauvegarde
+   atterrirait sur la carte SD et la remplirait.
+2. **Copie la base** avec l'API de SQLite (`VACUUM INTO`) : la copie est
+   cohérente même pendant que le site tourne — **jamais `cp`**, qui donnerait
+   un fichier abîmé. Le résultat est contrôlé (`PRAGMA integrity_check`) avant
+   d'être conservé.
+3. **Copie les fichiers** (photos, miniatures, vidéos, audio, PDF, dossier
+   `arrivee`) de façon incrémentale : seuls les fichiers nouveaux ou modifiés
+   sont réécrits. `tmp/` et `verrous/` sont ignorés (fichiers jetables).
+4. **Range la copie** : 7 sauvegardes **quotidiennes**, 4 **hebdomadaires**
+   (une par semaine) et 6 **mensuelles** (une par mois). Une sauvegarde en
+   cours est fabriquée dans un dossier temporaire puis déplacée d'un bloc :
+   l'ancienne reste intacte jusqu'au bout.
+5. **Écrit un journal** dans `/mnt/sauvegarde/histoiredefamille/journal-sauvegarde.log`
+   et un fichier d'état lu par la page **État du site**.
+6. **Affiche un résumé clair** (« Base : ok, 2,4 Mo ; fichiers : 312 copiés,
+   0 erreur ; durée 41 s ») et **termine en erreur** (code de sortie non nul)
+   si quelque chose n'a pas fonctionné, pour que systemd le signale.
+
+> **`config.local.php` n'est pas dans la sauvegarde.** Ce fichier contient les
+> chemins et les réglages de sécurité du site ; il ne change pas. Gardez-en une
+> copie **à part**, par exemple dans votre gestionnaire de mots de passe ou sur
+> une feuille imprimée. Sans lui, un nouveau Raspberry Pi ne saurait pas où
+> sont les données.
 
 > **La clé USB doit avoir une capacité supérieure au volume des données.**
 > Base + photos + vidéos doivent tenir dessus, avec de la marge. Pour 50 Go de
 > vidéos, prenez une clé de 64 Go minimum.
 
+Vérifier que le minuteur est bien en place :
+
+```bash
+systemctl list-timers histoiredefamille-sauvegarde.timer
+systemctl status histoiredefamille-sauvegarde.service
+journalctl -u histoiredefamille-sauvegarde.service -n 30
+```
+
+La dernière commande affiche le compte rendu de la dernière nuit.
+
 ### 8.2 Tester la sauvegarde (à faire une fois par mois)
 
-```bash
-sudo -u www-data /var/www/histoiredefamille/deploy/backup.sh --verifier
-```
+Le plus simple : ouvrir **Administration → État du site**. La page indique la
+date et le résultat de la dernière sauvegarde, l'espace libre sur la clé et sur
+le disque des données.
 
-Résultat attendu :
-
-```
-Test de restauration de : /mnt/sauvegarde/histoiredefamille/base/histoire-2026-10-25_0315.sqlite.gz
-  · intégrité SQLite : ok
-  · comptes : 6
-  · documents : 148
-  · personnes : 312
-Restauration vérifiée avec succès.
-```
-
-Cette commande ne modifie rien : elle décompresse la dernière copie dans un
-dossier temporaire, vérifie son intégrité et compte les lignes.
-
-Vérifier aussi que les fichiers sont bien copiés :
+En ligne de commande :
 
 ```bash
-ls /mnt/sauvegarde/histoiredefamille/base | tail -5
+# 1. lancer une sauvegarde et lire le résumé
+sudo -u www-data php /var/www/histoiredefamille/app/cli/sauvegarde.php
+
+# 2. regarder les fichiers produits
+ls -lh /mnt/sauvegarde/histoiredefamille/base | tail -5
+ls -lh /mnt/sauvegarde/histoiredefamille/hebdo /mnt/sauvegarde/histoiredefamille/mensuel
 du -sh /mnt/sauvegarde/histoiredefamille/fichiers
+
 ```
+
+Chaque archive porte la date et l'heure de son début : `histoire-2026-11-03_033000.sqlite.gz`.
+La page **État du site** rappelle aussi combien de copies sont conservées dans
+chaque dossier (quotidiennes, hebdomadaires, mensuelles).
 
 ### 8.3 Restaurer (en cas de perte du SSD ou de fausse manœuvre)
 
@@ -1335,25 +1372,29 @@ sudo systemctl start apache2
 
 ### 8.4 Alertes en cas d'échec
 
-Trois mécanismes, du plus simple au plus pratique :
+Deux mécanismes, tous les deux consultables sans ligne de commande :
 
-1. **Le journal** : `/mnt/sauvegarde/histoiredefamille/journal-sauvegarde.log`.
-2. **La page État du site** : un bandeau rouge apparaît sur le tableau de bord
-   si la dernière sauvegarde a échoué ou date de plus de deux jours.
-3. **Une notification HTTP** (facultatif) : si vous avez une adresse de webhook
-   (service de notifications, par exemple), ajoutez-la dans la tâche cron :
+1. **Un bandeau rouge en haut de l'administration** dès que la dernière
+   sauvegarde réussie date de **plus de 3 jours**, qu'elle est **en échec**, ou
+   que **la clé USB n'est pas branchée**. Le bandeau renvoie vers la page
+   « État du site ».
+2. **Le journal** : `/mnt/sauvegarde/histoiredefamille/journal-sauvegarde.log`,
+   recopié dans `journalctl -u histoiredefamille-sauvegarde.service`.
 
-```bash
-sudo nano /etc/cron.d/histoiredefamille
-```
+La page **État du site** donne le détail : date, résultat, taille de la base,
+nombre de fichiers copiés, espace libre sur la clé et sur le disque des
+données, nombre de copies conservées.
 
-```cron
-15 3 * * * www-data WEBHOOK_URL="https://exemple.test/alerte" /var/www/histoiredefamille/deploy/backup.sh >/dev/null 2>&1
-```
+### 8.5 Chiffrer la clé USB (facultatif)
 
-Le script envoie alors un court message en cas d'échec.
+Une clé perdue, c'est toute l'histoire de la famille lisible par un inconnu.
+Le chiffrement LUKS protège contre cela, mais **le mot de passe devient la clé
+de tout** : oublié, les sauvegardes sont perdues.
 
-### 8.5 Surveiller l'espace disque
+Avantages, risques et commandes : **[docs/chiffrement-cle-usb.md](docs/chiffrement-cle-usb.md)**.
+Ne chiffrez pas la clé si personne ne peut retrouver le mot de passe.
+
+### 8.6 Surveiller l'espace disque
 
 ```bash
 df -h /mnt/ssd /mnt/sauvegarde
@@ -1362,7 +1403,7 @@ du -sh /mnt/ssd/histoiredefamille/medias
 
 La page **État du site** affiche aussi l'espace libre du SSD.
 
-### 8.6 Repartir d'une base vierge (développement seulement)
+### 8.7 Repartir d'une base vierge (développement seulement)
 
 > ⚠️ Efface tous les documents, comptes et personnes.
 
@@ -1486,7 +1527,7 @@ Les dates sont converties au format international de la généalogie
 | Mot de passe de branche perdu | — | Administration → Branches → **Réinitialiser le mot de passe** |
 | Compte bloqué après 5 essais | protection anti-force brute | attendre 15 minutes, ou `sudo -u www-data sqlite3 /mnt/ssd/histoiredefamille/histoire.sqlite "DELETE FROM login_attempts;"` |
 | Page « Site momentanément indisponible » | Apache répond 503 (surcharge, redémarrage) ou PHP est arrêté | `sudo systemctl status apache2` ; la page est `public/maintenance.html`, modifiable librement |
-| Sauvegarde en échec | clé USB absente ou pleine | `df -h /mnt/sauvegarde`, rebrancher, relancer `sudo -u www-data /var/www/histoiredefamille/deploy/backup.sh` |
+| Sauvegarde en échec | clé USB absente ou pleine | `df -h /mnt/sauvegarde`, rebrancher, relancer `sudo -u www-data php /var/www/histoiredefamille/app/cli/sauvegarde.php` |
 | Le Pi ne démarre plus | disque monté dans `fstab` et absent | `nofail` doit être présent ; sinon démarrer sans le disque et corriger `/etc/fstab` |
 | Vidéo qui ne démarre pas | format non compatible | reconvertir en MP4 H.264 + AAC (§ 9) |
 

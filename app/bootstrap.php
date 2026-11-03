@@ -20,6 +20,7 @@ require_once __DIR__ . '/lib/security.php';
 require_once __DIR__ . '/lib/auth.php';
 require_once __DIR__ . '/lib/visibility.php';
 require_once __DIR__ . '/lib/storage.php';
+require_once __DIR__ . '/lib/sauvegarde.php';
 require_once __DIR__ . '/lib/images.php';
 require_once __DIR__ . '/lib/text.php';
 require_once __DIR__ . '/lib/stream.php';

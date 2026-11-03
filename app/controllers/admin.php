@@ -102,18 +102,39 @@ function admin_status(): void
         'free'     => storage_free_space(),
         'streams'  => stream_active_count(),
         'php'      => PHP_VERSION,
+        'alerte'   => sauvegarde_alerte(),
+        'sauvegarde' => [
+            'dossier'     => (string) config('maintenance.backup_dir'),
+            'libre_cle'   => sauvegarde_espace_libre((string) config('maintenance.backup_dir')),
+            'support'     => sauvegarde_support_ok(sauvegarde_options()),
+            'rotation'    => backup_rotation_compte((string) config('maintenance.backup_dir')),
+        ],
     ], 'layout_admin');
 }
 
-/** Lit l'état de la dernière sauvegarde (écrit par deploy/backup.sh). */
+/** Lit l'état de la dernière sauvegarde (écrit par app/cli/sauvegarde.php). */
 function backup_state(): ?array
 {
-    $file = (string) config('maintenance.backup_state');
-    if (!is_readable($file)) {
-        return null;
-    }
-    $json = json_decode((string) file_get_contents($file), true);
-    return is_array($json) ? $json : null;
+    return sauvegarde_etat_lire((string) config('maintenance.backup_state'));
+}
+
+/**
+ * Nombre de copies conservées, par dossier de rotation.
+ *
+ * @return array{quotidiennes: int, hebdomadaires: int, mensuelles: int}
+ */
+function backup_rotation_compte(string $dir): array
+{
+    $compter = static function (string $sous, string $motif) use ($dir): int {
+        $fichiers = glob(rtrim($dir, '/') . '/' . $sous . '/' . $motif);
+        return is_array($fichiers) ? count($fichiers) : 0;
+    };
+
+    return [
+        'quotidiennes'  => $compter('base', 'histoire-*.sqlite.gz'),
+        'hebdomadaires' => $compter('hebdo', 'histoire-*.sqlite.gz'),
+        'mensuelles'    => $compter('mensuel', 'histoire-*.sqlite.gz'),
+    ];
 }
 
 /** Réglages généraux du site. */

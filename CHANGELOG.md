@@ -3,6 +3,47 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.13.0] — 2026-11-03
+
+### Des sauvegardes fiables, tous les soirs à 3 h 30
+
+La sauvegarde devient une **commande unique**, testée, qui refuse de faire
+semblant :
+
+```bash
+sudo -u www-data php /var/www/histoiredefamille/app/cli/sauvegarde.php
+```
+
+- **Copie cohérente de la base** avec l'API de SQLite (`VACUUM INTO`), puis
+  contrôle d'intégrité (`PRAGMA integrity_check`) : la copie est bonne même
+  pendant que le site tourne. `cp` n'est jamais utilisé (fichier abîmé).
+- **Fichiers copiés de façon incrémentale** (photos, miniatures, vidéos, audio,
+  PDF, dossier `arrivée`) : seuls les nouveaux ou modifiés sont réécrits.
+  `tmp/` et `verrous/` sont ignorés, la base n'est pas copiée deux fois.
+- **Rien n'est écrit si la clé USB n'est pas montée** : la commande s'arrête,
+  l'explique en français simple et laisse la carte SD intacte.
+- **Rotation** : 7 sauvegardes quotidiennes, 4 hebdomadaires, 6 mensuelles.
+  Une sauvegarde en cours est préparée dans un dossier temporaire puis déplacée
+  d'un bloc : l'ancienne reste intacte jusqu'au bout.
+- **Minuteur systemd** installé par `deploy/install.sh`, tous les jours à
+  **3 h 30**, rattrapé si le Raspberry Pi était éteint (`Persistent=true`).
+  L'ancienne tâche cron de sauvegarde est retirée ; la maintenance du dimanche
+  reste. Compte rendu dans `journalctl -u histoiredefamille-sauvegarde.service`.
+- **Page « État du site » enrichie** : date et résultat de la dernière
+  sauvegarde, taille de la base, fichiers copiés/retirés/en erreur, durée,
+  espace libre sur la clé **et** sur le disque des données, nombre de copies
+  conservées. Un **bandeau rouge** apparaît en haut de toute l'administration
+  si la dernière sauvegarde réussie date de plus de 3 jours, si elle a échoué
+  ou si la clé est absente.
+- **`config.local.php` n'est jamais copié** avec les données : le README
+  explique où en garder une copie.
+- **Chiffrement de la clé (facultatif)** : nouvelle page
+  [`docs/chiffrement-cle-usb.md`](docs/chiffrement-cle-usb.md) — avantages,
+  risques (mot de passe oublié = sauvegardes perdues) et commandes.
+- **42 nouveaux tests** (338 au total) : copie pendant une écriture, intégrité,
+  incrémental, suppressions, rotation, clé absente (rien n'est écrit), espace
+  insuffisant, base introuvable, état et alertes, installation du minuteur.
+
 ## [1.12.1] — 2026-11-03
 
 ### Correctifs

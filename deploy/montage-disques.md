@@ -6,7 +6,7 @@ Le site est prévu pour trois supports :
 |---|---|---|
 | Carte SD | `/` | système Ubuntu + code du site uniquement |
 | SSD USB | `/mnt/ssd` | base SQLite, photos, vidéos, miniatures |
-| Clé USB | `/mnt/sauvegarde` | sauvegardes (le script `backup.sh` les y dépose) |
+| Clé USB | `/mnt/sauvegarde` | sauvegardes (la commande `app/cli/sauvegarde.php` les y dépose) |
 
 L'intérêt : si la carte SD meurt (c'est la panne la plus fréquente sur un
 Raspberry Pi), le code se réinstalle en 10 minutes et **les photos, vidéos et

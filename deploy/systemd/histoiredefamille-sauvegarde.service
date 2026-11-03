@@ -1,0 +1,27 @@
+[Unit]
+Description=Histoire de famille — sauvegarde quotidienne (base + fichiers)
+Documentation=file:/var/www/histoiredefamille/README.md
+# La clé USB doit être montée avant de commencer : sinon la sauvegarde
+# refuserait de s'exécuter (c'est voulu : rien ne doit s'écrire sur la
+# carte SD du Raspberry Pi).
+Wants=mnt-sauvegarde.mount
+After=local-fs.target
+
+[Service]
+Type=oneshot
+User=www-data
+Group=www-data
+# Le site est dans /var/www ; la commande est indépendante du dossier courant.
+WorkingDirectory=/var/www/histoiredefamille
+ExecStart=/usr/bin/php /var/www/histoiredefamille/app/cli/sauvegarde.php
+# Priorité basse : la sauvegarde de nuit ne doit pas ralentir le site.
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+# Le journal (journalctl) reçoit la sortie : aucune donnée personnelle n'y est
+# écrite (ni mot de passe, ni jeton, ni chemin personnel).
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

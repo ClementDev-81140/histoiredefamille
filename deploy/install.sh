@@ -131,18 +131,40 @@ else
     exit 1
 fi
 
-# --- 8. Sauvegarde quotidienne --------------------------------------------
-bleu "Sauvegarde quotidienne (cron)"
-chmod 750 "${SITE_DIR}/deploy/backup.sh"
+# --- 8. Sauvegarde quotidienne (minuteur systemd) --------------------------
+bleu "Sauvegarde quotidienne à 3 h 30 (minuteur systemd)"
+
+# La clé USB doit déjà être montée (voir deploy/montage-disques.md). Sans
+# elle, la sauvegarde refusera de s'exécuter pour ne pas remplir la carte SD.
+if mountpoint -q /mnt/sauvegarde; then
+    vert "La clé USB est montée sur /mnt/sauvegarde."
+else
+    rouge "ATTENTION : /mnt/sauvegarde n'est pas un point de montage."
+    rouge "  La sauvegarde refusera de s'exécuter tant que la clé ne sera pas montée."
+    rouge "  Suivez deploy/montage-disques.md, puis relancez ce script."
+fi
+
+mkdir -p /mnt/sauvegarde/histoiredefamille
+chown -R www-data:www-data /mnt/sauvegarde/histoiredefamille 2>/dev/null || true
+chmod 750 /mnt/sauvegarde/histoiredefamille 2>/dev/null || true
+
+chmod 750 "${SITE_DIR}/deploy/backup.sh" 2>/dev/null || true
+
+install -m 644 "${SITE_DIR}/deploy/systemd/histoiredefamille-sauvegarde.service" /etc/systemd/system/
+install -m 644 "${SITE_DIR}/deploy/systemd/histoiredefamille-sauvegarde.timer" /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable --now histoiredefamille-sauvegarde.timer >/dev/null 2>&1
+vert "Minuteur installé et activé : tous les jours à 3 h 30."
+vert "Vérification : systemctl list-timers histoiredefamille-sauvegarde.timer"
+
+# Ancien cron : la ligne de sauvegarde est retirée (le minuteur la remplace).
+# La maintenance hebdomadaire reste dans /etc/cron.d.
 cat >/etc/cron.d/histoiredefamille <<CRON
-# Sauvegarde quotidienne du site à 3 h 15.
-# Voir la sortie dans /mnt/sauvegarde/histoiredefamille/journal-sauvegarde.log
-15 3 * * * www-data /var/www/histoiredefamille/deploy/backup.sh >/dev/null 2>&1
 # Maintenance hebdomadaire (nettoyage des verrous et fichiers temporaires).
 45 4 * * 0 www-data /usr/bin/php /var/www/histoiredefamille/app/cli/maintenance.php >/dev/null 2>&1
 CRON
 chmod 644 /etc/cron.d/histoiredefamille
-vert "Tâches planifiées installées dans /etc/cron.d/histoiredefamille."
+vert "Maintenance hebdomadaire conservée (dimanche à 4 h 45)."
 
 # --- 9. Fin ---------------------------------------------------------------
 bleu "Installation terminée"
@@ -159,7 +181,15 @@ Il reste deux choses à faire à la main :
 
        curl -I http://localhost/
 
-   Puis mettre en place le tunnel Cloudflare (voir README.md, section
-   « Mise en ligne » et le dossier deploy/cloudflared/).
+3) Faire une première sauvegarde et vérifier qu'elle fonctionne :
+
+       sudo -u www-data php /var/www/histoiredefamille/app/cli/sauvegarde.php
+       systemctl list-timers histoiredefamille-sauvegarde.timer
+
+4) Mettre en place le tunnel Cloudflare (voir README.md, section
+   « Mise en ligne » et le dossier deploy/cloudflared/), puis lancer la
+   vérification avant ouverture :
+
+       sudo -u www-data php /var/www/histoiredefamille/app/cli/verifier-mise-en-ligne.php
 
 FIN

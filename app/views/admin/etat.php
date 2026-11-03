@@ -8,10 +8,25 @@
  * @var int    $dbSize, $walSize, $streams
  * @var int|null $free
  * @var string $php
+ * @var array|null $alerte
+ * @var array  $sauvegarde (dossier, libre_cle, support, rotation)
  */
 ?>
 <?php $aDecocher = array_values(array_filter($checks, static fn ($c) => !$c['ok'])); ?>
 <h1>État du site</h1>
+
+<?php if ($alerte !== null): ?>
+    <div class="message message--erreur" role="alert">
+        <strong>Sauvegarde :</strong> <?= e($alerte['message']) ?>
+        <?php if (count($alerte['details']) > 1): ?>
+            <ul>
+                <?php foreach (array_slice($alerte['details'], 1) as $detail): ?>
+                    <li><?= e($detail) ?></li>
+                <?php endforeach; ?>
+            </ul>
+        <?php endif; ?>
+    </div>
+<?php endif; ?>
 
 <?php if ($aDecocher === []): ?>
     <div class="message message--succes">Tous les contrôles essentiels sont au vert.</div>
@@ -69,22 +84,68 @@
     </section>
 </div>
 
-<section class="panneau">
-    <h2>Dernière sauvegarde</h2>
+<section class="panneau" id="sauvegarde">
+    <h2>Sauvegarde</h2>
+
     <?php if ($backup === null): ?>
-        <p>Aucune information de sauvegarde. Vérifiez que <code>deploy/backup.sh</code> est installé et exécuté par cron.</p>
+        <p>
+            Aucune sauvegarde n’est encore enregistrée. Sur le Raspberry Pi, lancez une première fois :
+        </p>
+        <pre class="journal-technique">sudo -u www-data php /var/www/histoiredefamille/app/cli/sauvegarde.php</pre>
     <?php else: ?>
         <dl class="fiche">
-            <dt>Date</dt><dd><?= e((string) ($backup['date_humain'] ?? format_date((int) ($backup['date'] ?? 0), true))) ?></dd>
-            <dt>Résultat</dt><dd><?= e((string) ($backup['status'] ?? 'inconnu')) ?></dd>
-            <dt>Base copiée</dt><dd><?= !empty($backup['database']) ? 'oui' : 'non' ?></dd>
-            <dt>Fichiers synchronisés</dt><dd><?= !empty($backup['files']) ? 'oui' : 'non' ?></dd>
+            <dt>Dernière sauvegarde</dt>
+            <dd><?= e((string) ($backup['date_humain'] ?? format_date((int) ($backup['date'] ?? 0), true))) ?></dd>
+            <dt>Résultat</dt>
+            <dd><?= ($backup['status'] ?? '') === 'ok' ? 'réussie' : 'en échec' ?></dd>
+            <dt>Base copiée</dt>
+            <dd>
+                <?php if (!empty($backup['database'])): ?>
+                    oui, <?= e(format_size((int) ($backup['base_size'] ?? 0))) ?> (intégrité vérifiée)
+                <?php else: ?>
+                    non
+                <?php endif; ?>
+            </dd>
+            <dt>Fichiers</dt>
+            <dd>
+                <?= (int) ($backup['files_copied'] ?? 0) ?> copié(s),
+                <?= (int) ($backup['files_deleted'] ?? 0) ?> retiré(s),
+                <?= (int) ($backup['files_errors'] ?? 0) ?> erreur(s)
+            </dd>
+            <dt>Durée</dt><dd><?= (int) ($backup['duration'] ?? 0) ?> s</dd>
             <dt>Message</dt><dd><?= e((string) ($backup['message'] ?? '')) ?></dd>
         </dl>
-        <p class="note">
-            Test de restauration : voir la section « Sauvegarde » du README.
-        </p>
     <?php endif; ?>
+
+    <h3>Clé USB et espace disque</h3>
+    <dl class="fiche">
+        <dt>Dossier de sauvegarde</dt><dd><code><?= e((string) $sauvegarde['dossier']) ?></code></dd>
+        <dt>Clé montée</dt>
+        <dd>
+            <?php if ($sauvegarde['support']['ok']): ?>
+                oui (<?= e($sauvegarde['support']['montage']) ?>)
+            <?php else: ?>
+                non — <?= e($sauvegarde['support']['raison']) ?>
+            <?php endif; ?>
+        </dd>
+        <dt>Espace libre sur la clé</dt>
+        <dd><?= $sauvegarde['libre_cle'] !== null ? e(format_size((int) $sauvegarde['libre_cle'])) : 'inconnu (clé absente ?)' ?></dd>
+        <dt>Espace libre sur les données</dt>
+        <dd><?= $free !== null ? e(format_size($free)) : 'inconnu' ?></dd>
+        <dt>Copies conservées</dt>
+        <dd>
+            <?= (int) $sauvegarde['rotation']['quotidiennes'] ?> quotidienne(s) (7 au maximum),
+            <?= (int) $sauvegarde['rotation']['hebdomadaires'] ?> hebdomadaire(s) (4),
+            <?= (int) $sauvegarde['rotation']['mensuelles'] ?> mensuelle(s) (6)
+        </dd>
+    </dl>
+
+    <p class="note">
+        Le fichier <code>config.local.php</code> n’est jamais copié avec les données :
+        gardez-en une copie à part (voir le README, section « Sauvegarde et restauration »).
+        La clé USB peut être chiffrée : avantages et risques dans
+        <code>docs/chiffrement-cle-usb.md</code>.
+    </p>
 
     <h3>Journal de sauvegarde (<?= e($logFile) ?>)</h3>
     <?php if ($logTail === []): ?>

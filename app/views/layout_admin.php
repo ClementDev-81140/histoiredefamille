@@ -16,6 +16,16 @@ if ($account === null) {
     $account = ['username' => '', 'display_name' => ''];
 }
 $flashes   = take_flashes();
+
+// Alerte de sauvegarde : affichée en haut de TOUTES les pages de
+// l'administration (clé absente, sauvegarde trop ancienne ou en échec).
+// Un défaut de lecture ne doit jamais empêcher d'ouvrir l'administration.
+try {
+    $alerteSauvegarde = sauvegarde_alerte();
+} catch (Throwable) {
+    $alerteSauvegarde = null;
+}
+
 $current   = $_SERVER['REQUEST_URI'] ?? '/admin';
 $current   = parse_url($current, PHP_URL_PATH) ?: '/admin';
 $pageTitle = (!empty($titre) ? $titre . ' — ' : '') . 'Administration — ' . $siteName;
@@ -88,6 +98,13 @@ $navLink = static function (string $href, string $label, bool $exact = false) us
     </aside>
 
     <main id="contenu" class="admin-contenu">
+        <?php if ($alerteSauvegarde !== null): ?>
+            <div class="message message--erreur" role="alert">
+                <strong>Sauvegarde :</strong>
+                <?= e($alerteSauvegarde['message']) ?>
+                <a href="/admin/etat">Vérifier l’état du site</a>
+            </div>
+        <?php endif; ?>
         <?php require __DIR__ . '/partials/flashes.php'; ?>
         <?= $contenu ?>
     </main>

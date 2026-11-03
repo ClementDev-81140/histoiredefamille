@@ -1,0 +1,16 @@
+[Unit]
+Description=Histoire de famille — sauvegarde tous les jours à 3 h 30
+
+[Timer]
+# Tous les jours à 3 h 30, heure du Raspberry Pi.
+OnCalendar=*-*-* 03:30:00
+# Si le Pi était éteint à 3 h 30, la sauvegarde est faite dès le prochain
+# démarrage (dans l'heure qui suit) au lieu d'être perdue.
+Persistent=true
+# Petite marge aléatoire : évite de tomber pile pendant une autre tâche.
+RandomizedDelaySec=5min
+AccuracySec=1min
+Unit=histoiredefamille-sauvegarde.service
+
+[Install]
+WantedBy=timers.target

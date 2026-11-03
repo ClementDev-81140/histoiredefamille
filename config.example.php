@@ -114,12 +114,33 @@ return [
     ],
 
     // ------------------------------------------------------------------
-    // Sauvegarde (utilisé par deploy/backup.sh et la page « État du site »)
+    // Sauvegarde (commande php app/cli/sauvegarde.php et page « État du site »)
     // ------------------------------------------------------------------
+    // La clé USB est montée sur /mnt/sauvegarde (voir deploy/montage-disques.md).
+    // Le dossier ci-dessous doit se trouver SUR LA CLÉ, jamais sur la carte SD.
     'maintenance' => [
         'backup_dir'   => '/mnt/sauvegarde/histoiredefamille',
         'backup_log'   => '/mnt/sauvegarde/histoiredefamille/journal-sauvegarde.log',
         'backup_state' => '/mnt/sauvegarde/histoiredefamille/dernier-etat.json',
+        // Date du dernier essai de restauration (écrit par restauration.php).
+        'restore_state' => '/mnt/sauvegarde/histoiredefamille/derniere-restauration.json',
+
+        // Rotation : 7 copies quotidiennes, 4 hebdomadaires, 6 mensuelles.
+        'backup_daily'   => 7,
+        'backup_weekly'  => 4,
+        'backup_monthly' => 6,
+
+        // Marge libre exigée sur la clé avant de commencer (Mo).
+        'backup_min_free_mb' => 512,
+
+        // true = refuse d'écrire si la clé n'est pas montée (recommandé :
+        // sinon la sauvegarde atterrit sur la carte SD et la remplit).
+        'backup_require_mount' => true,
+
+        // Alerte rouge dans l'administration : sauvegarde trop ancienne
+        // (jours) ou espace libre faible (Mo).
+        'backup_alert_days'    => 3,
+        'backup_alert_free_mb' => 512,
     ],
 
     // Nombre d'éléments par page dans les listes.
