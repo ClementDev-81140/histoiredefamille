@@ -30,6 +30,13 @@ const APPARENCE_LONGUEURS = [
     'titre_chiffres' => 40,
     'titre_une'      => 40,
     'titre_lire'     => 40,
+    // Encarts de la gazette du mois (lot 2).
+    'titre_gazette_articles'    => 40,
+    'titre_gazette_photos'      => 40,
+    'titre_gazette_videos'      => 40,
+    'titre_gazette_temoignages' => 40,
+    'titre_gazette_recettes'    => 40,
+    'titre_gazette_personnes'   => 40,
 ];
 
 /** Textes par défaut quand le champ est vide (ceux d'aujourd'hui). */
@@ -43,6 +50,12 @@ const APPARENCE_TEXTES = [
     'titre_chiffres' => 'En chiffres',
     'titre_une'      => 'À la une',
     'titre_lire'     => 'À lire aussi',
+    'titre_gazette_articles'    => 'Les articles du mois',
+    'titre_gazette_photos'      => 'Photos et albums',
+    'titre_gazette_videos'      => 'Vidéos',
+    'titre_gazette_temoignages' => 'Témoignages sonores',
+    'titre_gazette_recettes'    => 'Recettes',
+    'titre_gazette_personnes'   => 'Nouvelles personnes',
 ];
 
 /** Pied de page et phrase d'accueil par défaut. */
@@ -193,10 +206,14 @@ function apparence_texte(string $cle, ?string $defaut = null): string
     return $defaut ?? (APPARENCE_TEXTES[$cle] ?? '');
 }
 
-/** Titre d'un encart du journal (renommable ; vide = nom par défaut). */
-function apparence_titre_encart(string $cle): string
+/**
+ * Titre d'un encart du journal (renommable ; vide = nom par défaut).
+ *
+ * @param string|null $defaut nom de secours quand aucun titre n'est réglé
+ */
+function apparence_titre_encart(string $cle, ?string $defaut = null): string
 {
-    return apparence_texte('titre_' . $cle);
+    return apparence_texte('titre_' . $cle, $defaut);
 }
 
 /** Case à cocher : absente ou vide = valeur par défaut (affiché). */

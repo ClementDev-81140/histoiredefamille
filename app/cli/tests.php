@@ -2396,11 +2396,16 @@ if ($filtre === '' || $filtre === 'composition') {
     $derniere = basename((string) end($migrations));
     $sql009   = (string) @file_get_contents(dirname(__DIR__) . '/migrations/009_articles_modele.sql');
     // Chaque lot ajoute SA migration ; les précédentes ne bougent jamais.
-    verifier('migration : 010 est la dernière migration', $derniere === '010_courriels.sql', $derniere);
+    verifier('migration : 011 est la dernière migration', $derniere === '011_gazette.sql', $derniere);
     verifier(
         'migration : 010 ajoute des colonnes et des tables, sans rien supprimer',
         str_contains((string) @file_get_contents(dirname(__DIR__) . '/migrations/010_courriels.sql'), 'ALTER TABLE accounts ADD COLUMN email')
             && !str_contains((string) @file_get_contents(dirname(__DIR__) . '/migrations/010_courriels.sql'), 'DROP TABLE')
+    );
+    verifier(
+        'migration : 011 crée la gazette sans toucher à l’existant',
+        str_contains((string) @file_get_contents(dirname(__DIR__) . '/migrations/011_gazette.sql'), 'CREATE TABLE IF NOT EXISTS gazettes')
+            && !str_contains((string) @file_get_contents(dirname(__DIR__) . '/migrations/011_gazette.sql'), 'DROP TABLE')
     );
     verifier(
         'migration : 009 ajoute seulement la colonne « modele », vide par défaut',
@@ -2449,9 +2454,14 @@ if ($filtre === '' || $filtre === 'verification') {
 }
 
 require_once __DIR__ . '/tests_courriels.php';
+require_once __DIR__ . '/tests_gazette.php';
 
 if ($filtre === '' || $filtre === 'courriels') {
     tests_courriels();
+}
+
+if ($filtre === '' || $filtre === 'gazette') {
+    tests_gazette();
 }
 
 $total = $reussis + count($echecs);

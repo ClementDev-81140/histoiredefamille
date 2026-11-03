@@ -4,7 +4,7 @@
 > réécrit par `php app/cli/tests.php matrice`. Il décrit ce que le site
 > répond réellement, route par route et profil par profil.
 
-Date de génération : 03/11/2026 à 23:40
+Date de génération : 03/11/2026 à 23:52
 
 ## Profils testés
 
@@ -26,10 +26,10 @@ Date de génération : 03/11/2026 à 23:40
 
 ## Résultat
 
-- Routes lues dans `app/routes.php` : **142** ;
-- Vérifications (route × profil) : **710** ;
+- Routes lues dans `app/routes.php` : **150** ;
+- Vérifications (route × profil) : **750** ;
 - Anomalies : **0** ;
-- Contrôles ciblés : **217**, dont **0** en échec.
+- Contrôles ciblés : **227**, dont **0** en échec.
 
 ## Points examinés
 
@@ -49,81 +49,81 @@ Aucune anomalie : pour chaque route, le code obtenu correspond au code attendu.
 
 | Contrôle | Attendu | Obtenu |
 |---|---|---|
-| fichier public — /f/51 — Visiteur (non connecté) | 200 | 200 |
-| fichier public — /f/51/telecharger — Visiteur (non connecté) | 200 | 200 |
-| fichier public — /media/miniature/51 — Visiteur (non connecté) | 200 | 200 |
-| fichier public — /f/51 — Branche A | 200 | 200 |
-| fichier public — /f/51/telecharger — Branche A | 200 | 200 |
-| fichier public — /media/miniature/51 — Branche A | 200 | 200 |
-| fichier public — /f/51 — Personne de la branche B | 200 | 200 |
-| fichier public — /f/51/telecharger — Personne de la branche B | 200 | 200 |
-| fichier public — /media/miniature/51 — Personne de la branche B | 200 | 200 |
-| fichier public — /f/51 — Voit toutes les branches | 200 | 200 |
-| fichier public — /f/51/telecharger — Voit toutes les branches | 200 | 200 |
-| fichier public — /media/miniature/51 — Voit toutes les branches | 200 | 200 |
-| fichier public — /f/51 — Administrateur | 200 | 200 |
-| fichier public — /f/51/telecharger — Administrateur | 200 | 200 |
-| fichier public — /media/miniature/51 — Administrateur | 200 | 200 |
-| fichier famille — /f/52 — Visiteur (non connecté) | 404 | 404 |
-| fichier famille — /f/52/telecharger — Visiteur (non connecté) | 404 | 404 |
-| fichier famille — /media/miniature/52 — Visiteur (non connecté) | 404 | 404 |
-| fichier famille — /f/52 — Branche A | 200 | 200 |
-| fichier famille — /f/52/telecharger — Branche A | 200 | 200 |
-| fichier famille — /media/miniature/52 — Branche A | 200 | 200 |
-| fichier famille — /f/52 — Personne de la branche B | 200 | 200 |
-| fichier famille — /f/52/telecharger — Personne de la branche B | 200 | 200 |
-| fichier famille — /media/miniature/52 — Personne de la branche B | 200 | 200 |
-| fichier famille — /f/52 — Voit toutes les branches | 200 | 200 |
-| fichier famille — /f/52/telecharger — Voit toutes les branches | 200 | 200 |
-| fichier famille — /media/miniature/52 — Voit toutes les branches | 200 | 200 |
-| fichier famille — /f/52 — Administrateur | 200 | 200 |
-| fichier famille — /f/52/telecharger — Administrateur | 200 | 200 |
-| fichier famille — /media/miniature/52 — Administrateur | 200 | 200 |
-| fichier branche A — /f/53 — Visiteur (non connecté) | 404 | 404 |
-| fichier branche A — /f/53/telecharger — Visiteur (non connecté) | 404 | 404 |
-| fichier branche A — /media/miniature/53 — Visiteur (non connecté) | 404 | 404 |
-| fichier branche A — /f/53 — Branche A | 200 | 200 |
-| fichier branche A — /f/53/telecharger — Branche A | 200 | 200 |
-| fichier branche A — /media/miniature/53 — Branche A | 200 | 200 |
-| fichier branche A — /f/53 — Personne de la branche B | 404 | 404 |
-| fichier branche A — /f/53/telecharger — Personne de la branche B | 404 | 404 |
-| fichier branche A — /media/miniature/53 — Personne de la branche B | 404 | 404 |
-| fichier branche A — /f/53 — Voit toutes les branches | 200 | 200 |
-| fichier branche A — /f/53/telecharger — Voit toutes les branches | 200 | 200 |
-| fichier branche A — /media/miniature/53 — Voit toutes les branches | 200 | 200 |
-| fichier branche A — /f/53 — Administrateur | 200 | 200 |
-| fichier branche A — /f/53/telecharger — Administrateur | 200 | 200 |
-| fichier branche A — /media/miniature/53 — Administrateur | 200 | 200 |
-| fichier branche B — /f/54 — Visiteur (non connecté) | 404 | 404 |
-| fichier branche B — /f/54/telecharger — Visiteur (non connecté) | 404 | 404 |
-| fichier branche B — /media/miniature/54 — Visiteur (non connecté) | 404 | 404 |
-| fichier branche B — /f/54 — Branche A | 404 | 404 |
-| fichier branche B — /f/54/telecharger — Branche A | 404 | 404 |
-| fichier branche B — /media/miniature/54 — Branche A | 404 | 404 |
-| fichier branche B — /f/54 — Personne de la branche B | 200 | 200 |
-| fichier branche B — /f/54/telecharger — Personne de la branche B | 200 | 200 |
-| fichier branche B — /media/miniature/54 — Personne de la branche B | 200 | 200 |
-| fichier branche B — /f/54 — Voit toutes les branches | 200 | 200 |
-| fichier branche B — /f/54/telecharger — Voit toutes les branches | 200 | 200 |
-| fichier branche B — /media/miniature/54 — Voit toutes les branches | 200 | 200 |
-| fichier branche B — /f/54 — Administrateur | 200 | 200 |
-| fichier branche B — /f/54/telecharger — Administrateur | 200 | 200 |
-| fichier branche B — /media/miniature/54 — Administrateur | 200 | 200 |
-| fichier privé — /f/55 — Visiteur (non connecté) | 404 | 404 |
-| fichier privé — /f/55/telecharger — Visiteur (non connecté) | 404 | 404 |
-| fichier privé — /media/miniature/55 — Visiteur (non connecté) | 404 | 404 |
-| fichier privé — /f/55 — Branche A | 404 | 404 |
-| fichier privé — /f/55/telecharger — Branche A | 404 | 404 |
-| fichier privé — /media/miniature/55 — Branche A | 404 | 404 |
-| fichier privé — /f/55 — Personne de la branche B | 404 | 404 |
-| fichier privé — /f/55/telecharger — Personne de la branche B | 404 | 404 |
-| fichier privé — /media/miniature/55 — Personne de la branche B | 404 | 404 |
-| fichier privé — /f/55 — Voit toutes les branches | 404 | 404 |
-| fichier privé — /f/55/telecharger — Voit toutes les branches | 404 | 404 |
-| fichier privé — /media/miniature/55 — Voit toutes les branches | 404 | 404 |
-| fichier privé — /f/55 — Administrateur | 200 | 200 |
-| fichier privé — /f/55/telecharger — Administrateur | 200 | 200 |
-| fichier privé — /media/miniature/55 — Administrateur | 200 | 200 |
+| fichier public — /f/55 — Visiteur (non connecté) | 200 | 200 |
+| fichier public — /f/55/telecharger — Visiteur (non connecté) | 200 | 200 |
+| fichier public — /media/miniature/55 — Visiteur (non connecté) | 200 | 200 |
+| fichier public — /f/55 — Branche A | 200 | 200 |
+| fichier public — /f/55/telecharger — Branche A | 200 | 200 |
+| fichier public — /media/miniature/55 — Branche A | 200 | 200 |
+| fichier public — /f/55 — Personne de la branche B | 200 | 200 |
+| fichier public — /f/55/telecharger — Personne de la branche B | 200 | 200 |
+| fichier public — /media/miniature/55 — Personne de la branche B | 200 | 200 |
+| fichier public — /f/55 — Voit toutes les branches | 200 | 200 |
+| fichier public — /f/55/telecharger — Voit toutes les branches | 200 | 200 |
+| fichier public — /media/miniature/55 — Voit toutes les branches | 200 | 200 |
+| fichier public — /f/55 — Administrateur | 200 | 200 |
+| fichier public — /f/55/telecharger — Administrateur | 200 | 200 |
+| fichier public — /media/miniature/55 — Administrateur | 200 | 200 |
+| fichier famille — /f/56 — Visiteur (non connecté) | 404 | 404 |
+| fichier famille — /f/56/telecharger — Visiteur (non connecté) | 404 | 404 |
+| fichier famille — /media/miniature/56 — Visiteur (non connecté) | 404 | 404 |
+| fichier famille — /f/56 — Branche A | 200 | 200 |
+| fichier famille — /f/56/telecharger — Branche A | 200 | 200 |
+| fichier famille — /media/miniature/56 — Branche A | 200 | 200 |
+| fichier famille — /f/56 — Personne de la branche B | 200 | 200 |
+| fichier famille — /f/56/telecharger — Personne de la branche B | 200 | 200 |
+| fichier famille — /media/miniature/56 — Personne de la branche B | 200 | 200 |
+| fichier famille — /f/56 — Voit toutes les branches | 200 | 200 |
+| fichier famille — /f/56/telecharger — Voit toutes les branches | 200 | 200 |
+| fichier famille — /media/miniature/56 — Voit toutes les branches | 200 | 200 |
+| fichier famille — /f/56 — Administrateur | 200 | 200 |
+| fichier famille — /f/56/telecharger — Administrateur | 200 | 200 |
+| fichier famille — /media/miniature/56 — Administrateur | 200 | 200 |
+| fichier branche A — /f/57 — Visiteur (non connecté) | 404 | 404 |
+| fichier branche A — /f/57/telecharger — Visiteur (non connecté) | 404 | 404 |
+| fichier branche A — /media/miniature/57 — Visiteur (non connecté) | 404 | 404 |
+| fichier branche A — /f/57 — Branche A | 200 | 200 |
+| fichier branche A — /f/57/telecharger — Branche A | 200 | 200 |
+| fichier branche A — /media/miniature/57 — Branche A | 200 | 200 |
+| fichier branche A — /f/57 — Personne de la branche B | 404 | 404 |
+| fichier branche A — /f/57/telecharger — Personne de la branche B | 404 | 404 |
+| fichier branche A — /media/miniature/57 — Personne de la branche B | 404 | 404 |
+| fichier branche A — /f/57 — Voit toutes les branches | 200 | 200 |
+| fichier branche A — /f/57/telecharger — Voit toutes les branches | 200 | 200 |
+| fichier branche A — /media/miniature/57 — Voit toutes les branches | 200 | 200 |
+| fichier branche A — /f/57 — Administrateur | 200 | 200 |
+| fichier branche A — /f/57/telecharger — Administrateur | 200 | 200 |
+| fichier branche A — /media/miniature/57 — Administrateur | 200 | 200 |
+| fichier branche B — /f/58 — Visiteur (non connecté) | 404 | 404 |
+| fichier branche B — /f/58/telecharger — Visiteur (non connecté) | 404 | 404 |
+| fichier branche B — /media/miniature/58 — Visiteur (non connecté) | 404 | 404 |
+| fichier branche B — /f/58 — Branche A | 404 | 404 |
+| fichier branche B — /f/58/telecharger — Branche A | 404 | 404 |
+| fichier branche B — /media/miniature/58 — Branche A | 404 | 404 |
+| fichier branche B — /f/58 — Personne de la branche B | 200 | 200 |
+| fichier branche B — /f/58/telecharger — Personne de la branche B | 200 | 200 |
+| fichier branche B — /media/miniature/58 — Personne de la branche B | 200 | 200 |
+| fichier branche B — /f/58 — Voit toutes les branches | 200 | 200 |
+| fichier branche B — /f/58/telecharger — Voit toutes les branches | 200 | 200 |
+| fichier branche B — /media/miniature/58 — Voit toutes les branches | 200 | 200 |
+| fichier branche B — /f/58 — Administrateur | 200 | 200 |
+| fichier branche B — /f/58/telecharger — Administrateur | 200 | 200 |
+| fichier branche B — /media/miniature/58 — Administrateur | 200 | 200 |
+| fichier privé — /f/59 — Visiteur (non connecté) | 404 | 404 |
+| fichier privé — /f/59/telecharger — Visiteur (non connecté) | 404 | 404 |
+| fichier privé — /media/miniature/59 — Visiteur (non connecté) | 404 | 404 |
+| fichier privé — /f/59 — Branche A | 404 | 404 |
+| fichier privé — /f/59/telecharger — Branche A | 404 | 404 |
+| fichier privé — /media/miniature/59 — Branche A | 404 | 404 |
+| fichier privé — /f/59 — Personne de la branche B | 404 | 404 |
+| fichier privé — /f/59/telecharger — Personne de la branche B | 404 | 404 |
+| fichier privé — /media/miniature/59 — Personne de la branche B | 404 | 404 |
+| fichier privé — /f/59 — Voit toutes les branches | 404 | 404 |
+| fichier privé — /f/59/telecharger — Voit toutes les branches | 404 | 404 |
+| fichier privé — /media/miniature/59 — Voit toutes les branches | 404 | 404 |
+| fichier privé — /f/59 — Administrateur | 200 | 200 |
+| fichier privé — /f/59/telecharger — Administrateur | 200 | 200 |
+| fichier privé — /media/miniature/59 — Administrateur | 200 | 200 |
 | vidéo publique — lecture complète (visiteur) | 200 | 200 |
 | vidéo publique — lecture par morceaux (Range) | 206 | 206 |
 | vidéo publique — plage invalide refusée | 416 | 416 |
@@ -147,6 +147,16 @@ Aucune anomalie : pour chaque route, le code obtenu correspond au code attendu.
 | tchat / espace famille — /mon-compte — visiteur renvoyé vers la connexion | 303 | 303 |
 | POST /tchat/{id}/supprimer — sans jeton CSRF (administrateur) | 403 | 403 |
 | POST /tchat/{id}/supprimer — compte de branche | 403 | 403 |
+| POST /admin/gazette/auto — sans jeton CSRF (administrateur) | 403 | 403 |
+| POST /admin/gazette/auto — compte de branche | 403 | 403 |
+| POST /admin/gazette/{id}/retirer — sans jeton CSRF (administrateur) | 403 | 403 |
+| POST /admin/gazette/{id}/retirer — compte de branche | 403 | 403 |
+| POST /admin/gazette/{id}/mot — sans jeton CSRF (administrateur) | 403 | 403 |
+| POST /admin/gazette/{id}/mot — compte de branche | 403 | 403 |
+| POST /admin/gazette/{id}/envoyer — sans jeton CSRF (administrateur) | 403 | 403 |
+| POST /admin/gazette/{id}/envoyer — compte de branche | 403 | 403 |
+| POST /admin/gazette/{id}/passer — sans jeton CSRF (administrateur) | 403 | 403 |
+| POST /admin/gazette/{id}/passer — compte de branche | 403 | 403 |
 | POST /admin/courriels/reglages — sans jeton CSRF (administrateur) | 403 | 403 |
 | POST /admin/courriels/reglages — compte de branche | 403 | 403 |
 | POST /admin/courriels/essai — sans jeton CSRF (administrateur) | 403 | 403 |
@@ -300,6 +310,7 @@ Aucune anomalie : pour chaque route, le code obtenu correspond au code attendu.
 | POST | `/deconnexion` | 403 | 403 | 403 | 403 | 403 | connexion |
 | GET | `/famille` | 303 | 200 | 200 | 200 | 200 | famille |
 | GET | `/mon-compte` | 303 | 200 | 200 | 200 | 200 | famille |
+| GET | `/gazette/{slug}` | 303 | 404 | 404 | 404 | 404 | gazette |
 | POST | `/mon-compte/courriels` | 303 | 403 | 403 | 403 | 403 | famille |
 | GET | `/desinscription` | 404 | 404 | 404 | 404 | 404 | desinscription |
 | POST | `/desinscription` | 403 | 403 | 403 | 403 | 403 | desinscription |
@@ -311,6 +322,13 @@ Aucune anomalie : pour chaque route, le code obtenu correspond au code attendu.
 | POST | `/tchat/{id}/supprimer` | 303 | 403 | 403 | 403 | 403 | administration |
 | GET | `/admin` | 303 | 403 | 403 | 403 | 200 | administration |
 | GET | `/admin/courriels` | 303 | 403 | 403 | 403 | 200 | administration |
+| GET | `/admin/gazette` | 303 | 403 | 403 | 403 | 200 | administration |
+| GET | `/admin/gazette/{id}` | 303 | 403 | 403 | 403 | 200 | administration |
+| POST | `/admin/gazette/auto` | 303 | 403 | 403 | 403 | 403 | administration |
+| POST | `/admin/gazette/{id}/retirer` | 303 | 403 | 403 | 403 | 403 | administration |
+| POST | `/admin/gazette/{id}/mot` | 303 | 403 | 403 | 403 | 403 | administration |
+| POST | `/admin/gazette/{id}/envoyer` | 303 | 403 | 403 | 403 | 403 | administration |
+| POST | `/admin/gazette/{id}/passer` | 303 | 403 | 403 | 403 | 403 | administration |
 | POST | `/admin/courriels/reglages` | 303 | 403 | 403 | 403 | 403 | administration |
 | POST | `/admin/courriels/essai` | 303 | 403 | 403 | 403 | 403 | administration |
 | GET | `/admin/etat` | 303 | 403 | 403 | 403 | 200 | administration |

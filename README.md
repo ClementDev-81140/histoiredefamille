@@ -31,6 +31,7 @@ et une installation qui tient en quelques commandes à copier-coller.
 12. [Confidentialité et sécurité](#12-confidentialité-et-sécurité)
 13. [Ouvrir le site au public : liste de contrôle du jour J](#13-ouvrir-le-site-au-public--liste-de-contrôle-du-jour-j)
 14. [Envoyer des courriels](#14-envoyer-des-courriels)
+15. [La gazette du mois](#15-la-gazette-du-mois)
 
 ---
 
@@ -2224,6 +2225,102 @@ journalctl -u histoiredefamille-courriels.service -n 30
 
 La première commande doit afficher une prochaine exécution (toutes les
 5 minutes). La seconde montre les derniers envois, avec les adresses masquées.
+
+---
+
+## 15. La gazette du mois
+
+Chaque mois, le site peut envoyer un petit journal à la famille : ce qui s'est
+passé le mois précédent, mis en page avec les couleurs de votre journal.
+
+Quatre choses à garder en tête :
+
+1. **Personne n'est obligé de la recevoir.** Seules les personnes qui ont coché
+   « Je veux recevoir la gazette du mois » dans **Mon compte** la reçoivent.
+2. **Chacun ne reçoit que ce qu'il a le droit de voir.** Le site prépare un
+   numéro par groupe de droits (la famille, chaque branche, et les personnes
+   qui voient tout) : un article réservé à une branche n'apparaît jamais dans
+   le numéro d'une autre branche.
+3. **Un mois sans rien = aucun envoi.** On ne vous envoie pas une page vide.
+4. **Un seul envoi par mois et par groupe.** Impossible de recevoir deux fois
+   le même numéro.
+
+### 15.1 Ce que contient la gazette
+
+Tout est repris automatiquement du mois écoulé :
+
+- les **articles** publiés dans le mois ;
+- les **photos** et les **albums** ajoutés ;
+- les **vidéos** ;
+- les **témoignages** sonores ;
+- les **recettes** ;
+- les **nouvelles personnes** ajoutées à l'arbre ;
+- les **petites annonces** (anniversaires et souvenirs des 30 prochains jours) ;
+- les **chiffres** du mois.
+
+Les titres de ces encarts se règlent dans **Administration → Apparence du
+journal → Titres des encarts** (les six titres « Gazette : … »).
+
+### 15.2 Le déroulement d'un mois
+
+| Quand | Ce qui se passe |
+|---|---|
+| Le **1er du mois** | La tâche automatique (celle qui envoie les courriels, toutes les 5 minutes) prépare un numéro par groupe de droits, à partir du mois écoulé. Le numéro porte l'état **« À valider »**. |
+| Quand vous voulez | **Administration → Gazette du mois** : vous relisez le numéro, vous pouvez **retirer un élément** (il ne partira pas), le remettre, et écrire un **mot de l'éditeur** (600 caractères). |
+| Vous cliquez **Envoyer** | Le site met un message en file pour chaque personne du groupe. Les messages partent dans les cinq minutes. Le numéro passe à « Envoyé ». |
+| Vous cliquez **Passer ce mois-ci** | Aucun message ne part. Le numéro reste consultable dans l'administration. |
+
+### 15.3 L'aperçu est fidèle
+
+L'écran de relecture montre **exactement** ce que les personnes recevront :
+mêmes encarts, mêmes éléments, même ordre, mot de l'éditeur compris. Ce qui est
+retiré n'apparaît ni dans l'aperçu, ni dans le courriel.
+
+Si plusieurs groupes existent (deux branches, par exemple), un sélecteur en
+haut de l'aperçu permet de passer d'un numéro à l'autre. Chacun est préparé et
+envoyé séparément : c'est ce qui garantit qu'aucune branche ne voit le contenu
+de l'autre.
+
+### 15.4 L'envoi automatique (désactivé par défaut)
+
+Sur la même page, la case **« Envoyer sans validation, au-delà de 3 jours »**
+est décochée. Décochez-la si vous voulez décider chaque mois.
+
+Si vous l'activez : un numéro encore « À valider » **3 jours après la fin du
+mois** part tout seul. C'est un filet de sécurité pour les mois chargés — vous
+pouvez toujours envoyer ou passer un numéro avant.
+
+### 15.5 « Lire en ligne »
+
+Chaque courriel contient un bouton **« Lire la gazette en ligne »** qui mène à
+`/gazette/AAAA-MM` (par exemple `/gazette/2026-10`). Cette page est réservée
+aux personnes connectées : chacun y retrouve **son** numéro, celui de son
+groupe de droits. Un numéro qui ne vous concerne pas, ou qui n'a pas encore été
+envoyé, répond « introuvable » comme partout ailleurs sur le site.
+
+La page « Lire en ligne » ne montre aucun bouton d'administration : elle sert
+à lire, pas à modifier.
+
+### 15.6 Ce qu'il faut savoir avant d'ouvrir
+
+- La gazette utilise la tâche d'envoi des courriels : sans configuration SMTP
+  (voir la section précédente), les numéros sont préparés mais **rien ne
+  part**. La page d'administration vous le rappelle.
+- Un numéro déjà envoyé ne peut plus être modifié (ni élément, ni mot).
+- Les liens du numéro mènent aux pages du site : si un contenu a été supprimé
+  depuis, le lien répond simplement « introuvable ».
+- Les adresses ne sont jamais affichées : un message par personne, jamais de
+  copie multiple.
+
+### 15.7 Vérifier
+
+```bash
+systemctl list-timers histoiredefamille-courriels.timer
+journalctl -u histoiredefamille-courriels.service -n 30
+```
+
+La première ligne de la sortie de la commande mentionne la préparation de la
+gazette (« Gazette du mois : 2 numéro(s) préparé(s) pour … ») au début du mois.
 
 ---
 

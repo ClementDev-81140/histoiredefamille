@@ -95,6 +95,7 @@ $navLink = static function (string $href, string $label, bool $exact = false) us
         <?= $navLink('/admin/admins', 'Administrateurs') ?>
         <?= $navLink('/admin/connexions', 'Journal des connexions') ?>
         <?= $navLink('/admin/courriels', 'Courriels') ?>
+        <?= $navLink('/admin/gazette', 'Gazette du mois') ?>
         <?= $navLink('/admin/etat', 'État du site') ?>
     </aside>
 

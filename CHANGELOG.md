@@ -3,6 +3,51 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.18.0] — 2026-11-03
+
+### La gazette du mois
+
+Un petit journal automatique, envoyé à celles et ceux qui l'ont demandé.
+
+- **Préparation automatique le 1er du mois** (migration 011) : le site compose
+  le résumé du mois écoulé — articles publiés, photos et albums, vidéos,
+  témoignages sonores, recettes, nouvelles personnes de l'arbre, « Petites
+  annonces » (anniversaires et souvenirs à venir) et chiffres. Statut « à
+  valider » : rien ne part sans décision.
+- **Un numéro par groupe de droits** : la famille, chaque branche, et les
+  personnes qui voient tout. Le contenu est calculé en se mettant à la place
+  d'un compte réel du groupe, avec les fonctions de visibilité du site : un
+  article réservé à la branche A ne peut pas apparaître dans le numéro de la
+  branche B. **Aucun élément invisible n'est repris.**
+- **Un instantané, pas un calcul à la volée** : ce que l'on relit le 12 est
+  exactement ce qui a été préparé le 1er ; retirer un élément ne modifie que
+  le numéro concerné.
+- **Administration → Gazette du mois** : liste des numéros et de leur état,
+  aperçu fidèle avec **sélecteur de groupe**, bouton **« Retirer »** par
+  élément (et « Remettre »), **mot de l'éditeur** (600 caractères), puis
+  **« Envoyer »** ou **« Passer ce mois-ci »**.
+- **Envoi automatique facultatif** (désactivé par défaut) : un numéro non
+  validé part au-delà d'un **délai de grâce de 3 jours** après la fin du mois.
+- **Jamais deux fois le même mois** : index unique (mois, groupe) et contrôle
+  d'état ; un numéro vide ne produit aucun envoi (les petites annonces seules
+  ne comptent pas).
+- **Envoi par la file** : un message par personne, comme pour les articles ;
+  aucune connexion SMTP pendant une visite du site. Le courriel contient le
+  mot de l'éditeur, les titres d'encarts, les premiers éléments de chacun et un
+  bouton **« Lire la gazette en ligne »**.
+- **Page `/gazette/AAAA-MM`** réservée aux ayants droit : chacun lit le numéro
+  de son groupe ; un numéro non envoyé ou passé répond 404, un visiteur est
+  renvoyé vers la connexion. Aucune règle d'accès n'est élargie.
+- **Titres des encarts réglables** dans « Apparence du journal » : six nouveaux
+  titres « Gazette : … », vides = noms par défaut.
+- **56 nouveaux tests** (525 au total) : mois et bornes, groupes de droits,
+  contenus du mois, absence de fuite entre branches, préparation, doublon,
+  mois vide, retrait et remise d'un élément, mot de l'éditeur, validation,
+  refus, désinscription, délai de grâce, second passage, lecture en ligne et
+  contrôle d'accès de l'administration.
+
+Aucune migration existante modifiée, aucune dépendance ajoutée.
+
 ## [1.17.0] — 2026-11-03
 
 ### Courriels : prévenir la famille d'un nouvel article

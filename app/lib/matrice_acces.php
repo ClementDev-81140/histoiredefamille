@@ -106,6 +106,11 @@ function matrice_famille(string $methode, string $motif): string
         || str_starts_with($motif, '/tchat')) {
         return 'famille';
     }
+    // La gazette en ligne n'est lisible que par les ayants droit : un visiteur
+    // est renvoyé vers la connexion, et un compte sans numéro reçoit un 404.
+    if (str_starts_with($motif, '/gazette/')) {
+        return 'gazette';
+    }
     // Désinscription par courriel : ouverte à tous (le jeton signé fait office
     // d'authentification), mais une action se fait toujours en POST.
     if ($motif === '/desinscription') {
@@ -151,6 +156,9 @@ function matrice_attendu(string $methode, string $motif, string $profil): int
             // POST sans jeton CSRF : refusé.
             return $methode === 'POST' ? 403 : 200;
 
+        case 'gazette':
+            return $connecte ? 404 : 303;
+
         case 'desinscription':
             // Sans jeton dans l'adresse : « lien invalide ». Sans jeton
             // anti-CSRF : l'action est refusée.
@@ -180,6 +188,9 @@ function matrice_url(string $motif, array $f): string
 
     if (str_contains($url, '{slug}')) {
         $slug = 'page';
+        if (str_starts_with($url, '/gazette/')) {
+            $slug = '1999-12'; // mois sans numéro dans la base d'essai
+        }
         if (str_starts_with($url, '/articles')) {
             $slug = $f['article_slug'];
         } elseif (str_starts_with($url, '/albums')) {
@@ -217,6 +228,7 @@ function matrice_url(string $motif, array $f): string
             str_starts_with($url, '/admin/admins/')             => $f['account_admin'],
             str_starts_with($url, '/admin/pages/')              => $f['page'],
             str_starts_with($url, '/admin/categories/')         => $f['category'],
+            str_starts_with($url, '/admin/gazette/')            => $f['gazette'],
             str_starts_with($url, '/tchat/')                    => $f['chat_message'],
             default                                             => $f['doc_pdf'],
         };
@@ -418,6 +430,15 @@ function matrice_fixtures(): array
         'created_at' => $maintenant,
     ]);
 
+    // Un numéro de gazette fictif, pour l'écran d'aperçu de l'administration
+    // (mois volontairement ancien : il ne gêne aucun autre test).
+    $gazette = db_insert('gazettes', [
+        'periode' => '2000-01', 'groupe' => 'famille', 'status' => 'a_valider',
+        'mot' => '',
+        'contenu' => '{"periode":"2000-01","libelle":"janvier 2000","sections":[],"chiffres":[]}',
+        'retire' => '[]', 'created_at' => $maintenant, 'updated_at' => $maintenant,
+    ]);
+
     return [
         'branches' => [$branchA, $branchB, $branchVoirTout],
         'branch_a' => $branchA,
@@ -450,6 +471,7 @@ function matrice_fixtures(): array
         'family' => $family,
         'category' => $categorie,
         'chat_message' => $chat,
+        'gazette' => $gazette,
         'secret_article' => 'SECRET-PRIVE-' . $suffixe,
         'secret_page' => 'SECRET-PAGE-' . $suffixe,
         'dossier_fichiers' => $dossier,

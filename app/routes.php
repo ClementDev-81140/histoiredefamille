@@ -23,8 +23,10 @@ require_once __DIR__ . '/controllers/admin_documents.php';
 require_once __DIR__ . '/controllers/admin_branches.php';
 require_once __DIR__ . '/controllers/admin_comptes.php';
 require_once __DIR__ . '/controllers/admin_courriels.php';
+require_once __DIR__ . '/controllers/admin_gazette.php';
 require_once __DIR__ . '/controllers/compte.php';
 require_once __DIR__ . '/controllers/desinscription.php';
+require_once __DIR__ . '/controllers/gazette.php';
 require_once __DIR__ . '/controllers/admin_pages.php';
 require_once __DIR__ . '/controllers/admin_persons.php';
 require_once __DIR__ . '/controllers/admin_import.php';
@@ -85,6 +87,8 @@ route('GET', '/famille', 'family_home');
 
 // Mon compte : changement de son propre mot de passe, pour tous les comptes.
 route('GET', '/mon-compte', 'mon_compte');
+// La gazette du mois : un numéro par groupe de droits, réservé aux ayants droit.
+route('GET', '/gazette/{slug}', 'gazette_mois_page');
 route('POST', '/mon-compte/courriels', 'mon_compte_courriels');
 route('GET', '/desinscription', 'desinscription');
 route('POST', '/desinscription', 'desinscription_confirmer');
@@ -102,6 +106,13 @@ route('POST', '/tchat/{id}/supprimer', 'tchat_supprimer');
 // ---------------------------------------------------------------------------
 route('GET', '/admin', 'admin_dashboard');
 route('GET', '/admin/courriels', 'admin_courriels');
+route('GET', '/admin/gazette', 'admin_gazette');
+route('GET', '/admin/gazette/{id}', 'admin_gazette_apercu');
+route('POST', '/admin/gazette/auto', 'admin_gazette_auto');
+route('POST', '/admin/gazette/{id}/retirer', 'admin_gazette_retirer');
+route('POST', '/admin/gazette/{id}/mot', 'admin_gazette_mot');
+route('POST', '/admin/gazette/{id}/envoyer', 'admin_gazette_envoyer');
+route('POST', '/admin/gazette/{id}/passer', 'admin_gazette_passer');
 route('POST', '/admin/courriels/reglages', 'admin_courriels_reglages');
 route('POST', '/admin/courriels/essai', 'admin_courriels_essai');
 route('GET', '/admin/etat', 'admin_status');

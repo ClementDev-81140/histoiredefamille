@@ -433,6 +433,26 @@ function courriel_traiter_file(array $options = [], ?callable $trace = null, $co
     }
     $dire('Nouvelles notifications mises en file : ' . $res['enfiles']);
 
+    // 1 bis. Gazette du mois : préparation le 1er, envoi automatique éventuel
+    //        au-delà du délai de grâce (réglage désactivé par défaut).
+    if (($options['gazette'] ?? true) === true) {
+        try {
+            $prep = gazette_preparer();
+            if ($prep['prepares'] > 0) {
+                $dire('Gazette du mois : ' . $prep['prepares'] . ' numéro(s) préparé(s) pour '
+                    . implode(', ', $prep['groupes']) . ' — à valider dans l’administration.');
+            }
+            $auto = gazette_valider_auto(null, static function (string $ligne) use ($dire): void {
+                $dire('  · ' . $ligne);
+            });
+            if ($auto > 0) {
+                $dire('Gazette du mois : ' . $auto . ' numéro(s) envoyé(s) automatiquement.');
+            }
+        } catch (Throwable $e) {
+            $dire('  ! La préparation de la gazette a échoué : ' . $e->getMessage());
+        }
+    }
+
     // 2. Sans serveur d'envoi, rien ne part — et la file est conservée.
     if (!$res['configure']) {
         $res['raison'] = courriel_raison_non_configuree($surcharge);

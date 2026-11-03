@@ -42,6 +42,12 @@ $libelles = [
     'titre_chiffres' => ['En chiffres', 'Titre de l’encart.'],
     'titre_une'      => ['À la une', 'Titre de la rubrique des articles, page publique.'],
     'titre_lire'     => ['À lire aussi', 'Titre de la rubrique des pages d’information.'],
+    'titre_gazette_articles'    => ['Gazette : les articles', 'Encart de la gazette du mois.'],
+    'titre_gazette_photos'      => ['Gazette : photos et albums', 'Encart de la gazette du mois.'],
+    'titre_gazette_videos'      => ['Gazette : vidéos', 'Encart de la gazette du mois.'],
+    'titre_gazette_temoignages' => ['Gazette : témoignages', 'Encart de la gazette du mois.'],
+    'titre_gazette_recettes'    => ['Gazette : recettes', 'Encart de la gazette du mois.'],
+    'titre_gazette_personnes'   => ['Gazette : nouvelles personnes', 'Encart de la gazette du mois.'],
 ];
 ?>
 <nav class="fil" aria-label="Fil d’Ariane">
