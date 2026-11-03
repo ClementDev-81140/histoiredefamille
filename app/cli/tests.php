@@ -1624,6 +1624,387 @@ if ($filtre === '' || $filtre === 'comptes') {
     );
 }
 
+
+// ---------------------------------------------------------------------------
+// Apparence du journal (lot A) : textes de la une, numéro, couleurs
+// ---------------------------------------------------------------------------
+if ($filtre === '' || $filtre === 'apparence') {
+    echo "Apparence du journal — textes, numéro et couleurs\n";
+
+    $essais = [];
+    try {
+        db_transaction(static function () use (&$essais): void {
+            // On part d'une table de réglages propre : le site « d'origine ».
+            db_exec("DELETE FROM settings WHERE key LIKE 'apparence\\_%' ESCAPE '\\'");
+            db_exec("DELETE FROM settings WHERE key IN ('name', 'devise', 'fondee')");
+            site_settings_oublier();
+            apparence_brut(true);
+
+            $essais['defauts'] = [
+                'midi'    => apparence_texte('bandeau_milieu'),
+                'droite'  => apparence_texte('bandeau_droite'),
+                'numero'  => apparence_numero(),
+                'pied'    => apparence_pied(),
+                'accueil' => apparence_accueil_phrase(),
+                'encarts' => [
+                    apparence_titre_encart('annonces'),
+                    apparence_titre_encart('courrier'),
+                    apparence_titre_encart('editions'),
+                    apparence_titre_encart('acces'),
+                    apparence_titre_encart('chiffres'),
+                    apparence_titre_encart('une'),
+                    apparence_titre_encart('lire'),
+                ],
+                'gothique' => apparence_gothique(),
+                'montrer'  => [
+                    apparence_actif('montrer_bandeau'),
+                    apparence_actif('montrer_devise'),
+                    apparence_actif('montrer_fondee'),
+                    apparence_actif('montrer_numero'),
+                ],
+                'css'      => apparence_css(),
+                'variables' => apparence_variables(),
+                'papier'   => apparence_palette_papier(),
+            ];
+
+            // 1. Textes : nettoyage des retours à la ligne et des caractères
+            //    de contrôle, longueur bornée, champ vide = texte d'aujourd'hui.
+            $sale = apparence_nettoyer("  Édition\n\tdes familles\x07 réunies  ", 80);
+            $long = apparence_nettoyer(str_repeat('a', 120), 80);
+            $essais['nettoyage'] = [
+                'sale'  => $sale,
+                'long'  => mb_strlen($long),
+                'html'  => apparence_nettoyer('<b>gras</b>', 80),
+            ];
+
+            save_site_setting('apparence_bandeau_milieu', "  Notre journal\n  de famille  ");
+            save_site_setting('apparence_bandeau_droite', 'Prix : deux sourires');
+            save_site_setting('apparence_titre_courrier', 'Le courrier');
+            apparence_brut(true);
+            $essais['saisis'] = [
+                'midi'    => apparence_texte('bandeau_milieu'),
+                'droite'  => apparence_texte('bandeau_droite'),
+                'courrier' => apparence_titre_encart('courrier'),
+                'annonces' => apparence_titre_encart('annonces'),
+            ];
+
+            // 2. Numéro d'édition : automatique, texte libre, aucun, masqué.
+            save_site_setting('apparence_numero_mode', 'libre');
+            save_site_setting('apparence_numero_texte', 'N° 12');
+            apparence_brut(true);
+            $essais['numeroLibre'] = apparence_numero();
+
+            save_site_setting('apparence_numero_texte', '');
+            apparence_brut(true);
+            $essais['numeroLibreVide'] = apparence_numero();
+
+            save_site_setting('apparence_numero_texte', 'Hiver 2026');
+            save_site_setting('apparence_numero_mode', 'aucun');
+            apparence_brut(true);
+            $essais['numeroAucun'] = apparence_numero();
+
+            save_site_setting('apparence_numero_mode', 'auto');
+            save_site_setting('apparence_montrer_numero', '0');
+            apparence_brut(true);
+            $essais['numeroMasque'] = apparence_numero();
+
+            // 3. Une case décochée masque la ligne, pas le reste du site.
+            save_site_setting('apparence_montrer_devise', '0');
+            save_site_setting('apparence_montrer_fondee', '0');
+            apparence_brut(true);
+            $essais['cases'] = [
+                'devise'  => apparence_actif('montrer_devise'),
+                'fondee'  => apparence_actif('montrer_fondee'),
+                'bandeau' => apparence_actif('montrer_bandeau'),
+            ];
+
+            // 4. Validation de la saisie : longueurs, année, numéro libre.
+            $essais['validations'] = [];
+            foreach ([
+                'année trop ancienne'   => ['fondee' => '1400'],
+                'année dans le futur'   => ['fondee' => (string) ((int) date('Y') + 1)],
+                'année écrite en lettres' => ['fondee' => 'abcd'],
+                'devise trop longue'    => ['devise' => str_repeat('é', 130)],
+                'bandeau trop long'     => ['bandeau_milieu' => str_repeat('a', 90)],
+                'numéro libre sans texte' => ['numero_mode' => 'libre', 'numero_texte' => ''],
+            ] as $nom => $champs) {
+                $saisie = array_merge([
+                    'nom' => 'Histoire de famille', 'devise' => '', 'fondee' => '',
+                    'numero_mode' => 'auto', 'numero_texte' => '',
+                ], $champs);
+                [, $erreurs] = apparence_lire_saisie($saisie, $saisie['nom'], $saisie['devise'], $saisie['fondee']);
+                $essais['validations'][$nom] = $erreurs;
+            }
+            $saisieOk = [
+                'nom' => 'Notre journal', 'devise' => 'Les souvenirs', 'fondee' => '1889',
+                'numero_mode' => 'libre', 'numero_texte' => 'N° 3',
+                'bandeau_milieu' => '', 'bandeau_droite' => '',
+            ];
+            [$valeursOk, $erreursOk] = apparence_lire_saisie(
+                $saisieOk, $saisieOk['nom'], $saisieOk['devise'], $saisieOk['fondee']
+            );
+            $essais['saisieOk'] = [$valeursOk, $erreursOk];
+
+            // 5. Couleurs : format strictement validé.
+            $essais['couleurs'] = [
+                'six'      => apparence_hex_valide('#8F3126'),
+                'trois'    => apparence_hex_valide('#abc'),
+                'sansdiese' => apparence_hex_valide('8f3126'),
+                'nom'      => apparence_hex_valide('red'),
+                'injection' => apparence_hex_valide('red;} body{display:none'),
+                'court'    => apparence_hex_valide('#12345'),
+                'vide'     => apparence_hex_valide(''),
+                'tableau'  => apparence_hex_valide(['#ffffff']),
+            ];
+
+            // 6. Contrastes WCAG : calculs connus et minima respectés par les
+            //    deux palettes proposées.
+            $rapportsPapier = apparence_rapports(apparence_palette_papier());
+            $rapportsBleu   = apparence_rapports(apparence_palette_bleu());
+            $essais['contrastes'] = [
+                'noir/blanc' => apparence_contraste('#000000', '#ffffff'),
+                'blanc/blanc' => apparence_contraste('#ffffff', '#ffffff'),
+                'papier'     => array_column($rapportsPapier, 'ok'),
+                'bleu'       => array_column($rapportsBleu, 'ok'),
+            ];
+
+            // 7. Couleurs trop claires : refus, puis correction automatique.
+            $mauvaises = ['fond' => '#ffffff', 'texte' => '#dddddd', 'accent' => '#eeeeee', 'bordure' => '#cccccc'];
+            $essais['refus'] = apparence_verifier($mauvaises);
+            $corrigees = apparence_corriger($mauvaises);
+            $essais['corrigees'] = [
+                'erreurs' => apparence_verifier($corrigees),
+                'couleurs' => $corrigees,
+                'rapports' => array_column(apparence_rapports(apparence_deriver($corrigees)), 'ok'),
+            ];
+
+            // 8. La feuille /theme.css ne contient que des valeurs validées,
+            //    même quand on essaie d'y injecter du CSS par chaque champ.
+            $injection = 'red;} body{display:none} /*';
+            $essais['injections'] = [];
+            foreach (['fond', 'texte', 'accent', 'bordure'] as $cle) {
+                db_exec("DELETE FROM settings WHERE key LIKE 'apparence\\_%' ESCAPE '\\'");
+                site_settings_oublier();
+                save_site_setting('apparence_couleurs_mode', 'perso');
+                save_site_setting('apparence_couleur_' . $cle, $injection);
+                apparence_brut(true);
+                $css = apparence_css();
+                $essais['injections'][$cle] = [
+                    'fuite' => str_contains($css, 'display:none') || str_contains($css, 'red;}'),
+                    'hex'   => preg_match_all('/#[0-9a-f]{6}/', $css),
+                    'autre' => preg_match_all('/(?<![0-9a-f])#[0-9a-f]{3,5}(?![0-9a-f])/', $css),
+                ];
+            }
+
+            // 9. Palette « bleu d'origine » : fond uni, couleurs d'origine.
+            db_exec("DELETE FROM settings WHERE key LIKE 'apparence\\_%' ESCAPE '\\'");
+            site_settings_oublier();
+            save_site_setting('apparence_couleurs_mode', 'bleu');
+            apparence_brut(true);
+            $cssBleu = apparence_css();
+            $essais['bleu'] = [
+                'fond'   => str_contains($cssBleu, '--fond: #f6f5f2;'),
+                'uni'    => str_contains($cssBleu, 'background-image: none'),
+                'papier' => apparence_mode_couleurs() === 'bleu',
+                'accents' => apparence_rapports(apparence_variables()),
+            ];
+
+            // 10. Toutes les variables utilisées par style.css existent.
+            $css = (string) file_get_contents(dirname(__DIR__) . '/../public/assets/style.css');
+            preg_match_all('/var\(--([a-z0-9-]+)\)/', $css, $trouvees);
+            $utilisees  = array_values(array_unique($trouvees[1]));
+            $definies   = array_keys(apparence_palette_papier());
+            preg_match_all('/^\s*--([a-z0-9-]+)\s*:/m', $css, $declarees);
+            $definies = array_values(array_unique(array_merge($definies, $declarees[1])));
+            $essais['variables'] = array_values(array_diff($utilisees, $definies));
+
+            // 11. Enregistrement, version (ETag) et retour à l'origine.
+            $versionAvant = apparence_version();
+            apparence_enregistrer(['bandeau_milieu' => 'Bonjour', 'montrer_devise' => '0']);
+            $essais['enregistrement'] = [
+                'midi'    => apparence_texte('bandeau_milieu'),
+                'devise'  => apparence_actif('montrer_devise'),
+                'version' => apparence_version() - $versionAvant,
+            ];
+
+            save_site_setting('name', 'Nom bricolé');
+            save_site_setting('devise', 'Devise bricolée');
+            save_site_setting('fondee', '1900');
+            apparence_retablir();
+            apparence_brut(true);
+            $essais['retablir'] = [
+                'midi'   => apparence_texte('bandeau_milieu'),
+                'nom'    => site_setting('name'),
+                'devise' => site_setting('devise'),
+                'fondee' => site_setting('fondee'),
+                'css'    => apparence_css(),
+            ];
+
+            throw new RuntimeException('fin du test, annulation');
+        });
+    } catch (RuntimeException $e) {
+        if ($e->getMessage() !== 'fin du test, annulation') {
+            throw $e;
+        }
+    }
+    // Les essais sont annulés : on relit la base telle qu'elle était.
+    site_settings_oublier();
+    apparence_brut(true);
+
+    $ok = static fn (string $cle): bool => isset($essais[$cle]);
+
+    // Valeurs par défaut : le site d'aujourd'hui, à l'identique.
+    verifier('apparence : texte du bandeau par défaut', $ok('defauts') && $essais['defauts']['midi'] === 'Édition des familles réunies', $ok('defauts') ? $essais['defauts']['midi'] : '');
+    verifier('apparence : texte de droite par défaut', $ok('defauts') && $essais['defauts']['droite'] === 'Prix : un sourire');
+    verifier('apparence : numéro automatique par défaut', $ok('defauts') && $essais['defauts']['numero'] === gazette_numero(), $ok('defauts') ? $essais['defauts']['numero'] : '');
+    verifier('apparence : pied de page par défaut', $ok('defauts') && $essais['defauts']['pied'] === APPARENCE_PIED_DEFAUT);
+    verifier('apparence : phrase d’accueil = description du site', $ok('defauts') && $essais['defauts']['accueil'] === site_setting('description'));
+    verifier(
+        'apparence : les sept titres d’encart par défaut',
+        $ok('defauts') && $essais['defauts']['encarts'] === [
+            'Petites annonces', 'Courrier des lecteurs', 'Les éditions',
+            'Accès rapides', 'En chiffres', 'À la une', 'À lire aussi',
+        ],
+        $ok('defauts') ? json_encode($essais['defauts']['encarts'], JSON_UNESCAPED_UNICODE) : ''
+    );
+    verifier('apparence : gothique et les quatre lignes affichées par défaut', $ok('defauts') && $essais['defauts']['gothique'] === true && $essais['defauts']['montrer'] === [true, true, true, true]);
+    verifier('apparence : aucune surcharge de couleur par défaut', $ok('defauts') && !str_contains($essais['defauts']['css'], ':root'), $ok('defauts') ? $essais['defauts']['css'] : '');
+    verifier('apparence : la palette par défaut est celle d’aujourd’hui', $ok('defauts') && $essais['defauts']['variables'] === $essais['defauts']['papier']);
+
+    // Nettoyage et longueurs.
+    verifier('apparence : retours à la ligne et caractères de contrôle retirés', $ok('nettoyage') && $essais['nettoyage']['sale'] === 'Édition des familles réunies', $ok('nettoyage') ? $essais['nettoyage']['sale'] : '');
+    verifier('apparence : texte trop long coupé à 80 caractères', $ok('nettoyage') && $essais['nettoyage']['long'] === 80, $ok('nettoyage') ? (string) $essais['nettoyage']['long'] : '');
+    verifier('apparence : le HTML saisi reste du texte', $ok('nettoyage') && $essais['nettoyage']['html'] === '<b>gras</b>');
+    verifier('apparence : les textes saisis remplacent les textes par défaut', $ok('saisis') && $essais['saisis']['midi'] === 'Notre journal de famille' && $essais['saisis']['droite'] === 'Prix : deux sourires', $ok('saisis') ? json_encode($essais['saisis'], JSON_UNESCAPED_UNICODE) : '');
+    verifier('apparence : un encart renommé, les autres inchangés', $ok('saisis') && $essais['saisis']['courrier'] === 'Le courrier' && $essais['saisis']['annonces'] === 'Petites annonces');
+
+    // Numéro d'édition.
+    verifier('apparence : numéro en texte libre', $ok('numeroLibre') && $essais['numeroLibre'] === 'N° 12', $ok('numeroLibre') ? $essais['numeroLibre'] : '');
+    verifier('apparence : texte libre vide → numéro automatique', $ok('numeroLibreVide') && $essais['numeroLibreVide'] === gazette_numero());
+    verifier('apparence : mode « aucun » → pas de numéro', $ok('numeroAucun') && $essais['numeroAucun'] === '');
+    verifier('apparence : case décochée → pas de numéro', $ok('numeroMasque') && $essais['numeroMasque'] === '');
+    verifier('apparence : cases devise et fondée décochées', $ok('cases') && $essais['cases'] === ['devise' => false, 'fondee' => false, 'bandeau' => true], $ok('cases') ? json_encode($essais['cases']) : '');
+
+    // Validation.
+    $v = $ok('validations') ? $essais['validations'] : [];
+    verifier('apparence : année avant 1500 refusée', ($v['année trop ancienne'] ?? []) !== []);
+    verifier('apparence : année dans le futur refusée', ($v['année dans le futur'] ?? []) !== []);
+    verifier('apparence : année en lettres refusée', ($v['année écrite en lettres'] ?? []) !== []);
+    verifier('apparence : devise de plus de 120 caractères refusée', ($v['devise trop longue'] ?? []) !== []);
+    verifier('apparence : bandeau de plus de 80 caractères refusé', ($v['bandeau trop long'] ?? []) !== []);
+    verifier('apparence : numéro libre sans texte refusé', ($v['numéro libre sans texte'] ?? []) !== []);
+    verifier('apparence : une saisie correcte passe', $ok('saisieOk') && $essais['saisieOk'][1] === [] && $essais['saisieOk'][0]['fondee'] === '1889', $ok('saisieOk') ? json_encode($essais['saisieOk'][1], JSON_UNESCAPED_UNICODE) : '');
+
+    // Couleurs.
+    $c = $ok('couleurs') ? $essais['couleurs'] : [];
+    verifier('couleurs : #RRGGBB accepté et mis en minuscules', ($c['six'] ?? null) === '#8f3126');
+    verifier('couleurs : #abc accepté et complété', ($c['trois'] ?? null) === '#aabbcc');
+    verifier('couleurs : sans dièse accepté', ($c['sansdiese'] ?? null) === '#8f3126');
+    verifier('couleurs : nom de couleur refusé', $ok('couleurs') && array_key_exists('nom', $c) && $c['nom'] === null);
+    verifier('couleurs : tentative d’injection refusée', $ok('couleurs') && array_key_exists('injection', $c) && $c['injection'] === null);
+    verifier('couleurs : code trop court refusé', $ok('couleurs') && array_key_exists('court', $c) && $c['court'] === null);
+    verifier('couleurs : vide refusé', $ok('couleurs') && array_key_exists('vide', $c) && $c['vide'] === null);
+    verifier('couleurs : valeur non textuelle refusée', $ok('couleurs') && array_key_exists('tableau', $c) && $c['tableau'] === null);
+
+    // Contrastes.
+    $k = $ok('contrastes') ? $essais['contrastes'] : [];
+    verifier('contraste : noir sur blanc = 21 pour 1', ($k['noir/blanc'] ?? 0) === 21.0, 'obtenu : ' . ($k['noir/blanc'] ?? ''));
+    verifier('contraste : blanc sur blanc = 1 pour 1', ($k['blanc/blanc'] ?? 0) === 1.0);
+    verifier('contraste : la palette papier respecte les quatre minima', ($k['papier'] ?? []) === [true, true, true, true], json_encode($k['papier'] ?? []));
+    verifier('contraste : la palette bleue respecte les quatre minima', ($k['bleu'] ?? []) === [true, true, true, true], json_encode($k['bleu'] ?? []));
+
+    // Refus et correction.
+    verifier('couleurs : un texte gris sur du blanc est refusé', $ok('refus') && $essais['refus'] !== [], $ok('refus') ? json_encode($essais['refus'], JSON_UNESCAPED_UNICODE) : '');
+    verifier('couleurs : le refus dit quel contraste ne va pas', $ok('refus') && str_contains(implode(' ', $essais['refus']), 'contraste'));
+    verifier('couleurs : la correction proposée passe la vérification', $ok('corrigees') && $essais['corrigees']['erreurs'] === [] && $essais['corrigees']['rapports'] === [true, true, true, true], $ok('corrigees') ? json_encode($essais['corrigees'], JSON_UNESCAPED_UNICODE) : '');
+    verifier('couleurs : la correction reste proche du choix (même papier)', $ok('corrigees') && $essais['corrigees']['couleurs']['fond'] === '#ffffff');
+
+    // Feuille /theme.css : aucune valeur non validée, même par injection.
+    $i = $ok('injections') ? $essais['injections'] : [];
+    verifier('theme.css : aucune injection ne passe par les quatre couleurs', array_reduce(array_keys($i), static fn (bool $ok, string $cle): bool => $ok && $i[$cle]['fuite'] === false, true), json_encode($i));
+    verifier(
+        'theme.css : uniquement des codes #RRGGBB complets',
+        array_reduce(array_keys($i), static fn (bool $ok, string $cle): bool => $ok && $i[$cle]['hex'] > 10 && $i[$cle]['autre'] === 0, true),
+        json_encode($i)
+    );
+
+    // Mode « bleu d'origine ».
+    $b = $ok('bleu') ? $essais['bleu'] : [];
+    verifier('couleurs : le mode bleu reprend la palette d’origine', ($b['fond'] ?? false) === true);
+    verifier('couleurs : le mode bleu donne un fond uni, sans papier', ($b['uni'] ?? false) === true);
+    verifier(
+        'couleurs : le mode bleu respecte les contrastes',
+        array_column($b['accents'] ?? [], 'ok') === array_column(apparence_rapports(apparence_palette_bleu()), 'ok'),
+        json_encode($b['accents'] ?? [], JSON_UNESCAPED_UNICODE)
+    );
+
+    // Cohérence de style.css.
+    verifier(
+        'style.css : chaque variable utilisée est définie quelque part',
+        $ok('variables') && $essais['variables'] === [],
+        $ok('variables') ? implode(', ', $essais['variables']) : ''
+    );
+
+    // Enregistrement, version et retour à l'origine.
+    $e2 = $ok('enregistrement') ? $essais['enregistrement'] : [];
+    verifier('apparence : l’enregistrement garde les textes', ($e2['midi'] ?? '') === 'Bonjour');
+    verifier('apparence : l’enregistrement garde la case décochée', ($e2['devise'] ?? null) === false);
+    verifier('apparence : l’enregistrement change la version (ETag)', ($e2['version'] ?? 0) === 1, 'écart : ' . ($e2['version'] ?? '?'));
+
+    $r = $ok('retablir') ? $essais['retablir'] : [];
+    verifier('apparence : « Rétablir » remet les textes d’origine', ($r['midi'] ?? '') === 'Édition des familles réunies');
+    // Après « Rétablir », le titre revient à celui de la configuration
+    // (`config.local.php`), la devise et l'année ne sont plus enregistrées.
+    verifier(
+        'apparence : « Rétablir » remet le titre, la devise et la date du fichier',
+        ($r['nom'] ?? '') === (string) config('site.name')
+            && ($r['devise'] ?? 'x') === ''
+            && ($r['fondee'] ?? 'x') === '',
+        json_encode($r, JSON_UNESCAPED_UNICODE)
+    );
+    verifier(
+        'apparence : « Rétablir » remet la palette papier (aucune surcharge)',
+        str_contains((string) ($r['css'] ?? 'x'), 'papier ancien') && !str_contains((string) ($r['css'] ?? ''), ':root'),
+        (string) ($r['css'] ?? '')
+    );
+
+    // Accès et sécurité, par lecture du code.
+    $code = (string) file_get_contents(dirname(__DIR__) . '/controllers/admin_apparence.php');
+    $sansGarde = [];
+    foreach (preg_split('/\nfunction\s+/', $code) ?: [] as $index => $morceau) {
+        if ($index === 0 || preg_match('/^admin_\w+\s*\(/', $morceau) !== 1) {
+            continue;
+        }
+        if (!str_contains($morceau, 'require_admin();')) {
+            $sansGarde[] = strtok($morceau, '(');
+        }
+    }
+    verifier('accès : chaque page d’apparence commence par require_admin()', $sansGarde === [], 'sans garde : ' . implode(', ', $sansGarde));
+    verifier('accès : l’enregistrement de l’apparence vérifie le jeton CSRF', str_contains($code, 'csrf_check();'));
+    verifier('theme.css : la feuille de style est publique (pas de require_login)', !str_contains(substr($code, (int) strpos($code, 'function theme_css')), 'require_login'));
+
+    // La feuille /theme.css n'est demandée que si une autre palette est
+    // active : avec « Papier ancien », aucune requête de plus sur le Pi.
+    $script = (string) file_get_contents(dirname(__DIR__) . '/../public/assets/app.js');
+    verifier(
+        'apparence : /theme.css n’est lié que si une autre palette est active',
+        str_contains((string) file_get_contents(dirname(__DIR__) . '/views/layout.php'), 'apparence_feuille_active()')
+            && str_contains((string) file_get_contents(dirname(__DIR__) . '/views/layout_admin.php'), 'apparence_feuille_active()')
+            && !str_contains($code, 'theme.css?v=')
+    );
+    // L'aperçu écrit du texte, jamais du HTML (CSP : aucun script en ligne).
+    verifier(
+        'apparence : l’aperçu n’utilise jamais innerHTML',
+        !preg_match('/\.innerHTML\s*=/', $script) === true
+            && !str_contains($script, 'document.write')
+            && substr_count($script, 'textContent') >= 3
+    );
+    verifier(
+        'apparence : les couleurs de l’aperçu passent par setProperty (aucun style= en HTML)',
+        str_contains($script, 'setProperty') && !str_contains($script, '.cssText')
+    );
+}
+
 $total = $reussis + count($echecs);
 echo "\n", $total, " test(s) — ", $reussis, " ok, ", count($echecs), " échec(s).\n";
 

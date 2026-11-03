@@ -3,6 +3,72 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.11.0] — 2026-11-03
+
+### L'apparence du journal (textes et couleurs)
+
+Une nouvelle page **Administration → Apparence du journal**, juste sous
+« Réglages » : les administrateurs changent eux-mêmes les petites lignes de
+« la une » et les couleurs, sans toucher au code. **Tant que rien n'est
+modifié, le site s'affiche exactement comme avant.**
+
+- **Les textes** : milieu du bandeau (« Édition des familles réunies »),
+  droite du bandeau (« Prix : un sourire »), titre, devise, « Fondée en »
+  (quatre chiffres ou vide), pied de page, phrase d'accueil, et les titres des
+  sept encarts (« Petites annonces », « Courrier des lecteurs », « Les
+  éditions », « Accès rapides », « En chiffres », « À la une », « À lire
+  aussi »). La date reste automatique. Un champ vidé reprend le texte actuel.
+- **Le numéro d'édition** : automatique (numéro de la semaine), texte libre
+  (« N° 12 », « Hiver 2026 »), ou aucun.
+- **Quatre cases** pour afficher ou masquer le bandeau, la devise, le
+  « Fondée en » et le numéro.
+- **Titre gothique** : une case. Décochée, le titre s'écrit en Old Standard TT
+  gras, en petites capitales. Si le fichier de la police gothique manque sur le
+  serveur, la page le signale et le repli s'applique tout seul.
+- **Les couleurs**, trois modes : « Papier ancien » (le site d'aujourd'hui),
+  « Bleu d'origine » (la palette claire d'avant 1.9, avec un fond uni), et
+  « Personnalisée » : quatre couleurs seulement (papier, texte, accent, encre),
+  le site calcule les panneaux, les gris, les ombres et les messages.
+- **Contrastes vérifiés** avant d'enregistrer : 7:1 pour le texte sur le
+  papier, 4,5:1 pour les textes doux, l'accent sur le papier et le texte des
+  boutons sur l'accent. Une combinaison illisible est **refusée** avec un
+  message clair (« Le texte choisi (#cccccc) est trop proche du papier
+  (#f3e7ce) : contraste 1,3 pour 1 (il faut 7 pour 1) »), un tableau recalculé
+  pendant la saisie, et le bouton **« Corriger pour moi »** qui rapproche juste
+  ce qu'il faut. Le texte et l'accent choisis ne sont **jamais** modifiés en
+  silence : c'est le refus qui explique, la correction qui propose.
+- **« Rétablir les valeurs d'origine »** (avec confirmation) remet tous les
+  réglages de la page comme au premier jour : textes, cases, gothique, palette.
+- **Aperçu en direct** du bandeau en haut de la page : il suit la saisie, la
+  mise en page et les couleurs. Le script écrit du texte (`textContent`) et
+  change les couleurs par le CSSOM (`setProperty`) : jamais de HTML inséré,
+  aucun `style=` produit, donc la CSP stricte reste intacte. Sans JavaScript,
+  le formulaire fonctionne normalement (seul l'aperçu ne s'anime pas).
+- **Sous le capot** : une seule feuille `/theme.css` écrite par PHP à partir de
+  codes `#RRGGBB` validés, avec un numéro de version dans les réglages servi
+  comme ETag (le navigateur garde le fichier cinq minutes, puis demande
+  seulement « a-t-il changé ? »). Elle est liée **après** `style.css` et
+  **seulement** si une autre palette que « Papier ancien » est active : une
+  requête de moins sur le Pi quand rien n'a été personnalisé.
+- Les couleurs de `style.css` passent toutes par des variables `:root` (aucune
+  couleur en dur hors du bloc d'impression) ; les classes existantes n'ont pas
+  changé de nom, et le bloc `:root` d'origine est conservé.
+- **Sécurité** : textes en clair échappés à l'affichage, longueurs bornées
+  (40 à 200 caractères selon le champ), retours à la ligne et caractères de
+  contrôle retirés, année entre 1500 et l'année en cours, palette refusée si
+  les contrastes ne passent pas. `/theme.css` ne contient que des valeurs
+  recalculées : l'essai d'injection `red;} body{display:none` ne produit rien.
+  L'enregistrement est journalisé (« apparence modifiée ») sans recopier les
+  textes.
+- **57 vérifications de plus** (244 au total).
+- `site_setting()` relit les réglages après un enregistrement ou un effacement
+  (`site_settings_oublier()`) : « Rétablir » se voit tout de suite, sans
+  attendre le rechargement suivant.
+- Aucune migration, aucune règle d'accès modifiée.
+- **À faire sur le Pi** : rien de particulier (pas de migration). Vider le
+  cache du navigateur si le bandeau semble figé : le numéro de version force
+  déjà le rechargement.
+
 ## [1.10.0] — 2026-11-03
 
 ### Les comptes de la famille

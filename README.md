@@ -119,6 +119,11 @@ et une installation qui tient en quelques commandes à copier-coller.
   de sécurité.
 - Réglages du site : nom, sous-titre, description, adresse de contact,
   ouverture du **tchat** et durée de conservation de ses messages.
+- **Apparence du journal** : les textes de la une (bandeau, devise, numéro
+  d'édition, pied de page, titres des encarts), les lignes à afficher ou à
+  masquer, le titre en gothique et les **couleurs** — palette d'origine,
+  bleu d'avant, ou quatre couleurs choisies, avec contrôle des contrastes et
+  correction automatique en un clic.
 
 ### Journal des connexions et alertes
 
@@ -403,7 +408,8 @@ histoiredefamille/
 │   ├── lib/                 base de données, sécurité, stockage, images, vidéos,
 │   │                        GEDCOM, visibilité, textes, tchat, recherche,
 │   │                        albums, calendrier, recettes, journal des connexions,
-│   │                        gazette, rubriques publiques, comptes de la famille…
+│   │                        gazette, rubriques publiques, comptes de la famille,
+│   │                        apparence du journal (textes et couleurs)…
 │   ├── views/               gabarits PHP (public, famille, admin)
 │   ├── migrations/          fichiers SQL numérotés
 │   │                        (001_init … 008_comptes_personnels)
@@ -460,19 +466,31 @@ Trois blocs de `public/assets/style.css` s'en occupent, à la fin du fichier :
    repli, page d'article). Ce bloc ne renomme rien : il arrive après les deux
    autres et les surcharge.
 
-Depuis la 1.9.2, le fond est une **feuille de papier** : crème (`#f3e7ce`) avec
+Depuis la 1.9.2, le fond par défaut est une **feuille de papier** : crème (`#f3e7ce`) avec
 deux halos bruns et une ombre intérieure, tenue en place pendant que le texte
 défile. Sur un téléphone, le fond redevient fixe par rapport à la page (même
 aspect, moins de travail pour le processeur). L'administration garde un
 en-tête compact : le grand titre de journal est réservé aux pages publiques.
 
-**Pour revenir à l'ancienne palette bleue** : supprimer le bloc `:root` du
-design Gazette (les couleurs suivent alors les variables, tout reste
-cohérent). Les classes CSS n'ont pas changé de nom.
+Toutes les couleurs passent par des **variables** déclarées dans le bloc
+`:root`, tout en haut de `public/assets/style.css` : le papier, le texte,
+l'encre, l'accent et ses variantes, les bordures, les fonds de messages, les
+couleurs du code. Aucune couleur n'est écrite en dur ailleurs (sauf dans le
+bloc d'impression, qui reste en noir sur blanc). Les classes CSS n'ont pas
+changé de nom.
+
+Depuis la 1.11, ces variables peuvent être remplacées sans toucher au CSS :
+l'administration écrit une feuille `/theme.css` qui ne contient que les
+couleurs choisies, et `layout.php` la charge **après** `style.css`, seulement
+quand une autre palette que « Papier ancien » est active. Pour revenir à
+l'ancienne palette bleue, il suffit donc de choisir « Bleu d'origine » dans
+**Administration → Apparence du journal**.
 
 Deux réglages facultatifs donnent la devise sous le titre et l'année de
 fondation : `devise` et `fondee` (dans la table `settings`, comme les autres
-réglages). S'ils sont absents, la devise reprend le sous-titre du site.
+réglages). S'ils sont absents, la devise reprend le sous-titre du site. Ils se
+modifient désormais dans **Apparence du journal** (voir 6.4), qui les relit
+avec le titre du site (`name`) et le sous-titre (`subtitle`).
 
 La police gothique du titre (UnifrakturMaguntia, licence libre OFL) est
 fournie dans `public/assets/fonts/` (`UnifrakturMaguntia.woff`, licence dans
@@ -885,7 +903,61 @@ Toutes ces actions sont enregistrées dans le journal d'activité (qui a créé,
 modifié, réinitialisé ou désactivé quel compte), **sans jamais y écrire un mot
 de passe**.
 
-### 6.4 Ajouter une vidéo
+### 6.4 Changer les textes et les couleurs du journal
+
+**Administration → Apparence du journal** (menu de gauche, juste sous
+« Réglages »). Tout se règle sur une seule page, avec un aperçu du bandeau
+en haut qui suit la saisie.
+
+- **Les textes de la une** : le texte du milieu du bandeau (« Édition des
+  familles réunies »), celui de droite (« Prix : un sourire »), la devise, le
+  « Fondée en » et le titre du site. La date, elle, reste automatique. Un
+  champ vidé reprend le texte d'aujourd'hui.
+- **Le numéro d'édition** : « Automatique » (le numéro de la semaine),
+  « Texte libre » (« N° 12 », « Hiver 2026 »…) ou « Aucun ».
+- **Le pied de page** et la **phrase d'accueil** de la page publique.
+- **Les titres des encarts** (« Petites annonces », « Courrier des lecteurs »,
+  « Les éditions », « Accès rapides », « En chiffres », « À la une »,
+  « À lire aussi ») : chacun peut être renommé.
+- **Quatre cases** pour afficher ou masquer : le bandeau du haut, la devise,
+  le « Fondée en » et le numéro d'édition.
+- **Le titre en gothique** : une case. Décochée, le titre s'écrit en Old
+  Standard TT gras, en petites capitales. Si le fichier de la police
+  gothique n'est pas sur le serveur, le site le dit et utilise le repli.
+
+**Les couleurs.** Trois possibilités :
+
+1. **Papier ancien** (par défaut) : le site tel qu'il est aujourd'hui.
+2. **Bleu d'origine** : la palette claire d'avant le design « gazette »,
+   avec un fond uni (ni halo ni ombre de papier).
+3. **Couleurs personnalisées** : quatre couleurs seulement — le papier,
+   le texte, l'accent (liens, boutons, titres) et l'encre (bordures). Le site
+   calcule tout le reste : panneaux, textes gris, ombres, messages d'erreur.
+
+Le site **vérifie les contrastes** avant d'enregistrer, et refuse une
+combinaison illisible avec un message clair, par exemple :
+
+> Le texte choisi (#cccccc) est trop proche du papier (#f3e7ce) :
+> contraste 1,3 pour 1 (il faut 7 pour 1).
+
+Un tableau sous les couleurs affiche les quatre contrastes et se met à jour
+pendant la saisie. Si le refus arrive quand même, le bouton **« Corriger pour
+moi »** rapproche juste ce qu'il faut le texte et l'accent : vous n'avez rien
+à calculer.
+
+Le bouton **« Rétablir les valeurs d'origine »** (avec une confirmation) remet
+tous les réglages de cette page comme au premier jour.
+
+**Comment ça marche, en une phrase.** Le site écrit une petite feuille de
+style à part (`/theme.css`) qui ne contient que des couleurs vérifiées ; elle
+est chargée après la feuille principale, et seulement si vous avez choisi une
+autre palette. Tant que vous ne touchez à rien, elle ne change rien.
+
+**Sans JavaScript**, la page fonctionne quand même : les champs, les cases et
+les boutons sont un simple formulaire ; seuls l'aperçu et le calcul des
+contrastes en direct ne s'animent pas.
+
+### 6.5 Ajouter une vidéo
 
 Deux façons, selon la taille du fichier :
 
@@ -914,7 +986,7 @@ puis **Administration → Vidéos**, section « Depuis le dossier arrivée »
 fichier est **déplacé** sur le disque, jamais chargé en mémoire : un film
 volumineux passe sans problème.
 
-### 6.5 Remplir l'arbre généalogique
+### 6.6 Remplir l'arbre généalogique
 
 **Administration → Arbre** :
 
@@ -926,7 +998,7 @@ L'arbre se consulte sur `/arbre` (vue par défaut) ou depuis la fiche d'une
 personne. Le déplacement dans l'arbre est fait par un petit script maison,
 sans bibliothèque externe.
 
-### 6.6 Écrire un article
+### 6.7 Écrire un article
 
 **Administration → Articles → Écrire un article** :
 
@@ -952,14 +1024,14 @@ sans bibliothèque externe.
 > partie de la famille. C'est le seul contenu du site dans ce cas (avec les
 > pages et les documents marqués « Public »).
 
-### 6.7 Pages d'information
+### 6.8 Pages d'information
 
 **Administration → Pages** : texte simple, avec quelques mises en forme
 (`## titre`, `**gras**`, `*italique*`, `- liste`, `[lien](adresse)`), une
 visibilité par page. Exemple de contenu : l'histoire de la famille, les
 annonces de réunion, une page « qui contacter ».
 
-### 6.8 Utiliser le tchat
+### 6.9 Utiliser le tchat
 
 1. Se connecter avec l'identifiant de sa branche (ou son compte
    administrateur), puis cliquer sur **Tchat** dans le menu.
@@ -986,7 +1058,7 @@ Réglages utiles (Administration → Réglages, bloc « Tchat de la famille ») 
 > courriel ou par notification. C'est volontaire : aucun service à maintenir
 > sur le Raspberry Pi.
 
-### 6.9 Ranger des photos dans un album
+### 6.10 Ranger des photos dans un album
 
 1. Envoyer d'abord les photos normalement (Administration → Documents).
 2. Ouvrir **Administration → Albums photos → Nouvel album** : titre,
@@ -997,7 +1069,7 @@ Réglages utiles (Administration → Réglages, bloc « Tchat de la famille ») 
    **Ajouter**. Le nom apparaît sous la photo, dans l'album et sur la fiche de
    la personne.
 
-### 6.10 Suivre le calendrier et la frise
+### 6.11 Suivre le calendrier et la frise
 
 - **Calendrier** : le mois en cours s'affiche ; les flèches permettent de
   revenir au mois précédent ou d'aller au suivant. Les dates des personnes
@@ -1008,7 +1080,7 @@ Réglages utiles (Administration → Réglages, bloc « Tchat de la famille ») 
   (Administration → Arbre généalogique) : le calendrier et la frise suivent
   automatiquement.
 
-### 6.11 Envoyer un témoignage sonore ou écrire une recette
+### 6.12 Envoyer un témoignage sonore ou écrire une recette
 
 - **Témoignage** : Administration → Documents → **Ajouter un document**, choisir
   un fichier MP3, M4A ou OGG, puis, sur la ligne du document, le bouton
@@ -1018,7 +1090,7 @@ Réglages utiles (Administration → Réglages, bloc « Tchat de la famille ») 
   titre, les ingrédients (un par ligne) et la préparation ; choisir une photo
   déjà envoyée si on veut. La recette s'imprime avec le bouton **Imprimer**.
 
-### 6.12 Chercher dans le site
+### 6.13 Chercher dans le site
 
 1. Cliquer sur **Recherche** dans le menu.
 2. Taper un nom, un mot ou une année, puis **Chercher**. Par exemple
@@ -1035,7 +1107,7 @@ sur le Raspberry Pi.
 
 ---
 
-### 6.13 Choisir ce que voit un visiteur
+### 6.14 Choisir ce que voit un visiteur
 
 Rien à cocher : le site s'en occupe.
 
@@ -1051,7 +1123,7 @@ Rien à cocher : le site s'en occupe.
 - Le tchat reste toujours privé : il n'apparaît jamais dans le menu public.
 - Un compte de famille ou d'administration garde, lui, **tout** le menu.
 
-### 6.14 Vérifier qui s'est connecté
+### 6.15 Vérifier qui s'est connecté
 
 Une fois par semaine, ou dès qu'une alerte apparaît sur le tableau de bord :
 
@@ -1433,6 +1505,10 @@ le dossier `storage/` sont listés dans `.gitignore`.
 - **En-têtes** : `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`,
   `Content-Security-Policy` (aucune ressource externe, aucun script en ligne),
   `Permissions-Policy`.
+- **Couleurs choisies** : la feuille `/theme.css` ne contient que des valeurs
+  validées par le serveur (codes `#RRGGBB` et couleurs calculées à partir
+  d'elles). Aucun texte saisi n'y entre, donc aucune injection CSS n'est
+  possible ; les contrastes trop faibles sont refusés à l'enregistrement.
 - **Apache** : `.git`, `.env`, `config*.php`, `*.sqlite`, `*.bak`, `*.log` sont
   bloqués, y compris le dossier `app/` (hors racine web) et le contenu du SSD.
 - **SQLite** : mode WAL, `busy_timeout` 5000 ms, 3 tentatives espacées de

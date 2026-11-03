@@ -35,6 +35,9 @@ $navLink = static function (string $href, string $label, bool $exact = false) us
     <title><?= e($pageTitle) ?></title>
     <meta name="robots" content="noindex, nofollow">
     <link rel="stylesheet" href="/assets/style.css">
+<?php if (apparence_feuille_active()): ?>
+    <link rel="stylesheet" href="/theme.css?v=<?= apparence_version() ?>">
+<?php endif; ?>
 </head>
 <body class="page-admin">
 <a class="lien-evitement" href="#contenu">Aller au contenu principal</a>
@@ -77,6 +80,7 @@ $navLink = static function (string $href, string $label, bool $exact = false) us
 
         <p class="admin-menu__titre">Système</p>
         <?= $navLink('/admin/reglages', 'Réglages') ?>
+        <?= $navLink('/admin/apparence', 'Apparence du journal') ?>
         <?= $navLink('/admin/admins', 'Administrateurs') ?>
         <?= $navLink('/admin/connexions', 'Journal des connexions') ?>
         <?= $navLink('/admin/etat', 'État du site') ?>

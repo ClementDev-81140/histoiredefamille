@@ -45,7 +45,7 @@ $estPersonne     = compte_type($account) === 'personne';
 
     <aside class="une__lateral" aria-label="Dans ce numéro">
         <section class="encart">
-            <h2 class="encart__titre">Petites annonces</h2>
+            <h2 class="encart__titre"><?= e(apparence_titre_encart('annonces')) ?></h2>
             <?php if ($annonces === []): ?>
                 <p class="discret">Rien à signaler dans les trente prochains jours.</p>
             <?php else: ?>
@@ -63,7 +63,7 @@ $estPersonne     = compte_type($account) === 'personne';
 
         <?php if ($branchesEdition !== [] || $decenniesEdition !== []): ?>
             <section class="encart">
-                <h2 class="encart__titre">Les éditions</h2>
+                <h2 class="encart__titre"><?= e(apparence_titre_encart('editions')) ?></h2>
                 <?php if ($branchesEdition !== []): ?>
                     <ul class="encart__liste encart__liste--editions">
                         <?php foreach ($branchesEdition as $brancheEdition): ?>
@@ -82,7 +82,7 @@ $estPersonne     = compte_type($account) === 'personne';
 
         <?php if ($courrier !== []): ?>
             <section class="encart">
-                <h2 class="encart__titre">Courrier des lecteurs</h2>
+                <h2 class="encart__titre"><?= e(apparence_titre_encart('courrier')) ?></h2>
                 <?php foreach ($courrier as $message): ?>
                     <blockquote class="encart__lettre">
                         <p><?= e(text_summary((string) $message['body'], 140)) ?></p>
@@ -94,7 +94,7 @@ $estPersonne     = compte_type($account) === 'personne';
         <?php endif; ?>
 
         <section class="encart">
-            <h2 class="encart__titre">Accès rapides</h2>
+            <h2 class="encart__titre"><?= e(apparence_titre_encart('acces')) ?></h2>
             <ul class="encart__liste encart__liste--liens">
                 <?php foreach ($acces as $lien): ?>
                     <li><a href="<?= e($lien[0]) ?>"><?= e($lien[1]) ?></a></li>
@@ -103,7 +103,7 @@ $estPersonne     = compte_type($account) === 'personne';
         </section>
 
         <section class="encart">
-            <h2 class="encart__titre">En chiffres</h2>
+            <h2 class="encart__titre"><?= e(apparence_titre_encart('chiffres')) ?></h2>
             <p class="hero__chiffres">
                 <span><strong><?= (int) $nbDocuments ?></strong> document<?= (int) $nbDocuments > 1 ? 's' : '' ?></span>
                 <span><strong><?= (int) $nbPersonnes ?></strong> personne<?= (int) $nbPersonnes > 1 ? 's' : '' ?> dans l’arbre</span>

@@ -16,9 +16,11 @@ $siteName = site_setting('name');
              recherche, mais invisible à l'écran (évite le doublon). */ ?>
     <h1 class="sr-only"><?= e($siteName) ?></h1>
     <?php /* Le sous-titre est déjà dans l'en-tête du journal : on ne
-             l'affiche pas une deuxième fois ici. */ ?>
-    <?php if (site_setting('description') !== ''): ?>
-        <p class="hero__texte"><?= e(site_setting('description')) ?></p>
+             l'affiche pas une deuxième fois ici. La phrase d'accueil est
+             réglable dans « Apparence du journal » ; vide, elle reprend la
+             description du site. */ ?>
+    <?php if (apparence_accueil_phrase() !== ''): ?>
+        <p class="hero__texte"><?= e(apparence_accueil_phrase()) ?></p>
     <?php endif; ?>
 
     <?php /* Trois entrées, pas une de plus : le site se consulte d'abord
@@ -77,7 +79,7 @@ $siteName = site_setting('name');
 <?php if ($articles !== []): ?>
     <section class="section">
         <div class="section__entete">
-            <h2>À la une</h2>
+            <h2><?= e(apparence_titre_encart('une')) ?></h2>
             <a href="/articles">Tous les articles →</a>
         </div>
         <div class="articles-liste">

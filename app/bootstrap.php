@@ -35,6 +35,7 @@ require_once __DIR__ . '/lib/gazette.php';
 require_once __DIR__ . '/lib/rubriques.php';
 require_once __DIR__ . '/lib/editions.php';
 require_once __DIR__ . '/lib/comptes.php';
+require_once __DIR__ . '/lib/apparence.php';
 
 /**
  * Le script tourne-t-il en ligne de commande ?

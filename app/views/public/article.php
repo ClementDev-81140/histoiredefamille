@@ -92,7 +92,7 @@ if ((int) $decennie > 0) {
 
 <?php if ($others !== []): ?>
     <section class="section">
-        <h2 class="encart__titre encart__titre--section">À lire aussi</h2>
+        <h2 class="encart__titre encart__titre--section"><?= e(apparence_titre_encart('lire')) ?></h2>
         <div class="articles-colonnes">
             <?php foreach ($others as $article): ?>
                 <?php $grand = false; require __DIR__ . '/../partials/carte_article.php'; ?>

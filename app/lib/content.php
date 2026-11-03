@@ -344,9 +344,15 @@ function slugify(string $text): string
 function site_setting(string $key): string
 {
     static $cache = null;
+    static $generation = null;
 
-    if ($cache === null) {
-        $cache = [];
+    // Un enregistrement (save_site_setting) change la génération : le cache
+    // est alors relu, sinon la page suivante du même appel verrait encore
+    // l'ancienne valeur.
+    $actuelle = (int) ($GLOBALS['hdf_settings_generation'] ?? 0);
+    if ($cache === null || $generation !== $actuelle) {
+        $generation = $actuelle;
+        $cache      = [];
         try {
             foreach (db_all('SELECT key, value FROM settings') as $row) {
                 $cache[(string) $row['key']] = (string) $row['value'];
@@ -364,6 +370,18 @@ function site_setting(string $key): string
 }
 
 /** Enregistre un réglage. */
+/**
+ * Oublie les réglages déjà lus pendant cette page.
+ *
+ * À appeler après un effacement direct dans la table `settings` (par exemple
+ * « Rétablir les valeurs d'origine »), sinon la page continuerait d'afficher
+ * les anciennes valeurs jusqu'au rechargement suivant.
+ */
+function site_settings_oublier(): void
+{
+    $GLOBALS['hdf_settings_generation'] = (int) ($GLOBALS['hdf_settings_generation'] ?? 0) + 1;
+}
+
 function save_site_setting(string $key, string $value): void
 {
     db_exec(
@@ -371,6 +389,9 @@ function save_site_setting(string $key, string $value): void
          ON CONFLICT(key) DO UPDATE SET value = excluded.value',
         [$key, $value]
     );
+
+    // Le cache de lecture est relu au prochain site_setting().
+    site_settings_oublier();
 }
 
 // ---------------------------------------------------------------------------

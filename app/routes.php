@@ -17,6 +17,7 @@ require_once __DIR__ . '/controllers/tchat.php';
 require_once __DIR__ . '/controllers/recherche.php';
 require_once __DIR__ . '/controllers/admin_journal.php';
 require_once __DIR__ . '/controllers/admin.php';
+require_once __DIR__ . '/controllers/admin_apparence.php';
 require_once __DIR__ . '/controllers/admin_documents.php';
 require_once __DIR__ . '/controllers/admin_branches.php';
 require_once __DIR__ . '/controllers/admin_comptes.php';
@@ -36,6 +37,9 @@ require_once __DIR__ . '/controllers/admin_export.php';
 // ---------------------------------------------------------------------------
 // Partie publique
 // ---------------------------------------------------------------------------
+// Feuille de style des couleurs choisies (réglable dans l'administration).
+route('GET', '/theme.css', 'theme_css');
+
 route('GET', '/', 'public_accueil');
 route('GET', '/articles', 'public_articles');
 route('GET', '/articles/{slug}', 'public_article_detail');
@@ -97,6 +101,8 @@ route('POST', '/admin/connexions/conservation', 'admin_connexions_reglage');
 route('POST', '/admin/alertes/acquitter', 'admin_alertes_acquitter');
 route('GET', '/admin/reglages', 'admin_settings');
 route('POST', '/admin/reglages', 'admin_settings_save');
+route('GET', '/admin/apparence', 'admin_apparence');
+route('POST', '/admin/apparence', 'admin_apparence_save');
 // Même page, présentée dans l'administration quand on vient de là.
 route('GET', '/admin/mon-compte', 'mon_compte');
 route('POST', '/admin/mon-compte', 'mon_compte_save');

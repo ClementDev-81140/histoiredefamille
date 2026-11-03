@@ -33,7 +33,7 @@ $navClass = static function (string $href) use ($currentPath): string {
 };
 ?>
 <!doctype html>
-<html lang="fr"<?= gazette_police_titre() ? ' class="police-titre"' : '' ?>>
+<html lang="fr"<?= apparence_gothique_disponible() ? ' class="police-titre"' : '' ?>>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -41,6 +41,12 @@ $navClass = static function (string $href) use ($currentPath): string {
     <meta name="description" content="<?= e(site_setting('description')) ?>">
     <meta name="robots" content="<?= is_logged_in() ? 'noindex, nofollow' : 'index, follow' ?>">
     <link rel="stylesheet" href="/assets/style.css">
+<?php if (apparence_feuille_active()): ?>
+    <?php /* Couleurs choisies par les administrateurs : feuille calculée par
+             PHP, liée APRÈS style.css (aucun style en ligne, aucune ressource
+             externe). Silencieuse tant que rien n'a été personnalisé. */ ?>
+    <link rel="stylesheet" href="/theme.css?v=<?= apparence_version() ?>">
+<?php endif; ?>
     <link rel="preload" href="/assets/fonts/old-standard-tt-400.woff2" as="font" type="font/woff2" crossorigin>
 </head>
 <body>
@@ -48,13 +54,18 @@ $navClass = static function (string $href) use ($currentPath): string {
 
 <header class="entete">
     <div class="conteneur entete__barre">
-        <?php /* Bandeau supérieur façon gazette : date écrite par PHP (aucune
-                 dépendance à l'extension intl), édition, prix. */ ?>
+        <?php
+        // Bandeau supérieur façon gazette : date écrite par PHP (aucune
+        // dépendance à l'extension intl), édition et prix réglables dans
+        // « Administration → Apparence du journal ». Une case décochée le
+        // masque ; un champ vide garde le texte d'aujourd'hui.
+        if (apparence_actif('montrer_bandeau')): ?>
         <p class="entete__date">
             <span><?= e(french_long_date()) ?></span>
-            <span class="entete__edition">Édition des familles réunies</span>
-            <span>Prix : un sourire</span>
+            <span class="entete__edition"><?= e(apparence_texte('bandeau_milieu')) ?></span>
+            <span><?= e(apparence_texte('bandeau_droite')) ?></span>
         </p>
+        <?php endif; ?>
 
         <a class="entete__titre" href="/">
             <span class="entete__nom"><?= e($siteName) ?></span>
@@ -63,15 +74,19 @@ $navClass = static function (string $href) use ($currentPath): string {
         <?php
         // Ligne de conduite du journal : fondation à gauche, devise au
         // centre, numéro d'édition à droite (filet fin au-dessus, règle
-        // double en dessous : voir style.css).
-        $devise = gazette_devise();
-        $fondee = gazette_fondee();
+        // double en dessous : voir style.css). Chaque élément peut être
+        // masqué dans « Apparence du journal ».
+        $devise = apparence_actif('montrer_devise') ? gazette_devise() : '';
+        $fondee = apparence_actif('montrer_fondee') ? gazette_fondee() : '';
+        $numero = apparence_numero();
         ?>
+<?php if ($devise !== '' || $fondee !== '' || $numero !== ''): ?>
         <p class="entete__devise">
             <span class="entete__fondee"><?= $fondee !== '' ? 'Fondée en ' . e($fondee) : '' ?></span>
             <span class="entete__devise-texte"><?= $devise !== '' ? '« ' . e($devise) . ' »' : '' ?></span>
-            <span class="entete__numero"><?= e(gazette_numero()) ?></span>
+            <span class="entete__numero"><?= e($numero) ?></span>
         </p>
+<?php endif; ?>
 
         <?php
         // Menu : réduit pour un visiteur (seulement ce qui a du contenu
@@ -145,10 +160,7 @@ $navClass = static function (string $href) use ($currentPath): string {
             <?= e($siteName) ?>
             <?php if ($siteSub !== ''): ?> — <?= e($siteSub) ?><?php endif; ?>
         </p>
-        <p class="pied__note">
-            Site privé de famille. Les documents sont protégés et accessibles
-            uniquement selon les droits définis par les administrateurs.
-        </p>
+        <p class="pied__note"><?= e(apparence_pied()) ?></p>
     </div>
 </footer>
 

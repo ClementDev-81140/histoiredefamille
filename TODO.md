@@ -3,6 +3,35 @@
 Ce fichier liste ce qui reste à faire, classé par priorité. Il n'y a pas de
 suivi automatique : cochez au fur et à mesure.
 
+## Fait (2026-11-03, lot 9 — apparence du journal)
+
+- [x] **Administration → Apparence du journal**, à côté de « Réglages »
+  (administrateurs seulement, POST + jeton CSRF, journalisé « apparence
+  modifiée » sans recopier les textes).
+- [x] **Textes de la une** : milieu et droite du bandeau, titre, devise,
+  « Fondée en », pied de page, phrase d'accueil, et les sept titres d'encarts.
+  Champ vide = texte d'aujourd'hui.
+- [x] **Numéro d'édition** : automatique, texte libre ou aucun.
+- [x] **Quatre cases** pour afficher/masquer bandeau, devise, « Fondée en »,
+  numéro.
+- [x] **Titre gothique** : une case ; décochée, Old Standard TT gras en petites
+  capitales. Police manquante = repli automatique, signalé dans la page.
+- [x] **Couleurs**, trois modes : « Papier ancien » (défaut, aucune surcharge),
+  « Bleu d'origine » (fond uni), « Personnalisée » (quatre couleurs, le site
+  calcule le reste). Contrastes vérifiés (7:1 texte, 4,5:1 doux/accent/bouton),
+  refus explicite, bouton « Corriger pour moi », « Rétablir les couleurs
+  d'origine ».
+- [x] **Feuille `/theme.css` calculée par PHP** : valeurs validées uniquement,
+  ETag sur un numéro de version, cache puis revalidation ; liée après
+  `style.css` et **seulement** si une autre palette est active.
+- [x] **Aperçu en direct** de l'en-tête (`public/assets/app.js`, `textContent`
+  et `setProperty` : aucun `innerHTML`, aucun `style=` en HTML). Sans
+  JavaScript, le formulaire reste complet.
+- [x] 57 vérifications de plus (244 au total), dont l'essai d'injection
+  `red;} body{display:none}` dans chaque couleur.
+- [x] Aucune migration, aucune règle d'accès modifiée, aucune classe CSS
+  renommée.
+
 ## Fait (2026-11-03, lot 8)
 
 - [x] **Comptes de la famille** : un compte par personne (`prenom.nom`), à
@@ -131,8 +160,14 @@ suivi automatique : cochez au fur et à mesure.
 
 ## Prochains lots (un par un, après accord)
 
-(Tous les lots prévus sont terminés. La suite dépend des envies de la famille :
-voir « Idées à étudier » plus bas.)
+- [ ] **Lot 10 — Composition des pages** (prochaine étape prévue) :
+  afficher/masquer et monter/descendre les blocs de `/` et de `/famille`,
+  modèles d'article (« Journal », « Simple », « Grande photo »), réglages de
+  la une (nombre d'articles, longueur du résumé, photo), « Rétablir la
+  composition d'origine ». Stockage en `settings`, migration `009`.
+
+(Tous les autres lots prévus sont terminés. La suite dépend des envies de la
+famille : voir « Idées à étudier » plus bas.)
 
 ## Avant la mise en ligne (fait par Clément)
 

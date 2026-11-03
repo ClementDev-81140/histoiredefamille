@@ -135,15 +135,15 @@ strong { font-weight: 700; }
 code {
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-size: 0.85em;
-    background: #efede8;
+    background: var(--code-fond-doux);
     padding: 0.08em 0.3em;
     border-radius: 0;
 }
 
 pre {
     overflow-x: auto;
-    background: #24292f;
-    color: #f0f0f0;
+    background: var(--code-fond);
+    color: var(--code-texte);
     padding: 0.9rem;
     font-size: 0.78rem;
     line-height: 1.45;
@@ -178,7 +178,7 @@ hr {
     left: -9999px;
     top: 0;
     background: var(--texte);
-    color: #fff;
+    color: var(--sur-encre);
     padding: 0.6rem 1rem;
     z-index: 10;
 }
@@ -346,7 +346,7 @@ hr {
 .bouton {
     display: inline-block;
     background: var(--accent);
-    color: #fff;
+    color: var(--sur-accent);
     border: 1px solid var(--accent);
     border-radius: 0;
     padding: 0.5rem 0.95rem;
@@ -363,7 +363,7 @@ hr {
 .bouton:focus {
     background: var(--accent-fonce);
     border-color: var(--accent-fonce);
-    color: #fff;
+    color: var(--sur-accent);
 }
 
 .bouton--secondaire {
@@ -384,8 +384,8 @@ hr {
 
 .bouton--danger:hover,
 .bouton--danger:focus {
-    background: #6f1f19;
-    border-color: #6f1f19;
+    background: var(--danger-fonce-2);
+    border-color: var(--danger-fonce-2);
 }
 
 .actions {
@@ -417,15 +417,15 @@ hr {
     margin: 2.4rem auto;
 }
 
-.panneau--public { border-top: 2px solid #2f6b46; }
+.panneau--public { border-top: 2px solid var(--panneau-public-bordure); }
 .panneau--famille { border-top: 2px solid var(--accent); }
 
 /* Panneau d'action irréversible : filet d'accent, jamais de fond criard. */
 .panneau--danger { border-top: 2px solid var(--erreur-texte); }
 
 /* Aperçu vidéo : même cadre que les cartes de documents. */
-.carte__apercu--video { background: #111; }
-.carte__apercu--video .carte__type { color: #f2f0eb; }
+.carte__apercu--video { background: var(--apercu-fond); }
+.carte__apercu--video .carte__type { color: var(--apercu-texte); }
 
 .section { margin-bottom: 2.4rem; }
 
@@ -527,7 +527,7 @@ hr {
 
 .hero .note,
 .note {
-    border: 1px solid #c3d5e5;
+    border: 1px solid var(--info-bordure-2);
     background: var(--info-fond);
     color: var(--info-texte);
     padding: 0.7rem 0.9rem;
@@ -574,25 +574,25 @@ hr {
 
 .message--succes {
     background: var(--succes-fond);
-    border-color: #b9d8c4;
+    border-color: var(--succes-bordure-2);
     color: var(--succes-texte);
 }
 
 .message--erreur {
     background: var(--erreur-fond);
-    border-color: #e5bdb8;
+    border-color: var(--erreur-bordure-2);
     color: var(--erreur-texte);
 }
 
 .message--info {
     background: var(--info-fond);
-    border-color: #c3d5e5;
+    border-color: var(--info-bordure);
     color: var(--info-texte);
 }
 
 .mot-de-passe-genere {
     font-size: 1rem;
-    background: #fff;
+    background: var(--surface);
     border: 1px dashed var(--accent);
     padding: 0.8rem;
 }
@@ -619,33 +619,33 @@ hr {
 }
 
 .badge-public {
-    background: #e7f2ea;
-    border-color: #b9d8c4;
-    color: #235c39;
+    background: var(--succes-fond);
+    border-color: var(--succes-bordure);
+    color: var(--succes-texte);
 }
 
 .badge-famille {
     background: var(--accent-clair);
-    border-color: #bfd2e3;
+    border-color: var(--info-bordure-2);
     color: var(--accent-fonce);
 }
 
 .badge-branches {
-    background: #f3edda;
-    border-color: #ddce9f;
-    color: #6b5518;
+    background: var(--attention-fond);
+    border-color: var(--attention-bordure);
+    color: var(--attention-texte);
 }
 
 .badge-prive {
-    background: #f1eeea;
-    border-color: #cfc7bc;
-    color: #5d5a55;
+    background: var(--badge-prive-fond);
+    border-color: var(--badge-prive-bordure);
+    color: var(--texte-doux);
 }
 
 .etiquette {
     display: inline-block;
     font-size: 0.78rem;
-    background: #efede8;
+    background: var(--etiquette-fond);
     border: 1px solid var(--bordure);
     border-radius: 0;
     padding: 0.1rem 0.5rem;
@@ -697,8 +697,8 @@ textarea {
     font-size: 0.95rem;
     padding: 0.45rem 0.55rem;
     color: var(--texte);
-    background: #fff;
-    border: 1px solid #b9b3a8;
+    background: var(--surface);
+    border: 1px solid var(--bordure-douce);
     border-radius: 0;
 }
 
@@ -826,7 +826,7 @@ legend {
 
 .carte__apercu {
     position: relative;
-    background: #e9e6df;
+    background: var(--apercu-document);
     aspect-ratio: 4 / 3;
     display: flex;
     align-items: center;
@@ -856,8 +856,8 @@ legend {
     align-items: center;
     justify-content: center;
     font-size: 2rem;
-    color: #fff;
-    background: rgba(0, 0, 0, 0.26);
+    color: var(--sur-voile);
+    background: var(--voile);
 }
 
 .carte__corps {
@@ -883,8 +883,8 @@ legend {
     position: absolute;
     right: 0.45rem;
     bottom: 0.45rem;
-    background: rgba(0, 0, 0, 0.72);
-    color: #fff;
+    background: var(--voile-fort);
+    color: var(--sur-voile);
     font-size: 0.72rem;
     letter-spacing: 0.04em;
     padding: 0.05rem 0.35rem;
@@ -927,7 +927,7 @@ legend {
 }
 
 .tableau thead th {
-    background: #efece6;
+    background: var(--tableau-fond-doux);
     font-size: 0.74rem;
     text-transform: uppercase;
     letter-spacing: 0.08em;
@@ -935,7 +935,7 @@ legend {
     border-top: var(--filet-fort);
 }
 
-.tableau tbody tr:hover { background: #faf9f6; }
+.tableau tbody tr:hover { background: var(--ligne-survol); }
 
 .colonne-actions {
     white-space: nowrap;
@@ -1073,13 +1073,13 @@ legend {
 .lettres a.actif,
 .lettres a[aria-current] {
     background: var(--accent);
-    color: #fff;
+    color: var(--sur-accent);
     border-color: var(--accent);
 }
 
 .lettres .inactif {
-    color: #b3aea5;
-    background: #f4f2ee;
+    color: var(--desactive-texte);
+    background: var(--desactive-fond);
 }
 
 /* --------------------------------------------------------------------------
@@ -1096,7 +1096,7 @@ legend {
 .document__video {
     width: 100%;
     height: auto;
-    background: #111;
+    background: var(--apercu-fond);
     border: var(--filet);
 }
 
@@ -1244,7 +1244,7 @@ legend {
 }
 
 .explorateur__noeud--central {
-    border-left-color: #2f6b46;
+    border-left-color: var(--panneau-public-bordure);
     font-weight: 700;
 }
 
@@ -1301,7 +1301,7 @@ legend {
 .video-joueur {
     width: 100%;
     max-height: 70vh;
-    background: #111;
+    background: var(--apercu-fond);
     border: var(--filet);
 }
 
@@ -1377,7 +1377,7 @@ legend {
 
 .admin-menu a.actif {
     background: var(--accent);
-    color: #fff;
+    color: var(--sur-accent);
 }
 
 .admin-menu__titre {
@@ -1411,7 +1411,7 @@ legend {
 
 /* Aperçus de cartes selon le type de fichier (photo, document, vidéo). */
 .carte__apercu--photo,
-.carte__apercu--document { background: #e9e6df; }
+.carte__apercu--document { background: var(--apercu-document); }
 
 /* Bloc de l'explorateur d'arbre (conteneur) : centré, sans cadre. */
 .explorateur { margin-top: 1.6rem; }
@@ -1759,7 +1759,7 @@ legend {
     margin-left: 0.35rem;
     padding: 0.05rem 0.38rem;
     background: var(--accent);
-    color: #fff;
+    color: var(--sur-accent);
     font-size: 0.68rem;
     font-style: normal;
     font-weight: 700;
@@ -2194,7 +2194,7 @@ legend {
 
 .album-carte__apercu {
     aspect-ratio: 4 / 3;
-    background: #e9e6df;
+    background: var(--apercu-document);
     overflow: hidden;
 }
 
@@ -2219,7 +2219,7 @@ legend {
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--texte-doux);
-    background: #e9e6df;
+    background: var(--apercu-document);
 }
 
 .album-carte__corps { padding: 0.8rem 0.9rem; }
@@ -2260,7 +2260,7 @@ legend {
     display: block;
     aspect-ratio: 4 / 3;
     overflow: hidden;
-    background: #e9e6df;
+    background: var(--apercu-document);
 }
 
 .vignette__lien img {
@@ -2398,7 +2398,7 @@ legend {
     padding: 0.45rem 0.3rem;
     border-right: var(--filet);
     border-bottom: var(--filet);
-    background: #f2f0eb;
+    background: var(--surface-douce);
     font-size: 0.7rem;
     letter-spacing: 0.12em;
     text-transform: uppercase;
@@ -2414,7 +2414,7 @@ legend {
     font-size: 0.78rem;
 }
 
-.calendrier__case--vide { background: #f8f7f4; }
+.calendrier__case--vide { background: var(--calendrier-vide); }
 .calendrier__case--pleine { background: var(--accent-clair); }
 
 .calendrier__jour { color: var(--texte-doux); }
@@ -2436,7 +2436,7 @@ legend {
 }
 
 .calendrier__point--deces { border-left-color: var(--texte-doux); }
-.calendrier__point--mariage { border-left-color: #8a6f4b; }
+.calendrier__point--mariage { border-left-color: var(--calendrier-mariage); }
 
 .calendrier__liste {
     padding: 0;
@@ -2684,15 +2684,15 @@ legend {
     [data-imprimer] { display: none !important; }
 
     body {
-        background: #ffffff;
-        color: #000000;
+        background: var(--impression-fond);
+        color: var(--impression-texte);
         font-size: 11pt;
     }
 
     .conteneur { max-width: none; padding: 0; }
 
     a {
-        color: #000000;
+        color: var(--impression-texte);
         text-decoration: none;
         border-bottom: 0;
     }
@@ -2703,7 +2703,7 @@ legend {
     .album-carte { border: 0; }
 
     .album-carte__apercu,
-    .vignette__lien { background: #ffffff; }
+    .vignette__lien { background: var(--impression-fond); }
 
     .grille-album,
     .grille-albums,
@@ -2725,7 +2725,7 @@ legend {
         display: block;
         margin: 0 0 1.2rem;
         padding-bottom: 0.4rem;
-        border-bottom: 1px solid #000000;
+        border-bottom: 1px solid var(--impression-texte);
         font-size: 0.8rem;
         letter-spacing: 0.06em;
         text-transform: uppercase;
@@ -2778,7 +2778,7 @@ legend {
 
 body {
     background-color: var(--fond);
-    background-image: radial-gradient(ellipse at top, rgba(215, 184, 148, .35), transparent 70%);
+    background-image: radial-gradient(ellipse at top, var(--halo-1), transparent 70%);
 }
 
 /* Bandeau supérieur : date · édition · prix */
@@ -2795,7 +2795,7 @@ body {
     padding-bottom: .35rem;
 }
 .entete__edition { font-style: italic; }
-.note { border-color: #b89c78; }
+.note { border-color: var(--note-bordure); }
 @media (max-width: 40rem) {
     .entete__date { justify-content: center; text-align: center; font-size: .65rem; }
     .entete__date > :last-child { display: none; }
@@ -2834,11 +2834,11 @@ body {
 /* Cartes et panneaux : papier légèrement plus clair, liseré encre */
 .panneau, .article-carte, .carte {
     background: var(--surface);
-    box-shadow: inset 0 0 18px rgba(148, 102, 64, .35);
+    box-shadow: inset 0 0 18px var(--ombre-panneau);
 }
 
 /* Image de repli : plaque sépia */
-.article-carte__image:not(:has(img)) { background: linear-gradient(135deg, #d7af88, #704b36); }
+.article-carte__image:not(:has(img)) { background: linear-gradient(135deg, var(--plaque-1), var(--plaque-2)); }
 .article-carte__image img { filter: sepia(.35) contrast(.97); }
 
 /* Page d'accueil de l'espace famille = « une » de journal */
@@ -2938,7 +2938,7 @@ input[type="file"]::file-selector-button {
 
 code,
 .etiquette {
-    background: #efe6d2;
+    background: var(--etiquette-fond);
 }
 
 /* --------------------------------------------------------------------------
@@ -2946,58 +2946,58 @@ code,
    -------------------------------------------------------------------------- */
 .note,
 .message--info {
-    border-color: #b89c78;
+    border-color: var(--note-bordure);
 }
 
 .message--succes {
-    border-color: #b3bf95;
+    border-color: var(--succes-bordure);
 }
 
 .message--erreur {
-    border-color: #d3a596;
+    border-color: var(--erreur-bordure);
 }
 
 /* --------------------------------------------------------------------------
    Badges : mêmes couleurs que les encadrés, teintes chaudes
    -------------------------------------------------------------------------- */
 .badge-famille {
-    border-color: #b89c78;
+    border-color: var(--note-bordure);
 }
 
 .badge-public {
     background: var(--succes-fond);
-    border-color: #b3bf95;
-    color: #40501f;
+    border-color: var(--succes-bordure-2);
+    color: var(--succes-texte);
 }
 
 .badge-branches {
-    background: #f0e3c4;
-    border-color: #c8b083;
-    color: #6b5518;
+    background: var(--attention-fond-2);
+    border-color: var(--attention-bordure-2);
+    color: var(--attention-texte);
 }
 
 .badge-prive {
-    background: #e7dcc9;
-    border-color: #b9a68c;
-    color: #55443a;
+    background: var(--badge-prive-fond);
+    border-color: var(--badge-prive-bordure);
+    color: var(--prive-texte);
 }
 
 /* --------------------------------------------------------------------------
    Tableaux : en-tête et survol sur papier
    -------------------------------------------------------------------------- */
 .tableau thead th {
-    background: #e7dcc9;
+    background: var(--tableau-fond);
 }
 
 .tableau tbody tr:hover {
-    background: #f5e9d2;
+    background: var(--ligne-survol);
 }
 
 /* --------------------------------------------------------------------------
    Calendrier, vignettes, aperçus : gris remplacés par du parchemin
    -------------------------------------------------------------------------- */
 .calendrier__case--vide {
-    background: #f5e9d2;
+    background: var(--calendrier-vide);
 }
 
 .calendrier__entete-jour,
@@ -3007,7 +3007,7 @@ code,
 
 .carte__apercu--document,
 .vignette__lien {
-    background: #e8dcc4;
+    background: var(--papier-moyen);
 }
 
 /* --------------------------------------------------------------------------
@@ -3075,16 +3075,16 @@ code,
    -------------------------------------------------------------------------- */
 @media print {
     body {
-        background: #ffffff !important;
+        background: var(--impression-fond) !important;
         background-image: none !important;
-        color: #000000 !important;
+        color: var(--impression-texte) !important;
     }
 
     .panneau,
     .article-carte,
     .carte,
     .album-carte {
-        background: #ffffff !important;
+        background: var(--impression-fond) !important;
         box-shadow: none !important;
     }
 
@@ -3248,14 +3248,14 @@ code,
    Sur un écran étroit, on repasse en défilement normal (voir la fin du
    fichier) : le rendu est le même et c'est plus doux pour le processeur. */
 html {
-    background-color: #f3e7ce;
+    background-color: var(--fond);
 }
 
 body {
-    background-color: #f3e7ce;
+    background-color: var(--fond);
     background-image:
-        radial-gradient(circle at 20% 10%, rgba(215, 184, 148, 0.30), transparent 55%),
-        radial-gradient(circle at 85% 70%, rgba(208, 164, 129, 0.30), transparent 55%);
+        radial-gradient(circle at 20% 10%, var(--halo-1), transparent 55%),
+        radial-gradient(circle at 85% 70%, var(--halo-2), transparent 55%);
     background-repeat: no-repeat;
     background-size: 100% 100%, 100% 100%;
     /* Les halos restent en place quand on fait défiler : c'est ce qui donne
@@ -3265,7 +3265,7 @@ body {
     background-attachment: fixed;
     color: var(--texte);
     /* Le papier : ombre interne brune sur toute la page. */
-    box-shadow: inset 0 0 120px rgba(148, 102, 64, 0.30);
+    box-shadow: inset 0 0 120px var(--ombre-page);
 }
 
 /* Aucun arrondi nulle part : les composants datent d'avant la mode des
@@ -3596,7 +3596,7 @@ body:not(.page-admin) .nav .lien-bouton {
     aspect-ratio: 4 / 3;
     overflow: hidden;
     margin-bottom: 0.9rem;
-    background: #e8dcc4;
+    background: var(--papier-moyen);
 }
 
 .article-carte--une .article-carte__image img {
@@ -3674,10 +3674,10 @@ body:not(.page-admin) .nav .lien-bouton {
     align-items: center;
     justify-content: center;
     background:
-        radial-gradient(circle at 50% 42%, #d7af88 0%, #a57a5a 55%, #704b36 100%);
+        radial-gradient(circle at 50% 42%, var(--plaque-1) 0%, var(--plaque-3) 55%, var(--plaque-2) 100%);
     filter: sepia(0.35);
     /* Le même grain de papier que la page, en plus petit. */
-    box-shadow: inset 0 0 60px rgba(148, 102, 64, 0.35);
+    box-shadow: inset 0 0 60px var(--ombre-panneau);
 }
 
 .article-carte:not(.article-carte--une) .article-carte__plaque {
@@ -3688,7 +3688,7 @@ body:not(.page-admin) .nav .lien-bouton {
     font-family: var(--police-gothique);
     font-size: clamp(3rem, 9vw, 6rem);
     line-height: 1;
-    color: rgba(243, 231, 206, 0.42);
+    color: var(--plaque-lettre);
     letter-spacing: 0;
     user-select: none;
 }
@@ -3876,7 +3876,7 @@ html:not(.police-titre) .plaque__lettre {
 .editions__branches a.actif {
     background: var(--texte);
     border-color: var(--texte);
-    color: #f3e7ce;
+    color: var(--sur-accent);
 }
 
 /* Frise : une ligne fine, des points, l'actif en rouge brique. */
@@ -3949,7 +3949,7 @@ html:not(.police-titre) .plaque__lettre {
 .editions__point.actif .editions__rond {
     background: var(--accent);
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(143, 49, 38, 0.18);
+    box-shadow: 0 0 0 3px var(--focus-anneau);
 }
 
 .editions__point.actif .editions__libelle {
@@ -4011,7 +4011,7 @@ html:not(.police-titre) .plaque__lettre {
     padding: 0.4rem;
     border: 1px solid var(--bordure);
     background: var(--surface);
-    box-shadow: inset 0 0 18px rgba(148, 102, 64, 0.30);
+    box-shadow: inset 0 0 18px var(--ombre-page);
 }
 
 .article__image img {
@@ -4058,7 +4058,7 @@ html:not(.police-titre) .plaque__lettre {
 .panneau,
 .formulaire {
     border: 1px solid var(--bordure);
-    box-shadow: inset 0 0 40px rgba(148, 102, 64, 0.22);
+    box-shadow: inset 0 0 40px var(--ombre-panneau);
 }
 
 .panneau {
@@ -4084,7 +4084,7 @@ html:not(.police-titre) .plaque__lettre {
 .bouton {
     background: var(--accent);
     border: 1px solid var(--texte);
-    color: #f3e7ce;
+    color: var(--sur-accent);
     font-size: 0.74rem;
     letter-spacing: 0.16em;
     text-transform: uppercase;
@@ -4096,7 +4096,7 @@ html:not(.police-titre) .plaque__lettre {
 .bouton:focus {
     background: var(--accent-fonce);
     border-color: var(--texte);
-    color: #f3e7ce;
+    color: var(--sur-accent);
 }
 
 /* Bouton contour : filet encre, papier. */
@@ -4110,19 +4110,19 @@ html:not(.police-titre) .plaque__lettre {
 .bouton--secondaire:focus {
     background: var(--texte);
     border-color: var(--texte);
-    color: #f3e7ce;
+    color: var(--sur-accent);
 }
 
 .bouton--danger {
     background: var(--alerte);
     border-color: var(--texte);
-    color: #f3e7ce;
+    color: var(--sur-accent);
 }
 
 .bouton--danger:hover,
 .bouton--danger:focus {
-    background: #8d1a16;
-    color: #f3e7ce;
+    background: var(--danger-fonce);
+    color: var(--sur-accent);
 }
 
 /* Champs : papier plus clair, filet encre, aucune ombre. */
@@ -4136,7 +4136,7 @@ input[type="date"],
 input[type="tel"],
 select,
 textarea {
-    background: #fdf6e6;
+    background: var(--papier-blanc);
     border: 1px solid var(--bordure);
     color: var(--texte);
     box-shadow: none;
@@ -4152,7 +4152,7 @@ legend {
    Le titre s'écrit gros, le texte respire, tout reste sur le papier. */
 .formulaire .champ + .champ {
     padding-top: 0.9rem;
-    border-top: 1px solid rgba(54, 44, 36, 0.25);
+    border-top: 1px solid var(--filet-papier);
 }
 
 .formulaire input[name="title"],
@@ -4197,7 +4197,7 @@ legend {
 }
 
 .tableau thead th {
-    background: #e7dcc9;
+    background: var(--tableau-fond);
     border-bottom: 1px solid var(--bordure);
     letter-spacing: 0.12em;
     font-size: 0.72rem;
@@ -4265,7 +4265,7 @@ legend {
    -------------------------------------------------------------------------- */
 @media (max-width: 40rem) {
     body {
-        box-shadow: inset 0 0 70px rgba(148, 102, 64, 0.22);
+        box-shadow: inset 0 0 70px var(--ombre-page);
         background-attachment: scroll;
     }
 
@@ -4403,10 +4403,10 @@ legend {
 @media print {
     html,
     body {
-        background: #ffffff !important;
+        background: var(--impression-fond) !important;
         background-image: none !important;
         box-shadow: none !important;
-        color: #000000 !important;
+        color: var(--impression-texte) !important;
     }
 
     .panneau,
@@ -4414,9 +4414,9 @@ legend {
     .carte,
     .article-carte,
     .article__image {
-        background: #ffffff !important;
+        background: var(--impression-fond) !important;
         box-shadow: none !important;
-        border-color: #000000 !important;
+        border-color: var(--impression-texte) !important;
     }
 
     .article-carte__image img,
@@ -4473,7 +4473,7 @@ legend {
     .article-carte--une .article-carte__image { max-height: 14rem; }
 }
 .article-carte--une .article-carte__plaque {
-    background: radial-gradient(ellipse at center, #c9a07a, #6f4c37);
+    background: radial-gradient(ellipse at center, var(--plaque-4), var(--plaque-5));
 }
 
 
@@ -4556,7 +4556,7 @@ legend {
 
 /* Aperçu : une ligne en erreur se voit tout de suite. */
 .comptes-apercu__ligne--erreur {
-    background: rgba(179, 36, 31, 0.07);
+    background: var(--erreur-voile);
 }
 
 .comptes-apercu input[type="text"] {
@@ -4583,7 +4583,7 @@ legend {
     background: var(--surface);
     border: 1px solid var(--alerte);
     border-left: 5px solid var(--alerte);
-    box-shadow: inset 0 0 22px rgba(148, 102, 64, 0.18);
+    box-shadow: inset 0 0 22px var(--ombre-panneau);
 }
 
 .comptes-avertissement strong {
@@ -4601,7 +4601,7 @@ legend {
     padding: 0.85rem 1rem;
     background: var(--surface);
     border: 1px solid var(--bordure);
-    box-shadow: inset 0 0 20px rgba(148, 102, 64, 0.2);
+    box-shadow: inset 0 0 20px var(--ombre-panneau);
 }
 
 .message-acces__titre {
@@ -4615,8 +4615,8 @@ legend {
 .message-acces__texte {
     margin: 0 0 0.6rem;
     padding: 0.65rem 0.75rem;
-    background: #fdf6e6;
-    border: 1px solid rgba(54, 44, 36, 0.35);
+    background: var(--papier-blanc);
+    border: 1px solid var(--filet-papier);
     font-family: var(--serif);
     font-size: 0.96rem;
     line-height: 1.55;
@@ -4672,4 +4672,279 @@ legend {
     .message-acces__texte {
         font-size: 0.9rem;
     }
+}
+
+
+/* ==========================================================================
+   APPARENCE DU JOURNAL — VARIABLES (1.11.0)
+   --------------------------------------------------------------------------
+   Toutes les couleurs du site passent par ces variables. Celles qui
+   existaient déjà (fond, surface, texte, accent, bordure…) restent définies
+   plus haut : on ne les redéfinit pas ici, on complète seulement.
+
+   La feuille /theme.css, calculée par PHP, remplace ces valeurs quand
+   l'administrateur choisit une autre palette. Sans réglage, rien ne change :
+   les valeurs ci-dessous sont exactement celles du design actuel.
+   ========================================================================== */
+:root {
+    /* Texte posé sur un fond coloré : boutons, pastilles, menus actifs. */
+    --sur-accent: #f3e7ce;
+    --sur-encre: #ffffff;
+    /* Voiles posés sur les photos et les vidéos (titre, durée). */
+    --sur-voile: #ffffff;
+    --voile: rgba(0, 0, 0, 0.26);
+    --voile-fort: rgba(0, 0, 0, 0.72);
+    /* Anneau de focus clavier, et fond d'une ligne en erreur. */
+    --focus-anneau: rgba(143, 49, 38, 0.18);
+    --erreur-voile: rgba(179, 36, 31, 0.07);
+    /* Messages et badges d'information, de succès, d'erreur, d'attention. */
+    --info-fond: #ecdcc0;
+    --info-texte: #4a3526;
+    --info-bordure: #b89c78;
+    --info-bordure-2: #bfd2e3;
+    --succes-fond: #e4ead2;
+    --succes-texte: #40501f;
+    --succes-bordure: #b3bf95;
+    --succes-bordure-2: #b9d8c4;
+    --erreur-fond: #f4d9cf;
+    --erreur-texte: #8d1a16;
+    --erreur-bordure: #d3a596;
+    --erreur-bordure-2: #e5bdb8;
+    --attention-fond: #f3edda;
+    --attention-fond-2: #f0e3c4;
+    --attention-texte: #6b5518;
+    --attention-bordure: #ddce9f;
+    --attention-bordure-2: #c8b083;
+    --alerte: #b3241f;
+    --danger-fonce: #8d1a16;
+    --danger-fonce-2: #6f1f19;
+    --badge-prive-fond: #e7dcc9;
+    --badge-prive-bordure: #b9a68c;
+    --prive-texte: #55443a;
+    /* Papiers : panneaux, tableaux, champs, lignes survolées. */
+    --note-bordure: #b89c78;
+    --papier-clair: #f5e9d2;
+    --papier-moyen: #e8dcc4;
+    --papier-fonce: #e7dcc9;
+    --papier-blanc: #fdf6e6;
+    --tableau-fond: #e7dcc9;
+    --tableau-fond-doux: #efece6;
+    --etiquette-fond: #efe6d2;
+    --ligne-survol: #f5e9d2;
+    --surface-douce: #f2f0eb;
+    --desactive-fond: #f4f2ee;
+    --desactive-texte: #b3aea5;
+    --bordure-douce: #b9b3a8;
+    --calendrier-vide: #f5e9d2;
+    --calendrier-mariage: #8a6f4b;
+    /* Aperçus (document, album, vignette) et lecteur vidéo. */
+    --apercu-fond: #111111;
+    --apercu-texte: #f2f0eb;
+    --apercu-document: #e9e6df;
+    /* Bloc de code (mise en forme légère) et plaque de repli des articles. */
+    --code-fond: #24292f;
+    --code-texte: #f0f0f0;
+    --code-fond-doux: #efede8;
+    --plaque-1: #d7af88;
+    --plaque-2: #704b36;
+    --plaque-3: #a57a5a;
+    --plaque-4: #c9a07a;
+    --plaque-5: #6f4c37;
+    --plaque-lettre: rgba(243, 231, 206, 0.42);
+    /* Le papier : halos et ombres intérieures. */
+    --halo-1: rgba(215, 184, 148, 0.30);
+    --halo-2: rgba(208, 164, 129, 0.30);
+    --ombre-page: rgba(148, 102, 64, 0.30);
+    --ombre-panneau: rgba(148, 102, 64, 0.35);
+    --filet-papier: rgba(54, 44, 36, 0.35);
+    --panneau-public-bordure: #2f6b46;
+    /* Impression : noir sur blanc, quel que soit le thème. */
+    --impression-fond: #ffffff;
+    --impression-texte: #000000;
+}
+
+/* Les mêmes valeurs s'appliquent aussi au menu de l'administration, qui
+   utilise les variables : rien à ajouter, il suit le thème choisi. */
+
+/* --------------------------------------------------------------------------
+   APPARENCE DU JOURNAL — PAGE D'ADMINISTRATION ET APERÇU
+   -------------------------------------------------------------------------- */
+
+.apparence-groupe {
+    margin: 0 0 2rem;
+    padding: 1.2rem;
+    background: var(--surface);
+    border: 1px solid var(--bordure);
+    box-shadow: inset 0 0 18px var(--ombre-panneau);
+}
+
+.apparence-groupe > h2 {
+    margin-top: 0;
+}
+
+.apparence-groupe > h2 small {
+    display: block;
+    margin-top: .3rem;
+    font-size: .8rem;
+    font-weight: 400;
+    font-style: italic;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--texte-doux);
+}
+
+/* Aperçu de l'en-tête : un vrai bandeau, aux couleurs choisies. */
+.apercu-journal {
+    margin: 0 0 2rem;
+    padding: 1rem 1.2rem 1.2rem;
+    background: var(--fond);
+    color: var(--texte);
+    border: 1px solid var(--bordure);
+}
+
+.apercu-journal [hidden] { display: none !important; }
+
+.apercu-journal__barre {
+    display: flex;
+    justify-content: space-between;
+    gap: .75rem;
+    flex-wrap: wrap;
+    margin: 0 0 .4rem;
+    padding-bottom: .35rem;
+    border-bottom: 1px solid var(--bordure);
+    font-size: .7rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.apercu-journal__titre {
+    margin: 0;
+    text-align: center;
+    font-size: clamp(1.6rem, 5vw, 2.6rem);
+    line-height: 1.1;
+    color: var(--texte);
+}
+
+/* Titre gothique : la même règle que l'en-tête du site. */
+.apercu-journal--gothique .apercu-journal__titre {
+    font-family: var(--police-gothique);
+    font-weight: 400;
+}
+
+.apercu-journal--romain .apercu-journal__titre {
+    font-family: var(--serif);
+    font-weight: 700;
+    font-variant-caps: small-caps;
+    letter-spacing: .06em;
+}
+
+.apercu-journal__ligne {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: .5rem;
+    align-items: baseline;
+    margin: .3rem 0 0;
+    padding: .3rem 0 .35rem;
+    border-top: 1px solid var(--bordure);
+    border-bottom: 3px double var(--bordure);
+    font-size: .78rem;
+    font-style: italic;
+}
+
+.apercu-journal__ligne > :last-child { text-align: right; }
+.apercu-journal__ligne > :nth-child(2) { text-align: center; }
+
+.apercu-journal__exemple {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .6rem;
+    align-items: center;
+    margin: 1rem 0 0;
+    font-size: .8rem;
+}
+
+.apercu-journal__exemple .bouton {
+    font-size: .7rem;
+}
+
+/* Le rapport de contraste, en direct sous les couleurs. */
+.contrastes {
+    margin: 1rem 0 0;
+    border-collapse: collapse;
+    width: 100%;
+    font-size: .85rem;
+}
+
+.contrastes th,
+.contrastes td {
+    padding: .4rem .5rem;
+    border-bottom: 1px solid var(--bordure);
+    text-align: left;
+}
+
+.contrastes td.contraste-valeur { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.contrastes tr.contraste-ko td { color: var(--erreur-texte); }
+.contrastes tr.contraste-ok td.contraste-etat { color: var(--succes-texte); }
+
+.contraste-note {
+    margin: .6rem 0 0;
+    font-size: .82rem;
+    font-style: italic;
+    color: var(--texte-doux);
+}
+
+/* Les quatre couleurs : sélecteur + code #RRGGBB côte à côte. */
+.couleur-champ {
+    display: flex;
+    gap: .5rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.couleur-champ input[type="color"] {
+    width: 3.2rem;
+    height: 2.4rem;
+    padding: 0;
+    border: 1px solid var(--bordure);
+    background: var(--surface);
+}
+
+.couleur-champ input[type="text"] {
+    width: 9rem;
+    font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    text-transform: lowercase;
+}
+
+/* Aperçu d'un article selon le modèle choisi (composition des pages). */
+.modele-apercu {
+    display: grid;
+    gap: .35rem;
+    margin: .4rem 0 0;
+    padding: .7rem;
+    background: var(--surface);
+    border: 1px solid var(--bordure);
+    font-size: .78rem;
+    color: var(--texte-doux);
+}
+
+.modele-apercu__photo {
+    height: 1.6rem;
+    background: var(--plaque-1);
+}
+
+.modele-apercu__texte {
+    height: .5rem;
+    background: var(--bordure-douce);
+}
+
+.modele-apercu--journal .modele-apercu__texte { width: 48%; }
+.modele-apercu--simple .modele-apercu__texte { width: 100%; }
+.modele-apercu--photo .modele-apercu__photo { height: 2.6rem; }
+.modele-apercu--photo .modele-apercu__texte { width: 100%; }
+
+@media (max-width: 40rem) {
+    .apercu-journal__ligne { grid-template-columns: 1fr; text-align: center; }
+    .apercu-journal__ligne > :last-child,
+    .apercu-journal__ligne > :nth-child(2) { text-align: center; }
+    .couleur-champ input[type="text"] { width: 7rem; }
 }
