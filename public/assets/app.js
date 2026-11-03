@@ -533,4 +533,93 @@
         event.preventDefault();
         window.print();
     });
+
+    // ---------------------------------------------------------------------
+    // 8. Copier un message d'accès (mots de passe provisoires)
+    // ---------------------------------------------------------------------
+    // Deux boutons : « Copier le message » (data-copier="#identifiant") et
+    // « Tout copier » (data-copier-tout=".classe"). Aucun script en ligne :
+    // l'API Clipboard quand elle existe, sinon sélection + execCommand.
+    function texteDe(selecteur) {
+        var cible = document.querySelector(selecteur);
+        if (!cible) {
+            return '';
+        }
+        // <pre> : textContent garde les retours à la ligne.
+        return (cible.textContent || '').trim();
+    }
+
+    function copieDeSecours(texte) {
+        var zone = document.createElement('textarea');
+        zone.value = texte;
+        zone.setAttribute('readonly', 'readonly');
+        zone.className = 'copie-temporaire';
+        document.body.appendChild(zone);
+        zone.select();
+        zone.setSelectionRange(0, texte.length);
+        var ok = false;
+        try {
+            ok = document.execCommand('copy');
+        } catch (erreur) {
+            ok = false;
+        }
+        document.body.removeChild(zone);
+        return ok;
+    }
+
+    function annoncer(bouton, message) {
+        var libelle = bouton.getAttribute('data-libelle') || bouton.textContent;
+        bouton.setAttribute('data-libelle', libelle);
+        bouton.textContent = message;
+        window.setTimeout(function () {
+            bouton.textContent = libelle;
+        }, 2500);
+    }
+
+    function copier(texte, bouton) {
+        if (texte === '') {
+            annoncer(bouton, 'Rien à copier');
+            return;
+        }
+
+        var reussi = function () {
+            annoncer(bouton, 'Copié !');
+        };
+        var echoue = function () {
+            annoncer(bouton, copieDeSecours(texte) ? 'Copié !' : 'Copie impossible');
+        };
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(texte).then(reussi, echoue);
+        } else {
+            echoue();
+        }
+    }
+
+    document.addEventListener('click', function (event) {
+        var bouton = event.target.closest
+            ? event.target.closest('[data-copier], [data-copier-tout]')
+            : null;
+        if (!bouton) {
+            return;
+        }
+
+        var tout = bouton.getAttribute('data-copier-tout');
+        if (tout) {
+            var morceaux = [];
+            document.querySelectorAll(tout).forEach(function (bloc) {
+                var texte = (bloc.textContent || '').trim();
+                if (texte !== '') {
+                    morceaux.push(texte);
+                }
+            });
+            copier(morceaux.join('\n\n'), bouton);
+            return;
+        }
+
+        var cible = bouton.getAttribute('data-copier');
+        if (cible) {
+            copier(texteDe(cible), bouton);
+        }
+    });
 })();

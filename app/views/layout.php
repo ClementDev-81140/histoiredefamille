@@ -103,6 +103,7 @@ $navClass = static function (string $href) use ($currentPath): string {
                 <a class="nav__accent" href="<?= $account['role'] === 'admin' ? '/admin' : '/famille' ?>">
                     <?= $account['role'] === 'admin' ? 'Administration' : 'Espace famille' ?>
                 </a>
+                <a href="/mon-compte"<?= $navClass('/mon-compte') ?>>Mon compte</a>
                 <form method="post" action="/deconnexion" class="nav__form">
                     <?= csrf_field() ?>
                     <button type="submit" class="lien-bouton">Déconnexion</button>
@@ -116,7 +117,7 @@ $navClass = static function (string $href) use ($currentPath): string {
             Connecté en tant que <strong><?= e($account['username']) ?></strong>
             <?php if ($account['role'] === 'famille' && !empty($account['branch_name'])): ?>
                 — branche <strong><?= e($account['branch_name']) ?></strong>
-                <?php if ((int) ($account['branch_see_all'] ?? 0) === 1): ?>
+                <?php if (can_see_all()): ?>
                     <span class="badge badge-famille">voit toutes les branches</span>
                 <?php endif; ?>
             <?php endif; ?>

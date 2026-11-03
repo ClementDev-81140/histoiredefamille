@@ -7,12 +7,17 @@
  * @var int   $nbDocuments, $nbPersonnes, $nbPages
  */
 $isBranchAccount = ($account['role'] === 'famille');
+$estPersonne     = compte_type($account) === 'personne';
 ?>
 <section class="section une-intro">
     <h1 class="une-intro__titre">Bonjour<?= !empty($account['display_name']) ? ' ' . e($account['display_name']) : '' ?></h1>
     <p class="note">
-        Vous êtes connecté<?= $isBranchAccount && !empty($account['branch_name']) ? ' avec le compte de la branche <strong>' . e($account['branch_name']) . '</strong>' : '' ?>.
-        <?php if ($isBranchAccount && (int) ($account['branch_see_all'] ?? 0) === 1): ?>
+        <?php if ($estPersonne): ?>
+            Votre compte personnel<?= !empty($account['branch_name']) ? ', rattaché à la branche <strong>' . e($account['branch_name']) . '</strong>' : '' ?>.
+        <?php else: ?>
+            Vous êtes connecté<?= $isBranchAccount && !empty($account['branch_name']) ? ' avec le compte de la branche <strong>' . e($account['branch_name']) . '</strong>' : '' ?>.
+        <?php endif; ?>
+        <?php if ($isBranchAccount && can_see_all()): ?>
             Ce compte voit les contenus de toutes les branches.
         <?php elseif ($isBranchAccount): ?>
             Vous voyez les contenus publics, ceux ouverts à toutes les familles et ceux

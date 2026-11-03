@@ -4475,3 +4475,201 @@ legend {
 .article-carte--une .article-carte__plaque {
     background: radial-gradient(ellipse at center, #c9a07a, #6f4c37);
 }
+
+
+/* ==========================================================================
+   COMPTES DE LA FAMILLE (1.10.0)
+   --------------------------------------------------------------------------
+   Page « Comptes », ajout de personnes, aperçu, écran de résultat avec les
+   mots de passe provisoires, et « Mon compte ».
+   Même papier que le reste : aucun arrondi, filets encre, rouge brique pour
+   ce qui doit attirer l'œil.
+   ========================================================================== */
+
+/* Résumé en haut de page : « 12 personnes · 3 comptes de branche · 2 admins » */
+.comptes-resume {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem 1.6rem;
+    margin: 0 0 1.2rem;
+    padding: 0.45rem 0;
+    border-top: 1px solid var(--bordure);
+    border-bottom: 1px solid var(--bordure);
+    font-size: 0.82rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--texte-doux);
+}
+
+.comptes-resume strong {
+    color: var(--texte);
+    font-size: 0.95rem;
+}
+
+/* Barre de recherche : un panneau de papier, comme les autres formulaires. */
+.formulaire--filtre {
+    padding: 0.9rem 1rem;
+    margin-bottom: 1.4rem;
+}
+
+.formulaire--filtre .ligne-champs {
+    margin-bottom: 0;
+}
+
+.formulaire--filtre .actions {
+    margin-bottom: 0;
+}
+
+/* Les deux blocs de création (« Une personne », « Plusieurs personnes »). */
+.comptes-bloc {
+    margin-bottom: 1.6rem;
+}
+
+.comptes-bloc h2 {
+    margin-top: 0;
+}
+
+.comptes-bloc .formulaire {
+    background: transparent;
+    border: 0;
+    padding: 0;
+    box-shadow: none;
+}
+
+.comptes-bloc textarea {
+    min-height: 11rem;
+    font-family: var(--serif);
+    line-height: 1.7;
+}
+
+/* Tableau des comptes : les colonnes restent lisibles, le code en encre. */
+.comptes-tableau td,
+.comptes-apercu td {
+    vertical-align: middle;
+}
+
+.comptes-tableau code,
+.comptes-apercu code,
+.comptes-resultat code {
+    font-size: 0.92rem;
+}
+
+/* Aperçu : une ligne en erreur se voit tout de suite. */
+.comptes-apercu__ligne--erreur {
+    background: rgba(179, 36, 31, 0.07);
+}
+
+.comptes-apercu input[type="text"] {
+    max-width: 17rem;
+    font-size: 0.95rem;
+}
+
+.comptes-apercu__probleme {
+    display: inline-block;
+    color: var(--alerte);
+    font-size: 0.84rem;
+    font-weight: 700;
+}
+
+.comptes-apercu__remarque {
+    display: inline-block;
+    color: var(--texte-doux);
+    font-size: 0.84rem;
+    font-style: italic;
+}
+
+/* Avertissement des mots de passe : cadre rouge brique, très lisible. */
+.comptes-avertissement {
+    background: var(--surface);
+    border: 1px solid var(--alerte);
+    border-left: 5px solid var(--alerte);
+    box-shadow: inset 0 0 22px rgba(148, 102, 64, 0.18);
+}
+
+.comptes-avertissement strong {
+    color: var(--alerte);
+    font-size: 1.02rem;
+}
+
+/* Messages prêts à envoyer. */
+.comptes-messages h2 {
+    margin-top: 2rem;
+}
+
+.message-acces {
+    margin-bottom: 1.2rem;
+    padding: 0.85rem 1rem;
+    background: var(--surface);
+    border: 1px solid var(--bordure);
+    box-shadow: inset 0 0 20px rgba(148, 102, 64, 0.2);
+}
+
+.message-acces__titre {
+    margin: 0 0 0.5rem;
+    font-size: 0.82rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--texte-doux);
+}
+
+.message-acces__texte {
+    margin: 0 0 0.6rem;
+    padding: 0.65rem 0.75rem;
+    background: #fdf6e6;
+    border: 1px solid rgba(54, 44, 36, 0.35);
+    font-family: var(--serif);
+    font-size: 0.96rem;
+    line-height: 1.55;
+    white-space: pre-wrap;
+    /* Une adresse web très longue ne doit pas déborder sur téléphone. */
+    overflow-wrap: anywhere;
+}
+
+.message-acces .actions {
+    margin-bottom: 0;
+}
+
+/* Le champ temporaire du repli « execCommand » reste hors de la vue. */
+.copie-temporaire {
+    position: fixed;
+    left: -9999px;
+    top: 0;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+}
+
+/* « Mon compte » : liste simple de deux points. */
+.liste-simple {
+    margin: 0;
+    padding-left: 1.1rem;
+}
+
+.liste-simple li {
+    margin-bottom: 0.5rem;
+}
+
+/* Tchat : phrase qui rappelle la signature automatique d'un compte personnel. */
+.tchat-page__signature {
+    margin: 0 0 1rem;
+    padding: 0.5rem 0.8rem;
+    border-left: 3px solid var(--accent);
+    background: var(--surface);
+    font-size: 0.92rem;
+    color: var(--texte-doux);
+}
+
+@media (max-width: 40rem) {
+    .comptes-resume {
+        gap: 0.15rem 0.9rem;
+        font-size: 0.72rem;
+    }
+
+    .comptes-apercu input[type="text"] {
+        max-width: 100%;
+    }
+
+    .message-acces__texte {
+        font-size: 0.9rem;
+    }
+}

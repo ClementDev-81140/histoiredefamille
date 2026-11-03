@@ -9,7 +9,8 @@
  * @var int    $premier   identifiant du plus ancien message affiché
  * @var bool   $resteAvant des messages plus anciens existent-ils ?
  */
-$estAdmin = $account['role'] === 'admin';
+$estAdmin      = $account['role'] === 'admin';
+$estPersonne   = compte_type($account) === 'personne';
 ?>
 <section class="section tchat-page">
     <div class="section__entete">
@@ -42,6 +43,13 @@ $estAdmin = $account['role'] === 'admin';
                 <button type="submit" class="bouton">Commencer à discuter</button>
             </p>
         </form>
+    <?php elseif ($estPersonne): ?>
+        <?php /* Compte personnel : la signature est déjà « BRANCHE/Prénom »,
+                 on ne propose donc pas de changer le prénom ici (c'est
+                 l'administrateur qui modifie les noms). */ ?>
+        <p class="tchat-page__signature">
+            Vos messages sont signés <strong><?= e($signature) ?></strong>.
+        </p>
     <?php else: ?>
         <details class="tchat-page__reglages">
             <summary>Changer mon prénom (<?= e($signature) ?>)</summary>

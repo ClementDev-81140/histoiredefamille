@@ -47,7 +47,7 @@ $navLink = static function (string $href, string $label, bool $exact = false) us
         </a>
         <nav class="nav" aria-label="Navigation d'administration">
             <a href="/" target="_blank" rel="noopener">Voir le site</a>
-            <a href="/admin/mon-compte"><?= e($account['display_name'] ?? $account['username'] ?? '') ?></a>
+            <a href="/mon-compte"<?= str_starts_with($current, '/mon-compte') ? ' class="actif" aria-current="page"' : '' ?>>Mon compte</a>
             <form method="post" action="/deconnexion" class="nav__form">
                 <?= csrf_field() ?>
                 <button type="submit" class="lien-bouton">Déconnexion</button>
@@ -70,6 +70,7 @@ $navLink = static function (string $href, string $label, bool $exact = false) us
 
         <p class="admin-menu__titre">Partie famille</p>
         <?= $navLink('/admin/videos', 'Vidéos') ?>
+        <?= $navLink('/admin/comptes', 'Comptes') ?>
         <?= $navLink('/admin/branches', 'Branches & comptes') ?>
         <?= $navLink('/admin/arbre', 'Arbre généalogique') ?>
         <?= $navLink('/admin/importer', 'Dossier arrivée') ?>
