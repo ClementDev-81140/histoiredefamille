@@ -3,6 +3,72 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.21.0] — 2026-11-04
+
+### Le site convertit les vidéos tout seul
+
+Un téléphone produit du MOV, un caméscope de l'AVI, un vieux dictaphone du WAV :
+aucun de ces formats n'est lu par les navigateurs. Jusqu'ici, il fallait
+convertir sur son ordinateur avant d'envoyer. Désormais, le site s'en charge,
+**en arrière-plan**, une vidéo à la fois.
+
+- **Une file d'attente, pas une requête.** L'envoi ne convertit rien : il
+  inscrit le fichier dans la table `conversions` (**migration 015**, ajout
+  seul). La commande `php app/cli/convertir.php`, lancée toutes les 10 minutes
+  par un **minuteur systemd** (priorité basse, `www-data`, une seule à la
+  fois), prend le travail le plus ancien et le fait tranquillement. Une visite
+  du site n'attend donc jamais ffmpeg, et une conversion dure ce qu'elle dure.
+- **Ce qui est converti** : les vidéos non lisibles (MOV, AVI, MKV, WebM,
+  MP4 en HEVC) deviennent **MP4 H.264 + AAC, faststart, yuv420p**, hauteur
+  bornée (1080p par défaut) ; les sons **WAV et AMR** deviennent **M4A (AAC)**,
+  sans image. Un MP4 déjà en H.264 n'est **jamais** reconverti (double
+  encodage = perte de qualité pour rien).
+- **La famille ne voit rien d'inachevé** : une vidéo en attente ou en cours est
+  retirée des listes, albums, recherches et fiches par une condition SQL qui
+  **ne fait que rétrécir** la visibilité — aucun droit n'est ouvert, et les
+  administrateurs continuent de tout voir. Une conversion annulée ou en échec
+  ne bloque rien : c'est l'original qui est servi, comme avant.
+- **Page Administration → Conversions** : état de chaque fichier, avancement,
+  nombre d'essais, message d'erreur en français, **Relancer**, **Annuler**
+  (ffmpeg est arrêté au palier suivant), et **« Les ajouter à la file »** pour
+  les vidéos déjà présentes. Si ffmpeg manque, la page le dit et donne la
+  commande à taper — rien ne casse, la file attend.
+- **Trois essais, puis un message clair.** Fichier abîmé, disque plein, droits
+  insuffisants, encodeur absent : chaque cas a sa phrase. L'original reste
+  toujours en place après un échec.
+- **Rien n'est servi à moitié** : le fichier converti est écrit sous un nom
+  temporaire puis renommé, et la fiche n'est mise à jour qu'à la fin, **en une
+  seule transaction**. La miniature et les dimensions ne sont jamais recalculées
+  deux fois.
+- **L'original n'est effacé que sur demande** : réglage « effacer l'original
+  sept jours après une conversion réussie » (décoché par défaut), et jamais s'il
+  est encore le fichier d'une autre fiche. La tâche d'entretien du dimanche
+  s'en occupe, et purge aussi les lignes de plus de 90 jours.
+- **Réglages** : conversion oui/non, trois qualités (légère 720p, équilibrée
+  1080p, haute), et le choix de garder ou non les originaux. Tous les réglages
+  sont bornés côté serveur : une valeur absurde retombe sur la valeur sûre.
+- **Installation** : `deploy/install.sh` installe `ffmpeg`, pose le minuteur et
+  prévient clairement s'il manque. `config.local.php` peut indiquer un autre
+  chemin (`conversion.ffmpeg`, `conversion.ffprobe`).
+- **Sauvegarde** : la file est dans la base, donc une vidéo en attente survit à
+  une restauration ; les originaux déjà sur le disque sont sauvegardés comme le
+  reste.
+
+Tests : **746 au total (+83)**, dans quatre familles (file, prise et essais,
+réussite, droits et entretien) : qui entre dans la file et qui n'y entre pas,
+la qualité qui retombe sur la valeur sûre, la prise atomique (un même travail
+n'est jamais pris deux fois), l'avancement borné, le premier échec qui remet en
+attente puis l'échec définitif au troisième, la relance qui remet les compteurs
+à zéro, l'annulation, la réussite (fichier remplacé, nom d'origine conservé
+avec l'extension .mp4, durée enregistrée, visibilité intacte), le son converti
+en M4A, le fichier vide refusé, la page fermée aux comptes de famille et aux
+visiteurs, le jeton CSRF exigé, la clause de visibilité qui cache une vidéo en
+préparation à un visiteur, l'échec qui ne bloque pas la lecture, la purge, la
+libération des originaux après sept jours et le garde-fou sur une fiche qui
+utilise encore le même fichier. La commande ffmpeg est éprouvée sans jamais
+l'exécuter : arguments (tableau, jamais de shell), bornage de la hauteur,
+lecture de `out_time_us`, messages d'erreur en français, durées lisibles.
+
 ## [1.20.0] — 2026-11-04
 
 ### Envoyer de gros fichiers depuis Paris

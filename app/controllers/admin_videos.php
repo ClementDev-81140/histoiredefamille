@@ -257,6 +257,9 @@ function admin_video_save(array $params = []): void
     set_content_branches('document', $videoId, $visibility === 'branches' ? $branches : []);
     save_document_tags($videoId, $old['tags']);
 
+    // Format non lisible par les navigateurs : conversion en MP4 en arrière-plan.
+    conversion_planifier_document($videoId);
+
     if ($id > 0 && is_array($stored) && !empty($stored['ok']) && $video) {
         delete_document_files($video);
     }
@@ -356,6 +359,10 @@ function admin_video_import(): void
     ]);
 
     set_content_branches('document', $videoId, $visibility === 'branches' ? $branches : []);
+
+    // Un fichier déposé par le réseau local peut aussi avoir besoin d'être
+    // converti : il entre dans la même file que les envois par le navigateur.
+    conversion_planifier_document($videoId);
 
     log_activity((int) current_account()['id'], 'video_importee', $fileName . ' → ' . $title);
     flash('succes', sprintf('« %s » a été importée (%s). Complétez la fiche si besoin.', $title, format_size((int) $valid['size'])));

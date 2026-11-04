@@ -182,7 +182,10 @@ $dureeActuelle = $isEdit && !empty($video['duration_seconds'])
             </p>
         <?php else: ?>
             <p class="aide">
-                MP4 (H.264 + AAC) conseillé : il est lu partout, sans conversion.
+                MP4 (H.264 + AAC) est le format lu partout : s’il est déjà dans ce
+                format, il est publié tel quel. Un autre format (MOV, AVI, MKV,
+                WebM…) est converti automatiquement en arrière-plan, et la vidéo
+                n’est visible qu’une fois la conversion terminée.
                 Formats acceptés : <?= e(implode(', ', allowed_extensions())) ?>.
             </p>
         <?php endif; ?>

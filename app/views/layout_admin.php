@@ -84,6 +84,7 @@ $navLink = static function (string $href, string $label, bool $exact = false) us
 
         <p class="admin-menu__titre">Partie famille</p>
         <?= $navLink('/admin/videos', 'Vidéos') ?>
+        <?= $navLink('/admin/conversions', 'Conversions') ?>
         <?= $navLink('/admin/comptes', 'Comptes') ?>
         <?= $navLink('/admin/branches', 'Branches & comptes') ?>
         <?= $navLink('/admin/arbre', 'Arbre généalogique') ?>

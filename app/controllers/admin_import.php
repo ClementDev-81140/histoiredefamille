@@ -108,6 +108,10 @@ function admin_import_store(): void
     set_content_branches('document', $documentId, $visibility === 'branches' ? $branches : []);
     save_document_tags($documentId, $old['tags']);
 
+    // Une vidéo importée depuis le dossier arrivée passe par la même file de
+    // conversion que les autres.
+    conversion_planifier_document($documentId);
+
     log_activity((int) current_account()['id'], 'import_fichier', $fileName . ' → ' . $title);
     flash('succes', sprintf('« %s » a été importé (%s).', $title, format_size((int) $valid['size'])));
     redirect('/admin/importer');

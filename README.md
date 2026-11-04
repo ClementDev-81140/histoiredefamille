@@ -25,7 +25,7 @@ et une installation qui tient en quelques commandes à copier-coller.
 6. [Utiliser le site au quotidien](#6-utiliser-le-site-au-quotidien)
 7. [Mettre à jour le site](#7-mettre-à-jour-le-site)
 8. [Sauvegarde et restauration](#8-sauvegarde-et-restauration)
-9. [Vidéos : convertir avant de déposer](#9-vidéos--convertir-avant-de-déposer)
+9. [Vidéos : le site convertit tout seul](#9-vidéos--le-site-convertit-tout-seul)
 10. [Arbre généalogique et GEDCOM](#10-arbre-généalogique-et-gedcom)
 11. [En cas de problème](#11-en-cas-de-problème)
 12. [Confidentialité et sécurité](#12-confidentialité-et-sécurité)
@@ -121,6 +121,10 @@ et une installation qui tient en quelques commandes à copier-coller.
   visibilité, **mise en avant** en un clic, **ordre d'affichage**, durée,
   autorisation de téléchargement, import depuis le dossier arrivée,
   modification et suppression.
+- **Conversions** : la file d'attente des vidéos converties en MP4 (H.264 +
+  AAC) en arrière-plan, une seule à la fois. État, avancement, nombre d'essais,
+  message d'erreur clair, **Relancer** et **Annuler**. La famille ne voit une
+  vidéo qu'une fois la conversion terminée (§ 9).
 - **Import depuis le dossier arrivée** : pour les fichiers (vidéos) déposés
   sur le Pi par le réseau local, quand l'envoi par le navigateur ne convient pas.
 - **Journal des connexions** : qui s'est connecté, quand, depuis quelle
@@ -453,15 +457,18 @@ histoiredefamille/
 │   │                        apparence du journal (textes et couleurs),
 │   │                        composition des pages et modèles d'article,
 │   │                        vérification avant ouverture (mise_en_ligne),
-│   │                        carte des lieux, envoi de gros fichiers (envoi)…
+│   │                        carte des lieux, envoi de gros fichiers (envoi),
+│   │                        conversion des vidéos (conversion)…
 │   ├── views/               gabarits PHP (public, famille, admin)
 │   ├── migrations/          fichiers SQL numérotés
-│   │                        (001_init … 014_envois)
+│   │                        (001_init … 015_conversions)
 │   └── cli/                 commandes : migrate, create-admin, demo, maintenance,
-│                            sauvegarde, restauration, verifier-mise-en-ligne, tests
+│                            sauvegarde, restauration, verifier-mise-en-ligne,
+│                            convertir (vidéos), envoyer-courriels, tests
 ├── deploy/
 │   ├── install.sh           installation complète sur le Pi
-│   ├── systemd/             minuteur de sauvegarde (tous les jours à 3 h 30)
+│   ├── systemd/             minuteurs : sauvegarde (3 h 30), courriels
+│   │                        (5 min), conversion des vidéos (10 min)
 │   ├── backup.sh            ancien point d'entrée (appelle la commande PHP)
 │   ├── crontab.example      tâches planifiées
 │   ├── apache/              VirtualHost Apache
@@ -1414,8 +1421,8 @@ php app/cli/migrate.php
 Après une mise à jour, les petits tests automatiques (mise en forme des
 messages du tchat, préparation du texte cherché, chronologie d'une fiche de
 personne, albums, calendrier, GEDCOM, recettes, journal des connexions,
-rubriques publiques, envoi de gros fichiers, carte des lieux, menu et comptes de
-la famille) se lancent en une commande. Le nom d'une famille
+rubriques publiques, envoi de gros fichiers, conversion des vidéos, carte des
+lieux, menu et comptes de la famille) se lancent en une commande. Le nom d'une famille
 peut être ajouté pour ne lancer qu'elle (`php app/cli/tests.php rubriques`) :
 
 ```bash
@@ -1456,6 +1463,9 @@ Ce qu'elle fait, dans l'ordre :
    `arrivee`) de façon incrémentale : seuls les fichiers nouveaux ou modifiés
    sont réécrits. `tmp/`, `verrous/` et `envois/` sont ignorés (fichiers
    jetables : un fichier à moitié reçu n'a rien à faire dans une sauvegarde).
+   La **file de conversion** (table `conversions`) est dans la base : une
+   vidéo en attente est donc sauvegardée, et le travail reprend après une
+   restauration.
 4. **Range la copie** : 7 sauvegardes **quotidiennes**, 4 **hebdomadaires**
    (une par semaine) et 6 **mensuelles** (une par mois). Une sauvegarde en
    cours est fabriquée dans un dossier temporaire puis déplacée d'un bloc :
@@ -1784,13 +1794,96 @@ par la base ; supprimez-les si vous voulez vraiment tout effacer.
 
 ---
 
-## 9. Vidéos : convertir avant de déposer
+## 9. Vidéos : le site convertit tout seul
 
-Le site **ne réencode pas** les vidéos : un Raspberry Pi mettrait des dizaines
-d'heures à convertir un film. Le fichier déposé doit donc déjà être lisible
-par les navigateurs :
+Depuis la version 1.21, le site **convertit lui-même** les vidéos : envoyer un
+fichier MOV d'un téléphone, un AVI du caméscope ou un MKV de la famille ne
+demande plus aucune préparation. La conversion se fait **en arrière-plan**,
+une seule vidéo à la fois, sans jamais bloquer une visite.
 
-- conteneur **MP4**, vidéo **H.264**, audio **AAC**, option « faststart ».
+### Pourquoi en arrière-plan
+
+Un Raspberry Pi n'a pas de puce vidéo : convertir une heure de film prend
+plusieurs heures. Ce travail ne peut donc pas se faire pendant l'envoi (la
+requête serait coupée, et la personne attendrait devant une page blanche).
+L'envoi se contente d'inscrire le fichier dans une **file d'attente**, et une
+commande séparée la vide tranquillement :
+
+```bash
+# une seule fois, à l'installation : ffmpeg (installation par deploy/install.sh)
+sudo apt-get install -y ffmpeg
+
+# ce que fait le minuteur, toutes les 10 minutes
+sudo -u www-data php /var/www/histoiredefamille/app/cli/convertir.php
+```
+
+Le minuteur `histoiredefamille-conversion.timer` est posé par
+`deploy/install.sh`. Il tourne en **priorité basse** (le site reste réactif)
+et **une seule conversion à la fois**.
+
+### Ce qui est converti
+
+- **vidéos** : MOV, AVI, MKV, WebM, MP4 en HEVC… deviennent **MP4 (H.264 +
+  AAC)**, le format que tous les navigateurs savent lire. Un MP4 déjà en
+  H.264 n'est **jamais** reconverti (ce serait un double encodage, donc une
+  perte de qualité pour rien) ;
+- **sons** : WAV et AMR (dictaphones, vieux téléphones) deviennent **M4A
+  (AAC)**, sans image ;
+- les photos et les documents ne sont jamais touchés.
+
+### Ce que voit la famille
+
+Tant qu'une vidéo n'est pas convertie, elle **n'apparaît pas** : ni dans
+l'onglet Vidéos, ni dans les albums, ni dans la recherche. Aucun lecteur ne
+s'affiche donc sur un fichier illisible. Les administrateurs, eux, voient la
+fiche et son état (« en attente », « en cours — 42 % », « échec »).
+
+### Suivre et décider : Administration → Conversions
+
+La page liste la file avec, pour chaque fichier : la vidéo, son état, la
+taille de l'original et du fichier converti, le nombre d'essais et le message
+d'erreur s'il y en a un.
+
+- **Relancer** remet un travail échoué ou annulé dans la file (les trois
+  essais repartent de zéro) ;
+- **Annuler** arrête une conversion en cours : ffmpeg est stoppé au palier
+  suivant, le fichier d'origine reste en place ;
+- **Les ajouter à la file** inscrit les vidéos déjà présentes sur le site qui
+  ne sont pas au bon format (utile après avoir installé ffmpeg) ;
+- si ffmpeg est absent, la page le dit **clairement** et propose la commande à
+  taper : rien ne casse, la file attend.
+
+### Réglages (Administration → Réglages)
+
+- **Convertir les vidéos en MP4** : oui (conseillé) ou non. Désactivé, aucun
+  fichier n'entre dans la file et les vidéos restent telles quelles ;
+- **Qualité** : *légère* (720p, la plus rapide), *équilibrée* (1080p,
+  conseillée), *haute* (hauteur d'origine, plus lente et plus lourde) ;
+- **Effacer le fichier d'origine sept jours après une conversion réussie** :
+  décoché par défaut (deux versions occupent alors la place). Coché, l'original
+  n'est effacé qu'après **sept jours**, jamais si la conversion a échoué, et
+  jamais s'il est encore utilisé par une autre fiche.
+
+### Ce que le site garantit
+
+- **rien n'est servi à moitié** : le fichier converti est écrit sous un nom
+  temporaire, puis la fiche est mise à jour **en une seule transaction**.
+  Jamais de lecteur pointant vers un fichier incomplet ;
+- **l'original n'est jamais perdu** : il reste sur le disque jusqu'à ce que
+  vous ayez explicitement demandé son effacement, sept jours après ;
+- **trois essais, puis un message clair** : « Le fichier d'origine est abîmé »,
+  « Le disque est plein », « ffmpeg ne sait pas encoder en H.264 »… jamais une
+  erreur technique ;
+- **la visibilité ne change pas** : convertir une vidéo ne modifie ni ses
+  droits, ni sa catégorie, ni ses albums ;
+- **la mémoire reste basse** : la commande lit la sortie de ffmpeg ligne par
+  ligne, ffmpeg écrit directement dans un fichier ; aucun film n'est jamais
+  chargé en mémoire.
+
+### Si vous préférez convertir sur votre ordinateur
+
+C'est toujours possible, et parfois plus rapide : le site accepte alors
+directement le MP4, sans passer par la file.
 
 Avec HandBrake (interface graphique) : préréglage **Fast 1080p30**, audio AAC
 160 kb/s, cocher **Web Optimized**.
@@ -1896,7 +1989,10 @@ Les dates sont converties au format international de la généalogie
 | Page « Site momentanément indisponible » | Apache répond 503 (surcharge, redémarrage) ou PHP est arrêté | `sudo systemctl status apache2` ; la page est `public/maintenance.html`, modifiable librement |
 | Sauvegarde en échec | clé USB absente ou pleine | `df -h /mnt/sauvegarde`, rebrancher, relancer `sudo -u www-data php /var/www/histoiredefamille/app/cli/sauvegarde.php` |
 | Le Pi ne démarre plus | disque monté dans `fstab` et absent | `nofail` doit être présent ; sinon démarrer sans le disque et corriger `/etc/fstab` |
-| Vidéo qui ne démarre pas | format non compatible | reconvertir en MP4 H.264 + AAC (§ 9) |
+| Vidéo qui ne démarre pas | format non compatible, conversion pas encore faite | ouvrir **Administration → Conversions** : la file dit où en est le fichier (§ 9) |
+| « ffmpeg est introuvable » | programme absent du Pi | `sudo apt-get install -y ffmpeg` puis `sudo bash deploy/install.sh`. En attendant, la file attend et les vidéos restent dans leur format d'origine |
+| Une conversion échoue | fichier abîmé, disque plein, format exotique | lire le message dans **Conversions** ; « Relancer » après avoir corrigé la cause. L'original reste servi tel quel |
+| Les conversions ne démarrent pas | minuteur arrêté | `systemctl list-timers histoiredefamille-conversion.timer` puis `sudo systemctl start histoiredefamille-conversion.service` ; journal : `journalctl -u histoiredefamille-conversion.service -n 50` |
 
 Commandes de diagnostic utiles :
 
@@ -1976,6 +2072,11 @@ le dossier `storage/` sont listés dans `.gitignore`.
 - **Envois** : stockés hors de la racine web, type réel vérifié avec `finfo`,
   liste blanche d'extensions, nom aléatoire, nom d'origine conservé seulement
   en base, jamais exécutables.
+- **Conversion des vidéos** : ffmpeg est lancé **sans passer par le shell**
+  (arguments en tableau : aucun nom de fichier ne peut être interprété), sous
+  l'utilisateur `www-data`, en priorité basse, un seul fichier à la fois. La
+  fiche n'est mise à jour qu'à la fin, en une transaction ; l'original n'est
+  jamais effacé sans un réglage explicite et un délai de sept jours.
 - **Envois par morceaux** : les morceaux attendent dans le dossier `envois`,
   **hors de la racine web**, sous un identifiant aléatoire de **128 bits**
   contrôlé par une expression stricte (aucun chemin n'est construit à partir

@@ -74,8 +74,13 @@ function visibility_clause(string $kind, string $alias, array &$params): string
     }
 
     if ($account === null) {
-        // Visiteur non connecté : uniquement le public.
-        return $a . ".visibility = 'public'";
+        // Visiteur non connecté : uniquement le public (et, pour un document,
+        // seulement s'il est prêt — voir plus bas).
+        $visiteur = $a . ".visibility = 'public'";
+        if ($kind === 'document') {
+            return '(' . $visiteur . ' AND ' . conversion_pretes_sql($a) . ')';
+        }
+        return $visiteur;
     }
 
     // Compte de famille : public + toutes les familles + ses branches.
@@ -108,7 +113,17 @@ function visibility_clause(string $kind, string $alias, array &$params): string
         );
     }
 
-    return '(' . implode(' OR ', $conditions) . ')';
+    $visible = '(' . implode(' OR ', $conditions) . ')';
+
+    // Une vidéo encore dans la file de conversion n'est pas montrée aux
+    // comptes de famille : son lecteur afficherait une erreur. Cette condition
+    // ne fait que RÉTRÉCIR ce qui est visible : aucun droit n'est ouvert, et
+    // les administrateurs (plus haut) continuent de tout voir.
+    if ($kind === 'document') {
+        $visible = '(' . $visible . ' AND ' . conversion_pretes_sql($a) . ')';
+    }
+
+    return $visible;
 }
 
 /**
@@ -204,6 +219,12 @@ function find_viewable_document(int $id): ?array
         return null;
     }
     if (!can_view((string) $doc['visibility'], content_branch_ids('document', $id))) {
+        return null;
+    }
+    // Une vidéo encore dans la file de conversion n'existe pas, pour la
+    // famille : même réponse qu'un document interdit (404). L'administrateur,
+    // lui, la voit et sa fiche indique l'avancement.
+    if (!is_admin() && !conversion_document_pret($doc)) {
         return null;
     }
     return $doc;

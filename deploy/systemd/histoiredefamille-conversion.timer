@@ -1,0 +1,13 @@
+[Unit]
+Description=Histoire de famille — conversion des vidéos toutes les 10 minutes
+
+[Timer]
+# Toutes les 10 minutes. Si un film est en cours, systemd ne lance pas un
+# deuxième passage : « OnUnitActiveSec » compte à partir de la fin du dernier.
+OnBootSec=5min
+OnUnitActiveSec=10min
+AccuracySec=1min
+Unit=histoiredefamille-conversion.service
+
+[Install]
+WantedBy=timers.target

@@ -77,5 +77,8 @@ function public_video_detail(array $params): void
         'downloadable' => document_download_allowed($video),
         'saturation'  => $actifs >= $maxStreams,
         'maxStreams'  => $maxStreams,
+        // Conversion en MP4 : la famille ne voit pas cette vidéo tant qu'elle
+        // n'est pas prête ; l'administrateur, lui, voit toujours l'état.
+        'conversion'  => conversion_avertissement((int) $video['id']),
     ]);
 }

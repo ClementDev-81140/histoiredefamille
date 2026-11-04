@@ -1,0 +1,26 @@
+[Unit]
+Description=Histoire de famille — conversion des vidéos en MP4
+Documentation=file:/var/www/histoiredefamille/README.md
+After=local-fs.target
+# Pas de « network-online » : la conversion ne sort jamais du Raspberry Pi.
+
+[Service]
+Type=oneshot
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/histoiredefamille
+# Un fichier à la fois, puis la commande s'arrête : le minuteur la relance.
+ExecStart=/usr/bin/php /var/www/histoiredefamille/app/cli/convertir.php
+# Priorité basse et disque après les autres : le site doit rester réactif
+# pendant qu'un film est converti (c'est long, et c'est normal).
+Nice=19
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+# Six heures au maximum par passage : au-delà, systemd arrête la commande.
+# Un film est alors repris au passage suivant (l'original n'a pas bougé).
+TimeoutStartSec=6h
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

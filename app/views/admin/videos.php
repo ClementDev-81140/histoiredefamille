@@ -19,8 +19,10 @@ $filtreActif = $q !== '' || $visibility !== '';
 <p class="note">
     <?= (int) $total ?> vidéo<?= (int) $total > 1 ? 's' : '' ?> enregistrée<?= (int) $total > 1 ? 's' : '' ?>.
     Le Raspberry Pi ne diffuse pas plus de <strong><?= (int) $maxStreams ?></strong> vidéos
-    en même temps et ne convertit aucun fichier : utilisez du MP4 (H.264 + AAC).
-    Au-delà de la limite, les visiteurs voient un message d’attente, pas une erreur.
+    en même temps ; au-delà, les visiteurs voient un message d’attente, pas une erreur.
+    Un fichier qui n’est pas en MP4 (H.264 + AAC) est converti en arrière-plan
+    (<a href="/admin/conversions">Conversions</a>) : la famille ne le voit qu’une
+    fois le travail terminé.
 </p>
 
 <form method="get" action="/admin/videos" class="filtres">
@@ -72,6 +74,12 @@ $filtreActif = $q !== '' || $visibility !== '';
                             <a href="/videos/<?= (int) $video['id'] ?>"><?= e($video['title']) ?></a>
                             <?php if ($enAvant): ?>
                                 <span class="badge badge-branches">en avant</span>
+                            <?php endif; ?>
+                            <?php $conv = conversion_etat_document((int) $video['id']); ?>
+                            <?php if (in_array($conv['state'], ['attente', 'en_cours', 'echec'], true)): ?>
+                                <span class="badge badge-<?= $conv['state'] === 'echec' ? 'prive' : 'branches' ?>">
+                                    <?= e($conv['state'] === 'en_cours' ? 'conversion ' . (int) $conv['progress'] . ' %' : conversion_libelle_etat($conv['state'])) ?>
+                                </span>
                             <?php endif; ?>
                             <span class="discret discret--bloc">
                                 <?php if ((int) $video['display_order'] > 0): ?>

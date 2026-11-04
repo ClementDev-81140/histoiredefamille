@@ -26,6 +26,7 @@ require_once __DIR__ . '/controllers/admin_courriels.php';
 require_once __DIR__ . '/controllers/admin_gazette.php';
 require_once __DIR__ . '/controllers/admin_lieux.php';
 require_once __DIR__ . '/controllers/admin_envoi.php';
+require_once __DIR__ . '/controllers/admin_conversions.php';
 require_once __DIR__ . '/controllers/compte.php';
 require_once __DIR__ . '/controllers/desinscription.php';
 require_once __DIR__ . '/controllers/gazette.php';
@@ -133,6 +134,14 @@ route('POST', '/admin/envoyer/decision', 'admin_envoi_decision');
 route('POST', '/admin/envoyer/annuler', 'admin_envoi_annuler');
 route('POST', '/admin/envoyer/lot', 'admin_envoi_lot_save');
 route('GET', '/admin/envois', 'admin_envois');
+
+// Conversion des vidéos en MP4 : la file d'attente, surveillée par un
+// minuteur systemd (app/cli/convertir.php). Rien n'est converti pendant une
+// visite : ces pages remplissent et surveillent la file, c'est tout.
+route('GET', '/admin/conversions', 'admin_conversions');
+route('POST', '/admin/conversions/planifier', 'admin_conversion_planifier');
+route('POST', '/admin/conversions/{id}/relancer', 'admin_conversion_relancer');
+route('POST', '/admin/conversions/{id}/annuler', 'admin_conversion_annuler');
 
 // Lieux de la carte : donner des coordonnées aux textes des fiches.
 route('GET', '/admin/lieux', 'admin_lieux');

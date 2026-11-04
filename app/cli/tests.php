@@ -2396,7 +2396,17 @@ if ($filtre === '' || $filtre === 'composition') {
     $derniere = basename((string) end($migrations));
     $sql009   = (string) @file_get_contents(dirname(__DIR__) . '/migrations/009_articles_modele.sql');
     // Chaque lot ajoute SA migration ; les précédentes ne bougent jamais.
-    verifier('migration : 014 est la dernière migration', $derniere === '014_envois.sql', $derniere);
+    verifier('migration : 015 est la dernière migration', $derniere === '015_conversions.sql', $derniere);
+    $migration015 = (string) @file_get_contents(dirname(__DIR__) . '/migrations/015_conversions.sql');
+    verifier(
+        'migration : 015 crée la file de conversion, sans toucher à l’existant',
+        str_contains($migration015, 'CREATE TABLE conversions')
+            && str_contains($migration015, 'ON DELETE CASCADE')
+            // Aucune instruction destructive, en début de ligne (« ON DELETE
+            // CASCADE » dans une clé étrangère n'en est pas une).
+            && preg_match('/^\s*(DROP|DELETE|ALTER)\b/mi', $migration015) === 0,
+        'migration 015'
+    );
     verifier(
         'migration : 010 ajoute des colonnes et des tables, sans rien supprimer',
         str_contains((string) @file_get_contents(dirname(__DIR__) . '/migrations/010_courriels.sql'), 'ALTER TABLE accounts ADD COLUMN email')
@@ -2473,6 +2483,7 @@ require_once __DIR__ . '/tests_courriels.php';
 require_once __DIR__ . '/tests_gazette.php';
 require_once __DIR__ . '/tests_carte.php';
 require_once __DIR__ . '/tests_envoi.php';
+require_once __DIR__ . '/tests_conversion.php';
 
 if ($filtre === '' || $filtre === 'courriels') {
     tests_courriels();
@@ -2488,6 +2499,10 @@ if ($filtre === '' || $filtre === 'carte') {
 
 if ($filtre === '' || $filtre === 'envoi') {
     tests_envoi();
+}
+
+if ($filtre === '' || $filtre === 'conversion') {
+    tests_conversion();
 }
 
 // ---------------------------------------------------------------------------

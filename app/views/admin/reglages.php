@@ -130,6 +130,54 @@ $val = static fn (string $key, string $default = ''): string => (string) old_val
         </p>
     </fieldset>
 
+    <fieldset class="champ">
+        <legend>Conversion des vidéos</legend>
+
+        <div class="ligne-champs">
+            <div class="champ">
+                <label for="conversion_active">Convertir les vidéos en MP4</label>
+                <select id="conversion_active" name="conversion_active">
+                    <option value="1"<?= selected($val('conversion_active') === '1') ?>>Oui (conseillé)</option>
+                    <option value="0"<?= selected($val('conversion_active') !== '1') ?>>Non</option>
+                </select>
+                <p class="aide">
+                    Une vidéo dans un format que les navigateurs ne lisent pas (MOV,
+                    AVI, MKV, WebM, HEVC, WAV, AMR…) est convertie en arrière-plan,
+                    une seule à la fois, par la commande
+                    <code>php app/cli/convertir.php</code>.
+                </p>
+            </div>
+
+            <div class="champ">
+                <label for="conversion_qualite">Qualité</label>
+                <select id="conversion_qualite" name="conversion_qualite">
+                    <option value="leger"<?= selected($val('conversion_qualite') === 'leger') ?>>Légère (720p) — la plus rapide</option>
+                    <option value="equilibre"<?= selected($val('conversion_qualite') !== 'leger' && $val('conversion_qualite') !== 'haute') ?>>Équilibrée (1080p) — conseillée</option>
+                    <option value="haute"<?= selected($val('conversion_qualite') === 'haute') ?>>Haute — plus lente, plus lourde</option>
+                </select>
+                <p class="aide">
+                    Le Raspberry Pi n’a pas de puce vidéo : une heure de film peut
+                    demander plusieurs heures de conversion. « Légère » divise ce
+                    temps par deux environ.
+                </p>
+            </div>
+        </div>
+
+        <div class="champ">
+            <label class="case">
+                <input type="checkbox" id="conversion_supprimer_original" name="conversion_supprimer_original"
+                       value="1"<?= checked($val('conversion_supprimer_original') === '1') ?>>
+                Effacer le fichier d’origine sept jours après une conversion réussie
+            </label>
+            <p class="aide">
+                Décoché (par défaut), l’original est conservé sur le disque : deux
+                versions de la vidéo occupent alors la place. Coché, il n’est effacé
+                qu’après sept jours, et jamais si la conversion a échoué. Il faut
+                un peu de place libre : deux heures de film en 1080p pèsent 4 à 6 Go.
+            </p>
+        </div>
+    </fieldset>
+
     <p class="actions">
         <button type="submit" class="bouton">Enregistrer</button>
         <a class="bouton bouton--secondaire" href="/">Voir le résultat</a>

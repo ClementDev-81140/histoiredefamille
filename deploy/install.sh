@@ -50,6 +50,7 @@ apt-get install -y \
     sqlite3 \
     rsync \
     curl \
+    ffmpeg \
     openssh-server
 # Version de PHP réellement installée (sert à placer le fichier .ini).
 PHP_VERSION="$(php -r 'echo PHP_MAJOR_VERSION . "." . PHP_MINOR_VERSION;')"
@@ -167,6 +168,23 @@ systemctl enable --now histoiredefamille-courriels.timer >/dev/null 2>&1
 vert "Minuteur installé et activé : toutes les 5 minutes."
 vert "Vérification : systemctl list-timers histoiredefamille-courriels.timer"
 vert "Sans configuration d'envoi (config.local.php), la commande ne fait rien : les messages attendent."
+
+# --- 8 ter. Conversion des vidéos (minuteur systemd, toutes les 10 minutes) --
+bleu "Conversion des vidéos en MP4 (minuteur systemd, toutes les 10 minutes)"
+
+install -m 644 "${SITE_DIR}/deploy/systemd/histoiredefamille-conversion.service" /etc/systemd/system/
+install -m 644 "${SITE_DIR}/deploy/systemd/histoiredefamille-conversion.timer" /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable --now histoiredefamille-conversion.timer >/dev/null 2>&1
+
+if command -v ffmpeg >/dev/null 2>&1; then
+    vert "Minuteur installé et activé : un fichier à la fois, en priorité basse."
+    vert "ffmpeg est présent : les vidéos envoyées seront converties en arrière-plan."
+else
+    rouge "ffmpeg est absent : les vidéos envoyées resteront dans leur format d’origine."
+    rouge "Pour l'installer : sudo apt-get install -y ffmpeg"
+fi
+vert "Vérification : systemctl list-timers histoiredefamille-conversion.timer"
 
 # Ancien cron : la ligne de sauvegarde est retirée (le minuteur la remplace).
 # La maintenance hebdomadaire reste dans /etc/cron.d.

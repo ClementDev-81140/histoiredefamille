@@ -164,6 +164,10 @@ function admin_settings(): void
             // Envoi de gros fichiers par morceaux.
             'envoi_morceau_mo' => (string) envoi_reglages()['morceau_mo'],
             'envoi_max_mo'     => (string) envoi_reglages()['max_mo'],
+            // Conversion des vidéos en MP4.
+            'conversion_active'             => conversion_reglages()['active'] ? '1' : '0',
+            'conversion_qualite'            => (string) conversion_reglages()['qualite'],
+            'conversion_supprimer_original' => conversion_reglages()['supprimer_original'] ? '1' : '0',
         ],
     ], 'layout_admin');
 }
@@ -188,6 +192,10 @@ function admin_settings_save(): void
         'tchat_conservation_mois' => (string) post('tchat_conservation_mois', '12'),
         'envoi_morceau_mo' => (string) post('envoi_morceau_mo', '5'),
         'envoi_max_mo'     => (string) post('envoi_max_mo', '4096'),
+        // Conversion des vidéos : la case absente vaut « non ».
+        'conversion_active' => post('conversion_active') === '0' ? '0' : '1',
+        'conversion_qualite' => (string) post('conversion_qualite', 'equilibre'),
+        'conversion_supprimer_original' => post('conversion_supprimer_original') === '1' ? '1' : '0',
     ];
 
     $errors = [];
@@ -225,6 +233,9 @@ function admin_settings_save(): void
     $maxMo = (int) $values['envoi_max_mo'];
     if ($maxMo < 50 || $maxMo > 16384) {
         $errors[] = 'La taille maximale d’un fichier doit être comprise entre 50 Mo et 16 Go.';
+    }
+    if (!in_array($values['conversion_qualite'], ['leger', 'equilibre', 'haute'], true)) {
+        $errors[] = 'La qualité de conversion n’est pas valide.';
     }
 
     if ($errors !== []) {

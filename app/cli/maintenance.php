@@ -64,6 +64,17 @@ try {
     cli_err("  ! purge des envois impossible : " . $e->getMessage() . "\n");
 }
 
+// Conversions : vieilles lignes terminées, et originaux libérés (sept jours
+// après une conversion réussie, si le réglage le demande).
+try {
+    $vieux   = conversion_purger(90);
+    $effaces = conversion_liberer_originaux(7);
+    echo "  · conversions : {$vieux} ancienne(s) ligne(s) effacée(s), "
+        . ($effaces > 0 ? "{$effaces} original(aux) libéré(s)" : 'aucun original à effacer') . "\n";
+} catch (Throwable $e) {
+    cli_err("  ! entretien des conversions impossible : " . $e->getMessage() . "\n");
+}
+
 // Fichiers temporaires (aperçus GEDCOM abandonnés, etc.).
 $tmpDir = storage_path((string) config('storage.tmp', 'tmp'));
 $removed = 0;

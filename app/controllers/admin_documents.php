@@ -226,6 +226,10 @@ function admin_document_save(array $params = []): void
     set_content_branches('document', $documentId, $visibility === 'branches' ? $branches : []);
     save_document_tags($documentId, $old['tags']);
 
+    // Vidéo envoyée dans un format que les navigateurs ne lisent pas : elle
+    // entre dans la file de conversion (jamais pendant la visite).
+    conversion_planifier_document($documentId);
+
     // Remplacement de fichier : on supprime l'ancien après succès.
     if ($id > 0 && is_array($stored) && !empty($stored['ok']) && $doc) {
         delete_document_files($doc);

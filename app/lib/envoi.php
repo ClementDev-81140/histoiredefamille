@@ -579,6 +579,9 @@ function envoi_conclure(array $envoi, array $donnees): array
              $donnees['ext'], $donnees['mime'], $donnees['kind'], $donnees['date_meta'],
              $donnees['width'], $donnees['height'], $documentId, time(), time(), (int) $envoi['id']]
         );
+        // Une vidéo (ou un son) dans un format que les navigateurs ne lisent
+        // pas entre dans la file de conversion, une fois la fiche créée.
+        conversion_planifier_document($documentId);
         $resultat['etat'] = 'termine';
     } else {
         // Le fichier est prêt : il attend que l'administrateur valide le

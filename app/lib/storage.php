@@ -103,6 +103,10 @@ function mime_map(): array
         'mp3'  => ['audio/mpeg', 'audio/mp3'],
         'm4a'  => ['audio/mp4', 'audio/x-m4a'],
         'ogg'  => ['audio/ogg', 'application/ogg'],
+        // Formats que les navigateurs ne lisent pas : acceptés pour être
+        // convertis en M4A (AAC) par la file de conversion.
+        'wav'  => ['audio/wav', 'audio/x-wav', 'audio/wave', 'audio/vnd.wave'],
+        'amr'  => ['audio/amr', 'audio/3gpp', 'audio/amr-nb'],
     ];
 }
 

@@ -6,7 +6,7 @@
  * (HTTP Range), jamais chargé en entier en mémoire, droits vérifiés avant
  * l'ouverture du fichier.
  *
- * @var array  $video, $branches
+ * @var array  $video, $branches, $conversion
  * @var bool   $downloadable, $saturation
  * @var int    $maxStreams
  */
@@ -31,6 +31,13 @@ $poster = thumbnail_url($video);
             <?php endif; ?>
         </span>
     </div>
+
+    <?php if ((string) ($conversion['phrase'] ?? '') !== '' && is_admin()): ?>
+        <div class="message message--info">
+            <strong>Conversion :</strong> <?= e((string) $conversion['phrase']) ?>
+            <a href="/admin/conversions">Voir la file d’attente</a>.
+        </div>
+    <?php endif; ?>
 
     <?php if ($saturation): ?>
         <div class="video-indisponible">

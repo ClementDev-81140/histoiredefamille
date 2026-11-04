@@ -51,6 +51,10 @@ function config_defaults(): array
             'allowed_extensions' => [
                 'pdf', 'txt', 'jpg', 'jpeg', 'png', 'webp', 'gif',
                 'mp4', 'm4v', 'docx', 'xlsx', 'odt', 'ods', 'mp3', 'm4a', 'ogg',
+                // WAV et AMR ne sont pas lus par les navigateurs : ils sont
+                // acceptés pour être convertis en M4A (AAC) par la file de
+                // conversion (voir app/lib/conversion.php).
+                'wav', 'amr',
             ],
             'max_image_pixels' => 24000000,
             'thumb_max'        => 480,
@@ -61,6 +65,13 @@ function config_defaults(): array
             'max_concurrent_streams' => 2,
             'chunk_size'             => 262144,
             'lock_timeout'           => 120,
+        ],
+        // Conversion des vidéos en MP4 (H.264 + AAC) par la commande
+        // app/cli/convertir.php. Les chemins peuvent être changés dans
+        // config.local.php si ffmpeg n'est pas dans /usr/bin.
+        'conversion' => [
+            'ffmpeg'  => '/usr/bin/ffmpeg',
+            'ffprobe' => '/usr/bin/ffprobe',
         ],
         'security' => [
             'login_max_attempts'     => 5,
