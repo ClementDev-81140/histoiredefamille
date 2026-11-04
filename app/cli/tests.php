@@ -2464,6 +2464,23 @@ if ($filtre === '' || $filtre === 'gazette') {
     tests_gazette();
 }
 
+// ---------------------------------------------------------------------------
+// Adresses des fichiers du site : le numéro de version force le rechargement
+// ---------------------------------------------------------------------------
+if ($filtre === '' || $filtre === 'assets') {
+    echo "Adresses des fichiers (cache)\n";
+    $css = asset_url('/assets/style.css');
+    verifier('la feuille de style porte un numéro de version',
+        preg_match('#^/assets/style\.css\?v=\d{9,}$#', $css) === 1);
+    verifier('le numéro suit la date de modification du fichier',
+        $css === '/assets/style.css?v=' . filemtime(HDF_ROOT . '/public/assets/style.css'));
+    verifier('un fichier introuvable reste sans numéro (pas d\'erreur)',
+        asset_url('assets/inexistant.css') === '/assets/inexistant.css');
+    verifier('les deux mises en page (site et administration) utilisent l’adresse versionnée',
+        str_contains((string) @file_get_contents(dirname(__DIR__) . '/views/layout.php'), "asset_url('/assets/style.css')")
+        && str_contains((string) @file_get_contents(dirname(__DIR__) . '/views/layout_admin.php'), "asset_url('/assets/style.css')"));
+}
+
 $total = $reussis + count($echecs);
 echo "\n", $total, " test(s) — ", $reussis, " ok, ", count($echecs), " échec(s).\n";
 

@@ -44,7 +44,7 @@ $navLink = static function (string $href, string $label, bool $exact = false) us
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= e($pageTitle) ?></title>
     <meta name="robots" content="noindex, nofollow">
-    <link rel="stylesheet" href="/assets/style.css">
+    <link rel="stylesheet" href="<?= e(asset_url('/assets/style.css')) ?>">
 <?php if (apparence_feuille_active()): ?>
     <link rel="stylesheet" href="/theme.css?v=<?= apparence_version() ?>">
 <?php endif; ?>
@@ -120,6 +120,6 @@ $navLink = static function (string $href, string $label, bool $exact = false) us
     </div>
 </footer>
 
-<script src="/assets/app.js" defer></script>
+<script src="<?= e(asset_url('/assets/app.js')) ?>" defer></script>
 </body>
 </html>

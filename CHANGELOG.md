@@ -106,6 +106,18 @@ messages attendent dans la file.
 
 Aucune règle d'accès modifiée, aucune migration existante touchée, aucune
 dépendance ajoutée.
+## [1.16.1] — 2026-11-04
+
+### Les mises à jour du site apparaissent tout de suite
+
+- La feuille de style et le script portent maintenant un numéro de version
+  dans leur adresse (`/assets/style.css?v=…`), qui change dès que le fichier
+  change. Avant, après une mise à jour, le navigateur gardait l'ancien
+  aspect jusqu'à 7 jours (il fallait une fenêtre de navigation privée).
+- La police du titre au format `.woff` est aussi gardée en cache 30 jours.
+- La page d'administration utilisait encore l'ancienne adresse : elle est
+  corrigée de la même façon (le défaut était le même des deux côtés).
+- Quatre tests vérifient ces adresses.
 
 ## [1.16.0] — 2026-11-03
 

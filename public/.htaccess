@@ -57,6 +57,7 @@ RedirectMatch 404 /(README\.md|CHANGELOG\.md|TODO\.md)$
     ExpiresByType application/javascript "access plus 7 days"
     ExpiresByType image/svg+xml "access plus 30 days"
     ExpiresByType font/woff2 "access plus 30 days"
+    ExpiresByType font/woff "access plus 30 days"
 </IfModule>
 
 # ---------------------------------------------------------------------------
