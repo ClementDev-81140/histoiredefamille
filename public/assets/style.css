@@ -5416,3 +5416,195 @@ legend {
 @media (max-width: 40rem) {
     .formulaire--suggestion .bouton { margin-left: 0; }
 }
+
+/* ==========================================================================
+   ENVOI DE GROS FICHIERS (lot A)
+   Bloc ajouté en fin de feuille, comme les précédents : aucune classe
+   existante n'est renommée et toutes les couleurs passent par les variables
+   de la palette (papier ancien ou bleu d'origine).
+   ========================================================================== */
+
+/* Le bloc entier : un cadre fin, comme un encart de journal. */
+.envoi {
+    border: var(--filet-double);
+    background: var(--surface);
+    padding: 1rem 1.25rem 1.25rem;
+    margin: 0 0 1.75rem;
+}
+
+.envoi__titre {
+    margin: 0 0 0.4rem;
+    font-size: 1.15rem;
+}
+
+.envoi__aide {
+    margin-bottom: 1rem;
+}
+
+/* Zone de glisser-déposer : un pointillé discret, jamais un coin arrondi. */
+.envoi__zone {
+    border: 1px dashed var(--bordure);
+    background: var(--fond);
+    padding: 1.25rem 1rem;
+    text-align: center;
+}
+
+.envoi__zone--survol {
+    border-color: var(--accent);
+    background: var(--accent-clair);
+    outline: 2px solid var(--accent);
+    outline-offset: -4px;
+}
+
+.envoi__consigne {
+    margin: 0 0 0.5rem;
+    color: var(--texte-doux);
+}
+
+.envoi__reprise {
+    margin: 0.75rem 0 0;
+    font-weight: 700;
+    color: var(--accent-fonce);
+}
+
+/* Un fichier = une ligne : nom, jauge, état, boutons. */
+.envoi__liste {
+    list-style: none;
+    margin: 1rem 0 0;
+    padding: 0;
+}
+
+.envoi-ligne {
+    border-top: var(--filet);
+    padding: 0.6rem 0;
+}
+
+.envoi-ligne__entete {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.25rem 1rem;
+    margin: 0 0 0.35rem;
+}
+
+.envoi-ligne__nom {
+    font-weight: 700;
+    word-break: break-word;
+}
+
+.envoi-ligne__jauge {
+    display: block;
+    width: 100%;
+    height: 0.9rem;
+    margin-bottom: 0.35rem;
+    accent-color: var(--accent);
+    border: var(--filet);
+    background: var(--fond);
+}
+
+/* Repli pour les navigateurs qui ne colorent pas <progress> : on colore la
+   barre intérieure avec les variables de la palette. */
+.envoi-ligne__jauge::-webkit-progress-bar {
+    background: var(--fond);
+    border: var(--filet);
+}
+
+.envoi-ligne__jauge::-webkit-progress-value {
+    background: var(--accent);
+}
+
+.envoi-ligne__jauge::-moz-progress-bar {
+    background: var(--accent);
+}
+
+.envoi-ligne__statut {
+    margin: 0;
+    font-size: 0.92rem;
+    color: var(--texte-doux);
+    font-variant-numeric: tabular-nums;
+}
+
+.envoi-ligne__boutons {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1rem;
+    margin: 0.35rem 0 0;
+}
+
+/* États : la couleur du texte suffit, aucun fond criard. */
+.envoi-ligne[data-etat="erreur"] .envoi-ligne__statut {
+    color: var(--erreur-texte);
+    font-weight: 700;
+}
+
+.envoi-ligne[data-etat="termine"] .envoi-ligne__statut {
+    color: var(--succes-texte);
+    font-weight: 700;
+}
+
+.envoi-ligne[data-etat="doublon"] .envoi-ligne__statut {
+    color: var(--accent-fonce);
+    font-weight: 700;
+}
+
+.envoi-ligne[data-etat="pause"] .envoi-ligne__statut {
+    font-style: italic;
+}
+
+.envoi-ligne[data-etat="annule"] .envoi-ligne__nom {
+    text-decoration: line-through;
+    color: var(--texte-doux);
+}
+
+.envoi__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    align-items: center;
+    margin: 1rem 0 0;
+}
+
+/* Deux compteurs côte à côte (en cours / espace libre). */
+.envoi-etat {
+    align-items: baseline;
+}
+
+.envoi-etat p {
+    margin: 0;
+}
+
+/* Message d'avertissement « JavaScript est désactivé », etc. */
+.message--attention {
+    background: var(--info-fond);
+    color: var(--info-texte);
+    border-left: 3px solid var(--accent);
+}
+
+/* Tableau du lot : les champs restent lisibles même étroits. */
+.tableau--lot input[type="text"] {
+    width: 100%;
+    min-width: 8rem;
+}
+
+.tableau--lot .case {
+    margin: 0;
+}
+
+@media (max-width: 40rem) {
+    .envoi {
+        padding: 0.75rem;
+    }
+
+    .envoi__zone {
+        padding: 1rem 0.75rem;
+    }
+
+    .envoi-ligne__boutons .lien-bouton {
+        padding: 0.35rem 0;
+    }
+
+    .tableau--lot input[type="text"] {
+        min-width: 0;
+    }
+}

@@ -123,6 +123,17 @@ $visibility = (string) $v('visibility', 'prive');
         </div>
     </fieldset>
 
+
+    <?php
+    // Même composant que la page « Envoyer des fichiers » : un gros film passe
+    // par morceaux. Le fichier rejoint ce formulaire une fois assemblé.
+    $envoiOptions = [
+        'creer' => false,
+        'titre' => 'Fichier volumineux (envoi par morceaux)',
+        'aide'  => 'Facultatif : pour remplacer le champ « Fichier » quand le film dépasse la limite de l’envoi simple.',
+    ];
+    require __DIR__ . '/partials/envoi.php';
+    ?>
     <div class="champ">
         <label for="fichier"><?= $isEdit ? 'Remplacer le fichier' : 'Fichier' ?><?= $isEdit ? '' : ' *' ?></label>
         <input type="file" id="fichier" name="fichier" <?= $isEdit ? '' : 'required' ?>

@@ -163,7 +163,20 @@ function admin_video_save(array $params = []): void
     // --- Fichier envoyé ----------------------------------------------------
     $file    = $_FILES['fichier'] ?? null;
     $hasFile = is_array($file) && (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
-    if ($id === 0 && !$hasFile) {
+
+    // Gros film déjà assemblé par l'envoi par morceaux.
+    $envoiPrepare = null;
+    if (!$hasFile && post('envoi') !== '') {
+        $envoiPrepare = envoi_fichier_pret((int) current_account()['id'], post('envoi'));
+        if ($envoiPrepare === null) {
+            $errors[] = 'Le fichier envoyé par morceaux n’est plus disponible. Redéposez-le.';
+        } elseif ((string) $envoiPrepare['kind'] !== 'video') {
+            $errors[] = 'Ce fichier n’est pas une vidéo. Utilisez la page Documents pour les autres formats.';
+            $envoiPrepare = null;
+        }
+    }
+
+    if ($id === 0 && !$hasFile && $envoiPrepare === null) {
         $errors[] = 'Choisissez un fichier vidéo à envoyer (ou passez par le dossier arrivée pour les gros films).';
     }
 
@@ -221,6 +234,12 @@ function admin_video_save(array $params = []): void
         ];
     }
 
+    // Gros film assemblé par l'envoi par morceaux : même fiche, même contrôle.
+    if ($envoiPrepare !== null) {
+        $data += envoi_champs_document($envoiPrepare);
+        $data['kind'] = 'video';
+    }
+
     if ($id > 0) {
         db_update('documents', $id, $data);
         $videoId = $id;
@@ -229,6 +248,10 @@ function admin_video_save(array $params = []): void
         $data['created_at']    = time();
         $data['is_attachment'] = 0;
         $videoId = db_insert('documents', $data);
+    }
+
+    if ($envoiPrepare !== null) {
+        envoi_marquer_utilise($envoiPrepare, $videoId);
     }
 
     set_content_branches('document', $videoId, $visibility === 'branches' ? $branches : []);

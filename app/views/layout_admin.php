@@ -76,6 +76,7 @@ $navLink = static function (string $href, string $label, bool $exact = false) us
         <p class="admin-menu__titre">Partie publique</p>
         <?= $navLink('/admin/articles', 'Articles') ?>
         <?= $navLink('/admin/pages', 'Pages d’informations') ?>
+        <?= $navLink('/admin/envoyer', 'Envoyer des fichiers') ?>
         <?= $navLink('/admin/documents', 'Documents & photos') ?>
         <?= $navLink('/admin/albums', 'Albums photos') ?>
         <?= $navLink('/admin/recettes', 'Recettes') ?>
@@ -97,6 +98,7 @@ $navLink = static function (string $href, string $label, bool $exact = false) us
         <?= $navLink('/admin/courriels', 'Courriels') ?>
         <?= $navLink('/admin/gazette', 'Gazette du mois') ?>
         <?= $navLink('/admin/lieux', 'Lieux à placer') ?>
+        <?= $navLink('/admin/envois', 'Mes envois') ?>
         <?= $navLink('/admin/etat', 'État du site') ?>
     </aside>
 
@@ -122,5 +124,6 @@ $navLink = static function (string $href, string $label, bool $exact = false) us
 </footer>
 
 <script src="<?= e(asset_url('/assets/app.js')) ?>" defer></script>
+<script src="<?= e(asset_url('/assets/envoi.js')) ?>" defer></script>
 </body>
 </html>

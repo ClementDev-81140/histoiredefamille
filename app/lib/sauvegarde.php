@@ -36,7 +36,9 @@ function sauvegarde_options(array $override = []): array
         'restore_state'   => (string) config('maintenance.restore_state', $dir . '/derniere-restauration.json'),
         'database'        => (string) config('database'),
         'storage_root'    => rtrim((string) config('storage.root'), '/'),
-        'exclude'         => ['tmp', 'verrous'],
+        // « envois » : morceaux d'un envoi en cours. Inutile, et souvent
+        // volumineux : on ne sauvegarde jamais un fichier à moitié reçu.
+        'exclude'         => ['tmp', 'verrous', 'envois'],
         // La base est souvent à l'intérieur du dossier de données : elle est
         // sauvegardée à part (copie cohérente), jamais par la copie de fichiers.
         'exclude_files'   => [],

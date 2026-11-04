@@ -97,6 +97,39 @@ $val = static fn (string $key, string $default = ''): string => (string) old_val
         </div>
     </fieldset>
 
+    <fieldset class="champ">
+        <legend>Envoi de gros fichiers</legend>
+
+        <div class="ligne-champs">
+            <div class="champ">
+                <label for="envoi_morceau_mo">Taille d’un morceau (Mo)</label>
+                <input type="number" id="envoi_morceau_mo" name="envoi_morceau_mo"
+                       min="1" max="20" step="1" value="<?= e($val('envoi_morceau_mo')) ?>">
+                <p class="aide">
+                    Un morceau est la plus petite unité envoyée : 5 Mo convient à
+                    presque tout. <strong>20 Mo au maximum</strong> (au-delà, Cloudflare
+                    couperait la requête).
+                </p>
+            </div>
+
+            <div class="champ">
+                <label for="envoi_max_mo">Taille maximale d’un fichier (Mo)</label>
+                <input type="number" id="envoi_max_mo" name="envoi_max_mo"
+                       min="50" max="16384" step="1" value="<?= e($val('envoi_max_mo')) ?>">
+                <p class="aide">
+                    Valeur par défaut : 4096 (4 Go). Un fichier plus gros est refusé
+                    <em>avant</em> le premier octet. Il faut aussi que le disque ait
+                    2 Go de marge libre.
+                </p>
+            </div>
+        </div>
+
+        <p class="aide">
+            Ces réglages ne changent rien à l’envoi simple des formulaires, limité à
+            <?= e(format_size(upload_max_bytes())) ?>.
+        </p>
+    </fieldset>
+
     <p class="actions">
         <button type="submit" class="bouton">Enregistrer</button>
         <a class="bouton bouton--secondaire" href="/">Voir le résultat</a>

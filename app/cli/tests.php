@@ -2396,7 +2396,7 @@ if ($filtre === '' || $filtre === 'composition') {
     $derniere = basename((string) end($migrations));
     $sql009   = (string) @file_get_contents(dirname(__DIR__) . '/migrations/009_articles_modele.sql');
     // Chaque lot ajoute SA migration ; les précédentes ne bougent jamais.
-    verifier('migration : 013 est la dernière migration', $derniere === '013_notification_depuis.sql', $derniere);
+    verifier('migration : 014 est la dernière migration', $derniere === '014_envois.sql', $derniere);
     verifier(
         'migration : 010 ajoute des colonnes et des tables, sans rien supprimer',
         str_contains((string) @file_get_contents(dirname(__DIR__) . '/migrations/010_courriels.sql'), 'ALTER TABLE accounts ADD COLUMN email')
@@ -2472,6 +2472,7 @@ if ($filtre === '' || $filtre === 'verification') {
 require_once __DIR__ . '/tests_courriels.php';
 require_once __DIR__ . '/tests_gazette.php';
 require_once __DIR__ . '/tests_carte.php';
+require_once __DIR__ . '/tests_envoi.php';
 
 if ($filtre === '' || $filtre === 'courriels') {
     tests_courriels();
@@ -2483,6 +2484,10 @@ if ($filtre === '' || $filtre === 'gazette') {
 
 if ($filtre === '' || $filtre === 'carte') {
     tests_carte();
+}
+
+if ($filtre === '' || $filtre === 'envoi') {
+    tests_envoi();
 }
 
 // ---------------------------------------------------------------------------

@@ -161,6 +161,9 @@ function admin_settings(): void
             'fondee'      => site_setting('fondee'),
             'tchat_actif' => tchat_actif() ? '1' : '0',
             'tchat_conservation_mois' => (string) tchat_conservation_mois(),
+            // Envoi de gros fichiers par morceaux.
+            'envoi_morceau_mo' => (string) envoi_reglages()['morceau_mo'],
+            'envoi_max_mo'     => (string) envoi_reglages()['max_mo'],
         ],
     ], 'layout_admin');
 }
@@ -183,6 +186,8 @@ function admin_settings_save(): void
         // Case à cocher : absente de l'envoi quand elle est décochée.
         'tchat_actif' => post('tchat_actif') === '1' ? '1' : '0',
         'tchat_conservation_mois' => (string) post('tchat_conservation_mois', '12'),
+        'envoi_morceau_mo' => (string) post('envoi_morceau_mo', '5'),
+        'envoi_max_mo'     => (string) post('envoi_max_mo', '4096'),
     ];
 
     $errors = [];
@@ -210,6 +215,16 @@ function admin_settings_save(): void
     }
     if (!in_array($values['tchat_conservation_mois'], ['0', '3', '6', '12'], true)) {
         $errors[] = 'La durée de conservation du tchat n’est pas valide.';
+    }
+    // Envoi par morceaux : bornes strictes. Un morceau de plus de 20 Mo ne
+    // passerait pas les limites de Cloudflare, donc on refuse.
+    $morceau = (int) $values['envoi_morceau_mo'];
+    if ($morceau < 1 || $morceau > 20) {
+        $errors[] = 'La taille d’un morceau doit être comprise entre 1 et 20 Mo.';
+    }
+    $maxMo = (int) $values['envoi_max_mo'];
+    if ($maxMo < 50 || $maxMo > 16384) {
+        $errors[] = 'La taille maximale d’un fichier doit être comprise entre 50 Mo et 16 Go.';
     }
 
     if ($errors !== []) {

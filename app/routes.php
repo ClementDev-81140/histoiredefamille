@@ -25,6 +25,7 @@ require_once __DIR__ . '/controllers/admin_comptes.php';
 require_once __DIR__ . '/controllers/admin_courriels.php';
 require_once __DIR__ . '/controllers/admin_gazette.php';
 require_once __DIR__ . '/controllers/admin_lieux.php';
+require_once __DIR__ . '/controllers/admin_envoi.php';
 require_once __DIR__ . '/controllers/compte.php';
 require_once __DIR__ . '/controllers/desinscription.php';
 require_once __DIR__ . '/controllers/gazette.php';
@@ -119,6 +120,19 @@ route('POST', '/admin/gazette/{id}/retirer', 'admin_gazette_retirer');
 route('POST', '/admin/gazette/{id}/mot', 'admin_gazette_mot');
 route('POST', '/admin/gazette/{id}/envoyer', 'admin_gazette_envoyer');
 route('POST', '/admin/gazette/{id}/passer', 'admin_gazette_passer');
+
+// Envoi de gros fichiers par morceaux (administrateurs seulement).
+// Le protocole répond en JSON ; les morceaux ne sont jamais servis.
+route('GET', '/admin/envoyer', 'admin_envoi_page');
+route('GET', '/admin/envoyer/lot', 'admin_envoi_lot');
+route('POST', '/admin/envoyer/init', 'admin_envoi_init');
+route('POST', '/admin/envoyer/morceau', 'admin_envoi_morceau');
+route('GET', '/admin/envoyer/etat', 'admin_envoi_etat');
+route('POST', '/admin/envoyer/terminer', 'admin_envoi_terminer');
+route('POST', '/admin/envoyer/decision', 'admin_envoi_decision');
+route('POST', '/admin/envoyer/annuler', 'admin_envoi_annuler');
+route('POST', '/admin/envoyer/lot', 'admin_envoi_lot_save');
+route('GET', '/admin/envois', 'admin_envois');
 
 // Lieux de la carte : donner des coordonnées aux textes des fiches.
 route('GET', '/admin/lieux', 'admin_lieux');

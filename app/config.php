@@ -38,9 +38,16 @@ function config_defaults(): array
             'incoming' => 'arrivee',
             'tmp'      => 'tmp',
             'locks'    => 'verrous',
+            // Morceaux des envois par tranches (repris après une coupure).
+            'envois'   => 'envois',
         ],
         'uploads' => [
+            // Envoi simple (formulaire classique) : 50 Mo.
             'max_mb'             => 50,
+            // Envoi par morceaux : 5 Mo par morceau (20 au maximum) et
+            // 4 Go par fichier. Modifiables dans Administration → Réglages.
+            'morceau_mo'         => 5,
+            'max_go'             => 4,
             'allowed_extensions' => [
                 'pdf', 'txt', 'jpg', 'jpeg', 'png', 'webp', 'gif',
                 'mp4', 'm4v', 'docx', 'xlsx', 'odt', 'ods', 'mp3', 'm4a', 'ogg',

@@ -55,6 +55,15 @@ try {
 stream_purge_stale_locks();
 echo "  · lectures vidéo en cours : " . stream_active_count() . "\n";
 
+// Envois abandonnés (morceaux d'un fichier jamais terminé) : plus de 48 h.
+try {
+    $purge = envoi_purge(48);
+    echo "  · envois abandonnés supprimés : {$purge['supprimes']}"
+        . ($purge['octets'] > 0 ? ' (' . format_size($purge['octets']) . ' libérés)' : '') . "\n";
+} catch (Throwable $e) {
+    cli_err("  ! purge des envois impossible : " . $e->getMessage() . "\n");
+}
+
 // Fichiers temporaires (aperçus GEDCOM abandonnés, etc.).
 $tmpDir = storage_path((string) config('storage.tmp', 'tmp'));
 $removed = 0;

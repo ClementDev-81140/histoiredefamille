@@ -88,6 +88,12 @@ et une installation qui tient en quelques commandes à copier-coller.
 - Documents : envoi par le navigateur (photos, PDF, sons, documents bureautiques
   jusqu'à 50 Mo), titre, description, date, catégorie, étiquettes, **visibilité**,
   modification et suppression.
+- **Envoyer des fichiers** : une page dédiée aux **gros fichiers** (vidéos,
+  scans, lots de photos), **jusqu'à 4 Go** et depuis n'importe où. Le navigateur
+  découpe le fichier en morceaux de 5 Mo ; si la connexion tombe, l'envoi
+  **reprend** là où il s'était arrêté, même après avoir fermé la page. Le
+  fichier arrive **privé** et attend sa fiche (une à une, ou tout un lot d'un
+  coup). Rien n'est jamais chargé en mémoire sur le Pi.
 - **Albums photos** : création, rangement des photos (aucune copie de fichier),
   ordre d'affichage, photo de couverture, visibilité.
 - **Personnes identifiées** sur une photo (ou un témoignage) : recherche dans
@@ -115,8 +121,8 @@ et une installation qui tient en quelques commandes à copier-coller.
   visibilité, **mise en avant** en un clic, **ordre d'affichage**, durée,
   autorisation de téléchargement, import depuis le dossier arrivée,
   modification et suppression.
-- **Import depuis le dossier arrivée** : pour les gros fichiers (vidéos)
-  déposés sur le Pi par le réseau local.
+- **Import depuis le dossier arrivée** : pour les fichiers (vidéos) déposés
+  sur le Pi par le réseau local, quand l'envoi par le navigateur ne convient pas.
 - **Journal des connexions** : qui s'est connecté, quand, depuis quelle
   adresse ; les échecs avec leur raison ; les comptes bloqués après trop
   d'essais. Une **alerte** apparaît sur le tableau de bord quand un
@@ -446,10 +452,11 @@ histoiredefamille/
 │   │                        gazette, rubriques publiques, comptes de la famille,
 │   │                        apparence du journal (textes et couleurs),
 │   │                        composition des pages et modèles d'article,
-│   │                        vérification avant ouverture (mise_en_ligne)…
+│   │                        vérification avant ouverture (mise_en_ligne),
+│   │                        carte des lieux, envoi de gros fichiers (envoi)…
 │   ├── views/               gabarits PHP (public, famille, admin)
 │   ├── migrations/          fichiers SQL numérotés
-│   │                        (001_init … 009_articles_modele)
+│   │                        (001_init … 014_envois)
 │   └── cli/                 commandes : migrate, create-admin, demo, maintenance,
 │                            sauvegarde, restauration, verifier-mise-en-ligne, tests
 ├── deploy/
@@ -477,7 +484,7 @@ Autour du dossier du site :
 ```
 /mnt/ssd/histoiredefamille/      ← SSD : base, photos, vidéos, miniatures
     histoire.sqlite
-    medias/  miniatures/  arrivee/  tmp/  verrous/
+    medias/  miniatures/  arrivee/  tmp/  verrous/  envois/
 /mnt/sauvegarde/histoiredefamille/  ← clé USB : sauvegardes
 ```
 
@@ -1080,20 +1087,24 @@ Deux façons, selon la taille du fichier :
 4. Décider si le bouton **Télécharger** est proposé.
 5. Choisir la **visibilité** — comme pour un document.
 
-**b. Gros film (plusieurs centaines de Mo)**
+**b. Gros film (plusieurs centaines de Mo, voire plusieurs Go)** — deux voies :
 
-Voir **[`deploy/dossier-arrivee.md`](deploy/dossier-arrivee.md)** et le § 9
-ci-dessous. Résumé :
+1. **Depuis n'importe où, par le navigateur** : **Administration → Envoyer des
+   fichiers**. Le fichier part par morceaux et l'envoi reprend après une
+   coupure. C'est la bonne solution depuis Paris, ou depuis un téléphone ; tout
+   est expliqué au § 6.18.
+2. **Par le réseau de la maison** : copier le fichier dans le dossier
+   `arrivee` du Pi, puis **Administration → Vidéos**, section « Depuis le
+   dossier arrivée » (ou **Importer depuis le dossier arrivée** pour les autres
+   formats). Voir **[`deploy/dossier-arrivee.md`](deploy/dossier-arrivee.md)**.
 
-```bash
-# depuis votre ordinateur, sur le réseau de la maison
-scp film-famille.mp4 votre-utilisateur@histoiredefamille.local:/mnt/ssd/histoiredefamille/arrivee/
-```
+   ```bash
+   # depuis votre ordinateur, sur le réseau de la maison
+   scp film-famille.mp4 votre-utilisateur@histoiredefamille.local:/mnt/ssd/histoiredefamille/arrivee/
+   ```
 
-puis **Administration → Vidéos**, section « Depuis le dossier arrivée »
-(ou **Importer depuis le dossier arrivée** pour les autres formats). Le
-fichier est **déplacé** sur le disque, jamais chargé en mémoire : un film
-volumineux passe sans problème.
+   Le fichier est **déplacé** sur le disque, jamais chargé en mémoire : un film
+   volumineux passe sans problème.
 
 ### 6.7 Remplir l'arbre généalogique
 
@@ -1291,6 +1302,89 @@ Bon à savoir :
 La méthode complète (origine du fond de carte, licence, projection, cache) est
 décrite dans [`docs/carte.md`](docs/carte.md).
 
+### 6.18 Envoyer de gros fichiers depuis Paris
+
+Un film de vacances, un registre scanné, deux cents photos de mariage : ces
+fichiers ne passent pas par le formulaire ordinaire (50 Mo par fichier), et le
+dossier « arrivée » demande d'être à la maison, sur le réseau du Pi. La page
+**Envoyer des fichiers** est faite pour eux : elle accepte **jusqu'à 4 Go par
+fichier** et fonctionne **depuis n'importe où**, par un simple navigateur.
+
+Rien à installer, rien à préparer : le navigateur découpe le fichier en
+**morceaux de 5 Mo** et les envoie un par un. Chaque requête reste petite, donc
+elle passe le tunnel Cloudflare, le réseau de l'hôtel et le Wi-Fi de la
+famille, même lents.
+
+**Comment faire**
+
+1. **Administration → Envoyer des fichiers**.
+2. Cliquez sur **Choisir des fichiers** (ou glissez vos fichiers sur la zone
+   pointillée). Plusieurs fichiers à la fois : chacun a sa propre barre de
+   progression.
+3. Laissez l'onglet ouvert pendant l'envoi. Vous pouvez continuer à vous
+   servir du site dans un autre onglet.
+4. Quand le fichier est reçu, sa fiche est créée **en privé** : personne ne le
+   voit. Deux façons de la compléter :
+   - **Ouvrir la fiche** (titre, description, date, catégorie, étiquettes,
+     visibilité) ;
+   - **Compléter ce lot d'un coup** (bouton en bas de la page) : les réglages
+     du haut s'appliquent à tous les fichiers cochés (type, catégorie, album,
+     branche, visibilité), puis vous ajustez titre, date et visibilité fichier
+     par fichier.
+
+La page **Administration → Mes envois** liste vos envois des 30 derniers jours
+et tout ce qui n'est pas terminé, avec le bouton **Reprendre**. Une vue
+« Tous les envois » montre ceux de tous les administrateurs, en lecture seule :
+chacun ne peut reprendre ou annuler que les siens.
+
+**Si la connexion tombe**
+
+C'est prévu, et c'est le point important de cette page :
+
+- un fichier interrompu (coupure, mise en veille de l'ordinateur, onglet fermé)
+  **n'est pas perdu** : les morceaux déjà reçus restent sur le Pi ;
+- pour reprendre, retournez sur **Envoyer des fichiers** (ou cliquez sur
+  **Reprendre** depuis *Mes envois*) et **redéposez le même fichier** : le site
+  reconnaît le fichier et ne redemande que les morceaux manquants ;
+- le bouton **Mettre en pause** arrête proprement, **Reprendre** continue,
+  **Annuler** supprime les morceaux déjà reçus ;
+- après cinq échecs de suite, l'envoi s'arrête de lui-même et affiche
+  « Vérifiez votre réseau, puis cliquez sur Reprendre ».
+
+**Bon à savoir**
+
+- **tout arrive privé** : aucun fichier envoyé n'est visible avant que vous
+  n'ayez choisi sa visibilité. La règle du site ne change pas ;
+- **les doublons sont signalés, jamais supprimés** : si le même fichier
+  (empreinte SHA-256 identique) est déjà sur le site, le site vous le dit avant
+  d'ajouter quoi que ce soit et vous choisissez « **Garder quand même** » ou
+  « **Ignorer ce fichier** » ;
+- **trois envois à la fois** au maximum ; les autres attendent leur tour ;
+- **limites réglables** dans **Administration → Réglages** : taille d'un
+  morceau (1 à 20 Mo, 5 Mo par défaut) et taille maximale d'un fichier (50 Mo à
+  16 Go, 4 Go par défaut). Une taille de morceau plus petite est plus lente
+  mais passe mieux sur une connexion très mauvaise ;
+- **l'espace disque est vérifié** : le site refuse un envoi s'il ne resterait
+  pas au moins 2 Go libres après. Mieux vaut refuser que remplir le SSD ;
+- **les morceaux sont hors de la portée du web** (dossier `envois`, à côté de
+  `medias`), sous un nom tiré au hasard : personne ne peut télécharger un
+  fichier à moitié reçu ni deviner son adresse. Les validations habituelles
+  (extension autorisée, type réel du fichier, taille, nom nettoyé) sont
+  rejouées à la fin, sur le fichier assemblé ;
+- **le disque du Pi ne travaille presque pas** : tout est copié par blocs de
+  1 Mo, la mémoire du serveur ne dépend pas de la taille du fichier. Un envoi
+  de 3 Go a été essayé de bout en bout : empreinte identique, 8 Mo de mémoire
+  au plus ;
+- **les envois abandonnés sont nettoyés** au bout de **48 h** (tâche
+  d'entretien du dimanche). Un fichier interrompu depuis plus longtemps doit
+  donc être renvoyé ;
+- sur un téléphone : branchez-le, gardez l'écran allumé et l'application du
+  navigateur au premier plan. Une vidéo de 2 Go demandera de toute façon
+  plusieurs dizaines de minutes ;
+- si l'envoi par le navigateur ne convient pas (fichier de plus de 4 Go,
+  réseau local très rapide), le **dossier arrivée** reste la solution de
+  secours : voir § 6.6 et [`deploy/dossier-arrivee.md`](deploy/dossier-arrivee.md).
+
 ## 7. Mettre à jour le site
 
 Les mises à jour ne touchent **ni** `config.local.php`, **ni** le SSD, **ni**
@@ -1320,8 +1414,8 @@ php app/cli/migrate.php
 Après une mise à jour, les petits tests automatiques (mise en forme des
 messages du tchat, préparation du texte cherché, chronologie d'une fiche de
 personne, albums, calendrier, GEDCOM, recettes, journal des connexions,
-rubriques publiques, menu et comptes de la famille) se lancent en une
-commande. Le nom d'une famille
+rubriques publiques, envoi de gros fichiers, carte des lieux, menu et comptes de
+la famille) se lancent en une commande. Le nom d'une famille
 peut être ajouté pour ne lancer qu'elle (`php app/cli/tests.php rubriques`) :
 
 ```bash
@@ -1360,7 +1454,8 @@ Ce qu'elle fait, dans l'ordre :
    d'être conservé.
 3. **Copie les fichiers** (photos, miniatures, vidéos, audio, PDF, dossier
    `arrivee`) de façon incrémentale : seuls les fichiers nouveaux ou modifiés
-   sont réécrits. `tmp/` et `verrous/` sont ignorés (fichiers jetables).
+   sont réécrits. `tmp/`, `verrous/` et `envois/` sont ignorés (fichiers
+   jetables : un fichier à moitié reçu n'a rien à faire dans une sauvegarde).
 4. **Range la copie** : 7 sauvegardes **quotidiennes**, 4 **hebdomadaires**
    (une par semaine) et 6 **mensuelles** (une par mois). Une sauvegarde en
    cours est fabriquée dans un dossier temporaire puis déplacée d'un bloc :
@@ -1712,8 +1807,9 @@ ffmpeg -i film-original.avi \
 
 Compter 1,5 à 2 Go par heure de film en 720p (le bon compromis pour un Pi).
 
-Ensuite, déposez le fichier sur le Pi et importez-le :
-**[`deploy/dossier-arrivee.md`](deploy/dossier-arrivee.md)**.
+Ensuite, deux voies : **Administration → Envoyer des fichiers** (§ 6.18, par
+morceaux, depuis n'importe où), ou le dépôt dans le dossier `arrivee` du Pi
+puis l'import : **[`deploy/dossier-arrivee.md`](deploy/dossier-arrivee.md)**.
 
 ### Limite de lectures simultanées
 
@@ -1791,7 +1887,9 @@ Les dates sont converties au format international de la généalogie
 | `database is locked` | écritures simultanées | le site réessaie déjà 3 fois ; vérifier qu'aucune autre application n'ouvre la base et que le SSD n'est pas monté en lecture seule |
 | Erreur 502 / 1033 via Cloudflare | tunnel arrêté ou Apache arrêté | `sudo systemctl status cloudflared` puis `sudo systemctl restart cloudflared` ; `sudo systemctl status apache2` |
 | Le site est très lent | Pi surchargé, vidéo en cours | normal avec 2 lectures vidéo ; fermer un film, vérifier `htop` |
-| Envoi de photo refusé « fichier trop volumineux » | plus de 50 Mo | réduire la photo, ou augmenter `uploads.max_mb` **et** `upload_max_filesize` / `post_max_size` (max 90 Mo à cause de Cloudflare) |
+| Envoi de photo refusé « fichier trop volumineux » | plus de 50 Mo | réduire la photo, ou augmenter `uploads.max_mb` **et** `upload_max_filesize` / `post_max_size` (max 90 Mo à cause de Cloudflare). Au-delà, passer par **Envoyer des fichiers** (§ 6.18) |
+| Envoi d'un gros fichier qui s'arrête sans cesse | Wi-Fi instable, ordinateur en veille, onglet fermé | rouvrir la page, redéposer **le même** fichier : l'envoi reprend où il s'était arrêté. Réduire la taille d'un morceau à 2 Mo dans **Réglages** aide sur une mauvaise ligne |
+| « Il n'y a pas assez de place » à l'envoi | moins de 2 Go libres après l'envoi | `df -h /mnt/ssd`, faire de la place (ou attendre le nettoyage des envois abandonnés, 48 h) |
 | Miniatures noires ou vides | image CMYK ou très grande | convertir en JPEG RVB ; au-delà de 24 Mpx le site refuse (limite mémoire du Pi) |
 | Mot de passe de branche perdu | — | Administration → Branches → **Réinitialiser le mot de passe** |
 | Compte bloqué après 5 essais | protection anti-force brute | attendre 15 minutes, ou `sudo -u www-data sqlite3 /mnt/ssd/histoiredefamille/histoire.sqlite "DELETE FROM login_attempts;"` |
@@ -1878,6 +1976,13 @@ le dossier `storage/` sont listés dans `.gitignore`.
 - **Envois** : stockés hors de la racine web, type réel vérifié avec `finfo`,
   liste blanche d'extensions, nom aléatoire, nom d'origine conservé seulement
   en base, jamais exécutables.
+- **Envois par morceaux** : les morceaux attendent dans le dossier `envois`,
+  **hors de la racine web**, sous un identifiant aléatoire de **128 bits**
+  contrôlé par une expression stricte (aucun chemin n'est construit à partir
+  d'une valeur saisie) ; ils ne sont assemblés, vérifiés et déplacés vers
+  `medias` qu'à la dernière étape. Chaque requête (déposer, interroger,
+  terminer, annuler) exige une **session administrateur** et, pour les actions
+  qui modifient, un **jeton CSRF** ; un envoi n'appartient qu'à son auteur.
 - **Fichiers privés** : jamais accessibles par URL directe ; tout passe par
   `/f/{id}`, `/media/miniature/{id}` ou `/video/{id}` avec contrôle des droits
   et en-tête `Cache-Control: private, no-store`.

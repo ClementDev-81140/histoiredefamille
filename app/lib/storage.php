@@ -30,7 +30,7 @@ function storage_path(string $sub = ''): string
 function storage_ensure_dirs(): array
 {
     $created = [];
-    foreach (['medias', 'thumbs', 'incoming', 'tmp', 'locks'] as $key) {
+    foreach (['medias', 'thumbs', 'incoming', 'tmp', 'locks', 'envois'] as $key) {
         $sub = (string) config('storage.' . $key, $key);
         storage_path($sub);
         $created[] = $sub;

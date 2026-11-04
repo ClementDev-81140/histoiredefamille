@@ -3,6 +3,73 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.20.0] — 2026-11-04
+
+### Envoyer de gros fichiers depuis Paris
+
+Un film de famille de 3 Go, un registre scanné, deux cents photos : jusqu'ici,
+il fallait être à la maison pour les déposer dans le dossier « arrivée » du
+Raspberry Pi. Désormais, **Administration → Envoyer des fichiers** accepte
+**jusqu'à 4 Go par fichier**, depuis n'importe où, avec un simple navigateur.
+
+- **Par morceaux, avec reprise.** Le navigateur découpe le fichier en tranches
+  de 5 Mo (réglable de 1 à 20 Mo) et les envoie une par une : chaque requête
+  reste petite, donc elle passe le tunnel Cloudflare, un Wi-Fi d'hôtel ou une
+  ligne montante lente. Si la connexion tombe, si l'ordinateur se met en veille
+  ou si l'onglet est fermé, **l'envoi reprend** là où il s'était arrêté : il
+  suffit de redéposer le même fichier. Rien n'est jamais renvoyé deux fois.
+- **Tout arrive privé.** Un fichier reçu n'est visible de personne : sa fiche
+  est créée en **privé**, puis complétée une à une (« Ouvrir la fiche ») ou
+  **tout un lot d'un coup** (type, catégorie, album, branche, visibilité
+  communs, puis réglage fichier par fichier). Aucune règle de visibilité
+  n'est modifiée : le fichier suit la règle ordinaire des documents.
+- **Les doublons sont signalés.** Si le même fichier (empreinte SHA-256
+  identique) est déjà sur le site, le site le dit **avant** d'ajouter quoi que
+  ce soit, et propose « **Garder quand même** » ou « **Ignorer ce fichier** ».
+  Rien n'est jamais supprimé automatiquement.
+- **Les formulaires existants en profitent.** Le champ « Fichier » des fiches
+  document et vidéo passe par le même mécanisme : les gros films ne dépendent
+  plus de la limite de 50 Mo, et leur envoi reprend aussi après une coupure.
+- **Deux pages de suivi.** *Mes envois* (les 30 derniers jours et tout ce qui
+  n'est pas terminé, avec **Reprendre**) et une vue **Tous les envois**, en
+  lecture seule : chacun ne peut reprendre ou annuler que les siens.
+- **Rien dans le dossier web.** Les morceaux attendent dans `storage/envois`,
+  **hors de la racine web**, sous un identifiant aléatoire de **128 bits**
+  vérifié par une expression stricte (aucun chemin construit à partir d'une
+  saisie). Les validations ordinaires (extension autorisée, type réel par
+  `finfo`, taille, nom nettoyé) sont rejouées à la fin, sur le fichier
+  assemblé. Session administrateur et jeton CSRF exigés à chaque étape.
+- **Mémoire constante.** Tout est copié par blocs de 1 Mo : la mémoire du
+  serveur ne dépend pas de la taille du fichier. Mesuré de bout en bout sur un
+  fichier de **3 Go** coupé en deux : reprise, assemblage, **empreinte
+  identique**, **8 Mo de mémoire au plus**.
+- **Le disque est protégé.** Un envoi est refusé s'il ne resterait pas 2 Go
+  libres après ; trois envois au maximum en même temps ; les tranches d'un
+  envoi abandonné depuis plus de **48 h** sont effacées par la tâche
+  d'entretien. Le dossier `envois` est exclu de la sauvegarde (un fichier à
+  moitié reçu n'a rien à y faire).
+- **Deux réglages** dans *Administration → Réglages* : taille d'un morceau
+  (1 à 20 Mo) et taille maximale d'un fichier (50 Mo à 16 Go), avec des bornes
+  qui tiennent compte des limites de Cloudflare, d'Apache et de PHP.
+- **Configuration du Pi revue** : délais Apache (300 s, `RequestReadTimeout`)
+  et PHP (300 s) allongés pour qu'un morceau de 20 Mo arrive sur une ligne
+  montante lente, et pour que l'assemblage d'un fichier de plusieurs Go ait le
+  temps de se terminer.
+- **Sans JavaScript**, la page le dit clairement et renvoie vers l'envoi simple
+  (50 Mo) ou le dossier arrivée : aucune fonction existante ne dépend du
+  nouveau script.
+
+Tests : **663 au total (+62)**, dans cinq familles (protocole, refus, doublons,
+droits, ménage) : un envoi complet, une coupure simulée au milieu puis une
+reprise qui ne redemande que les morceaux manquants, un morceau déposé deux
+fois (sans effet), un morceau hors bornes ou d'une taille fausse, un jeton
+inventé, un fichier trop gros, un disque plein simulé, un doublon accepté puis
+ignoré, l'annulation, le nettoyage après 48 h, et les droits (un administrateur
+ne peut ni reprendre ni annuler l'envoi d'un autre, un compte de la famille
+n'atteint aucune de ces adresses). Les trois tests de bornes des réglages
+Le bornage des réglages est vérifié : une valeur absurde (99 ou −9) reste
+ramenée entre 1 et 20 Mo.
+
 ## [1.19.0] — 2026-11-04
 
 ### La carte des lieux

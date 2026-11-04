@@ -139,9 +139,20 @@ function admin_document_save(array $params = []): void
     }
 
     // --- Fichier envoyé ----------------------------------------------------
+    // Deux possibilités : l'envoi simple (≤ 50 Mo) ou un fichier déjà assemblé
+    // par l'envoi par morceaux (gros fichiers), jamais les deux à la fois.
     $file    = $_FILES['fichier'] ?? null;
     $hasFile = is_array($file) && (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
-    if ($id === 0 && !$hasFile) {
+
+    $envoiPrepare = null;
+    if (!$hasFile && post('envoi') !== '') {
+        $envoiPrepare = envoi_fichier_pret((int) current_account()['id'], post('envoi'));
+        if ($envoiPrepare === null) {
+            $errors[] = 'Le fichier envoyé par morceaux n’est plus disponible. Redéposez-le.';
+        }
+    }
+
+    if ($id === 0 && !$hasFile && $envoiPrepare === null) {
         $errors[] = 'Choisissez un fichier à envoyer.';
     }
 
@@ -193,6 +204,11 @@ function admin_document_save(array $params = []): void
         ];
     }
 
+    // Fichier assemblé par l'envoi par morceaux : mêmes champs, même fiche.
+    if ($envoiPrepare !== null) {
+        $data += envoi_champs_document($envoiPrepare);
+    }
+
     if ($id > 0) {
         db_update('documents', $id, $data);
         $documentId = $id;
@@ -201,6 +217,10 @@ function admin_document_save(array $params = []): void
         $data['created_at'] = time();
         $data['is_attachment'] = 0;
         $documentId = db_insert('documents', $data);
+    }
+
+    if ($envoiPrepare !== null) {
+        envoi_marquer_utilise($envoiPrepare, $documentId);
     }
 
     set_content_branches('document', $documentId, $visibility === 'branches' ? $branches : []);
