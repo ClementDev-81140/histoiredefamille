@@ -497,6 +497,12 @@ function admin_compte_save(array $params): void
         $notifyArticles = false;
         $notifyGazette  = false;
     }
+    // Une adresse nouvelle remet les accords à zéro : la date d'accord sur les
+    // articles repart donc de zéro elle aussi.
+    $accordArticles = courriel_accord_articles(
+        $adresseNouvelle ? null : $compte,
+        $notifyArticles
+    );
 
     $branche = $brancheId > 0 ? find_branch($brancheId) : null;
     if ($branche === null) {
@@ -527,7 +533,10 @@ function admin_compte_save(array $params): void
         'branch_id'    => $brancheId,
         'see_all'      => $seeAll ? 1 : 0,
         'email'           => $email,
-        'notify_articles' => $notifyArticles ? 1 : 0,
+        // Même règle que dans « Mon compte » : la date d'accord ne se pose
+        // qu'au moment où la case est cochée.
+        'notify_articles'         => $accordArticles['notify_articles'],
+        'notify_articles_depuis'  => $accordArticles['notify_articles_depuis'],
         'notify_gazette'  => $notifyGazette ? 1 : 0,
         'updated_at'   => time(),
     ]);

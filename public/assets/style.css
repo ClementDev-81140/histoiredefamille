@@ -5259,3 +5259,35 @@ legend {
     .gazette__element .gazette__resume { grid-column: 1 / -1; }
     .gazette__geste { margin: 0; }
 }
+
+/* --------------------------------------------------------------------------
+   Tableau des derniers envois (Administration → Courriels)
+   Sur un grand écran, les colonnes se partagent la place disponible et le
+   texte long (objet, message d'erreur) passe à la ligne : plus de colonne
+   coupée à droite, plus de défilement latéral. Sur un téléphone, le tableau
+   défile latéralement comme les autres.
+   Ajouté en fin de feuille (bloc 1.18.1).
+   -------------------------------------------------------------------------- */
+.tableau--courriels th,
+.tableau--courriels td {
+    /* Un mot très long (adresse masquée, message du serveur) se coupe au lieu
+       de pousser la colonne hors du cadre. */
+    overflow-wrap: anywhere;
+}
+
+.tableau--courriels .colonne-nombre {
+    width: 4rem;
+    text-align: right;
+    /* Le nombre d'essais reste sur une ligne : sinon « 3 » se retrouve seul
+       sur deux lignes. */
+    white-space: nowrap;
+}
+
+.tableau--courriels .colonne-destinataire { min-width: 9rem; }
+.tableau--courriels .colonne-erreur { min-width: 8rem; }
+
+@media (min-width: 62rem) {
+    /* Assez de place : la largeur minimale imposée aux grands tableaux
+       (52 rem) est levée pour celui-ci, qui tient alors dans son cadre. */
+    .tableau-defilant .tableau--courriels { min-width: 0; }
+}

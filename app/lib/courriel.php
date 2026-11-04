@@ -1017,6 +1017,48 @@ function compte_voit_article(array $compte, array $article): bool
  *
  * @return int nombre de messages mis en file
  */
+/**
+ * Valeurs à enregistrer pour l'accord « nouveaux articles ».
+ *
+ * La date d'accord ne bouge pas tant que la case reste cochée ; elle se pose
+ * au moment où on la coche (y compris après l'avoir décochée) et retombe à
+ * zéro quand on la décoche.
+ *
+ * @return array{notify_articles: int, notify_articles_depuis: int}
+ */
+function courriel_accord_articles(?array $compte, bool $articles): array
+{
+    $avant    = (int) ($compte['notify_articles'] ?? 0) === 1;
+    $depuis   = (int) ($compte['notify_articles_depuis'] ?? 0);
+
+    if (!$articles) {
+        return ['notify_articles' => 0, 'notify_articles_depuis' => 0];
+    }
+    if ($avant && $depuis > 0) {
+        return ['notify_articles' => 1, 'notify_articles_depuis' => $depuis];
+    }
+
+    return ['notify_articles' => 1, 'notify_articles_depuis' => time()];
+}
+
+/**
+ * Une nouvelle est-elle assez récente pour cette personne ?
+ *
+ * Règle : on ne prévient que des articles publiés APRÈS le moment où la
+ * personne a coché « Prévenez-moi des nouveaux articles »
+ * (accounts.notify_articles_depuis). Un nouvel inscrit ne reçoit donc jamais
+ * le retard des 30 derniers jours, et décocher puis recocher repart de zéro.
+ */
+function courriel_article_apres_accord(array $article, array $compte): bool
+{
+    $depuis = (int) ($compte['notify_articles_depuis'] ?? 0);
+    if ($depuis <= 0) {
+        return false;
+    }
+
+    return (int) $article['published_at'] >= $depuis;
+}
+
 function courriel_notifier_article(array $article, ?callable $trace = null): int
 {
     if ((int) ($article['notify'] ?? 1) !== 1) {
@@ -1029,12 +1071,16 @@ function courriel_notifier_article(array $article, ?callable $trace = null): int
     $comptes = db_all(
         "SELECT * FROM accounts
          WHERE is_active = 1 AND email <> '' AND notify_articles = 1
+           AND notify_articles_depuis > 0
          ORDER BY id"
     );
 
     $envies = 0;
     foreach ($comptes as $compte) {
         if (!compte_voit_article($compte, $article)) {
+            continue;
+        }
+        if (!courriel_article_apres_accord($article, $compte)) {
             continue;
         }
 
@@ -1139,6 +1185,8 @@ function courriel_articles_echus(?callable $trace = null): int
            AND EXISTS (
                 SELECT 1 FROM accounts ac
                 WHERE ac.is_active = 1 AND ac.email <> '' AND ac.notify_articles = 1
+                  AND ac.notify_articles_depuis > 0
+                  AND a.published_at >= ac.notify_articles_depuis
                   AND NOT EXISTS (SELECT 1 FROM article_notifications n
                                   WHERE n.article_id = a.id AND n.account_id = ac.id)
            )

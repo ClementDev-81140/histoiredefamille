@@ -75,7 +75,13 @@ $type = compte_type($account);
                     <input type="checkbox" name="notify_articles" value="1" <?= checked($courriel['articles']) ?>>
                     Prévenez-moi des nouveaux articles
                 </label>
-                <p class="aide">Un seul message par article, et seulement si vous avez le droit de le lire.</p>
+                <p class="aide">
+                    Un seul message par article, et seulement si vous avez le droit de le lire.
+                    Vous ne recevrez que les articles publiés <strong>après le moment où vous
+                    avez coché cette case</strong> : les anciens articles ne vous seront pas
+                    renvoyés. Si vous décochez puis recochez, le compteur repart de ce
+                    nouveau moment.
+                </p>
 
                 <label class="case">
                     <input type="checkbox" name="notify_gazette" value="1" <?= checked($courriel['gazette']) ?>>

@@ -138,17 +138,20 @@ $etats = [
     <?php if ($derniers === []): ?>
         <p class="discret">Aucun envoi pour l’instant.</p>
     <?php else: ?>
+        <?php /* Tableau large : sur un grand écran, les colonnes se replient
+                 et l'erreur passe à la ligne (aucun défilement horizontal) ;
+                 sur un téléphone, il défile latéralement. */ ?>
         <div class="tableau-defilant">
-            <table class="tableau">
+            <table class="tableau tableau--courriels">
                 <thead>
                     <tr>
                         <th scope="col">Date</th>
                         <th scope="col">Type</th>
-                        <th scope="col">Destinataire</th>
+                        <th scope="col" class="colonne-destinataire">Destinataire</th>
                         <th scope="col">Objet</th>
                         <th scope="col">État</th>
-                        <th scope="col">Essais</th>
-                        <th scope="col">Dernière erreur</th>
+                        <th scope="col" class="colonne-nombre">Essais</th>
+                        <th scope="col" class="colonne-erreur">Dernière erreur</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -156,11 +159,11 @@ $etats = [
                         <tr>
                             <td><?= e(format_date((int) ($envoi['sent_at'] ?: $envoi['created_at']), true)) ?></td>
                             <td><?= e($libelles[(string) $envoi['kind']] ?? (string) $envoi['kind']) ?></td>
-                            <td><?= e(courriel_masquer((string) $envoi['recipient'])) ?></td>
+                            <td class="colonne-destinataire"><?= e(courriel_masquer((string) $envoi['recipient'])) ?></td>
                             <td><?= e(mb_substr((string) $envoi['subject'], 0, 60)) ?></td>
                             <td><?= e($etats[(string) $envoi['status']] ?? (string) $envoi['status']) ?></td>
-                            <td><?= (int) $envoi['attempts'] ?></td>
-                            <td><?= e(mb_substr((string) $envoi['last_error'], 0, 80)) ?></td>
+                            <td class="colonne-nombre"><?= (int) $envoi['attempts'] ?></td>
+                            <td class="colonne-erreur"><?= e(mb_substr((string) $envoi['last_error'], 0, 80)) ?></td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>

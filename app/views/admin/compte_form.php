@@ -97,6 +97,10 @@ $type = compte_type($compte);
                 <?= checked((int) $val('notify_articles', '0') === 1) ?>>
             Prévenez-moi des nouveaux articles
         </label>
+        <p class="aide">
+            La personne ne recevra que les articles publiés après le moment où cette case est
+            cochée : cocher ici ne renvoie pas les anciens articles.
+        </p>
 
         <label class="case">
             <input type="checkbox" name="notify_gazette" value="1"

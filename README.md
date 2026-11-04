@@ -2196,6 +2196,13 @@ Ce qui se passe ensuite :
   annulés.
 - **Un seul message par personne et par article**, même si vous corrigez
   l'article dix fois.
+- **Personne ne reçoit le retard.** Chacun ne reçoit que les articles publiés
+  **après le moment où il a coché** « Prévenez-moi des nouveaux articles ».
+  Quelqu'un qui s'inscrit aujourd'hui ne reçoit donc pas les articles des
+  dernières semaines ; s'il décoche puis recoche, le compteur repart de ce
+  nouveau moment. La date est retenue dans son compte
+  (`notify_articles_depuis`) et n'apparaît nulle part à l'écran : c'est un
+  détail technique, pas un réglage.
 - Le message contient le **titre**, le **résumé**, la **rubrique**, la **date**
   et un **lien**. Jamais le texte intégral d'un article réservé, jamais la
   photo en pièce jointe.

@@ -100,11 +100,16 @@ function mon_compte_courriels(): void
     $articles = $email !== '' && $articles;
     $gazette  = $email !== '' && $gazette;
 
+    // La date d'accord sur les articles ne se pose qu'au moment où la case est
+    // cochée (voir courriel_accord_articles) : on ne reçoit jamais le retard.
+    $accord = courriel_accord_articles($account, $articles);
+
     db_update('accounts', (int) $account['id'], [
-        'email'           => $email,
-        'notify_articles' => $articles ? 1 : 0,
-        'notify_gazette'  => $gazette ? 1 : 0,
-        'updated_at'      => time(),
+        'email'                   => $email,
+        'notify_articles'         => $accord['notify_articles'],
+        'notify_articles_depuis'  => $accord['notify_articles_depuis'],
+        'notify_gazette'          => $gazette ? 1 : 0,
+        'updated_at'              => time(),
     ]);
 
     log_activity(

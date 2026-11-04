@@ -3,6 +3,28 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.18.1] — 2026-11-04
+
+### Trois corrections du quotidien
+
+- **Fusion du correctif 1.16.1** (branche `claude/cache-assets`) : la feuille de
+  style et le script portent un numéro de version dans leur adresse, donc une
+  mise à jour s'affiche tout de suite. La correction s'applique aussi à la mise
+  en page de l'administration, qui gardait l'ancien cache.
+- **Plus de courriels en retard** : une personne ne reçoit que les articles
+  publiés **après** le moment où elle a coché « Prévenez-moi des nouveaux
+  articles » (nouvelle colonne `accounts.notify_articles_depuis`, migration
+  013). Un nouvel inscrit ne reçoit plus les articles des 30 derniers jours ;
+  décocher puis recocher repose la date. Les personnes déjà inscrites avant la
+  mise à jour gardent leur abonnement : leur date est posée à l'instant de la
+  migration.
+- **Tableau « 50 derniers envois »** : sur un grand écran, les colonnes se
+  partagent la place et l'objet comme l'erreur passent à la ligne. Plus de
+  colonne coupée à droite, plus de défilement horizontal. Sur un téléphone, le
+  tableau continue de défiler latéralement.
+
+Tests : 544 au total (+19), dont 10 sur la date d'accord et 3 sur le tableau.
+
 ## [1.18.0] — 2026-11-03
 
 ### La gazette du mois

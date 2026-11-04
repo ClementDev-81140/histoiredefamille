@@ -2396,7 +2396,7 @@ if ($filtre === '' || $filtre === 'composition') {
     $derniere = basename((string) end($migrations));
     $sql009   = (string) @file_get_contents(dirname(__DIR__) . '/migrations/009_articles_modele.sql');
     // Chaque lot ajoute SA migration ; les précédentes ne bougent jamais.
-    verifier('migration : 011 est la dernière migration', $derniere === '011_gazette.sql', $derniere);
+    verifier('migration : 013 est la dernière migration', $derniere === '013_notification_depuis.sql', $derniere);
     verifier(
         'migration : 010 ajoute des colonnes et des tables, sans rien supprimer',
         str_contains((string) @file_get_contents(dirname(__DIR__) . '/migrations/010_courriels.sql'), 'ALTER TABLE accounts ADD COLUMN email')
@@ -2406,6 +2406,13 @@ if ($filtre === '' || $filtre === 'composition') {
         'migration : 011 crée la gazette sans toucher à l’existant',
         str_contains((string) @file_get_contents(dirname(__DIR__) . '/migrations/011_gazette.sql'), 'CREATE TABLE IF NOT EXISTS gazettes')
             && !str_contains((string) @file_get_contents(dirname(__DIR__) . '/migrations/011_gazette.sql'), 'DROP TABLE')
+    );
+    $migration013 = (string) @file_get_contents(dirname(__DIR__) . '/migrations/013_notification_depuis.sql');
+    verifier(
+        'migration : 013 ajoute la date d’accord et l’ouvre aux inscrits existants',
+        str_contains($migration013, 'ADD COLUMN notify_articles_depuis')
+            && str_contains($migration013, "WHERE notify_articles = 1")
+            && !str_contains($migration013, 'DROP ')
     );
     verifier(
         'migration : 009 ajoute seulement la colonne « modele », vide par défaut',

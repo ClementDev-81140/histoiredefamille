@@ -95,8 +95,13 @@ function desinscription_confirmer(array $params = []): void
         return;
     }
 
-    $colonne = $but === 'gazette' ? 'notify_gazette' : 'notify_articles';
-    db_update('accounts', (int) $ligne['id'], [$colonne => 0, 'updated_at' => time()]);
+    // Désinscription : l'accord retombe à zéro, et la date d'accord sur les
+    // articles aussi (un futur ré-abonnement repartira du bon moment).
+    $valeurs = $but === 'gazette'
+        ? ['notify_gazette' => 0]
+        : ['notify_articles' => 0, 'notify_articles_depuis' => 0];
+    $valeurs['updated_at'] = time();
+    db_update('accounts', (int) $ligne['id'], $valeurs);
 
     log_activity(
         (int) $ligne['id'],

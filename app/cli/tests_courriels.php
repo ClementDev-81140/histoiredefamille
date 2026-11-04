@@ -15,6 +15,14 @@ function tests_courriel_compte(array $champs): int
 {
     $maintenant = time();
 
+    // Un compte inscrit aux nouveaux articles l'est « depuis une heure », sauf
+    // mention contraire : les articles publiés maintenant arrivent donc après
+    // son accord, comme dans la vraie vie.
+    if ((int) ($champs['notify_articles'] ?? 0) === 1
+        && !array_key_exists('notify_articles_depuis', $champs)) {
+        $champs['notify_articles_depuis'] = $maintenant - 3600;
+    }
+
     return db_insert('accounts', array_merge([
         'username'      => 'essai.' . bin2hex(random_bytes(4)),
         'display_name'  => 'Essai',
@@ -28,6 +36,9 @@ function tests_courriel_compte(array $champs): int
         'see_all'       => 0,
         'email'         => '',
         'notify_articles' => 0,
+        // Par défaut, un compte inscrit l'est depuis une heure : les articles
+        // publiés « maintenant » sont donc bien après son accord.
+        'notify_articles_depuis' => 0,
         'notify_gazette'  => 0,
         'created_at'    => $maintenant,
         'updated_at'    => $maintenant,
@@ -382,6 +393,148 @@ function tests_courriels(): void
         verifier('courriel : la règle de visibilité est exactement celle du site', $reglesIdentiques);
 
         // -------------------------------------------------------------------
+        // 8 bis. La date d'accord : jamais les nouvelles déjà anciennes
+        // -------------------------------------------------------------------
+        // Un compte tout juste inscrit et un compte inscrit depuis longtemps.
+        $nouveau = tests_courriel_compte([
+            'email' => 'nouveau@exemple.fr', 'notify_articles' => 1,
+            'notify_articles_depuis' => time() - 60,
+        ]);
+        $ancien = tests_courriel_compte([
+            'email' => 'ancien@exemple.fr', 'notify_articles' => 1,
+            'notify_articles_depuis' => time() - 40 * 86400,
+        ]);
+
+        // Un article publié il y a dix jours : il est encore dans la fenêtre
+        // de 30 jours de la commande, mais il n'est neuf pour personne qui
+        // vient de s'inscrire.
+        $vieux = tests_courriel_article('Article d’il y a dix jours', 'public', time() - 10 * 86400);
+        courriel_notifier_article(db_one('SELECT * FROM articles WHERE id = ?', [$vieux]));
+        $recusVieux = $destinataires($vieux);
+        verifier(
+            'date d’accord : un nouvel inscrit ne reçoit pas les articles déjà publiés',
+            !in_array($nouveau, $recusVieux, true),
+            implode(', ', $recusVieux)
+        );
+        verifier(
+            'date d’accord : une personne inscrite depuis plus longtemps les reçoit',
+            in_array($ancien, $recusVieux, true)
+        );
+
+        $neuf = tests_courriel_article('Article publié maintenant', 'public', time() - 30);
+        courriel_notifier_article(db_one('SELECT * FROM articles WHERE id = ?', [$neuf]));
+        verifier(
+            'date d’accord : le nouvel inscrit reçoit bien les articles publiés après son accord',
+            in_array($nouveau, $destinataires($neuf), true),
+            implode(', ', $destinataires($neuf))
+        );
+
+        // La commande d'envoi applique la même règle : c'est là que le retard
+        // des 30 derniers jours arrivait autrefois.
+        $ancienSansEnvoi = tests_courriel_article('Article jamais notifié', 'public', time() - 5 * 86400);
+        $avantEchus = (int) db_value(
+            "SELECT COUNT(*) FROM email_queue WHERE dedupe_key LIKE ?",
+            ['article:' . $ancienSansEnvoi . ':%'],
+            0
+        );
+        courriel_articles_echus();
+        $lignesVieux = db_all(
+            "SELECT account_id FROM email_queue WHERE dedupe_key LIKE ?",
+            ['article:' . $ancienSansEnvoi . ':%']
+        );
+        $idsVieux = array_map(static fn (array $l): int => (int) $l['account_id'], $lignesVieux);
+        verifier(
+            'date d’accord : la commande ne renvoie pas non plus les 30 derniers jours au nouvel inscrit',
+            $avantEchus === 0
+            && !in_array($nouveau, $idsVieux, true)
+            && in_array($ancien, $idsVieux, true),
+            implode(', ', $idsVieux)
+        );
+
+        // Décocher puis recocher repose la date : les articles d'entre-temps
+        // ne repartent pas.
+        $avant = db_one('SELECT * FROM accounts WHERE id = ?', [$nouveau]);
+        $coche = courriel_accord_articles($avant, true);
+        verifier(
+            'date d’accord : la date ne bouge pas tant que la case reste cochée',
+            $coche['notify_articles'] === 1
+            && $coche['notify_articles_depuis'] === (int) $avant['notify_articles_depuis'],
+            (string) $coche['notify_articles_depuis']
+        );
+
+        $decoche = courriel_accord_articles($avant, false);
+        db_update('accounts', $nouveau, [
+            'notify_articles' => $decoche['notify_articles'],
+            'notify_articles_depuis' => $decoche['notify_articles_depuis'],
+        ]);
+        verifier(
+            'date d’accord : décocher efface la date',
+            $decoche === ['notify_articles' => 0, 'notify_articles_depuis' => 0]
+            && (int) db_value('SELECT notify_articles_depuis FROM accounts WHERE id = ?', [$nouveau], 1) === 0
+        );
+
+        // Pendant la désinscription, un article paraît.
+        $pendant = tests_courriel_article('Article paru pendant la désinscription', 'public', time() - 10);
+        courriel_notifier_article(db_one('SELECT * FROM articles WHERE id = ?', [$pendant]));
+        verifier(
+            'date d’accord : un compte désinscrit ne reçoit rien',
+            !in_array($nouveau, $destinataires($pendant), true)
+        );
+
+        // La personne recoche plus tard : la date repart de maintenant.
+        $apres = db_one('SELECT * FROM accounts WHERE id = ?', [$nouveau]);
+        $recoche = courriel_accord_articles($apres, true);
+        db_update('accounts', $nouveau, [
+            'notify_articles' => $recoche['notify_articles'],
+            'notify_articles_depuis' => $recoche['notify_articles_depuis'],
+        ]);
+        verifier(
+            'date d’accord : recocher pose une date toute neuve',
+            $recoche['notify_articles'] === 1
+            && $recoche['notify_articles_depuis'] >= $avant['notify_articles_depuis'],
+            (string) $recoche['notify_articles_depuis']
+        );
+
+        $retard = tests_courriel_article('Article de la veille', 'public', time() - 86400);
+        courriel_notifier_article(db_one('SELECT * FROM articles WHERE id = ?', [$retard]));
+        verifier(
+            'date d’accord : après un ré-abonnement, la veille ne repart pas',
+            !in_array($nouveau, $destinataires($retard), true)
+        );
+
+        // La page « Mon compte » enregistre bien la date, et pas seulement la
+        // case. (Appel direct : matrice_requete() remet la session à zéro, ce
+        // qui effacerait le jeton anti-CSRF au passage.)
+        db_update('accounts', $nouveau, ['notify_articles' => 0, 'notify_articles_depuis' => 0]);
+        $_SESSION = ['account_id' => $nouveau];
+        $_POST    = [
+            '_csrf'           => csrf_token(),
+            'email'           => 'nouveau@exemple.fr',
+            'notify_articles' => '1',
+        ];
+        $_SERVER['REQUEST_METHOD'] = 'POST';
+        $_SERVER['REQUEST_URI']    = '/mon-compte/courriels';
+        $niveau = ob_get_level();
+        ob_start();
+        try {
+            mon_compte_courriels();
+        } catch (Throwable) {
+            // Fin normale : la page renvoie vers « Mon compte ».
+        }
+        while (ob_get_level() > $niveau) {
+            ob_end_clean();
+        }
+        $_POST = [];
+        $enregistre = db_one('SELECT notify_articles, notify_articles_depuis FROM accounts WHERE id = ?', [$nouveau]);
+        verifier(
+            'date d’accord : cocher la case dans « Mon compte » pose la date',
+            (int) $enregistre['notify_articles'] === 1
+            && (int) $enregistre['notify_articles_depuis'] > 0,
+            json_encode($enregistre)
+        );
+        $_SESSION = [];
+
+        // -------------------------------------------------------------------
         // 9. Article programmé, contenu, annulation
         // -------------------------------------------------------------------
         $programme = tests_courriel_article('Article programmé', 'public', time() + 3600);
@@ -617,6 +770,30 @@ function tests_courriels(): void
         ]);
         $purges = courriel_purger(90);
         verifier('purge : les messages terminés de plus de 90 jours sont retirés', $purges >= 1, (string) $purges);
+
+        // -------------------------------------------------------------------
+        // 13 bis. Le tableau des derniers envois se replie (plus de colonne
+        //        coupée à droite sur un grand écran).
+        // -------------------------------------------------------------------
+        $vueCourriels = (string) @file_get_contents(dirname(__DIR__) . '/views/admin/courriels.php');
+        $feuille     = (string) @file_get_contents(dirname(__DIR__, 2) . '/public/assets/style.css');
+        verifier(
+            'page Courriels : le tableau des envois porte sa propre classe',
+            str_contains($vueCourriels, 'class="tableau tableau--courriels"')
+            && str_contains($vueCourriels, 'class="colonne-erreur"')
+        );
+        verifier(
+            'page Courriels : l’erreur et l’objet peuvent passer à la ligne',
+            str_contains($feuille, '.tableau--courriels th,')
+            && str_contains($feuille, 'overflow-wrap: anywhere;')
+        );
+        verifier(
+            'page Courriels : plus de défilement horizontal sur un grand écran',
+            (bool) preg_match(
+                '/@media \(min-width: 62rem\) \{[^}]*\.tableau-defilant \.tableau--courriels \{ min-width: 0;/s',
+                $feuille
+            )
+        );
 
         // -------------------------------------------------------------------
         // 14. Journaux : jamais d'adresse complète
