@@ -229,6 +229,7 @@ function matrice_url(string $motif, array $f): string
             str_starts_with($url, '/admin/pages/')              => $f['page'],
             str_starts_with($url, '/admin/categories/')         => $f['category'],
             str_starts_with($url, '/admin/gazette/')            => $f['gazette'],
+            str_starts_with($url, '/lieu/')                     => $f['place'],
             str_starts_with($url, '/tchat/')                    => $f['chat_message'],
             default                                             => $f['doc_pdf'],
         };
@@ -424,6 +425,15 @@ function matrice_fixtures(): array
         'created_at' => $maintenant, 'updated_at' => $maintenant,
     ]);
 
+    // --- Un lieu de la carte, rattaché à la personne publique ci-dessus -----
+    // La fiche /lieu/{id} répond donc de la même façon pour les cinq profils.
+    $nomPlace = 'Lieu matrice ' . $suffixe;
+    $place = db_insert('places', [
+        'nom' => $nomPlace, 'pays' => 'France', 'lat' => 44.0, 'lon' => 1.0, 'code' => '',
+        'created_at' => $maintenant, 'updated_at' => $maintenant,
+    ]);
+    db_update('persons', $person, ['birth_place' => $nomPlace]);
+
     $chat = db_insert('chat_messages', [
         'account_id' => $compteBrancheA, 'author_label' => 'Branche A (essai)',
         'author_branch' => 'MATR-A', 'body' => 'Message de test.',
@@ -468,6 +478,7 @@ function matrice_fixtures(): array
         'recipe_slug' => 'recette-' . $suffixe,
         'person' => $person,
         'person2' => $person2,
+        'place' => $place,
         'family' => $family,
         'category' => $categorie,
         'chat_message' => $chat,

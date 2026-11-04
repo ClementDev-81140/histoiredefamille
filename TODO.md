@@ -3,6 +3,33 @@
 Ce fichier liste ce qui reste à faire, classé par priorité. Il n'y a pas de
 suivi automatique : cochez au fur et à mesure.
 
+## Fait (2026-11-04, lot 3 — carte des lieux)
+
+- [x] **Page `/carte`** : les lieux de naissance, de décès et de mariage sur
+  une carte **dessinée par le serveur** (SVG), sans service externe, sans
+  JavaScript, sans ressource téléchargée.
+- [x] **Fond embarqué** (117 Ko) : Natural Earth 4.1.0, **domaine public**,
+  deux vues (France, monde entier) ; origine, licence et projection dans
+  `docs/carte.md`.
+- [x] **Table `places`** (migration **012**, ajout seul : une table, deux
+  index) ; les textes de lieu des fiches ne sont **jamais** réécrits, un texte
+  inconnu est ignoré sur la carte.
+- [x] **Administration → Lieux à placer** : textes en attente, recherche dans
+  **8 942 communes** embarquées (accents et casse ignorés), saisie à la main de
+  la latitude et de la longitude, liste des lieux placés, retrait sans toucher
+  aux fiches.
+- [x] **Filtres** branche et décennie en `GET`, deux vues, légende, **tableau
+  équivalent** sous la carte.
+- [x] **Fiche d'un lieu** (`/lieu/{id}`) et lien **« Voir sur la carte »**
+  depuis la fiche d'une personne.
+- [x] **Droits inchangés** : seules les personnes visibles
+  (`visibility_clause('person', …)`) ; lieu sans personne visible → même 404,
+  même texte qu'un lieu inexistant.
+- [x] **Cache court** (5 min) par groupe de droits, filtres et version des
+  données ; projection en PHP pur, < 300 ms avec 2 000 personnes.
+- [x] 55 vérifications de plus (599 au total) ; aucune règle d'accès modifiée,
+  aucune migration existante touchée, aucune classe CSS renommée.
+
 ## Fait (2026-11-03, lot 10 — composition des pages)
 
 - [x] **Administration → Composition des pages** (administrateurs seulement,

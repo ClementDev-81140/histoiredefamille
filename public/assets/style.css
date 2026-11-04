@@ -5291,3 +5291,128 @@ legend {
        (52 rem) est levée pour celui-ci, qui tient alors dans son cadre. */
     .tableau-defilant .tableau--courriels { min-width: 0; }
 }
+
+/* ==========================================================================
+   CARTE DES LIEUX (1.19.0)
+   --------------------------------------------------------------------------
+   La carte est un dessin SVG engendré par le serveur : aucun fond de carte
+   téléchargé, aucune image. Les couleurs passent par les variables CSS, donc
+   la carte suit automatiquement la palette (papier ancien ou bleue).
+   Les points sont cliquables ; un titre s'affiche au survol, sans JavaScript.
+   Bloc ajouté en fin de feuille : les classes .carte / .carte__* existantes
+   (les cartes d'articles et de vidéos) ne sont pas touchées.
+   ========================================================================== */
+
+.carte-lieux__figure {
+    margin: 0 0 1.25rem;
+}
+
+.carte-lieux__cadre {
+    border: var(--filet-double);
+    background: var(--surface);
+    padding: 0.5rem;
+    overflow: hidden;
+}
+
+.carte-lieux {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 80vh;
+}
+
+/* Mer : simple teinte de fond, tirée de la palette. */
+.carte-lieux__fond {
+    fill: var(--accent-clair);
+}
+
+/* Terres : la couleur du papier, soulignée d'un trait fin pour les côtes. */
+.carte-lieux__terre {
+    fill: var(--surface);
+    stroke: var(--texte-doux);
+    stroke-width: 0.5;
+    stroke-linejoin: round;
+}
+
+/* Un point par lieu : sa taille suit le nombre de personnes. */
+.carte-lieux__point {
+    fill: var(--accent);
+    stroke: var(--surface);
+    stroke-width: 1;
+}
+
+.carte-lieux__lien:hover .carte-lieux__point,
+.carte-lieux__lien:focus-visible .carte-lieux__point {
+    fill: var(--accent-fonce);
+}
+
+/* Le lieu mis en avant (venu d'une fiche de personne ou de lieu). */
+.carte-lieux__point--actif {
+    fill: var(--alerte);
+    stroke: var(--texte);
+    stroke-width: 1.5;
+}
+
+/* Sans JavaScript, le contour de sélection doit rester visible. */
+.carte-lieux__lien:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.carte-lieux__note {
+    margin-bottom: 1.25rem;
+}
+
+/* Filtres de la carte : trois listes déroulantes côte à côte. */
+.carte-lieux__filtres {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1rem;
+    align-items: flex-end;
+    margin-bottom: 1.25rem;
+}
+
+.carte-lieux__filtres .champ {
+    margin: 0;
+}
+
+.carte-lieux__filtres .actions {
+    margin: 0;
+}
+
+@media (max-width: 40rem) {
+    .carte-lieux__filtres .champ { flex: 1 1 100%; }
+    .carte-lieux__cadre { padding: 0.25rem; }
+    .carte-lieux { max-height: none; }
+}
+
+/* Suggestion de commune (Administration → Lieux à placer) : une ligne par
+   commune, avec son bouton « Placer ». */
+.formulaire--suggestion {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.4rem 0.75rem;
+    border-bottom: var(--filet);
+    padding: 0.45rem 0;
+    margin: 0;
+}
+
+.formulaire--suggestion .suggestion__nom {
+    font-weight: 700;
+    color: var(--accent-fonce);
+}
+
+.formulaire--suggestion .bouton {
+    margin-left: auto;
+}
+
+/* Colonne des coordonnées : deux nombres qui ne se coupent pas. */
+.colonne-position {
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 40rem) {
+    .formulaire--suggestion .bouton { margin-left: 0; }
+}

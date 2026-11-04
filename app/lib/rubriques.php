@@ -129,7 +129,7 @@ function rubriques_publiques_oubli(): void
  * page filtrant ensuite selon les droits du compte.
  *
  * @param array|null $compte  compte courant (null = visiteur non connecté)
- * @param array{recettes?:bool,temoignages?:bool,tchat?:bool} $extras
+ * @param array{recettes?:bool,temoignages?:bool,tchat?:bool,carte?:bool} $extras
  *        rubriques facultatives, déjà vérifiées par l'appelant
  * @return list<array{cle:string,href:string,libelle:string}>
  */
@@ -159,6 +159,9 @@ function menu_rubriques(?array $compte, array $extras = []): array
         if (!empty($extras['temoignages'])) {
             $entrees[] = ['cle' => 'temoignages', 'href' => '/temoignages', 'libelle' => 'Témoignages'];
         }
+        if (!empty($extras['carte'])) {
+            $entrees[] = ['cle' => 'carte', 'href' => '/carte', 'libelle' => 'Carte'];
+        }
         if (rubrique_publique('recherche')) {
             $entrees[] = ['cle' => 'recherche', 'href' => '/recherche', 'libelle' => 'Recherche'];
         }
@@ -184,6 +187,9 @@ function menu_rubriques(?array $compte, array $extras = []): array
     }
     if (!empty($extras['temoignages'])) {
         $entrees[] = ['cle' => 'temoignages', 'href' => '/temoignages', 'libelle' => 'Témoignages'];
+    }
+    if (!empty($extras['carte'])) {
+        $entrees[] = ['cle' => 'carte', 'href' => '/carte', 'libelle' => 'Carte'];
     }
 
     $entrees[] = ['cle' => 'recherche', 'href' => '/recherche', 'libelle' => 'Recherche'];

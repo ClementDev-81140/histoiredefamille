@@ -3,6 +3,52 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.19.0] — 2026-11-04
+
+### La carte des lieux
+
+Les lieux de naissance, de décès et de mariage de la famille, sur une carte —
+sans aucun service externe.
+
+- **Aucune ressource extérieure** : le fond de carte est un fichier livré avec
+  le site (Natural Earth, **domaine public**, contours projetés et simplifiés :
+  37 Ko pour deux vues, France et monde entier). Le dessin est un **SVG
+  fabriqué par le serveur** : ni JavaScript, ni tuile, ni bibliothèque, ni
+  police. La carte fonctionne sans connexion sortante et ne transmet rien à un
+  tiers.
+- **UNE seule façon d'entrer sur la carte** : un texte de lieu (« Toulouse »,
+  « le hameau de la Croix ») n'est jamais réécrit. La table `places`
+  (**migration 012**, ajout seul : une table neuve, deux index) lui donne des
+  coordonnées, une fois pour toutes.
+- **Administration → Lieux à placer** : la liste des textes de lieu des fiches
+  qui attendent une position, une recherche dans **8 942 communes** embarquées
+  (deux lettres suffisent, accents et majuscules ignorés), et une saisie à la
+  main de la latitude et de la longitude pour les hameaux et l'étranger.
+  « Retirer » ne touche aucune fiche.
+- **Page `/carte`** : points dont la taille suit le nombre de personnes, deux
+  vues (France / monde), filtres **branche** et **décennie** en `GET` (adresse
+  mise en favori), légende, et **tableau équivalent** sous la carte (lecteur
+  d'écran, impression).
+- **Fiche d'un lieu** (`/lieu/12`) : naissances, décès et mariages de ce lieu,
+  avec le lien vers chaque personne ; et **« Voir sur la carte »** depuis la
+  fiche d'une personne quand son lieu est placé.
+- **Droits inchangés, sans exception** : seules les personnes visibles sont
+  comptées (`visibility_clause('person', …)`). Un lieu sans personne visible
+  n'apparaît pas, et sa fiche répond **exactement** comme un lieu inexistant
+  (même 404, même texte).
+- **Cache court** de 5 minutes, par groupe de droits, filtres et version des
+  données ; le fichier ne contient que des noms de lieux publics et des
+  nombres. Projection en PHP pur : moins de 300 ms avec 2 000 personnes.
+- Couleurs uniquement par **variables CSS** : la carte suit la palette choisie
+  (papier ancien, bleu d'origine, personnalisée). Aucun attribut `style`, aucun
+  gestionnaire en ligne, aucune classe CSS existante renommée.
+- GEDCOM inchangé : aucune donnée n'est réécrite, aucun champ ajouté aux
+  fiches.
+
+Tests : **599 au total (+55)**, dont la projection (bords, hors cadre,
+coordonnées impossibles), les suggestions de communes, les filtres, les droits,
+le cache et un contrôle du SVG (ni `style`, ni script, ni ressource externe).
+
 ## [1.18.1] — 2026-11-04
 
 ### Trois corrections du quotidien

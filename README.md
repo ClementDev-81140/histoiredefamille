@@ -32,6 +32,7 @@ et une installation qui tient en quelques commandes à copier-coller.
 13. [Ouvrir le site au public : liste de contrôle du jour J](#13-ouvrir-le-site-au-public--liste-de-contrôle-du-jour-j)
 14. [Envoyer des courriels](#14-envoyer-des-courriels)
 15. [La gazette du mois](#15-la-gazette-du-mois)
+16. [La carte des lieux](#16-la-carte-des-lieux)
 
 ---
 
@@ -61,6 +62,10 @@ et une installation qui tient en quelques commandes à copier-coller.
   articles, les pages d'information et les personnes de l'arbre.
 - Les pages d'information publiques (histoire de la famille, annonces).
 - L'arbre généalogique pour les personnes marquées « Public ».
+- Une **carte des lieux** (naissance, décès, mariage), dessinée par le site
+  lui-même : aucun service externe, aucune connexion à Internet, aucun
+  JavaScript. Chaque point mène à la liste des personnes rattachées à ce lieu.
+  Elle n'apparaît dans le menu que si au moins un lieu a été placé.
 
 ### Partie famille (après connexion)
 
@@ -1244,6 +1249,48 @@ Une fois par semaine, ou dès qu'une alerte apparaît sur le tableau de bord :
 Réglages utiles, dans la même page : « Échecs refusés » / « Adresses
 nouvelles » pour filtrer, et la durée de conservation du journal.
 
+### 6.17 Placer les lieux sur la carte
+
+La carte ne devine aucun lieu. Un texte écrit dans une fiche (« Toulouse »,
+« Saint-Étienne », « le hameau de la Croix ») reste **exactement** comme il est :
+la carte lui donne seulement des coordonnées. Tant qu'un texte n'a pas de
+coordonnées, il n'apparaît pas sur la carte — la fiche, elle, ne change pas.
+
+1. ouvrez **Lieux à placer** dans le menu de gauche de l'administration (ou
+   cliquez sur « Placer les lieux » depuis la page `/carte`) ;
+2. la liste du haut montre les textes de lieu des fiches qui attendent une
+   position, avec le nombre de fiches concernées. Cliquez sur « **Chercher** »
+   à côté d'un lieu ;
+3. tapez les premières lettres du nom (deux suffisent), puis cliquez sur
+   « **Placer** » sur la bonne commune : c'est fini ;
+4. pour un hameau, un lieu-dit ou un village à l'étranger, descendez à
+   « **À la main** » : écrivez le nom **exactement comme dans les fiches**,
+   puis la latitude et la longitude (par exemple `43.6047` et `1.4442`). Sur une
+   carte en ligne, un clic droit sur le lieu donne souvent ces deux nombres ;
+5. en bas, « **Lieux déjà placés** » rappelle tout ce qui est sur la carte.
+   « **Retirer** » ne modifie aucune fiche : le lieu quitte la carte et revient
+   dans « À placer ».
+
+Bon à savoir :
+
+- **rien n'est envoyé sur Internet** : la liste des communes est dans le site,
+  la carte est dessinée par le serveur. Elle fonctionne même si le Pi n'a pas
+  de connexion sortante ;
+- un texte de lieu **inconnu est simplement ignoré** sur la carte. Les fiches
+  ne sont jamais réécrites, et un import GEDCOM reste sans effet sur la carte ;
+- les accents et les majuscules ne comptent pas : « Saint-Étienne » et
+  « SAINT ETIENNE » désignent le même point ;
+- **on ne voit que ce qu'on a le droit de voir** : un visiteur ne compte que
+  les personnes publiques ; un lieu dont aucune personne ne lui est visible
+  n'apparaît pas du tout, et sa fiche répond « Lieu introuvable » ;
+- la page propose deux vues (**France** et **Monde entier**), un filtre par
+  **branche** et un filtre par **décennie de naissance**, et sous la carte un
+  **tableau** qui donne les mêmes renseignements (utile pour imprimer ou avec
+  un lecteur d'écran).
+
+La méthode complète (origine du fond de carte, licence, projection, cache) est
+décrite dans [`docs/carte.md`](docs/carte.md).
+
 ## 7. Mettre à jour le site
 
 Les mises à jour ne touchent **ni** `config.local.php`, **ni** le SSD, **ni**
@@ -2328,6 +2375,109 @@ journalctl -u histoiredefamille-courriels.service -n 30
 
 La première ligne de la sortie de la commande mentionne la préparation de la
 gazette (« Gazette du mois : 2 numéro(s) préparé(s) pour … ») au début du mois.
+
+---
+
+## 16. La carte des lieux
+
+La page `/carte` dessine les lieux de la famille. Pour la placer au quotidien
+(chercher une commune, saisir une position à la main, retirer un lieu), voir
+[6.17](#617-placer-les-lieux-sur-la-carte). Ce chapitre explique ce qui se
+passe derrière, pour pouvoir la réparer ou l'expliquer un jour.
+
+### 16.1 Aucune ressource extérieure
+
+Trois choses ne sont **jamais** demandées à Internet :
+
+1. le **fond de carte** : un fichier livré avec le site
+   (`app/data/carte_fond.php`, 37 Ko), deux vues (France et monde entier) ;
+2. la **liste des communes** (`app/data/communes-fr.tsv`, 8 942 lignes) ;
+3. le **dessin** : le serveur écrit du SVG, que le navigateur affiche comme
+   une image. Il n'y a ni bibliothèque JavaScript, ni tuile, ni police
+   téléchargée.
+
+C'est un choix de confidentialité (aucune adresse IP transmise à un tiers,
+aucun pistage) autant que de robustesse : si la connexion du Pi tombe, la
+carte continue de s'afficher.
+
+Origine et licence du fond : Natural Earth 4.1.0, **domaine public**
+(contours projetés et simplifiés par le projet). Détail complet, projection et
+format des fichiers : [`docs/carte.md`](docs/carte.md).
+
+### 16.2 Une seule migration à appliquer
+
+La carte ajoute une table `places` (migration **012**). Comme toujours, elle
+**ajoute** sans rien modifier :
+
+```bash
+cd ~/histoiredefamille
+git pull
+sudo bash deploy/install.sh          # applique 012 (et 013 si besoin)
+```
+
+Si vous préférez la commande seule :
+
+```bash
+php app/cli/migrate.php
+```
+
+La migration 012 ne touche ni aux personnes, ni aux familles : elle crée une
+table neuve, avec un index unique (un même lieu ne peut pas être placé deux
+fois) et un index sur les coordonnées.
+
+### 16.3 Ce que voit la famille
+
+- **Filtres** : deux listes déroulantes (branche, décennie de naissance) et le
+  choix de la vue (France / monde). C'est un simple formulaire `GET` : l'adresse
+  obtenue peut être mise en favori ou envoyée par courriel.
+- **Points** : un point par lieu, dont la taille suit le nombre de personnes
+  rattachées (4 px pour un lieu isolé, 15 px pour le lieu le plus peuplé).
+- **Fiche d'un lieu** (`/lieu/12`) : qui y est né, qui y est décédé, quels
+  mariages y ont été célébrés — uniquement les personnes visibles par la
+  personne qui regarde.
+- **Tableau** sous la carte : la même information, lisible à l'impression et
+  par un lecteur d'écran.
+- **Lien « Voir sur la carte »** depuis la fiche d'une personne : il apparaît
+  quand le lieu de naissance, de décès ou de mariage de cette personne est
+  placé.
+
+### 16.4 Droits : la règle du site, sans exception
+
+La carte compte les personnes avec la **même** condition que partout ailleurs
+(`visibility_clause('person', …)`). Un visiteur non connecté ne compte que les
+personnes publiques. Un lieu dont aucune personne n'est visible **n'apparaît
+pas**, et sa fiche répond « Lieu introuvable » avec exactement le même texte
+que pour un lieu inexistant : impossible d'en déduire qu'il existe.
+
+Aucune règle d'accès n'a été modifiée pour ce lot.
+
+### 16.5 Le cache
+
+Pour rester vif sur le Pi, le résultat est gardé **5 minutes** dans
+`storage/cache/carte/`, un fichier par groupe de droits et par filtres. Le
+fichier ne contient que des noms de lieux et des **nombres** de personnes. Le
+cache est ignoré dès qu'une personne ou un lieu change, et il est effacé quand
+un lieu est placé ou retiré. Pour forcer un recalcul : ouvrir `/carte` avec
+`?recalculer=1`. Pour tout vider à la main :
+
+```bash
+sudo rm -f /mnt/ssd/histoiredefamille/storage/cache/carte/*.json
+```
+
+(rien n'est perdu : le dossier se remplit au prochain affichage).
+
+### 16.6 Vérifier
+
+```bash
+cd ~/histoiredefamille
+php app/cli/tests.php carte
+```
+
+Les tests vérifient la projection (bords du cadre, points hors vue,
+coordonnées impossibles), les suggestions de communes, les filtres, les droits
+(un visiteur ne compte pas une personne privée), le cache et le fait que le
+dessin ne contient ni `style`, ni script, ni adresse extérieure. Le jeu complet
+(`php app/cli/tests.php`) reste la référence avant une mise en ligne.
 
 ---
 

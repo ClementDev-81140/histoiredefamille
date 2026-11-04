@@ -77,17 +77,14 @@ function gazette_mois_bornes(string $periode): array
 // Groupes de droits
 // ---------------------------------------------------------------------------
 
-/** Groupe de droits d'un compte : « tout », « branche:ID » ou « famille ». */
+/**
+ * Groupe de droits d'un compte (même règle que la carte des lieux).
+ *
+ * Le calcul vit dans visibility.php : une seule définition pour tout le site.
+ */
 function gazette_groupe_de_compte(array $compte): string
 {
-    if (compte_type($compte) === 'admin' || (int) ($compte['see_all'] ?? 0) === 1) {
-        return 'tout';
-    }
-    $branche = (int) ($compte['branch_id'] ?? 0);
-    if ($branche > 0) {
-        return 'branche:' . $branche;
-    }
-    return 'famille';
+    return groupe_droits($compte);
 }
 
 /** Libellé lisible d'un groupe de droits. */

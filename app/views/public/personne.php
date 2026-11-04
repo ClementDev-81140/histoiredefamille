@@ -14,6 +14,27 @@ $age   = person_age($person);
 /** Lien vers la recherche pour un lieu (recherche sans accents). */
 $lienLieu = static fn (string $lieu): string => '/recherche?q=' . rawurlencode($lieu);
 
+// Lieu de la carte à montrer pour cette personne : sa naissance, sinon son
+// décès, sinon le lieu de son mariage. Aucun des trois n'est placé : pas de
+// bouton, pour ne pas promettre une carte vide.
+$lieuCarte = null;
+foreach ([
+    (string) ($person['birth_place'] ?? ''),
+    (string) ($person['death_place'] ?? ''),
+] as $texteLieu) {
+    if ($lieuCarte === null && trim($texteLieu) !== '') {
+        $lieuCarte = carte_place_du_texte($texteLieu);
+    }
+}
+if ($lieuCarte === null) {
+    foreach ($unions as $unionLieu) {
+        $texteLieu = (string) ($unionLieu['family']['marriage_place'] ?? '');
+        if (trim($texteLieu) !== '' && ($lieuCarte = carte_place_du_texte($texteLieu)) !== null) {
+            break;
+        }
+    }
+}
+
 /** Petite liste de personnes (nom, dates) réutilisée plusieurs fois. */
 $listePersonnes = static function (array $personnes): void {
     ?>
@@ -48,6 +69,10 @@ $listePersonnes = static function (array $personnes): void {
             <?php endif; ?>
             <p class="actions">
                 <a class="bouton bouton--secondaire" href="/arbre?racine=<?= (int) $person['id'] ?>">Voir dans l’arbre</a>
+                <?php if ($lieuCarte !== null): ?>
+                    <a class="bouton bouton--secondaire"
+                       href="/lieu/<?= (int) $lieuCarte['id'] ?>">Voir sur la carte</a>
+                <?php endif; ?>
                 <button type="button" class="bouton bouton--secondaire" data-imprimer>Imprimer</button>
                 <?php if (trim((string) $person['last_name']) !== ''): ?>
                     <a class="bouton bouton--secondaire"

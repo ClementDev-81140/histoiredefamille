@@ -237,3 +237,29 @@ function find_viewable_person(int $id): ?array
     }
     return $person;
 }
+
+/**
+ * Groupe de droits d'un compte : « tout », « branche:ID », « famille » ou
+ * « visiteur ».
+ *
+ * Deux personnes du même groupe voient exactement les mêmes contenus. C'est
+ * ce qui permet de préparer un seul numéro de gazette ou un seul dessin de
+ * carte par groupe, sans jamais deviner les droits : on les lit ici, une
+ * seule fois, à partir de la même règle que visibility_clause().
+ */
+function groupe_droits(?array $compte): string
+{
+    if ($compte === null) {
+        return 'visiteur';
+    }
+    // Administrateur : le rôle fait foi partout dans le site ; le type de
+    // compte est conservé pour les bases d'avant la migration 008.
+    if (($compte['role'] ?? '') === 'admin'
+        || ($compte['account_type'] ?? '') === 'admin'
+        || (int) ($compte['see_all'] ?? 0) === 1) {
+        return 'tout';
+    }
+    $branche = (int) ($compte['branch_id'] ?? 0);
+
+    return $branche > 0 ? 'branche:' . $branche : 'famille';
+}

@@ -2407,6 +2407,15 @@ if ($filtre === '' || $filtre === 'composition') {
         str_contains((string) @file_get_contents(dirname(__DIR__) . '/migrations/011_gazette.sql'), 'CREATE TABLE IF NOT EXISTS gazettes')
             && !str_contains((string) @file_get_contents(dirname(__DIR__) . '/migrations/011_gazette.sql'), 'DROP TABLE')
     );
+    $migration012 = (string) @file_get_contents(dirname(__DIR__) . '/migrations/012_carte.sql');
+    verifier(
+        'migration : 012 crée les lieux de la carte, sans toucher à l’existant',
+        str_contains($migration012, 'CREATE TABLE IF NOT EXISTS places')
+            && str_contains($migration012, 'CREATE UNIQUE INDEX IF NOT EXISTS idx_places_nom')
+            && !str_contains($migration012, 'DROP ')
+            && !str_contains($migration012, 'ALTER TABLE'),
+        'migration 012'
+    );
     $migration013 = (string) @file_get_contents(dirname(__DIR__) . '/migrations/013_notification_depuis.sql');
     verifier(
         'migration : 013 ajoute la date d’accord et l’ouvre aux inscrits existants',
@@ -2462,6 +2471,7 @@ if ($filtre === '' || $filtre === 'verification') {
 
 require_once __DIR__ . '/tests_courriels.php';
 require_once __DIR__ . '/tests_gazette.php';
+require_once __DIR__ . '/tests_carte.php';
 
 if ($filtre === '' || $filtre === 'courriels') {
     tests_courriels();
@@ -2469,6 +2479,10 @@ if ($filtre === '' || $filtre === 'courriels') {
 
 if ($filtre === '' || $filtre === 'gazette') {
     tests_gazette();
+}
+
+if ($filtre === '' || $filtre === 'carte') {
+    tests_carte();
 }
 
 // ---------------------------------------------------------------------------

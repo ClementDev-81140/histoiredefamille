@@ -42,3 +42,7 @@ package-lock.json
 .vscode/
 *.swp
 *~
+
+# Python (outils de fabrication du fond de carte : jamais utilisés par le site).
+__pycache__/
+*.pyc

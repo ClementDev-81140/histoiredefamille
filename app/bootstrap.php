@@ -42,6 +42,7 @@ require_once __DIR__ . '/lib/composition.php';
 require_once __DIR__ . '/lib/mise_en_ligne.php';
 require_once __DIR__ . '/lib/courriel.php';
 require_once __DIR__ . '/lib/gazette_mois.php';
+require_once __DIR__ . '/lib/carte.php';
 
 /**
  * Le script tourne-t-il en ligne de commande ?
