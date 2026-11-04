@@ -9,6 +9,23 @@ declare(strict_types=1);
 // Échappement et URL
 // ---------------------------------------------------------------------------
 
+/**
+ * Adresse d'un fichier du dossier public, suivie d'un numéro de version
+ * (la date de modification du fichier) : « /assets/style.css?v=1762243200 ».
+ *
+ * Le navigateur garde les feuilles de style et les scripts plusieurs jours.
+ * Sans ce numéro, une mise à jour du site n'apparaîtrait qu'après avoir vidé
+ * le cache ; avec lui, l'adresse change dès que le fichier change.
+ * Un fichier introuvable reste sans numéro (jamais d'erreur).
+ */
+function asset_url(string $chemin): string
+{
+    $chemin = '/' . ltrim($chemin, '/');
+    $fichier = HDF_ROOT . '/public' . $chemin;
+    $date = is_file($fichier) ? (int) @filemtime($fichier) : 0;
+    return $date > 0 ? $chemin . '?v=' . $date : $chemin;
+}
+
 /** Échappe une chaîne pour l'afficher dans du HTML (protection XSS). */
 function e(mixed $value): string
 {

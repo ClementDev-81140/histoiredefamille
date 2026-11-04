@@ -40,7 +40,7 @@ $navClass = static function (string $href) use ($currentPath): string {
     <title><?= e($pageTitle) ?></title>
     <meta name="description" content="<?= e(site_setting('description')) ?>">
     <meta name="robots" content="<?= is_logged_in() ? 'noindex, nofollow' : 'index, follow' ?>">
-    <link rel="stylesheet" href="/assets/style.css">
+    <link rel="stylesheet" href="<?= e(asset_url('/assets/style.css')) ?>">
 <?php if (apparence_feuille_active()): ?>
     <?php /* Couleurs choisies par les administrateurs : feuille calculée par
              PHP, liée APRÈS style.css (aucun style en ligne, aucune ressource
@@ -164,6 +164,6 @@ $navClass = static function (string $href) use ($currentPath): string {
     </div>
 </footer>
 
-<script src="/assets/app.js" defer></script>
+<script src="<?= e(asset_url('/assets/app.js')) ?>" defer></script>
 </body>
 </html>
