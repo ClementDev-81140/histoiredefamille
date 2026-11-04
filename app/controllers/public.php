@@ -175,6 +175,9 @@ function public_page(array $params): void
 /** Répertoire de l'arbre généalogique. */
 function public_arbre(): void
 {
+    // L'arbre généalogique n'est plus public : il s'ouvre une fois connecté.
+    require_login();
+
     $params = [];
     $clause = visibility_clause('person', 'p', $params);
     $where  = [$clause];
@@ -231,6 +234,8 @@ function public_arbre(): void
 /** Fiche d'une personne. */
 function public_personne(array $params): void
 {
+    require_login();
+
     $person = find_viewable_person((int) ($params['id'] ?? 0));
     if (!$person) {
         http_response_code(404);
@@ -295,6 +300,8 @@ function public_personne(array $params): void
  */
 function api_arbre(array $params): void
 {
+    require_login();
+
     $person = find_viewable_person((int) ($params['id'] ?? 0));
     if (!$person) {
         json_response(['erreur' => 'Personne introuvable'], 404);

@@ -367,10 +367,14 @@ function tests_propositions_flux(): void
         ($apres['moderation_state'] ?? '') === 'publie' && ($apres['visibility'] ?? '') === 'famille',
         'visibilité ' . ($apres['visibility'] ?? '?')
     );
+    $restants = count(propositions_en_attente());
     verifier(
-        'propositions : le compteur redescend une fois la proposition validée',
-        propositions_a_valider() < 2,
-        'compteur ' . propositions_a_valider()
+        'propositions : la proposition validée quitte la file « À valider »',
+        !in_array((int) $article2['id'], array_map(
+            static fn (array $e): int => (int) $e['row']['id'],
+            array_filter(propositions_en_attente(), static fn (array $e): bool => $e['type'] === 'article')
+        ), true),
+        'encore en attente : ' . $restants
     );
 
     // --- Refuser : motif obligatoire --------------------------------------
@@ -557,9 +561,12 @@ function tests_propositions_fuite(array &$fichiers): void
             $vuVisiteur === 0,
             'vu ' . $vuVisiteur . ' fois'
         );
+        // Dans les LISTES, personne ne voit une proposition en attente — pas
+        // même son auteur : elle n'existe que dans « Mes propositions » et par
+        // une adresse directe. L'administrateur, lui, la voit partout.
         verifier(
-            'fuite : l’auteur et l’administrateur voient ' . $nom . ' en attente',
-            $vuAuteur === 1 && $vuAdmin === 1,
+            'fuite : la liste reste vide pour l’auteur, pleine pour l’administrateur',
+            $vuAuteur === 0 && $vuAdmin === 1,
             'auteur ' . $vuAuteur . ', admin ' . $vuAdmin
         );
     }

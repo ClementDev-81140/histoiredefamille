@@ -59,6 +59,36 @@ function family_home(): void
         $articles = recent_articles(composition_nb_articles());
     }
 
+    // Nouveautés : ce qui a bougé récemment, strictement dans les droits de
+    // ce compte (les fonctions ci-dessus filtrent déjà avec visibility.php).
+    $nouveautes = [];
+    foreach (recent_documents(4) as $document) {
+        $nouveautes[] = [
+            'type'  => 'Document',
+            'titre' => (string) $document['title'],
+            'date'  => (int) $document['created_at'],
+            'lien'  => '/documents/' . (int) $document['id'],
+        ];
+    }
+    foreach (recent_articles(4) as $article) {
+        $nouveautes[] = [
+            'type'  => 'Article',
+            'titre' => (string) $article['title'],
+            'date'  => (int) $article['published_at'],
+            'lien'  => '/articles/' . (string) $article['slug'],
+        ];
+    }
+    foreach (recent_persons(4) as $personne) {
+        $nouveautes[] = [
+            'type'  => 'Personne',
+            'titre' => person_full_name($personne),
+            'date'  => (int) $personne['updated_at'],
+            'lien'  => '/arbre/' . (int) $personne['id'],
+        ];
+    }
+    usort($nouveautes, static fn (array $a, array $b): int => $b['date'] <=> $a['date']);
+    $nouveautes = array_slice($nouveautes, 0, 6);
+
     $nbDocuments = $nbPersonnes = $nbPages = 0;
     if ($visible('chiffres')) {
         $nbDocuments = count_visible('documents', 'document');
@@ -80,6 +110,8 @@ function family_home(): void
         'acces'     => $acces,
         'annonces'  => $visible('annonces') ? gazette_annonces(5) : [],
         'courrier'  => $visible('courrier') ? gazette_courrier(3) : [],
+        'nouveautes' => $nouveautes,
+        'aValider'  => is_admin() ? propositions_a_valider() : 0,
         'nbDocuments' => $nbDocuments,
         'nbPersonnes' => $nbPersonnes,
         'nbPages'     => $nbPages,

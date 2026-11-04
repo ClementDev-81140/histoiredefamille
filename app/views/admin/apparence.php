@@ -59,10 +59,7 @@ $libelles = [
 <h1>Apparence du journal</h1>
 
 <p class="note">
-    Tout ce qui se règle ici concerne l’apparence seulement : les textes des
-    lignes de la une, quelques cases à cocher et les couleurs. Les droits
-    d’accès et le contenu des pages ne changent pas.
-    <strong>Rien n’est enregistré avant le bouton « Enregistrer »</strong>, et
+    Rien n’est enregistré avant le bouton « Enregistrer », et
     tant que vous ne touchez à rien le site reste exactement comme aujourd’hui.
 </p>
 

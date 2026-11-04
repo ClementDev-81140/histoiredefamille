@@ -12,8 +12,6 @@
  * @var array $videos, $albums, $acces, $branchesEdition, $decenniesEdition
  * @var int   $nbDocuments, $nbPersonnes, $nbPages
  */
-$isBranchAccount = ($account['role'] === 'famille');
-$estPersonne     = compte_type($account) === 'personne';
 $principale      = composition_colonne('famille', 'principale');
 $laterale        = composition_colonne('famille', 'laterale');
 $pleine          = composition_colonne('famille', 'pleine');
@@ -45,21 +43,36 @@ if (est_journaliste()) {
 </section>
 <?php endif; ?>
 
+<?php if ($account['role'] === 'admin'): ?>
+<section class="message message--info">
+    <strong><?= (int) ($aValider ?? 0) ?></strong> proposition<?= (int) ($aValider ?? 0) > 1 ? 's' : '' ?>
+    en attente de validation.
+    <a href="/admin/a-valider">Examiner les propositions</a>
+</section>
+<?php endif; ?>
+
+<section class="panneau panneau--famille">
+    <h2>Nouveautés de votre famille</h2>
+    <?php if (empty($nouveautes)): ?>
+        <p class="discret">Rien de nouveau pour le moment : les derniers articles, documents et personnes ajoutés apparaîtront ici.</p>
+    <?php else: ?>
+        <ul class="nouveautes">
+            <?php foreach ($nouveautes as $nouveaute): ?>
+                <li>
+                    <span class="nouveautes__type"><?= e($nouveaute['type']) ?></span>
+                    <a href="<?= e($nouveaute['lien']) ?>"><?= e($nouveaute['titre']) ?></a>
+                    <span class="discret"><?= e(format_date($nouveaute['date'])) ?></span>
+                </li>
+            <?php endforeach; ?>
+        </ul>
+    <?php endif; ?>
+</section>
+
 <section class="section une-intro">
     <h1 class="une-intro__titre">Bonjour<?= !empty($account['display_name']) ? ' ' . e($account['display_name']) : '' ?></h1>
-    <p class="note">
-        <?php if ($estPersonne): ?>
-            Votre compte personnel<?= !empty($account['branch_name']) ? ', rattaché à la branche <strong>' . e($account['branch_name']) . '</strong>' : '' ?>.
-        <?php else: ?>
-            Vous êtes connecté<?= $isBranchAccount && !empty($account['branch_name']) ? ' avec le compte de la branche <strong>' . e($account['branch_name']) . '</strong>' : '' ?>.
-        <?php endif; ?>
-        <?php if ($isBranchAccount && can_see_all()): ?>
-            Ce compte voit les contenus de toutes les branches.
-        <?php elseif ($isBranchAccount): ?>
-            Vous voyez les contenus publics, ceux ouverts à toutes les familles et ceux
-            réservés à votre branche.
-        <?php endif; ?>
-    </p>
+    <?php if (!empty($account['branch_name'])): ?>
+        <p class="note">Branche <strong><?= e($account['branch_name']) ?></strong></p>
+    <?php endif; ?>
 </section>
 
 <?php if ($principale !== [] || $laterale !== []): ?>

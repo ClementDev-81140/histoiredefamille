@@ -115,7 +115,9 @@ $navClass = static function (string $href) use ($currentPath): string {
             <?php endforeach; ?>
 
             <?php if ($account === null): ?>
-                <a class="nav__accent" href="/connexion">Espace famille</a>
+                <!-- La porte d'entrée : « Se connecter », mise en avant dans
+                     l'en-tête. « Consulter » est déjà l'entrée du menu. -->
+                <a class="nav__accent nav__accent--connexion" href="/connexion">Se connecter</a>
             <?php else: ?>
                 <a class="nav__accent" href="<?= $account['role'] === 'admin' ? '/admin' : '/famille' ?>">
                     <?= $account['role'] === 'admin' ? 'Administration' : 'Espace famille' ?>

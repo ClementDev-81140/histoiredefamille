@@ -15,11 +15,6 @@ $val = static fn (string $cle, string $defaut = ''): string => (string) old_valu
 <div class="section__entete">
     <div>
         <h1>Ajouter un compte</h1>
-        <p class="note">
-            Trois profils existent : <strong>Lecteur</strong> (lit seulement), <strong>Journaliste</strong>
-            (propose des contenus, validés par un administrateur) et <strong>Administrateur</strong>
-            (géré dans « Administrateurs »).
-        </p>
     </div>
     <a class="lien" href="/admin/comptes">← Retour aux comptes</a>
 </div>

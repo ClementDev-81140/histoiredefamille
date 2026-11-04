@@ -15,7 +15,7 @@ $v = static function (string $cle, mixed $defaut = '') use ($old, $ligne): mixed
     $base = $ligne !== null && isset($ligne[$cle]) ? $ligne[$cle] : $defaut;
     return old_value($old, $cle, $base);
 };
-$suggestion = sanitize_visibility((string) $v('suggested_visibility', 'famille'));
+$suggestion = sanitize_visibility((string) $v('suggested_visibility', 'prive'));
 $etat       = (string) ($ligne['moderation_state'] ?? '');
 $action     = $isEdit ? '/propositions/' . $type . '/' . (int) $ligne['id'] : '/propositions/nouvelle/' . $type;
 ?>

@@ -23,9 +23,7 @@ $me = current_account();
 <?php endif; ?>
 
 <p class="note">
-    Chaque administrateur dispose de son propre compte : ne partagez jamais un
-    identifiant entre plusieurs personnes. Un administrateur voit et gère tout
-    (documents, branches, comptes, arbre, pages).
+    Ne partagez jamais un identifiant administrateur.
 </p>
 
 <?php if ($erreurs !== []): ?>

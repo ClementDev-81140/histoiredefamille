@@ -11,9 +11,7 @@
 </div>
 
 <p class="note">
-    Les articles forment le fil d’actualité de la famille. Chacun peut être public,
-    réservé aux familles connectées ou à certaines branches. Un article « publié »
-    avec une date future est <strong>programmé</strong> : il apparaîtra tout seul à cette date.
+    Une date future <strong>programme</strong> la publication.
 </p>
 
 <?php if ($articles === []): ?>

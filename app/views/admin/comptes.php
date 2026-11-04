@@ -11,10 +11,6 @@ $libelles = compte_types();
 <div class="section__entete">
     <div>
         <h1>Comptes de la famille</h1>
-        <p class="note">
-            Trois profils : <strong>Lecteur</strong> (lit seulement), <strong>Journaliste</strong>
-            (propose, un administrateur valide) et <strong>Administrateur</strong>.
-        </p>
     </div>
     <a class="bouton" href="/admin/comptes/nouvelle">Ajouter un compte</a>
 </div>
@@ -148,6 +144,5 @@ $libelles = compte_types();
 <?php endif; ?>
 
 <p class="note">
-    Les comptes administrateurs ne se créent pas ici : ils se créent sur le serveur, avec
-    <code>php app/cli/create-admin.php</code>, ou dans « Administrateurs ».
+    Les administrateurs se créent dans « Administrateurs » (ou avec <code>php app/cli/create-admin.php</code>).
 </p>

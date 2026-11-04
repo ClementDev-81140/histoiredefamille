@@ -41,7 +41,7 @@ function admin_import_store(): void
         'description' => post('description'),
         'doc_date'    => post('doc_date'),
         'category_id' => (int) post('category_id'),
-        'visibility'  => post('visibility'),
+        'visibility'  => sanitize_visibility(post('visibility')),
         'branches'    => array_map('intval', post_array('branches')),
         'tags'        => post('tags'),
     ];

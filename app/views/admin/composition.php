@@ -29,10 +29,7 @@ $photo  = (string) $val('une_photo', $unePhoto ? '1' : '0') === '1';
 <h1>Composition des pages</h1>
 
 <p class="note">
-    Deux pages se composent ici : l’accueil public (visible par tous) et
-    l’espace famille (après connexion). Pour chaque bloc, vous pouvez
-    <strong>l’afficher ou le masquer</strong> et le <strong>faire monter ou
-    descendre</strong> dans sa colonne. Les droits d’accès et le contenu ne
+    Un bloc masqué n’est pas calculé. Les droits d’accès et le contenu ne
     changent pas : un bloc masqué n’est même pas calculé.
 </p>
 

@@ -22,10 +22,6 @@ $etats = [
 <div class="section__entete">
     <div>
         <h1>Courriels</h1>
-        <p class="note">
-            Le site prévient la famille d’un nouvel article et envoie la gazette du mois —
-            uniquement aux personnes qui l’ont demandé.
-        </p>
     </div>
 </div>
 

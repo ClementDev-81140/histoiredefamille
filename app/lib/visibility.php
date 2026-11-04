@@ -115,21 +115,11 @@ function visibility_clause(string $kind, string $alias, array &$params): string
 
     $visible = '(' . implode(' OR ', $conditions) . ')';
 
-    // Un auteur voit toujours ses propres propositions, même privées : il
-    // doit pouvoir les relire avant la validation. Cette ouverture ne
-    // concerne que ses lignes (submitted_by = son identifiant).
-    if (in_array($kind, ['article', 'document', 'recipe'], true) && proposition_migration_faite()) {
-        static $auteur = 0;
-        $auteur++;
-        $nom = ':propauteur' . $auteur;
-        $params[$nom] = (int) $account['id'];
-        $visible = '(' . $visible . ' OR ' . $a . '.submitted_by = ' . $nom . ')';
-    }
-
-    // Une proposition non validée (article, document, recette) n'est pas
-    // montrée aux autres : la condition ci-dessous ne fait que RÉTRÉCIR ce
-    // qui est visible. Les administrateurs sont déjà sortis plus haut, et
-    // l'auteur retrouve ses propositions dans « Mes propositions ».
+    // Une proposition non validée (article, document, recette) n'est montrée
+    // à personne dans les listes : la condition ci-dessous ne fait que
+    // RÉTRÉCIR ce qui est visible. Les administrateurs sont déjà sortis plus
+    // haut, et l'auteur retrouve ses propositions dans « Mes propositions »
+    // (ou par une adresse directe, voir find_viewable_article()).
     $visible = '(' . $visible . ' AND ' . proposition_clause($kind, $a, $params) . ')';
 
     // Une vidéo encore dans la file de conversion n'est pas montrée aux

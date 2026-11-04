@@ -41,7 +41,7 @@ function composition_catalogue(string $page): array
     if ($page === 'public') {
         return [
             'entrees' => [
-                'nom'     => 'Les trois entrées (Parcourir, Arbre, Espace famille)',
+                'nom'     => 'Les deux entrées (Consulter, Se connecter)',
                 'colonne' => 'hero',
                 'aide'    => 'Toujours affichées : ce sont les portes d’entrée du site.',
                 'fixe'    => true,
@@ -75,11 +75,6 @@ function composition_catalogue(string $page): array
                 'nom'     => 'À lire (les pages d’information)',
                 'colonne' => 'pleine',
                 'aide'    => 'Les pages d’information publiques.',
-            ],
-            'arbre' => [
-                'nom'     => 'Dans l’arbre',
-                'colonne' => 'pleine',
-                'aide'    => 'Quelques personnes récemment mises à jour.',
             ],
         ];
     }

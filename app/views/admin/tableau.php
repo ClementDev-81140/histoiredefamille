@@ -59,8 +59,6 @@ try {
             <h2>Partie publique</h2>
             <span class="badge badge-public">visible sans compte</span>
         </div>
-        <p class="note">Contenus visibles par n’importe quel visiteur.</p>
-
         <ul class="chiffres">
             <li><strong><?= (int) $stats['public_documents'] ?></strong> document(s) public(s)</li>
             <li><strong><?= (int) $stats['public_pages'] ?></strong> page(s) publiée(s)</li>
@@ -72,10 +70,6 @@ try {
             <a class="bouton bouton--secondaire" href="/admin/pages">Pages d’informations</a>
             <a class="bouton bouton--secondaire" href="/admin/documents?visibilite=public">Documents publics</a>
         </p>
-        <p class="note">
-            Rappel : un contenu sans niveau de visibilité choisi reste
-            <strong>privé</strong> (visible des seuls administrateurs).
-        </p>
     </section>
 
     <section class="panneau panneau--famille">
@@ -83,8 +77,6 @@ try {
             <h2>Partie famille</h2>
             <span class="badge badge-famille">comptes de branche</span>
         </div>
-        <p class="note">Contenus réservés aux comptes de famille connectés.</p>
-
         <ul class="chiffres">
             <li><strong><?= (int) $stats['branches_active'] ?></strong> branche(s) active(s) sur <?= (int) $stats['branches'] ?></li>
             <li><strong><?= (int) $stats['family_documents'] ?></strong> document(s) famille/branches</li>
@@ -104,18 +96,6 @@ try {
         </p>
     </section>
 </div>
-
-<section class="panneau">
-    <h2>Rappel pour les vidéos</h2>
-    <p>
-        Les vidéos enregistrées par un téléphone (.mov) ou dans un ancien format (.avi,
-        .mkv…) sont <strong>converties en MP4 (H.264 + AAC)</strong> par le Raspberry Pi,
-        en tâche de fond, une vidéo à la fois : vous n’avez rien à faire. Suivez
-        l’avancement sur la page <a href="/admin/conversions">Conversions</a>. Un film
-        peut aussi être déposé dans le <a href="/admin/importer">dossier arrivée</a>
-        (SFTP/Samba) puis importé depuis l’administration.
-    </p>
-</section>
 
 <section class="section">
     <div class="section__entete">

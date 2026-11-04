@@ -14,10 +14,6 @@ $lignes = $bloc['lignes'] ?? [];
 <div class="section__entete">
     <div>
         <h1>Aperçu avant création</h1>
-        <p class="note">
-            Vérifiez les noms, les identifiants et la branche. Vous pouvez corriger un
-            identifiant ici ; rien n’est encore enregistré.
-        </p>
     </div>
     <a class="lien" href="/admin/comptes/nouvelle">← Corriger la saisie</a>
 </div>
@@ -106,8 +102,6 @@ $lignes = $bloc['lignes'] ?? [];
 
     <p class="note">
         Les lignes en rouge ne peuvent pas être créées : corrigez-les dans la liste collée.
-        Une personne déjà présente dans la branche est décochée : cochez-la si vous voulez
-        vraiment créer un second compte avec le même nom.
     </p>
 
     <p class="actions">

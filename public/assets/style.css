@@ -45,6 +45,7 @@
     --texte-doux: #5d5a55;
     --accent: #2b4a68;
     --accent-fonce: #1d3349;
+    --texte-sur-accent: #ffffff;
     --accent-clair: #e9eff5;
     --bordure: #dcd8d0;
     --succes-fond: #e7f2ea;
@@ -295,6 +296,61 @@ input[type="file"].sr-only {
 .nav__accent {
     font-weight: 700;
     color: var(--accent) !important;
+}
+
+/* « Se connecter » : la porte principale du site public. Elle se voit de
+   loin, sans crier : un fond plein, un peu plus de place autour. */
+.nav__accent--connexion {
+    padding: 0.5rem 1.1rem;
+    border-radius: 999px;
+    background: var(--accent);
+    color: var(--texte-sur-accent) !important;
+}
+
+/* Nouveautés de l'accueil connecté : une ligne par contenu, lisible d'un
+   coup d'œil, sans tableau. */
+.nouveautes {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.nouveautes li {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: baseline;
+    padding: 0.45rem 0;
+    border-bottom: var(--filet);
+}
+
+.nouveautes li:last-child {
+    border-bottom: 0;
+}
+
+.nouveautes__type {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--texte-doux);
+    min-width: 6.5rem;
+}
+
+/* Les deux portes de la page d'accueil (Consulter / Se connecter). */
+.actions--portes {
+    gap: 1rem;
+    margin: 1.6rem 0;
+}
+
+.bouton--large {
+    padding: 0.7rem 1.5rem;
+    font-size: 1.05rem;
+}
+
+.bouton--accent {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--texte-sur-accent);
 }
 
 .nav__form {
@@ -961,6 +1017,29 @@ legend {
 }
 
 .tableau-defilant .tableau { min-width: 52rem; }
+
+/* Un chemin de fichier ou une adresse très longue dans un titre ne doit
+   jamais faire glisser la page latéralement (page « État du site »). */
+h1, h2, h3, h4, h5, h6 {
+    overflow-wrap: anywhere;
+}
+
+/* Un tableau étroit (file « À valider ») : il tient dans la colonne et ne
+   demande pas de défilement horizontal sur un écran d'ordinateur. */
+.tableau-defilant .tableau--compact { min-width: 0; }
+
+.colonne-date,
+.colonne-type { white-space: nowrap; }
+
+/* Sur un téléphone, la file garde l'essentiel : le type et le titre, qui
+   mène à l'aperçu (la date et le bouton y sont). Rien ne dépasse. */
+@media (max-width: 40rem) {
+    .tableau--compact .colonne-date,
+    .tableau--compact .colonne-type,
+    .tableau--compact .colonne-actions {
+        display: none;
+    }
+}
 
 /* Précision secondaire sous un titre de tableau (durée, ordre, droits). */
 .discret--bloc {
@@ -3439,6 +3518,12 @@ body:not(.page-admin) .nav__accent {
     box-shadow: none;
 }
 
+/* « Se connecter » reste lisible : le texte prend la couleur du fond de la
+   pastille, et non celle de l'accent (même couleur = texte invisible). */
+body:not(.page-admin) .nav__accent--connexion {
+    color: var(--texte-sur-accent) !important;
+}
+
 body:not(.page-admin) .nav .lien-bouton {
     font-size: 0.7rem;
     letter-spacing: 0.16em;
@@ -4972,6 +5057,21 @@ legend {
     padding: 0.3rem 0.7rem;
     font-size: 0.82rem;
     letter-spacing: 0.04em;
+}
+
+/* ==========================================================================
+   LES DEUX PORTES DE L'ACCUEIL PUBLIC (1.24.0)
+   --------------------------------------------------------------------------
+   « Consulter » et « Se connecter » : la seconde est la plus grande, la plus
+   pleine, celle qu'on repère sans lire. Ces règles viennent après le bouton
+   de base (plus haut dans ce fichier), sinon c'est lui qui l'emporterait.
+   ========================================================================== */
+
+.bouton--porte {
+    padding: 0.85rem 2rem;
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
 }
 
 .composition-page {

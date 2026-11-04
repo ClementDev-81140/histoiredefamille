@@ -25,14 +25,13 @@ $types = proposition_types();
     </div>
 <?php else: ?>
     <div class="tableau-defilant">
-        <table class="tableau">
+        <table class="tableau tableau--compact">
             <thead>
                 <tr>
-                    <th scope="col">Type</th>
+                    <th scope="col" class="colonne-type">Type</th>
                     <th scope="col">Titre</th>
                     <th scope="col">Auteur</th>
-                    <th scope="col">Déposé le</th>
-                    <th scope="col">Visibilité souhaitée</th>
+                    <th scope="col" class="colonne-date">Déposé le</th>
                     <th scope="col"><span class="sr-only">Actions</span></th>
                 </tr>
             </thead>
@@ -44,13 +43,16 @@ $types = proposition_types();
                     $suggeree = sanitize_visibility((string) ($ligne['suggested_visibility'] ?? ''));
                     ?>
                     <tr>
-                        <td><?= e($types[$type]['label'] ?? $type) ?></td>
-                        <td><?= e(proposition_titre($ligne, $type)) ?></td>
+                        <td class="colonne-type"><?= e($types[$type]['label'] ?? $type) ?></td>
+                        <td>
+                            <a href="/admin/a-valider/<?= e($type) ?>/<?= (int) $ligne['id'] ?>"><?= e(proposition_titre($ligne, $type)) ?></a>
+                            <span class="<?= e(visibility_class($suggeree)) ?>" title="Visibilité souhaitée par l’auteur"><?= e(visibility_short($suggeree)) ?></span>
+                        </td>
                         <td><?= e(proposition_auteur($ligne)) ?></td>
-                        <td><?= e(format_date(proposition_date($ligne))) ?></td>
-                        <td><span class="<?= e(visibility_class($suggeree)) ?>"><?= e(visibility_short($suggeree)) ?></span></td>
+                        <td class="colonne-date"><?= e(format_date(proposition_date($ligne))) ?></td>
                         <td class="colonne-actions">
                             <a class="bouton bouton--secondaire" href="/admin/a-valider/<?= e($type) ?>/<?= (int) $ligne['id'] ?>">Examiner</a>
+                            <span class="sr-only">la proposition</span>
                         </td>
                     </tr>
                 <?php endforeach; ?>

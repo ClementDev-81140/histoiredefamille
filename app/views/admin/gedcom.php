@@ -22,9 +22,7 @@
     <section class="panneau">
         <h2>1. Choisir le fichier</h2>
         <p class="note">
-            Fichier exporté depuis un logiciel de généalogie (GEDCOM 5.5 / 5.5.1,
-            extension <code>.ged</code>). Taille maximale : <?= (int) $maxMb ?> Mo.
-            Les erreurs de format sont signalées mais n’empêchent pas l’import.
+            GEDCOM 5.5 / 5.5.1 (<code>.ged</code>), <?= (int) $maxMb ?> Mo au plus.
         </p>
 
         <form method="post" action="/admin/arbre/import" enctype="multipart/form-data" class="formulaire">

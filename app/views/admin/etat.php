@@ -47,9 +47,7 @@
         </p>
         <pre class="journal-technique">sudo -u www-data php /var/www/histoiredefamille/app/cli/verifier-mise-en-ligne.php</pre>
         <p class="note">
-            Cette commande contrôle tout ce qui doit être vrai avant d’ouvrir le site à la famille :
-            HTTPS, comptes, données de démonstration, permissions, sauvegarde, en-têtes HTTP réellement
-            envoyés par Apache. Elle affiche « PRÊT À OUVRIR » ou la liste des points à corriger.
+            Affiche « PRÊT À OUVRIR » ou la liste des points à corriger.
         </p>
     <?php else: ?>
         <?php
@@ -70,6 +68,7 @@
 
         <?php if ($aCorriger !== []): ?>
             <h3>À corriger avant d’ouvrir</h3>
+            <div class="tableau-defilant">
             <table class="tableau">
                 <thead>
                     <tr><th scope="col">Point</th><th scope="col">Ce qui ne va pas</th><th scope="col">Quoi faire</th></tr>
@@ -84,9 +83,11 @@
                     <?php endforeach; ?>
                 </tbody>
             </table>
+            </div>
         <?php endif; ?>
 
         <h3>Détail des contrôles</h3>
+        <div class="tableau-defilant">
         <table class="tableau">
             <thead>
                 <tr><th scope="col">Point</th><th scope="col">État</th><th scope="col">Détail</th></tr>
@@ -109,6 +110,7 @@
                 <?php endforeach; ?>
             </tbody>
         </table>
+        </div>
 
         <p class="note">
             Pour refaire cette vérification : <code>sudo -u www-data php /var/www/histoiredefamille/app/cli/verifier-mise-en-ligne.php</code>
@@ -118,6 +120,7 @@
 
 <section class="panneau">
     <h2>Contrôles</h2>
+    <div class="tableau-defilant">
     <table class="tableau">
         <thead>
             <tr><th scope="col">Élément</th><th scope="col">Valeur</th><th scope="col">État</th></tr>
@@ -132,6 +135,7 @@
             <?php endforeach; ?>
         </tbody>
     </table>
+    </div>
 </section>
 
 <div class="deux-colonnes">

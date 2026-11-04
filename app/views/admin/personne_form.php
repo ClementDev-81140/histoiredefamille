@@ -11,7 +11,7 @@ $v = static function (string $key, mixed $default = '') use ($old, $person, $isE
     return old_value($old, $key, $base);
 };
 $selectedBranches = array_map('intval', (array) old_value($old, 'branches', $personBranches));
-$visibility = (string) $v('visibility', 'famille');
+$visibility = (string) $v('visibility', 'prive');
 ?>
 <nav class="fil" aria-label="Fil d’Ariane">
     <a href="/admin/arbre">Arbre</a>
@@ -141,10 +141,6 @@ $visibility = (string) $v('visibility', 'famille');
             <h2>Liens de parenté</h2>
             <a class="bouton bouton--secondaire" href="/admin/arbre/couple/nouveau">Ajouter un couple</a>
         </div>
-        <p class="note">
-            Les parents, conjoints et enfants se gèrent dans « Couples » : un couple
-            rassemble deux conjoints et leurs enfants.
-        </p>
 
         <?php if ($couples === []): ?>
             <p class="discret">Cette personne n’est encore liée à aucun couple.</p>

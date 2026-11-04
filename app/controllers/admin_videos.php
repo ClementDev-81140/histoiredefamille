@@ -120,7 +120,7 @@ function admin_video_save(array $params = []): void
         'description'   => post('description'),
         'doc_date'      => post('doc_date'),
         'category_id'   => (int) post('category_id'),
-        'visibility'    => post('visibility'),
+        'visibility'    => sanitize_visibility(post('visibility')),
         'branches'      => array_map('intval', post_array('branches')),
         'tags'          => post('tags'),
         'is_featured'   => post('is_featured') === '1' ? '1' : '0',
@@ -292,7 +292,7 @@ function admin_video_import(): void
     $old = [
         'fichier'    => $fileName,
         'title'      => post('title'),
-        'visibility' => post('visibility'),
+        'visibility' => sanitize_visibility(post('visibility')),
         'branches'   => array_map('intval', post_array('branches')),
         'duration'   => post('duration'),
     ];

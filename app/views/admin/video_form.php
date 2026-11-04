@@ -38,9 +38,8 @@ $dureeActuelle = $isEdit && !empty($video['duration_seconds'])
 
 <?php if (!$isEdit): ?>
     <p class="note">
-        Envoi par le navigateur limité à <strong><?= e(format_size($maxBytes)) ?></strong>.
-        Pour un film plus lourd, utilisez <a href="/admin/importer">le dossier arrivée</a> :
-        le fichier est déplacé sur le disque, jamais chargé en mémoire.
+        <?= e(format_size($maxBytes)) ?> au plus ; au-delà,
+        <a href="/admin/importer">dossier arrivée</a>.
     </p>
 <?php endif; ?>
 

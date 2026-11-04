@@ -3,6 +3,59 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.24.0] — 2026-11-04
+
+### Privé par défaut, et deux portes d'entrée
+
+Deux principes simples, appliqués partout : **ce qu'on crée n'est vu de
+personne**, et **la page publique dit où aller en deux gestes**.
+
+- **Privé par défaut, sans exception.** Tous les formulaires de création
+  (articles, pages d'information, documents et photos, albums, recettes,
+  vidéos, fiches de personnes, import, envoi par morceaux, dossier arrivée,
+  propositions des journalistes) ouvrent sur **« Privé »** coché. La fiche
+  d'une personne proposait « Toutes les familles » : c'est corrigé.
+- **Rien ne devient public par accident.** Chaque contrôleur range la
+  visibilité reçue avec `sanitize_visibility()` : une valeur absente, vide ou
+  inventée devient **privée**, jamais publique. Un test parcourt **les dix
+  formulaires et les neuf contrôleurs** et échoue si un défaut n'est pas
+  « privé » ; un second vérifie en créant réellement des contenus sans
+  visibilité (article, page, valeur inventée).
+- **La page publique a deux portes** : **« Consulter »** et **« Se
+  connecter »**, la seconde plus grosse et mise en avant, dans l'en-tête comme
+  dans le corps de la page (police et contenu plus grands : elle se repère
+  sans lire). Le menu du visiteur suit : « Accueil », « Consulter », la
+  connexion en pastille, puis les rubriques qui ont vraiment du contenu
+  public.
+- **L'arbre généalogique n'est plus public.** Il disparaît de la page
+  d'accueil, du menu du visiteur et du catalogue de composition ; ses adresses
+  (`/arbre`, `/arbre/{id}`, `/api/arbre/{id}`) renvoient un visiteur vers la
+  connexion. Une fois connecté, il est là, comme avant, dans le menu et dans
+  les accès rapides.
+- **La page publique reste belle sans contenu.** Elle ne compte plus les
+  personnes « dans l'arbre » (elles ne sont plus publiques) et présente
+  toujours ses deux portes et sa phrase d'accueil réglable.
+- **L'accueil connecté est une vraie « une »** : encart du journaliste
+  (« Proposer un article » + « Mes propositions » avec son compteur) ou
+  compteur « À valider » pour un administrateur, puis **« Nouveautés de votre
+  famille »** (derniers articles, documents et personnes ajoutés), la une des
+  articles, les encarts habituels (petites annonces, accès rapides, chiffres).
+  Tout est filtré par les droits du compte : un lecteur ne voit rien de plus
+  que ce qu'il peut déjà ouvrir.
+- **File « À valider » lisible partout** : le tableau tient dans la colonne à
+  1280 px, et sur un téléphone il garde le titre (qui mène à l'aperçu) et
+  l'auteur — plus aucun débordement latéral.
+
+Tests : **881 au total (+19)**, dont une famille « défauts » (privé par
+défaut, formulaires et enregistrements) et une famille « accueil » (deux
+portes, arbre fermé au visiteur, nouveautés, encarts du journaliste et de
+l'administrateur). Corrigé au passage : le test de la page « Mon compte »
+(courriels) appelait un contrôleur qu'il ne chargeait pas — l'erreur était
+avalée et le test se trompait. Matrice d'accès : **184 routes**,
+**736 vérifications**,
+**240 contrôles**, **0 anomalie**. Captures vérifiées à 1280 et 390 px. Les deux
+palettes (bleue et « gazette ») ont été contrôlées : aucun débordement.
+
 ## [1.23.0] — 2026-11-04
 
 ### Les propositions passent par les administrateurs

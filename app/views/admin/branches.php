@@ -26,9 +26,7 @@
 <?php endif; ?>
 
 <p class="note">
-    Chaque branche possède un compte unique, partagé par la famille, dont l’identifiant
-    est en majuscules. La case « voit toutes les branches » donne accès à l’ensemble
-    des contenus (hors contenus privés réservés aux administrateurs).
+    Un compte unique par branche, identifiant en majuscules.
 </p>
 
 <?php if ($branches === []): ?>

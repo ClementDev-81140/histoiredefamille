@@ -77,10 +77,6 @@
 
     <section class="comptes-messages">
         <h2>Messages à transmettre</h2>
-        <p class="note">
-            Chaque message est prêt à coller : il contient l’adresse du site, l’identifiant
-            et le mot de passe provisoire.
-        </p>
 
         <?php foreach ($comptes as $index => $compte): ?>
             <div class="message-acces">

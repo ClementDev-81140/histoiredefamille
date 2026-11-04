@@ -3,9 +3,9 @@
  * Rubriques publiques du site.
  *
  * La page d'accueil et le menu public ne montrent que ce qui a du contenu
- * public : trois entrées de base (documents, arbre, espace famille) et,
- * en plus, les rubriques où quelque chose a réellement été publié.
- * Un visiteur ne doit jamais tomber sur une rubrique vide.
+ * public : deux entrées de base (documents et espace famille) et, en plus,
+ * les rubriques où quelque chose a réellement été publié. Un visiteur ne
+ * doit jamais tomber sur une rubrique vide.
  *
  * Une seule requête légère par rubrique (des EXISTS, servis par les index),
  * et le résultat est gardé en mémoire pour la durée de la requête : le menu
@@ -21,7 +21,7 @@ declare(strict_types=1);
 /**
  * Rubriques publiques à afficher, sous la forme clé => vrai.
  *
- * Toujours présentes : documents, arbre, famille (l'entrée de connexion).
+ * Toujours présentes : documents, famille (l'entrée de connexion).
  * Les autres ne reviennent que si elles ont du contenu public.
  *
  * @param bool $rafraichir recalcule le résultat (tests automatiques)
@@ -34,11 +34,12 @@ function rubriques_publiques(bool $rafraichir = false): array
         return $cache;
     }
 
-    // Les trois entrées de base : documents et arbre pour tout le monde,
-    // et la connexion pour les familles.
+    // Les deux entrées de base : les documents à consulter, et la connexion
+    // pour les familles. L'arbre généalogique n'est plus public : il s'ouvre
+    // une fois connecté (voir menu_rubriques()).
     $cache = [
         'documents' => true,
-        'arbre'     => true,
+        'arbre'     => false,
         'famille'   => true,
     ];
 
@@ -139,8 +140,7 @@ function menu_rubriques(?array $compte, array $extras = []): array
 
     if ($compte === null) {
         // --- Menu public réduit -------------------------------------------
-        $entrees[] = ['cle' => 'documents', 'href' => '/documents', 'libelle' => 'Documents'];
-        $entrees[] = ['cle' => 'arbre', 'href' => '/arbre', 'libelle' => 'Arbre'];
+        $entrees[] = ['cle' => 'documents', 'href' => '/documents', 'libelle' => 'Consulter'];
 
         foreach ([
             ['articles', '/articles', 'Articles'],

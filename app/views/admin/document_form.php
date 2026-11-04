@@ -33,8 +33,7 @@ $visibility = (string) $v('visibility', 'prive');
 
 <?php if (!$isEdit): ?>
     <p class="note">
-        Envoi par le navigateur limité à <strong><?= e(format_size($maxBytes)) ?></strong>.
-        Pour les vidéos et les gros fichiers, utilisez le
+        <?= e(format_size($maxBytes)) ?> au plus par le navigateur ; au-delà,
         <a href="/admin/importer">dossier arrivée</a>.
     </p>
 <?php endif; ?>

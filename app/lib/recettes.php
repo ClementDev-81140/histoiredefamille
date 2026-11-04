@@ -32,11 +32,23 @@ function find_viewable_recipe(string $slug): ?array
 {
     $params = [];
     $clause = recipe_visible_clause('r', $params);
-
-    return db_one(
+    $recette = db_one(
         "SELECT * FROM recipes r WHERE r.slug = :slug AND {$clause}",
         $params + [':slug' => $slug]
     );
+    if ($recette !== null) {
+        return $recette;
+    }
+
+    // Une recette proposée et pas encore validée n'est pas dans les listes :
+    // son auteur seul la relit, par son adresse.
+    $compte = current_account();
+    if ($compte === null) {
+        return null;
+    }
+    $propre = db_one('SELECT * FROM recipes WHERE slug = ?', [$slug]);
+
+    return $propre !== null && proposition_mienne($compte, 'recipe', $propre) ? $propre : null;
 }
 
 /** Recettes visibles, de la plus récente à la plus ancienne. */

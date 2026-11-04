@@ -10,11 +10,6 @@ $val = static fn (string $cle, string $defaut = ''): string => (string) old_valu
 <div class="section__entete">
     <div>
         <h1>Lieux à placer</h1>
-        <p class="note">
-            La carte ne devine aucun lieu : elle a besoin de coordonnées. Un texte de lieu
-            (« Toulouse », « Saint-Étienne ») reste écrit tel quel dans les fiches ; cette page
-            lui donne seulement une position, une fois pour toutes.
-        </p>
     </div>
 </div>
 

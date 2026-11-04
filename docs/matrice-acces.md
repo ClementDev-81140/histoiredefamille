@@ -4,7 +4,7 @@
 > réécrit par `php app/cli/tests.php matrice`. Il décrit ce que le site
 > répond réellement, route par route et profil par profil.
 
-Date de génération : 04/11/2026 à 22:58
+Date de génération : 04/11/2026 à 23:14
 
 ## Profils testés
 
@@ -48,66 +48,66 @@ Aucune anomalie : pour chaque route, le code obtenu correspond au code attendu.
 
 | Contrôle | Attendu | Obtenu |
 |---|---|---|
-| fichier public — /f/1 — Visiteur (non connecté) | 200 | 200 |
-| fichier public — /f/1/telecharger — Visiteur (non connecté) | 200 | 200 |
-| fichier public — /media/miniature/1 — Visiteur (non connecté) | 200 | 200 |
-| fichier public — /f/1 — Lecteur (branche A) | 200 | 200 |
-| fichier public — /f/1/telecharger — Lecteur (branche A) | 200 | 200 |
-| fichier public — /media/miniature/1 — Lecteur (branche A) | 200 | 200 |
-| fichier public — /f/1 — Journaliste (branche B) | 200 | 200 |
-| fichier public — /f/1/telecharger — Journaliste (branche B) | 200 | 200 |
-| fichier public — /media/miniature/1 — Journaliste (branche B) | 200 | 200 |
-| fichier public — /f/1 — Administrateur | 200 | 200 |
-| fichier public — /f/1/telecharger — Administrateur | 200 | 200 |
-| fichier public — /media/miniature/1 — Administrateur | 200 | 200 |
-| fichier famille — /f/2 — Visiteur (non connecté) | 404 | 404 |
-| fichier famille — /f/2/telecharger — Visiteur (non connecté) | 404 | 404 |
-| fichier famille — /media/miniature/2 — Visiteur (non connecté) | 404 | 404 |
-| fichier famille — /f/2 — Lecteur (branche A) | 200 | 200 |
-| fichier famille — /f/2/telecharger — Lecteur (branche A) | 200 | 200 |
-| fichier famille — /media/miniature/2 — Lecteur (branche A) | 200 | 200 |
-| fichier famille — /f/2 — Journaliste (branche B) | 200 | 200 |
-| fichier famille — /f/2/telecharger — Journaliste (branche B) | 200 | 200 |
-| fichier famille — /media/miniature/2 — Journaliste (branche B) | 200 | 200 |
-| fichier famille — /f/2 — Administrateur | 200 | 200 |
-| fichier famille — /f/2/telecharger — Administrateur | 200 | 200 |
-| fichier famille — /media/miniature/2 — Administrateur | 200 | 200 |
-| fichier branche A — /f/3 — Visiteur (non connecté) | 404 | 404 |
-| fichier branche A — /f/3/telecharger — Visiteur (non connecté) | 404 | 404 |
-| fichier branche A — /media/miniature/3 — Visiteur (non connecté) | 404 | 404 |
-| fichier branche A — /f/3 — Lecteur (branche A) | 200 | 200 |
-| fichier branche A — /f/3/telecharger — Lecteur (branche A) | 200 | 200 |
-| fichier branche A — /media/miniature/3 — Lecteur (branche A) | 200 | 200 |
-| fichier branche A — /f/3 — Journaliste (branche B) | 404 | 404 |
-| fichier branche A — /f/3/telecharger — Journaliste (branche B) | 404 | 404 |
-| fichier branche A — /media/miniature/3 — Journaliste (branche B) | 404 | 404 |
-| fichier branche A — /f/3 — Administrateur | 200 | 200 |
-| fichier branche A — /f/3/telecharger — Administrateur | 200 | 200 |
-| fichier branche A — /media/miniature/3 — Administrateur | 200 | 200 |
-| fichier branche B — /f/4 — Visiteur (non connecté) | 404 | 404 |
-| fichier branche B — /f/4/telecharger — Visiteur (non connecté) | 404 | 404 |
-| fichier branche B — /media/miniature/4 — Visiteur (non connecté) | 404 | 404 |
-| fichier branche B — /f/4 — Lecteur (branche A) | 404 | 404 |
-| fichier branche B — /f/4/telecharger — Lecteur (branche A) | 404 | 404 |
-| fichier branche B — /media/miniature/4 — Lecteur (branche A) | 404 | 404 |
-| fichier branche B — /f/4 — Journaliste (branche B) | 200 | 200 |
-| fichier branche B — /f/4/telecharger — Journaliste (branche B) | 200 | 200 |
-| fichier branche B — /media/miniature/4 — Journaliste (branche B) | 200 | 200 |
-| fichier branche B — /f/4 — Administrateur | 200 | 200 |
-| fichier branche B — /f/4/telecharger — Administrateur | 200 | 200 |
-| fichier branche B — /media/miniature/4 — Administrateur | 200 | 200 |
-| fichier privé — /f/5 — Visiteur (non connecté) | 404 | 404 |
-| fichier privé — /f/5/telecharger — Visiteur (non connecté) | 404 | 404 |
-| fichier privé — /media/miniature/5 — Visiteur (non connecté) | 404 | 404 |
-| fichier privé — /f/5 — Lecteur (branche A) | 404 | 404 |
-| fichier privé — /f/5/telecharger — Lecteur (branche A) | 404 | 404 |
-| fichier privé — /media/miniature/5 — Lecteur (branche A) | 404 | 404 |
-| fichier privé — /f/5 — Journaliste (branche B) | 404 | 404 |
-| fichier privé — /f/5/telecharger — Journaliste (branche B) | 404 | 404 |
-| fichier privé — /media/miniature/5 — Journaliste (branche B) | 404 | 404 |
-| fichier privé — /f/5 — Administrateur | 200 | 200 |
-| fichier privé — /f/5/telecharger — Administrateur | 200 | 200 |
-| fichier privé — /media/miniature/5 — Administrateur | 200 | 200 |
+| fichier public — /f/2 — Visiteur (non connecté) | 200 | 200 |
+| fichier public — /f/2/telecharger — Visiteur (non connecté) | 200 | 200 |
+| fichier public — /media/miniature/2 — Visiteur (non connecté) | 200 | 200 |
+| fichier public — /f/2 — Lecteur (branche A) | 200 | 200 |
+| fichier public — /f/2/telecharger — Lecteur (branche A) | 200 | 200 |
+| fichier public — /media/miniature/2 — Lecteur (branche A) | 200 | 200 |
+| fichier public — /f/2 — Journaliste (branche B) | 200 | 200 |
+| fichier public — /f/2/telecharger — Journaliste (branche B) | 200 | 200 |
+| fichier public — /media/miniature/2 — Journaliste (branche B) | 200 | 200 |
+| fichier public — /f/2 — Administrateur | 200 | 200 |
+| fichier public — /f/2/telecharger — Administrateur | 200 | 200 |
+| fichier public — /media/miniature/2 — Administrateur | 200 | 200 |
+| fichier famille — /f/3 — Visiteur (non connecté) | 404 | 404 |
+| fichier famille — /f/3/telecharger — Visiteur (non connecté) | 404 | 404 |
+| fichier famille — /media/miniature/3 — Visiteur (non connecté) | 404 | 404 |
+| fichier famille — /f/3 — Lecteur (branche A) | 200 | 200 |
+| fichier famille — /f/3/telecharger — Lecteur (branche A) | 200 | 200 |
+| fichier famille — /media/miniature/3 — Lecteur (branche A) | 200 | 200 |
+| fichier famille — /f/3 — Journaliste (branche B) | 200 | 200 |
+| fichier famille — /f/3/telecharger — Journaliste (branche B) | 200 | 200 |
+| fichier famille — /media/miniature/3 — Journaliste (branche B) | 200 | 200 |
+| fichier famille — /f/3 — Administrateur | 200 | 200 |
+| fichier famille — /f/3/telecharger — Administrateur | 200 | 200 |
+| fichier famille — /media/miniature/3 — Administrateur | 200 | 200 |
+| fichier branche A — /f/4 — Visiteur (non connecté) | 404 | 404 |
+| fichier branche A — /f/4/telecharger — Visiteur (non connecté) | 404 | 404 |
+| fichier branche A — /media/miniature/4 — Visiteur (non connecté) | 404 | 404 |
+| fichier branche A — /f/4 — Lecteur (branche A) | 200 | 200 |
+| fichier branche A — /f/4/telecharger — Lecteur (branche A) | 200 | 200 |
+| fichier branche A — /media/miniature/4 — Lecteur (branche A) | 200 | 200 |
+| fichier branche A — /f/4 — Journaliste (branche B) | 404 | 404 |
+| fichier branche A — /f/4/telecharger — Journaliste (branche B) | 404 | 404 |
+| fichier branche A — /media/miniature/4 — Journaliste (branche B) | 404 | 404 |
+| fichier branche A — /f/4 — Administrateur | 200 | 200 |
+| fichier branche A — /f/4/telecharger — Administrateur | 200 | 200 |
+| fichier branche A — /media/miniature/4 — Administrateur | 200 | 200 |
+| fichier branche B — /f/5 — Visiteur (non connecté) | 404 | 404 |
+| fichier branche B — /f/5/telecharger — Visiteur (non connecté) | 404 | 404 |
+| fichier branche B — /media/miniature/5 — Visiteur (non connecté) | 404 | 404 |
+| fichier branche B — /f/5 — Lecteur (branche A) | 404 | 404 |
+| fichier branche B — /f/5/telecharger — Lecteur (branche A) | 404 | 404 |
+| fichier branche B — /media/miniature/5 — Lecteur (branche A) | 404 | 404 |
+| fichier branche B — /f/5 — Journaliste (branche B) | 200 | 200 |
+| fichier branche B — /f/5/telecharger — Journaliste (branche B) | 200 | 200 |
+| fichier branche B — /media/miniature/5 — Journaliste (branche B) | 200 | 200 |
+| fichier branche B — /f/5 — Administrateur | 200 | 200 |
+| fichier branche B — /f/5/telecharger — Administrateur | 200 | 200 |
+| fichier branche B — /media/miniature/5 — Administrateur | 200 | 200 |
+| fichier privé — /f/6 — Visiteur (non connecté) | 404 | 404 |
+| fichier privé — /f/6/telecharger — Visiteur (non connecté) | 404 | 404 |
+| fichier privé — /media/miniature/6 — Visiteur (non connecté) | 404 | 404 |
+| fichier privé — /f/6 — Lecteur (branche A) | 404 | 404 |
+| fichier privé — /f/6/telecharger — Lecteur (branche A) | 404 | 404 |
+| fichier privé — /media/miniature/6 — Lecteur (branche A) | 404 | 404 |
+| fichier privé — /f/6 — Journaliste (branche B) | 404 | 404 |
+| fichier privé — /f/6/telecharger — Journaliste (branche B) | 404 | 404 |
+| fichier privé — /media/miniature/6 — Journaliste (branche B) | 404 | 404 |
+| fichier privé — /f/6 — Administrateur | 200 | 200 |
+| fichier privé — /f/6/telecharger — Administrateur | 200 | 200 |
+| fichier privé — /media/miniature/6 — Administrateur | 200 | 200 |
 | vidéo publique — lecture complète (visiteur) | 200 | 200 |
 | vidéo publique — lecture par morceaux (Range) | 206 | 206 |
 | vidéo publique — plage invalide refusée | 416 | 416 |
@@ -308,9 +308,9 @@ Aucune anomalie : pour chaque route, le code obtenu correspond au code attendu.
 | GET | `/temoignages` | 200 | 200 | 200 | 200 | public |
 | GET | `/pages/{slug}` | 200 | 200 | 200 | 200 | contenu |
 | GET | `/recherche` | 200 | 200 | 200 | 200 | public |
-| GET | `/arbre` | 200 | 200 | 200 | 200 | public |
-| GET | `/arbre/{id}` | 200 | 200 | 200 | 200 | contenu |
-| GET | `/api/arbre/{id}` | 200 | 200 | 200 | 200 | contenu |
+| GET | `/arbre` | 303 | 200 | 200 | 200 | arbre |
+| GET | `/arbre/{id}` | 303 | 200 | 200 | 200 | arbre |
+| GET | `/api/arbre/{id}` | 303 | 200 | 200 | 200 | arbre |
 | GET | `/videos` | 200 | 200 | 200 | 200 | public |
 | GET | `/videos/{id}` | 200 | 200 | 200 | 200 | contenu |
 | GET | `/f/{id}` | 200 | 200 | 200 | 200 | contenu |

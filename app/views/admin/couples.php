@@ -15,9 +15,7 @@ $nom = static function (string $first, ?string $last): string {
 </div>
 
 <p class="note">
-    Un couple relie deux personnes et leurs enfants. Pour ajouter des parents à une
-    personne, créez le couple de ses parents et cochez-la comme enfant. Il est aussi
-    possible de créer un couple avec un seul conjoint (parent isolé).
+    Un couple relie deux conjoints et leurs enfants. Un seul conjoint suffit (parent isolé).
 </p>
 
 <?php if ($families === []): ?>

@@ -9,17 +9,13 @@
 <h1>Importer depuis le dossier arrivée</h1>
 
 <p class="note">
-    Déposez les gros fichiers (vidéos, archives photo) directement sur le Raspberry Pi
-    dans le dossier <code><?= e($incoming) ?></code> via SFTP ou le partage Samba,
-    puis importez-les ici. Ils n’y sont pas accessibles par le site tant qu’ils ne sont
-    pas importés.
+    Déposez les fichiers dans <code><?= e($incoming) ?></code> (SFTP ou Samba), puis importez-les ici.
 </p>
 
 <div class="message message--info">
     <p><strong>Vidéos :</strong> le <strong>MP4 (H.264 + AAC)</strong> est publié tel quel ;
     tout autre format (.mov, .avi, .mkv, .webm…) est converti en arrière-plan après
     l’import, une vidéo à la fois.</p>
-    <p class="note">La procédure de dépôt (SFTP/Samba) est décrite dans le README, section « Vidéos ».</p>
 </div>
 
 <?php if ($erreurs !== []): ?>

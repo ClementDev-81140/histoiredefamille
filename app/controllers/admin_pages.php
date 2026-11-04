@@ -65,7 +65,7 @@ function admin_page_save(array $params = []): void
         'title'         => post('title'),
         'slug'          => strtolower(post('slug')),
         'body'          => post('body'),
-        'visibility'    => post('visibility'),
+        'visibility'    => sanitize_visibility(post('visibility')),
         'branches'      => array_map('intval', post_array('branches')),
         'is_published'  => post('is_published') === '1',
         'show_in_nav'   => post('show_in_nav') === '1',

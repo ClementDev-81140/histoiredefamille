@@ -73,7 +73,7 @@ function admin_recette_save(array $params = []): void
         'preparation'  => post('preparation'),
         'notes'        => post('notes'),
         'photo_id'     => (int) post('photo_id'),
-        'visibility'   => post('visibility'),
+        'visibility'   => sanitize_visibility(post('visibility')),
         'branches'     => array_map('intval', post_array('branches')),
     ];
 

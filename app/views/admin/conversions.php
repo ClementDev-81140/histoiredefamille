@@ -21,11 +21,7 @@ $derniereDate = isset($derniere['t']) && (int) $derniere['t'] > 0
 </div>
 
 <p class="note">
-    Le site convertit les vidéos en <strong>MP4 (H.264 + AAC)</strong>, le seul
-    format que tous les navigateurs savent lire, <strong>une seule à la fois</strong> :
-    le Raspberry Pi n’a pas la puissance de convertir deux films en même temps.
-    La conversion se fait en arrière-plan, jamais pendant une visite :
-    la famille peut continuer à se servir du site.
+    Une conversion à la fois, en arrière-plan.
 </p>
 
 <?php if (!$reglages['active']): ?>

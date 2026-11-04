@@ -40,10 +40,10 @@ et une installation qui tient en quelques commandes à copier-coller.
 
 ### Partie publique (visible par tous)
 
-- Une page d'accueil qui tient en **trois entrées** : *Parcourir les
-  documents*, *Voir l'arbre généalogique* et *Espace famille* (la connexion).
-  C'est voulu : le site se consulte d'abord en privé, avec le compte de sa
-  branche.
+- Une page d'accueil qui tient en **deux entrées** : *Consulter* (les
+  documents) et *Se connecter*, la seconde plus grosse et mise en avant. C'est
+  voulu : le site se consulte d'abord en privé, avec le compte de sa branche.
+  **L'arbre généalogique n'est plus public** : il s'ouvre une fois connecté.
 - Les autres rubriques (Articles, Vidéos, Albums, Calendrier, Recherche)
   n'apparaissent dans le menu et sur l'accueil **que si quelque chose y a été
   publié en « Public »**. Un visiteur ne tombe jamais sur une rubrique vide.
@@ -1068,9 +1068,9 @@ trois boutons :
 
 Ce sont de vrais boutons : **aucun JavaScript n'est nécessaire**. Un bloc
 masqué **n'est pas calculé du tout** — le site ne va même pas chercher les
-vidéos ou les annonces, ce qui allège le Raspberry Pi. Les trois entrées de
-l'accueil (Parcourir les documents, Voir l'arbre, Espace famille) restent
-toujours affichées : ce sont les portes du site.
+vidéos ou les annonces, ce qui allège le Raspberry Pi. Les deux entrées de
+l'accueil (Consulter, Se connecter) restent toujours affichées : ce sont les
+portes du site.
 
 Les blocs de **l'espace famille** :
 
@@ -1080,9 +1080,9 @@ Les blocs de **l'espace famille** :
 | Colonne de droite | Petites annonces, Les éditions, Courrier des lecteurs, Accès rapides, En chiffres |
 | Toute la largeur | Dernières vidéos, Albums photos, Pages d'information, Derniers documents, Personnes récemment mises à jour |
 
-Ceux de **l'accueil public** : les trois entrées, « Également publié », les
+Ceux de **l'accueil public** : les deux entrées, « Également publié », les
 chiffres, le mot sur l'espace réservé, « À la une » (les articles), les
-derniers documents, « À lire » (les pages d'information) et l'arbre.
+derniers documents et « À lire » (les pages d'information).
 
 **Réglages de la une.** Sur la même page :
 
@@ -1269,11 +1269,12 @@ sur le Raspberry Pi.
 
 Rien à cocher : le site s'en occupe.
 
-- Un visiteur non connecté ne voit que **trois entrées** : documents, arbre et
-  connexion. Les autres onglets apparaissent **seulement** quand leur rubrique
-  contient au moins un élément public (un article publié et daté d'aujourd'hui
-  ou du passé, une vidéo publique, un album public, une personne publique avec
-  des dates).
+- Un visiteur non connecté ne voit que **deux portes** : « Consulter » (les
+  documents) et « Se connecter ». **L'arbre généalogique n'est plus public** :
+  ses adresses renvoient vers la connexion. Les autres onglets apparaissent
+  **seulement** quand leur rubrique contient au moins un élément public (un
+  article publié et daté d'aujourd'hui ou du passé, une vidéo publique, un
+  album public, une personne publique avec des dates).
 - Pour faire apparaître une rubrique : publier quelque chose dedans en
   visibilité « **Public** » (Administration → Articles / Vidéos / Albums, ou
   l'arbre pour le calendrier). Pour la faire disparaître : repasser ce contenu

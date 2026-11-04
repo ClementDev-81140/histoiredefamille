@@ -194,7 +194,7 @@ function demo_person(array $data): int
         'death_year'  => extract_year($data['death_date'] ?? null),
         'death_place' => $data['death_place'] ?? null,
         'notes'       => $data['notes'] ?? null,
-        'visibility'  => $data['visibility'] ?? 'famille',
+        'visibility'  => sanitize_visibility($data['visibility'] ?? null),
         'created_at'  => $now,
         'updated_at'  => $now,
     ]);

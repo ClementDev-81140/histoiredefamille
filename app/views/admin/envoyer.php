@@ -32,10 +32,7 @@ if ($jeton !== '') {
 <?php endif; ?>
 
 <p class="note">
-    Cette page envoie les <strong>gros fichiers</strong> (vidéos, scans, lots de photos)
-    depuis n’importe où, sans rien installer : le navigateur découpe le fichier en
-    morceaux et les envoie un par un. Si la connexion tombe, l’envoi reprend où il
-    en était — même après avoir fermé la page, en redéposant le même fichier.
+    Si la connexion tombe, redéposez le même fichier : l’envoi reprend où il en était.
 </p>
 
 <div class="ligne-champs envoi-etat">

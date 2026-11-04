@@ -40,9 +40,7 @@ $canAdmin  = is_admin();
                     <a href="<?= e(file_url($doc)) ?>">Ouvrir le fichier</a>.
                 </video>
                 <p class="note">
-                    Lecture directe sans conversion. Si la vidéo ne démarre pas, le fichier
-                    n’est probablement pas au format MP4 (H.264 + AAC) : dans ce cas,
-                    <a href="<?= e(download_url($doc)) ?>">téléchargez-le</a>.
+                    Si la vidéo ne démarre pas, <a href="<?= e(download_url($doc)) ?>">téléchargez-la</a>.
                 </p>
             <?php elseif ($isAudio): ?>
                 <div class="panneau panneau--centre document__son">
@@ -51,7 +49,6 @@ $canAdmin  = is_admin();
                         Votre navigateur ne permet pas la lecture de ce fichier audio.
                         <a href="<?= e(download_url($doc)) ?>">Télécharger le fichier</a>.
                     </audio>
-                    <p class="note">Écoute directe dans le navigateur, sans rien installer.</p>
                 </div>
             <?php elseif ($isPdf): ?>
                 <div class="panneau panneau--centre">

@@ -98,7 +98,7 @@ function admin_person_save(array $params = []): void
         'death_date'  => post('death_date'),
         'death_place' => post('death_place'),
         'notes'       => post('notes'),
-        'visibility'  => post('visibility'),
+        'visibility'  => sanitize_visibility(post('visibility')),
         'branches'    => array_map('intval', post_array('branches')),
         'remove_photo' => post('remove_photo') === '1',
     ];

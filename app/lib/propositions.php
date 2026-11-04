@@ -112,16 +112,21 @@ function proposition_migration_faite(): bool
 // ---------------------------------------------------------------------------
 
 /**
- * Condition SQL : les contenus visibles pour le compte courant.
+ * Condition SQL : les contenus visibles dans les listes, la recherche, les
+ * flux et les courriels.
  *
  * Elle s'ajoute à la clause de visibilité habituelle (elle ne la remplace
- * jamais). Trois cas rendent un contenu visible :
- *   - il est publié (moderation_state = 'publie') ;
- *   - il a déjà été publié un jour (validated_at non vide) : une modification
- *     en cours de relecture ne retire donc pas l'article publié ;
- *   - son auteur est le compte courant (il suit sa proposition).
+ * jamais) et ne laisse passer que les contenus **publiés**. Les
+ * administrateurs, eux, voient tout : ils sont sortis plus haut par
+ * visibility_clause().
  *
- * @param array $params complété par référence
+ * Un auteur ne passe pas par ici : il retrouve ses propositions dans « Mes
+ * propositions », et il peut ouvrir leur page ou leur fichier par une adresse
+ * directe (voir proposition_mienne et proposition_visible). Une proposition en
+ * attente n'apparaît donc **dans aucune liste**, pas même celle de son auteur :
+ * c'est le sens de « invisible jusqu'à la validation ».
+ *
+ * @param array $params complété par référence (aucun paramètre ici)
  */
 function proposition_clause(string $kind, string $alias, array &$params): string
 {
@@ -129,21 +134,7 @@ function proposition_clause(string $kind, string $alias, array &$params): string
         return '1 = 1';
     }
 
-    $compte = current_account();
-    if ($compte === null) {
-        // Un visiteur ne voit que le publié : aucune exception, même pour un
-        // auteur (il n'est pas connecté).
-        return $alias . ".moderation_state = 'publie'";
-    }
-
-    static $sequence = 0;
-    $sequence++;
-    $param = ':modauteur' . $sequence;
-    $params[$param] = (int) $compte['id'];
-
-    return '(' . $alias . ".moderation_state = 'publie'"
-        . ' OR ' . $alias . '.validated_at IS NOT NULL'
-        . ' OR ' . $alias . '.submitted_by = ' . $param . ')';
+    return $alias . ".moderation_state = 'publie'";
 }
 
 /**
@@ -177,21 +168,17 @@ function proposition_visible(?array $account, string $kind, array $row): bool
         return true;
     }
 
-    if ($account !== null && ($account['role'] ?? '') === 'admin') {
+    if (($account['role'] ?? '') === 'admin') {
         return true;
     }
 
-    $etat = (string) ($row['moderation_state'] ?? 'publie');
-    if ($etat === 'publie') {
-        return true;
-    }
-    if (($row['validated_at'] ?? null) !== null && (string) $row['validated_at'] !== '') {
+    if ((string) ($row['moderation_state'] ?? 'publie') === 'publie') {
         return true;
     }
 
-    return $account !== null
-        && (int) ($row['submitted_by'] ?? 0) > 0
-        && (int) $row['submitted_by'] === (int) $account['id'];
+    // Ni un visiteur ni un autre compte ne voit une proposition en attente ;
+    // seul son auteur, par une adresse directe, peut la relire.
+    return proposition_mienne($account, $kind, $row);
 }
 
 // ---------------------------------------------------------------------------

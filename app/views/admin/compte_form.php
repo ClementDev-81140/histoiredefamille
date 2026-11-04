@@ -12,10 +12,6 @@ $profilChoisi = (string) old_value($old, 'profil', $profilActuel);
 <div class="section__entete">
     <div>
         <h1>Modifier <?= e(compte_nom_complet($compte)) ?></h1>
-        <p class="note">
-            L’identifiant et le mot de passe sont personnels : la personne peut changer son mot
-            de passe elle-même dans « Mon compte ».
-        </p>
     </div>
     <a class="lien" href="/admin/comptes">← Retour aux comptes</a>
 </div>

@@ -111,6 +111,11 @@ function matrice_famille(string $methode, string $motif): string
     if ($motif === '/propositions' || str_starts_with($motif, '/propositions/')) {
         return 'propositions';
     }
+    // L'arbre généalogique n'est plus public (1.24.0) : un visiteur est
+    // renvoyé vers la connexion, un compte connecté l'ouvre.
+    if (str_starts_with($motif, '/arbre') || str_starts_with($motif, '/api/arbre')) {
+        return 'arbre';
+    }
     // La gazette en ligne n'est lisible que par les ayants droit : un visiteur
     // est renvoyé vers la connexion, et un compte sans numéro reçoit un 404.
     if (str_starts_with($motif, '/gazette/')) {
@@ -177,6 +182,9 @@ function matrice_attendu(string $methode, string $motif, string $profil): int
                 return 404;
             }
             return 200;
+
+        case 'arbre':
+            return $connecte ? 200 : 303;
 
         case 'gazette':
             return $connecte ? 404 : 303;

@@ -504,7 +504,10 @@ function tests_courriels(): void
 
         // La page « Mon compte » enregistre bien la date, et pas seulement la
         // case. (Appel direct : matrice_requete() remet la session à zéro, ce
-        // qui effacerait le jeton anti-CSRF au passage.)
+        // qui effacerait le jeton anti-CSRF au passage. Le contrôleur est donc
+        // chargé ici : sans lui, l'appel lèverait une erreur avalée par le
+        // catch ci-dessous, et le test passerait à côté du vrai problème.)
+        require_once dirname(__DIR__) . '/controllers/compte.php';
         db_update('accounts', $nouveau, ['notify_articles' => 0, 'notify_articles_depuis' => 0]);
         $_SESSION = ['account_id' => $nouveau];
         $_POST    = [

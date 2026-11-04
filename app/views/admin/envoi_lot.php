@@ -28,9 +28,7 @@ $val = static function (string $cle, mixed $defaut = '') use ($old): mixed {
     </div>
 <?php else: ?>
     <p class="note">
-        Les réglages du haut s’appliquent à <strong>tous les fichiers cochés</strong>.
-        En dessous, vous pouvez changer le titre, la date et la visibilité de chaque
-        fichier. Tant que vous n’avez pas validé, tout reste <strong>privé</strong>.
+        Tant que vous n’avez pas validé, tout reste <strong>privé</strong>.
     </p>
 
     <form method="post" action="/admin/envoyer/lot" class="formulaire panneau">

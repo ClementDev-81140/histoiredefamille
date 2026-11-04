@@ -17,12 +17,8 @@ $filtreActif = $q !== '' || $visibility !== '';
 </div>
 
 <p class="note">
-    <?= (int) $total ?> vidéo<?= (int) $total > 1 ? 's' : '' ?> enregistrée<?= (int) $total > 1 ? 's' : '' ?>.
-    Le Raspberry Pi ne diffuse pas plus de <strong><?= (int) $maxStreams ?></strong> vidéos
-    en même temps ; au-delà, les visiteurs voient un message d’attente, pas une erreur.
-    Un fichier qui n’est pas en MP4 (H.264 + AAC) est converti en arrière-plan
-    (<a href="/admin/conversions">Conversions</a>) : la famille ne le voit qu’une
-    fois le travail terminé.
+    <?= (int) $total ?> vidéo<?= (int) $total > 1 ? 's' : '' ?>,
+    <?= (int) $maxStreams ?> en lecture simultanée au plus.
 </p>
 
 <form method="get" action="/admin/videos" class="filtres">

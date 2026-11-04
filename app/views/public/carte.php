@@ -28,11 +28,6 @@ $lienFiltre = static function (array $modifs) use ($filtres): string {
 <div class="section__entete">
     <div>
         <h1>Carte des lieux</h1>
-        <p class="note">
-            Les lieux de naissance, de décès et de mariage de la famille, sur une carte
-            dessinée par le site. Chaque point mène à la liste des personnes qui y sont
-            rattachées.
-        </p>
     </div>
 </div>
 

@@ -811,7 +811,7 @@ if ($filtre === '' || $filtre === 'rubriques') {
             }
         };
 
-        // 1. Aucun contenu public : il ne reste que les trois entrées de base.
+        // 1. Aucun contenu public : il ne reste que documents et famille.
         $sansRien     = null;
         $menuSansRien = null;
         $dansUneTransactionAnnulee(static function () use (&$sansRien, &$menuSansRien): void {
@@ -825,16 +825,17 @@ if ($filtre === '' || $filtre === 'rubriques') {
         });
 
         verifier(
-            'aucun contenu public : seulement documents, arbre et famille',
-            !empty($sansRien['documents']) && !empty($sansRien['arbre']) && !empty($sansRien['famille'])
+            'aucun contenu public : seulement documents et famille',
+            !empty($sansRien['documents']) && !empty($sansRien['famille'])
+                && empty($sansRien['arbre'])
                 && empty($sansRien['articles']) && empty($sansRien['videos'])
                 && empty($sansRien['albums']) && empty($sansRien['calendrier'])
                 && empty($sansRien['recherche']),
             'obtenu : ' . json_encode($sansRien, JSON_UNESCAPED_UNICODE)
         );
         verifier(
-            'aucun contenu public : menu du visiteur réduit aux trois entrées',
-            $menuSansRien === ['accueil', 'documents', 'arbre'],
+            'aucun contenu public : menu du visiteur réduit à deux entrées, sans arbre',
+            $menuSansRien === ['accueil', 'documents'],
             'obtenu : ' . implode(', ', (array) $menuSansRien)
         );
 
@@ -942,8 +943,9 @@ if ($filtre === '' || $filtre === 'rubriques') {
         $menuAdmin    = array_column(menu_rubriques($compteAdmin, $extras), 'cle');
 
         verifier(
-            'menu visiteur : commence par accueil, documents, arbre',
-            array_slice($menuVisiteur, 0, 3) === ['accueil', 'documents', 'arbre'],
+            'menu visiteur : commence par accueil et documents, jamais l’arbre',
+            array_slice($menuVisiteur, 0, 2) === ['accueil', 'documents']
+                && !in_array('arbre', $menuVisiteur, true),
             'obtenu : ' . implode(', ', $menuVisiteur)
         );
         verifier(
@@ -954,7 +956,7 @@ if ($filtre === '' || $filtre === 'rubriques') {
         verifier(
             'menu visiteur : aucun lien vers une rubrique vide',
             (static function () use ($menuVisiteur): bool {
-                $base = ['accueil', 'documents', 'arbre', 'recettes', 'temoignages'];
+                $base = ['accueil', 'documents', 'recettes', 'temoignages'];
                 foreach ($menuVisiteur as $cle) {
                     if (!in_array($cle, $base, true) && !rubrique_publique($cle)) {
                         return false;
@@ -2205,8 +2207,8 @@ if ($filtre === '' || $filtre === 'composition') {
     // Composition d'origine : le site tel qu'il est aujourd'hui.
     $d = $ok('defauts') ? $essais['defauts'] : [];
     verifier(
-        'composition : les huit blocs de l’accueil, dans l’ordre d’origine',
-        ($d['public'] ?? []) === ['entrees', 'egalement', 'chiffres', 'reserve', 'une', 'documents', 'lire', 'arbre'],
+        'composition : les sept blocs de l’accueil, dans l’ordre d’origine',
+        ($d['public'] ?? []) === ['entrees', 'egalement', 'chiffres', 'reserve', 'une', 'documents', 'lire'],
         json_encode($d['public'] ?? [], JSON_UNESCAPED_UNICODE)
     );
     verifier(
@@ -2271,8 +2273,8 @@ if ($filtre === '' || $filtre === 'composition') {
     $l = $ok('lecture') ? $essais['lecture'] : [];
     verifier(
         'composition : un JSON illisible redonne la composition d’origine',
-        ($l['invalide'] ?? []) === ['entrees', 'egalement', 'chiffres', 'reserve', 'une', 'documents', 'lire', 'arbre']
-            && ($l['vide'] ?? []) === ['entrees', 'egalement', 'chiffres', 'reserve', 'une', 'documents', 'lire', 'arbre'],
+        ($l['invalide'] ?? []) === ['entrees', 'egalement', 'chiffres', 'reserve', 'une', 'documents', 'lire']
+            && ($l['vide'] ?? []) === ['entrees', 'egalement', 'chiffres', 'reserve', 'une', 'documents', 'lire'],
         json_encode($l, JSON_UNESCAPED_UNICODE)
     );
     verifier(
@@ -2285,7 +2287,7 @@ if ($filtre === '' || $filtre === 'composition') {
     );
     verifier(
         'composition : une clé inconnue est ignorée, un doublon aussi',
-        count($l['inconnue'] ?? []) === 8 && count($l['doublon'] ?? []) === 8,
+        count($l['inconnue'] ?? []) === 7 && count($l['doublon'] ?? []) === 7,
         json_encode(['inconnue' => $l['inconnue'] ?? [], 'doublon' => $l['doublon'] ?? []], JSON_UNESCAPED_UNICODE)
     );
     verifier(
@@ -2503,6 +2505,16 @@ require_once __DIR__ . '/tests_profils.php';
 if ($filtre === '' || $filtre === 'propositions') {
     require_once __DIR__ . '/tests_propositions.php';
     tests_propositions();
+}
+
+if ($filtre === '' || $filtre === 'defauts') {
+    require_once __DIR__ . '/tests_defauts.php';
+    tests_defauts();
+}
+
+if ($filtre === '' || $filtre === 'accueil') {
+    require_once __DIR__ . '/tests_accueil.php';
+    tests_accueil();
 }
 
 

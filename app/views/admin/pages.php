@@ -10,10 +10,6 @@
     <a class="bouton" href="/admin/pages/nouvelle">Nouvelle page</a>
 </div>
 
-<p class="note">
-    Les pages servent à raconter l’histoire de la famille, publier des annonces, etc.
-    Une page peut être publique, réservée aux familles connectées, ou à certaines branches.
-</p>
 
 <?php if ($pages === []): ?>
     <div class="panneau panneau--centre">

@@ -16,11 +16,6 @@ $etats = [
 <div class="section__entete">
     <div>
         <h1>Gazette du mois</h1>
-        <p class="note">
-            Chaque début de mois, le site prépare tout seul le résumé du mois écoulé : les
-            articles, les photos, les vidéos, les témoignages, les recettes, les nouvelles
-            personnes et les petites annonces. Vous relisez, vous ajustez, puis vous envoyez.
-        </p>
     </div>
 </div>
 

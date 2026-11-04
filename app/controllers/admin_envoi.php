@@ -473,7 +473,7 @@ function admin_envoi_lot_save(): void
     $old = [
         'kind'       => post('kind'),
         'category_id' => post('category_id'),
-        'visibility' => post('visibility'),
+        'visibility' => sanitize_visibility(post('visibility')),
         'branches'   => array_map('intval', post_array('branches')),
         'album_id'   => post('album_id'),
     ];

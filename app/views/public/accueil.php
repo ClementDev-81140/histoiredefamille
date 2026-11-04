@@ -34,14 +34,15 @@ $pleine   = composition_colonne('public', 'pleine');
     <?php foreach ($hero as $bloc): ?>
 
         <?php if ($bloc === 'entrees'): ?>
-            <?php /* Trois entrées, pas une de plus : le site se consulte d'abord
-                     en privé. Les autres rubriques ne sont proposées que si elles
+            <?php /* Deux portes, pas une de plus : « Consulter » pour découvrir,
+                     « Se connecter » pour entrer dans l'espace de la famille.
+                     La seconde est mise en avant : c'est celle qu'on cherche.
+                     Les autres rubriques ne sont proposées que si elles
                      contiennent vraiment quelque chose de public. */ ?>
-            <p class="actions">
-                <a class="bouton" href="/documents">Parcourir les documents</a>
-                <a class="bouton bouton--secondaire" href="/arbre">Voir l’arbre généalogique</a>
+            <p class="actions actions--portes">
+                <a class="bouton bouton--large" href="/documents">Consulter</a>
                 <?php if (!is_logged_in()): ?>
-                    <a class="bouton bouton--secondaire" href="/connexion">Espace famille</a>
+                    <a class="bouton bouton--accent bouton--large bouton--porte" href="/connexion">Se connecter</a>
                 <?php endif; ?>
             </p>
 
@@ -77,17 +78,8 @@ $pleine   = composition_colonne('public', 'pleine');
             <p class="hero__chiffres" aria-label="Le site en chiffres">
                 <span><strong><?= (int) $nbDocs ?></strong> document<?= (int) $nbDocs > 1 ? 's' : '' ?> accessible<?= (int) $nbDocs > 1 ? 's' : '' ?></span>
                 <span><strong><?= (int) $nbPages ?></strong> page<?= (int) $nbPages > 1 ? 's' : '' ?> d’information</span>
-                <span><strong><?= (int) $nbPersonnes ?></strong> personne<?= (int) $nbPersonnes > 1 ? 's' : '' ?> dans l’arbre</span>
             </p>
 
-        <?php elseif ($bloc === 'reserve'): ?>
-            <?php if (!is_logged_in()): ?>
-                <p class="note">
-                    Une partie du site est réservée aux familles : connectez-vous avec
-                    l’identifiant et le mot de passe de votre branche pour voir les
-                    photos, vidéos et documents privés.
-                </p>
-            <?php endif; ?>
         <?php endif; ?>
 
     <?php endforeach; ?>
@@ -145,24 +137,6 @@ $pleine   = composition_colonne('public', 'pleine');
             </section>
         <?php endif; ?>
 
-    <?php elseif ($bloc === 'arbre'): ?>
-        <?php if ($personnes !== []): ?>
-            <section class="section">
-                <div class="section__entete">
-                    <h2>Dans l’arbre</h2>
-                    <a href="/arbre">Rechercher une personne →</a>
-                </div>
-                <ul class="liste-personnes">
-                    <?php foreach ($personnes as $personne): ?>
-                        <li>
-                            <a href="/arbre/<?= (int) $personne['id'] ?>"><?= e(person_full_name($personne)) ?></a>
-                            <?php $dates = person_dates($personne); ?>
-                            <?php if ($dates !== ''): ?><span class="discret"><?= e($dates) ?></span><?php endif; ?>
-                        </li>
-                    <?php endforeach; ?>
-                </ul>
-            </section>
-        <?php endif; ?>
     <?php endif; ?>
 
 <?php endforeach; ?>

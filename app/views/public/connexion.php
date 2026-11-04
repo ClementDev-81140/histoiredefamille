@@ -9,11 +9,6 @@
 <section class="panneau panneau--etroit">
     <h1>Connexion à l’espace famille</h1>
 
-    <p class="note">
-        Utilisez l’identifiant de votre branche (en majuscules) et le mot de passe
-        communiqué par un administrateur. Les comptes sont créés uniquement par
-        les administrateurs : il n’y a pas d’inscription publique.
-    </p>
 
     <form method="post" action="/connexion" class="formulaire">
         <?= csrf_field() ?>

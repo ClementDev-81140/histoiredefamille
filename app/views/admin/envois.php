@@ -29,12 +29,9 @@
 
 <p class="note">
     <?php if ($tous): ?>
-        Vue de supervision : les envois de tous les administrateurs, en
-        <strong>lecture seule</strong>. Chacun ne peut reprendre ou annuler que les siens.
+        Vue de supervision, en <strong>lecture seule</strong>.
     <?php else: ?>
-        Vos envois des 30 derniers jours, et tous ceux qui ne sont pas terminés.
-        « Reprendre » rouvre la page d’envoi : déposez le même fichier, l’envoi
-        continue où il s’était arrêté.
+        Vos envois des 30 derniers jours. « Reprendre » : redéposez le même fichier.
     <?php endif; ?>
 </p>
 
