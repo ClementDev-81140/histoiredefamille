@@ -8,10 +8,11 @@
  *   3. la réussite (fichier remplacé, original conservé, son en M4A) ;
  *   4. les droits et l'entretien (page fermée, purge, originaux libérés).
  *
- * ffmpeg n'existe pas dans l'environnement d'essai — et c'est voulu : tout le
- * lot doit fonctionner sans lui. Les tests vérifient justement que la file
- * attend sagement au lieu de casser le site, et le lancement de la commande
- * est contrôlé par lecture du code (aucun passage par le shell).
+ * Les essais ne supposent rien de la machine : ffmpeg est imposé absent (ou
+ * présent) par conversion_outils_forcer(), si bien qu'un serveur qui possède
+ * ffmpeg obtient exactement les mêmes résultats que celui qui ne l'a pas. La
+ * file doit attendre sagement au lieu de casser le site, et le lancement de la
+ * commande est contrôlé par lecture du code (aucun passage par le shell).
  *
  * Tout se passe dans une transaction annulée, et les fichiers créés sont
  * effacés : la base et le stockage du site sont rendus intacts.
@@ -29,6 +30,27 @@ function tests_conversion_fichier(int $octets, string $extension): string
         fwrite($handle, str_repeat('Donnée d’essai pour la conversion. ', max(1, intdiv($octets, 34) + 1)));
         fclose($handle);
     }
+    return $chemin;
+}
+
+/** Faux exécutable d'essai (droit d'exécution posé), effacé par le test. */
+function tests_conversion_outil(string $nom): string
+{
+    $chemin = storage_path('tmp') . '/essai-outil-' . $nom . '-' . bin2hex(random_bytes(4));
+    file_put_contents($chemin, "#!/bin/sh\nexit 0\n");
+    @chmod($chemin, 0755);
+    return $chemin;
+}
+
+/**
+ * Fichier .mov d'essai : véritable en-tête QuickTime (`ftyp`, marque `qt`),
+ * puis du remplissage. C'est le conteneur des vidéos de téléphone.
+ */
+function tests_conversion_film_mov(int $octets = 65536): string
+{
+    $chemin = storage_path('tmp') . '/essai-envoi-mov-' . bin2hex(random_bytes(6)) . '.mov';
+    $entete = pack('N', 20) . 'ftypqt  ' . pack('N', 0) . 'qt  ';
+    file_put_contents($chemin, $entete . str_repeat("\0", max(0, $octets - strlen($entete))));
     return $chemin;
 }
 
@@ -103,9 +125,14 @@ function tests_conversion(): void
     ];
     $avantFichiers = tests_envoi_fichiers();
 
+    // ffmpeg est imposé absent pour toute la famille d'essais : les résultats
+    // ne dépendent pas de la machine (un Pi en a un, pas le bac à sable).
+    conversion_outils_forcer(['ffmpeg' => null, 'ffprobe' => null]);
+
     try {
         db_transaction(static function () use ($compte, $famille): void {
             tests_conversion_file($compte);
+            tests_conversion_envoi($compte, $famille);
             tests_conversion_prise($compte);
             tests_conversion_reussite($compte);
             tests_conversion_droits($compte, $famille);
@@ -119,6 +146,8 @@ function tests_conversion(): void
             throw $e;
         }
     } finally {
+        // Recherche réelle de ffmpeg rétablie pour la suite des essais.
+        conversion_outils_forcer(null);
         foreach ($avant as $cle => $valeur) {
             if ($valeur === '') {
                 db_exec('DELETE FROM settings WHERE key = ?', [$cle]);
@@ -142,14 +171,34 @@ function tests_conversion(): void
 /** 1. La file d'attente : qui entre, qui n'entre pas, une seule ligne par fiche. */
 function tests_conversion_file(int $compte): void
 {
-    // Réglages : conversion active, ffmpeg absent (comme sur ce serveur).
+    // Réglages : conversion active, ffmpeg imposé absent.
     save_site_setting('conversion_active', '1');
+    conversion_outils_forcer(['ffmpeg' => null, 'ffprobe' => null]);
 
     $reglages = conversion_reglages();
     verifier(
         'conversion : sans ffmpeg, la conversion se déclare indisponible au lieu de casser',
         $reglages['disponible'] === false && conversion_active() === false,
         'outils : ' . json_encode([$reglages['ffmpeg'], $reglages['ffprobe']])
+    );
+
+    // L'autre sens : deux exécutables présents rendent la conversion possible.
+    $outilFfmpeg  = tests_conversion_outil('ffmpeg');
+    $outilFfprobe = tests_conversion_outil('ffprobe');
+    conversion_outils_forcer(['ffmpeg' => $outilFfmpeg, 'ffprobe' => $outilFfprobe]);
+    verifier(
+        'conversion : avec ffmpeg et ffprobe en place, elle redevient disponible',
+        conversion_reglages()['disponible'] === true && conversion_active() === true,
+        json_encode([conversion_reglages()['ffmpeg'], conversion_reglages()['ffprobe']])
+    );
+    @unlink($outilFfmpeg);
+    @unlink($outilFfprobe);
+
+    // Retour à l'absence : le reste des essais n'a jamais besoin de ffmpeg.
+    conversion_outils_forcer(['ffmpeg' => null, 'ffprobe' => null]);
+    verifier(
+        'conversion : sans outils, elle redevient indisponible (l’état se relit à chaque fois)',
+        conversion_reglages()['disponible'] === false
     );
     verifier(
         'conversion : la qualité par défaut est « équilibrée » (1080p, CRF 23)',
@@ -248,6 +297,86 @@ function tests_conversion_file(int $compte): void
         $resume['total'] >= 1 && $resume['attente'] >= 1 && $resume['a_faire'] === $resume['attente'] + $resume['en_cours'],
         json_encode($resume)
     );
+}
+
+/**
+ * 1 bis. Le .mov d'un téléphone, de bout en bout : envoi par morceaux, fiche
+ * créée, mise en file, puis invisible pour la famille jusqu'à la conversion.
+ */
+function tests_conversion_envoi(int $compte, int $famille): void
+{
+    save_site_setting('conversion_active', '1');
+    tests_conversion_vider_file();
+
+    $chemin = tests_conversion_film_mov(65536);
+    $taille = (int) filesize($chemin);
+    $envoi  = tests_envoi_jouer($compte, 'anniversaire-de-mamie.mov', $chemin);
+    @unlink($chemin);
+
+    verifier(
+        'envoi vidéo : un .mov de téléphone est accepté de bout en bout (extension et type réel)',
+        ($envoi['init']['ok'] ?? false) === true && ($envoi['terminer']['ok'] ?? false) === true,
+        'init : ' . (string) ($envoi['init']['error'] ?? '') . ' / fin : ' . (string) ($envoi['terminer']['error'] ?? '')
+    );
+
+    $ligne = envoi_par_id((int) ($envoi['envoi']['id'] ?? 0));
+    $doc   = $ligne !== null
+        ? db_one('SELECT * FROM documents WHERE id = ?', [(int) $ligne['document_id']])
+        : null;
+
+    verifier(
+        'envoi vidéo : la fiche garde le .mov d’origine, son type et sa taille',
+        $doc !== null && (string) $doc['ext'] === 'mov' && (string) $doc['mime'] === 'video/quicktime'
+            && (string) $doc['kind'] === 'video' && (int) $doc['size'] === $taille,
+        $doc !== null ? json_encode([$doc['ext'], $doc['mime'], $doc['kind'], (int) $doc['size']]) : 'aucune fiche'
+    );
+
+    $travail = $doc !== null ? conversion_pour_document((int) $doc['id']) : null;
+    verifier(
+        'envoi vidéo : le .mov part directement dans la file de conversion',
+        $travail !== null && (string) $travail['state'] === 'attente'
+            && (string) $travail['source_path'] === (string) $doc['rel_path'],
+        $travail !== null ? json_encode([$travail['state'], $travail['source_path']]) : 'hors file'
+    );
+
+    // Publiée par l'administrateur, la fiche reste invisible à la famille tant
+    // que la conversion n'a pas eu lieu : même réponse qu'un contenu interdit.
+    db_update('documents', (int) $doc['id'], ['visibility' => 'public']);
+    $_SESSION = ['account_id' => $famille];
+    $avant = find_viewable_document((int) $doc['id']);
+    verifier(
+        'envoi vidéo : la famille ne voit pas encore le .mov (même 404 qu’un contenu interdit)',
+        $avant === null && conversion_document_pret($doc) === false,
+        $avant !== null ? 'visible avant conversion' : 'refusée'
+    );
+
+    $liste = tests_conversion_requete('GET', '/videos', $famille);
+    verifier(
+        'envoi vidéo : la page « Vidéos » ne montre pas la vidéo en préparation',
+        $liste['code'] === 200 && !str_contains($liste['corps'], 'anniversaire-de-mamie'),
+        'code ' . $liste['code']
+    );
+
+    // Une fois convertie (ffmpeg simulé : le fichier MP4 est fabriqué ici),
+    // la même famille la voit, sans rien avoir à faire de plus.
+    $pris = conversion_prendre();
+    verifier(
+        'envoi vidéo : le travail repris est bien celui du .mov envoyé',
+        $pris !== null && (int) $pris['document_id'] === (int) $doc['id'],
+        $pris !== null ? (string) $pris['document_id'] . ' / ' . (string) $doc['id'] : 'file vide'
+    );
+    if ($pris !== null && (int) $pris['document_id'] === (int) $doc['id']) {
+        $fini = conversion_reussir((int) $pris['id'], tests_conversion_fichier(2048, 'mp4'), ['duration' => 42]);
+        $apres = db_one('SELECT * FROM documents WHERE id = ?', [(int) $doc['id']]);
+        verifier(
+            'envoi vidéo : converti en MP4, le film devient lisible par la famille',
+            $fini['ok'] && $apres !== null && (string) $apres['ext'] === 'mp4'
+                && (string) $apres['mime'] === 'video/mp4'
+                && find_viewable_document((int) $doc['id']) !== null,
+            $apres !== null ? json_encode([$apres['ext'], $apres['mime']]) : (string) $fini['error']
+        );
+    }
+    $_SESSION = ['account_id' => $compte];
 }
 
 /** 2. Prise d'un travail, avancement, essais, relance, annulation. */

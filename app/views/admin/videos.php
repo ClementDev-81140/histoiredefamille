@@ -125,8 +125,8 @@ $filtreActif = $q !== '' || $visibility !== '';
 
     <?php if ($enAttente === []): ?>
         <p class="discret">
-            Aucun fichier vidéo en attente. Déposez vos films (MP4) dans le dossier
-            « arrivée » du Pi par SFTP ou partage réseau, ils apparaîtront ici.
+            Aucun fichier vidéo en attente. Déposez vos films (MP4, MOV, AVI…) dans le
+            dossier « arrivée » du Pi par SFTP ou partage réseau, ils apparaîtront ici.
         </p>
     <?php else: ?>
         <p class="aide">

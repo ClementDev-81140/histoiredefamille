@@ -45,7 +45,7 @@ function admin_videos(): void
     // Fichiers déjà déposés dans le dossier « arrivée » (dépôt SFTP/Samba).
     $enAttente = array_values(array_filter(
         incoming_files(),
-        static fn (array $f): bool => in_array(strtolower((string) $f['ext']), ['mp4', 'm4v', 'mov', 'webm'], true)
+        static fn (array $f): bool => in_array(strtolower((string) $f['ext']), extensions_video(), true)
     ));
 
     render('admin/videos', [

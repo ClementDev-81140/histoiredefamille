@@ -91,10 +91,12 @@ $backupDays = $backup && !empty($backup['date']) ? days_since((int) $backup['dat
 <section class="panneau">
     <h2>Rappel pour les vidéos</h2>
     <p>
-        Les films doivent être <strong>déjà encodés en MP4 (H.264 + AAC)</strong> : le
-        Raspberry Pi ne convertit rien. Déposez-les dans le
-        <a href="/admin/importer">dossier arrivée</a> (SFTP/Samba) puis importez-les
-        depuis l’administration.
+        Les vidéos enregistrées par un téléphone (.mov) ou dans un ancien format (.avi,
+        .mkv…) sont <strong>converties en MP4 (H.264 + AAC)</strong> par le Raspberry Pi,
+        en tâche de fond, une vidéo à la fois : vous n’avez rien à faire. Suivez
+        l’avancement sur la page <a href="/admin/conversions">Conversions</a>. Un film
+        peut aussi être déposé dans le <a href="/admin/importer">dossier arrivée</a>
+        (SFTP/Samba) puis importé depuis l’administration.
     </p>
 </section>
 

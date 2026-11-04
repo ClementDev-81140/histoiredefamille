@@ -173,7 +173,7 @@ $dureeActuelle = $isEdit && !empty($video['duration_seconds'])
     <div class="champ">
         <label for="fichier"><?= $isEdit ? 'Remplacer le fichier' : 'Fichier vidéo' ?><?= $isEdit ? '' : ' *' ?></label>
         <input type="file" id="fichier" name="fichier" <?= $isEdit ? '' : 'required' ?>
-               accept=".mp4,.m4v,.webm,video/mp4,video/x-m4v,video/webm">
+               accept="<?= e('.' . implode(',.', allowed_extensions())) ?>,video/*">
         <?php if ($isEdit): ?>
             <p class="aide">
                 Fichier actuel : <?= e((string) $video['original_name']) ?>

@@ -3,6 +3,58 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.21.1] — 2026-11-04
+
+### Les vidéos de téléphone arrivent enfin jusqu'au bout
+
+Le lot 1.21.0 savait convertir ; encore fallait-il que le site accepte le
+fichier. C'est corrigé, avec les six retouches signalées après l'essai.
+
+- **Les .mov, .avi, .mkv, .webm et .3gp sont acceptés.** Un iPhone filme en
+  MOV, un caméscope en AVI, un vieux téléphone en 3GP : tous ces fichiers
+  étaient refusés à l'envoi (« Extension non autorisée »), donc jamais
+  convertis. Ils entrent maintenant dans le site et partent directement dans la
+  file de conversion. Le **type réel** reste vérifié par `fileinfo` : renommer
+  un fichier ne suffit pas à passer.
+- **Un garde-fou pour les anciennes installations.** La liste des extensions
+  autorisées est désormais l'**union** du réglage (`uploads.allowed_extensions`)
+  et des types que le site sait reconnaître : un `config.local.php` recopié
+  d'une version précédente ne peut plus bloquer les nouvelles extensions. Une
+  liste écrite à la main reste donc valable sans retouche.
+- **Les essais ne dépendent plus de la machine.** Les tests « sans ffmpeg »
+  supposaient que ffmpeg était absent ; sur un serveur qui en possède un, ils
+  auraient échoué ou, pire, lancé une vraie conversion. `conversion_outils_forcer()`
+  impose maintenant les chemins des outils (ou leur absence) : les mêmes
+  résultats partout, et un essai de plus vérifie que la conversion **redevient
+  disponible** quand les deux exécutables sont en place.
+- **Un .mov de bout en bout dans les tests** : envoi par morceaux avec un
+  véritable en-tête QuickTime, fiche créée en privé avec son extension et son
+  type, mise en file immédiate, puis **famille qui ne la voit pas** (même 404
+  qu'un contenu interdit, et rien sur la page « Vidéos ») — et qui la voit dès
+  que la conversion a réussi.
+- **Plus de barre horizontale sur « Envoyer des fichiers ».** Le champ de
+  fichier masqué (`.sr-only`) faisait la largeur de la fenêtre : la règle
+  `input[type="file"] { width: 100% }`, plus précise, l'emportait sur la classe.
+  La page mesurait 611 px dans une fenêtre de 390 : elle glissait latéralement
+  au doigt. `.sr-only` vise maintenant aussi ce cas, et fixe `left`/`top` :
+  vérifié au navigateur à 390, 768 et 1280 px (page rendue 390/390, 768/768,
+  1280/1280 — plus aucun débordement).
+- **Les textes ne mentent plus.** « Une vidéo envoyée reste telle quelle : le
+  site ne la reconvertit pas » et « le Raspberry Pi ne convertit rien » datent
+  d'avant le lot B. La page d'envoi, le tableau de bord, le formulaire vidéo,
+  le formulaire document, la page d'import, la page « Vidéos » et
+  `deploy/dossier-arrivee.md` disent maintenant la vérité : le MP4 est publié
+  tel quel, tout autre format est converti en arrière-plan.
+- **« Sauvegarde : Sauvegarde : »** ne s'affiche plus deux fois. Le message
+  d'alerte ne porte plus le préfixe : le bandeau de l'administration et la page
+  « État du site » le posent déjà en titre. Un test vérifie qu'il n'apparaît
+  **qu'une fois** sur la page.
+
+Tests : **760 au total (+14)** — 755 avant ce correctif, plus l'envoi `.mov`
+de bout en bout, la disponibilité de la conversion imposée dans les deux sens,
+et la mise en page du champ masqué. Lint : 170 fichiers, 0 erreur. Matrice
+d'accès : 169 routes, 845 vérifications, 249 contrôles, 0 anomalie.
+
 ## [1.21.0] — 2026-11-04
 
 ### Le site convertit les vidéos tout seul

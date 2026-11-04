@@ -15,11 +15,12 @@ dossier n'est pas dans la racine web.
 
 ---
 
-## 1. Avant tout : convertir la vidéo en MP4 (H.264 + AAC)
+## 1. Le mieux : préparer un MP4 (H.264 + AAC)
 
-Le site **ne réencode pas** les vidéos : c'est volontaire, un Raspberry Pi
-3B+ mettrait des dizaines d'heures à convertir un film et chaufferait pour
-rien. Il faut donc fournir un fichier que tous les navigateurs savent lire :
+Le site **sait** convertir une vidéo tout seul (page **Conversions**, une vidéo
+à la fois, en tâche de fond), mais un Raspberry Pi 3B+ met des heures à
+convertir un film d'1 h 30 et chauffe : pour un gros fichier, il vaut mieux
+fournir directement un MP4 que tous les navigateurs savent lire :
 
 - conteneur **MP4**
 - vidéo **H.264** (profil High level 4.0, `yuv420p`)

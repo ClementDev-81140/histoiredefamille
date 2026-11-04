@@ -874,8 +874,9 @@ Une **miniature** est créée automatiquement pour les photos (480 px de côté
 maximum) : les listes restent rapides même sur un petit écran et sur le Pi.
 
 Formats acceptés : `pdf`, `txt`, `jpg`, `jpeg`, `png`, `webp`, `gif`, `mp4`,
-`m4v`, `docx`, `xlsx`, `odt`, `ods`, `mp3`, `m4a`, `ogg`. Le type réel du
-fichier est vérifié : renommer un fichier n'aide pas à contourner la règle.
+`m4v`, `mov`, `avi`, `mkv`, `webm`, `3gp`, `docx`, `xlsx`, `odt`, `ods`, `mp3`,
+`m4a`, `ogg`. Le type réel du fichier est vérifié : renommer un fichier n'aide
+pas à contourner la règle.
 
 ### 6.2 Créer une branche familiale
 
@@ -1087,8 +1088,10 @@ Deux façons, selon la taille du fichier :
 **a. Petit film (moins de 50 Mo, la limite d'envoi du navigateur)**
 
 1. **Administration → Vidéos → Ajouter une vidéo**.
-2. Choisir le fichier MP4, saisir un titre, éventuellement une description,
-   une date, une durée, une catégorie.
+2. Choisir le fichier — MP4, mais aussi le MOV d'un téléphone, un AVI, un MKV
+   ou un WebM : tout format que les navigateurs ne lisent pas partout est
+   converti automatiquement en MP4 (H.264 + AAC) après l'envoi. Saisir ensuite
+   un titre, éventuellement une description, une date, une durée, une catégorie.
 3. Cocher **Mettre en avant** pour la placer en tête de l'onglet Vidéos,
    et régler l'**ordre d'affichage** (0 = pas de classement).
 4. Décider si le bouton **Télécharger** est proposé.

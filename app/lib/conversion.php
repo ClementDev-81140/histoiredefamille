@@ -104,6 +104,17 @@ function conversion_reglages(): array
  */
 function conversion_outils(): array
 {
+    // Outils imposés (essais seulement) : sans cela, un test « ffmpeg absent »
+    // réussirait ou échouerait selon la machine qui l'exécute (un Pi a ffmpeg,
+    // le bac à sable de test ne l'a pas). Voir conversion_outils_forcer().
+    $forces = $GLOBALS['hdf_conversion_outils'] ?? null;
+    if (is_array($forces)) {
+        return [
+            'ffmpeg'  => isset($forces['ffmpeg']) ? (string) $forces['ffmpeg'] : null,
+            'ffprobe' => isset($forces['ffprobe']) ? (string) $forces['ffprobe'] : null,
+        ];
+    }
+
     $trouver = static function (string $cle, string $defaut): ?string {
         $candidats = [];
         $regle = (string) config('conversion.' . $cle, '');
@@ -133,6 +144,23 @@ function conversion_outils(): array
         'ffmpeg'  => $trouver('ffmpeg', '/usr/bin/ffmpeg'),
         'ffprobe' => $trouver('ffprobe', '/usr/bin/ffprobe'),
     ];
+}
+
+/**
+ * Impose les chemins de ffmpeg et ffprobe (essais seulement).
+ *
+ * Passer null rétablit la recherche réelle. Le réglage ne survit pas à la
+ * requête : il ne sert qu'à rendre les tests indépendants de la machine.
+ *
+ * @param array{ffmpeg?:?string, ffprobe?:?string}|null $outils
+ */
+function conversion_outils_forcer(?array $outils): void
+{
+    if ($outils === null) {
+        unset($GLOBALS['hdf_conversion_outils']);
+        return;
+    }
+    $GLOBALS['hdf_conversion_outils'] = $outils;
 }
 
 /**

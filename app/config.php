@@ -51,9 +51,12 @@ function config_defaults(): array
             'allowed_extensions' => [
                 'pdf', 'txt', 'jpg', 'jpeg', 'png', 'webp', 'gif',
                 'mp4', 'm4v', 'docx', 'xlsx', 'odt', 'ods', 'mp3', 'm4a', 'ogg',
-                // WAV et AMR ne sont pas lus par les navigateurs : ils sont
-                // acceptés pour être convertis en M4A (AAC) par la file de
-                // conversion (voir app/lib/conversion.php).
+                // Formats vidéo que les navigateurs ne lisent pas (téléphones,
+                // caméscopes, appareils photo) : ils sont acceptés pour être
+                // convertis en MP4 (H.264 + AAC) par la file de conversion.
+                // Le type réel est vérifié avec finfo, comme pour le reste.
+                'mov', 'avi', 'mkv', 'webm', '3gp',
+                // WAV et AMR, eux, sont convertis en M4A (AAC).
                 'wav', 'amr',
             ],
             'max_image_pixels' => 24000000,

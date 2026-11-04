@@ -16,8 +16,9 @@
 </p>
 
 <div class="message message--info">
-    <p><strong>Vidéos :</strong> elles doivent être au format <strong>MP4 (H.264 + AAC)</strong>,
-    préparées à l’avance. Le serveur ne convertit aucun fichier.</p>
+    <p><strong>Vidéos :</strong> le <strong>MP4 (H.264 + AAC)</strong> est publié tel quel ;
+    tout autre format (.mov, .avi, .mkv, .webm…) est converti en arrière-plan après
+    l’import, une vidéo à la fois.</p>
     <p class="note">La procédure de dépôt (SFTP/Samba) est décrite dans le README, section « Vidéos ».</p>
 </div>
 
@@ -38,7 +39,7 @@
     <?php foreach ($files as $file): ?>
         <?php
         $defaultTitle = pathinfo($file['name'], PATHINFO_FILENAME);
-        $isVideo = in_array($file['ext'], ['mp4', 'm4v'], true);
+        $isVideo = in_array($file['ext'], extensions_video(), true);
         ?>
         <section class="panneau">
             <div class="section__entete">

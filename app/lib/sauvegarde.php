@@ -914,9 +914,12 @@ function sauvegarde_alerte(array $options = []): ?array
         return null;
     }
 
+    // Pas de préfixe « Sauvegarde : » ici : les deux vues qui affichent cette
+    // alerte (bandeau de l'administration, page « État du site ») le posent
+    // déjà en titre. Le message reste la phrase seule, réutilisable ailleurs.
     return [
         'niveau'  => 'rouge',
-        'message' => 'Sauvegarde : ' . $details[0],
+        'message' => $details[0],
         'details' => $details,
     ];
 }

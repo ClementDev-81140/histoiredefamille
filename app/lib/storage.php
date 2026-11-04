@@ -80,7 +80,28 @@ function incoming_files(): array
 function allowed_extensions(): array
 {
     $exts = config('uploads.allowed_extensions', []);
-    return is_array($exts) ? array_map(static fn ($e) => strtolower((string) $e), $exts) : [];
+    $exts = is_array($exts) ? array_map(static fn ($e) => strtolower((string) $e), $exts) : [];
+
+    // Les formats que le code sait réellement traiter (mime_map) sont toujours
+    // acceptés, même si config.local.php contient une ancienne liste : sinon un
+    // site déjà installé refuserait les fichiers .mov que la conversion sait
+    // désormais traiter (les deux listes disent la même chose, en pratique).
+    // Chaque extension ajoutée ici a un type réel déclaré : le contrôle par
+    // finfo reste donc aussi strict.
+    return array_values(array_unique(array_merge($exts, array_keys(mime_map()))));
+}
+
+/**
+ * Extensions qui désignent une vidéo, même quand fileinfo ne tranche pas.
+ *
+ * Une seule liste pour tout le site : le type de la fiche (kind_for), les
+ * fichiers en attente d'import et les filtres des pages vidéo.
+ *
+ * @return string[]
+ */
+function extensions_video(): array
+{
+    return ['mp4', 'm4v', 'mov', 'avi', 'mkv', 'webm', '3gp'];
 }
 
 /** Correspondance extension → types MIME acceptés (vérification du type réel). */
@@ -96,6 +117,12 @@ function mime_map(): array
         'gif'  => ['image/gif'],
         'mp4'  => ['video/mp4', 'application/mp4'],
         'm4v'  => ['video/mp4', 'video/x-m4v', 'application/mp4'],
+        // Formats vidéo à convertir en MP4 : le type réel est toujours vérifié.
+        'mov'  => ['video/quicktime'],
+        'avi'  => ['video/x-msvideo', 'video/avi', 'video/vnd.avi'],
+        'mkv'  => ['video/x-matroska'],
+        'webm' => ['video/webm'],
+        '3gp'  => ['video/3gpp'],
         'docx' => ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/zip', 'application/octet-stream'],
         'xlsx' => ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/zip', 'application/octet-stream'],
         'odt'  => ['application/vnd.oasis.opendocument.text', 'application/zip', 'application/octet-stream'],
@@ -278,7 +305,9 @@ function kind_for(string $mime, string $ext): string
     if (str_starts_with($mime, 'video/')) {
         return 'video';
     }
-    if (in_array($ext, ['mp4', 'm4v'], true)) {
+    // Repli par l'extension : certains conteneurs (.mkv, .3gp) ne sont pas
+    // toujours reconnus par fileinfo, et un film reste un film.
+    if (in_array($ext, extensions_video(), true)) {
         return 'video';
     }
     if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif'], true)) {

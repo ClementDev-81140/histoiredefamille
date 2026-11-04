@@ -187,14 +187,25 @@ hr {
     left: 0;
 }
 
-.sr-only {
+/* Texte réservé aux lecteurs d'écran : invisible, mais lu.
+ *
+ * Le sélecteur vise aussi un champ de fichier (input[type="file"].sr-only) :
+ * sans cela la règle « input[type="file"] { width: 100% } », plus spécifique et
+ * plus bas dans ce fichier, l'emportait. Le champ faisait alors la largeur de
+ * la fenêtre et débordait de la page (barre horizontale sur /admin/envoyer).
+ * left/top fixes : la boîte ne dépend plus de sa position dans le flux. */
+.sr-only,
+input[type="file"].sr-only {
     position: absolute;
+    top: 0;
+    left: 0;
     width: 1px;
     height: 1px;
     padding: 0;
     margin: -1px;
     overflow: hidden;
     clip: rect(0 0 0 0);
+    clip-path: inset(50%);
     white-space: nowrap;
     border: 0;
 }

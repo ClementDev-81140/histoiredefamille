@@ -145,9 +145,10 @@ require __DIR__ . '/partials/envoi.php';
         <li>Si le même fichier existe déjà sur le site, un message vous le dit avant
             d’ajouter quoi que ce soit : vous pouvez le garder quand même ou l’ignorer.
             Rien n’est jamais supprimé automatiquement.</li>
-        <li>Une vidéo envoyée reste telle quelle : le site ne la reconvertit pas. Le
-            <strong>MP4 (H.264 + AAC)</strong> est le seul format que tous les navigateurs
-            savent lire — choisissez-le quand c’est possible.</li>
+        <li>Une vidéo dans un format que les navigateurs ne lisent pas partout (.mov,
+            .avi, .mkv…) est acceptée : le site la <strong>convertit en MP4 (H.264 + AAC)</strong>
+            en tâche de fond, une vidéo à la fois. Elle reste invisible à la famille tant
+            que la conversion n’est pas finie. Un MP4 déjà prêt part en ligne tout de suite.</li>
         <li>Le dossier « arrivée » reste la solution de secours si l’envoi par le
             navigateur pose problème.</li>
     </ul>

@@ -147,7 +147,9 @@ $visibility = (string) $v('visibility', 'prive');
         <?php else: ?>
             <p class="aide">
                 Formats acceptés : <?= e(implode(', ', allowed_extensions())) ?>.
-                Pour une vidéo : MP4 (H.264 + AAC) uniquement.
+                Une vidéo déjà en MP4 (H.264 + AAC) est publiée telle quelle ; dans un
+                autre format (.mov, .avi, .mkv…), elle est convertie automatiquement
+                après l’envoi et reste invisible jusque-là.
             </p>
         <?php endif; ?>
     </div>

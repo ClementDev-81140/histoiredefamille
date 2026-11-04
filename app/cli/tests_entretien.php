@@ -418,6 +418,15 @@ function tests_sauvegarde(): void
             is_array($sansCle) && $sansCle['niveau'] === 'rouge',
             json_encode($sansCle, JSON_UNESCAPED_UNICODE)
         );
+
+        // Le titre « Sauvegarde : » est posé par les vues, jamais par le
+        // message : sinon le bandeau affichait « Sauvegarde : Sauvegarde : … ».
+        verifier(
+            'alerte : le message ne répète pas « Sauvegarde : » (la vue s’en charge)',
+            is_array($vieille) && !str_starts_with((string) $vieille['message'], 'Sauvegarde')
+                && str_contains((string) $vieille['message'], '5 jours'),
+            (string) ($vieille['message'] ?? '')
+        );
     } finally {
         tests_supprimer_dossier($site['racine']);
     }
@@ -884,7 +893,14 @@ function tests_verification(): void
             'free'     => null,
             'streams'  => 0,
             'php'      => PHP_VERSION,
-            'alerte'   => null,
+            'alerte'   => [
+                'niveau'  => 'rouge',
+                'message' => 'La dernière sauvegarde réussie date de 5 jours (limite : 3).',
+                'details' => [
+                    'La dernière sauvegarde réussie date de 5 jours (limite : 3).',
+                    'Espace libre faible sur la clé : 120 Mo.',
+                ],
+            ],
             'sauvegarde' => [
                 'dossier' => '/mnt/sauvegarde/histoiredefamille',
                 'libre_cle' => null,
@@ -912,6 +928,18 @@ function tests_verification(): void
             str_contains($page, 'À CORRIGER') && str_contains($page, 'Mettez https_only à true.'));
         verifier('page « État du site » : la date de la vérification est affichée',
             str_contains($page, '01/01/2026 à 10:00'));
+        verifier(
+            'page « État du site » : l’alerte de sauvegarde n’affiche « Sauvegarde : » qu’une fois',
+            substr_count($page, 'Sauvegarde :') === 1
+                && str_contains($page, 'La dernière sauvegarde réussie date de 5 jours (limite : 3).')
+                && str_contains($page, 'Espace libre faible sur la clé : 120 Mo.'),
+            (string) substr_count($page, 'Sauvegarde :')
+        );
+        verifier(
+            'bandeau de l’administration : le titre « Sauvegarde : » est posé par la vue, pas par le message',
+            substr_count((string) @file_get_contents(HDF_APP . '/views/layout_admin.php'), '<strong>Sauvegarde :</strong>') === 1
+                && !str_contains((string) @file_get_contents(HDF_APP . '/lib/sauvegarde.php'), "'Sauvegarde : ' .")
+        );
     } finally {
         tests_supprimer_dossier($racine);
     }

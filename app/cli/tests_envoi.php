@@ -778,4 +778,24 @@ function tests_envoi_menage(int $compte): void
         $ligne !== null && !str_contains((string) $ligne['details'], 'Ligne d’essai'),
         (string) ($ligne['details'] ?? '')
     );
+
+    // Mise en page : le champ de fichier masqué (class="sr-only") ne doit pas
+    // faire la largeur de la fenêtre. Le sélecteur « input[type="file"] » étant
+    // plus précis que « .sr-only », la règle « width: 100% » l'emportait : la
+    // page /admin/envoyer glissait horizontalement (611 px de large pour 390
+    // sur un téléphone).
+    $css = (string) @file_get_contents(HDF_ROOT . '/public/assets/style.css');
+    verifier(
+        'mise en page : le champ de fichier masqué ne déborde pas de la page (pas de barre horizontale)',
+        preg_match('/\.sr-only,\s*\ninput\[type="file"\]\.sr-only\s*\{[^}]*width:\s*1px;/', $css) === 1
+            && preg_match('/\.sr-only,\s*\ninput\[type="file"\]\.sr-only\s*\{[^}]*left:\s*0;/', $css) === 1,
+        'règle .sr-only de style.css'
+    );
+    verifier(
+        'mise en page : le composant d’envoi masque bien son champ de fichier',
+        str_contains(
+            (string) @file_get_contents(HDF_APP . '/views/admin/partials/envoi.php'),
+            'class="sr-only"'
+        )
+    );
 }
