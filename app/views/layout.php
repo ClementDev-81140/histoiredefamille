@@ -120,6 +120,9 @@ $navClass = static function (string $href) use ($currentPath): string {
                 <a class="nav__accent" href="<?= $account['role'] === 'admin' ? '/admin' : '/famille' ?>">
                     <?= $account['role'] === 'admin' ? 'Administration' : 'Espace famille' ?>
                 </a>
+                <?php if (est_journaliste()): ?>
+                    <a href="/propositions"<?= $navClass('/propositions') ?>>Mes propositions</a>
+                <?php endif; ?>
                 <a href="/mon-compte"<?= $navClass('/mon-compte') ?>>Mon compte</a>
                 <form method="post" action="/deconnexion" class="nav__form">
                     <?= csrf_field() ?>

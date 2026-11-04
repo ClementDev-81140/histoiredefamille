@@ -26,6 +26,8 @@ require_once __DIR__ . '/controllers/admin_courriels.php';
 require_once __DIR__ . '/controllers/admin_gazette.php';
 require_once __DIR__ . '/controllers/admin_lieux.php';
 require_once __DIR__ . '/controllers/admin_envoi.php';
+require_once __DIR__ . '/controllers/admin_a_valider.php';
+require_once __DIR__ . '/controllers/propositions.php';
 require_once __DIR__ . '/controllers/admin_conversions.php';
 require_once __DIR__ . '/controllers/compte.php';
 require_once __DIR__ . '/controllers/desinscription.php';
@@ -89,6 +91,21 @@ route('POST', '/deconnexion', 'auth_logout_action');
 // ---------------------------------------------------------------------------
 route('GET', '/famille', 'family_home');
 
+// Mes propositions : l'espace des journalistes (lecteurs et visiteurs refusés).
+route('GET', '/propositions', 'propositions_index');
+route('GET', '/propositions/nouvelle/{type}', 'proposition_form');
+route('POST', '/propositions/nouvelle/{type}', 'proposition_save');
+route('GET', '/propositions/{type}/{id}', 'proposition_form');
+route('POST', '/propositions/{type}/{id}', 'proposition_save');
+
+// Envoi par morceaux réservé aux journalistes : le fichier reste « prêt » et
+// ne devient un document que dans une proposition.
+route('POST', '/propositions/fichier/init', 'propositions_fichier_init');
+route('POST', '/propositions/fichier/morceau', 'propositions_fichier_morceau');
+route('GET', '/propositions/fichier/etat', 'propositions_fichier_etat');
+route('POST', '/propositions/fichier/terminer', 'propositions_fichier_terminer');
+route('POST', '/propositions/fichier/annuler', 'propositions_fichier_annuler');
+
 // Mon compte : changement de son propre mot de passe, pour tous les comptes.
 route('GET', '/mon-compte', 'mon_compte');
 // La gazette du mois : un numéro par groupe de droits, réservé aux ayants droit.
@@ -124,6 +141,11 @@ route('POST', '/admin/gazette/{id}/passer', 'admin_gazette_passer');
 
 // Envoi de gros fichiers par morceaux (administrateurs seulement).
 // Le protocole répond en JSON ; les morceaux ne sont jamais servis.
+route('GET', '/admin/a-valider', 'admin_a_valider');
+route('GET', '/admin/a-valider/{type}/{id}', 'admin_a_valider_apercu');
+route('POST', '/admin/a-valider/{type}/{id}/valider', 'admin_a_valider_valider');
+route('POST', '/admin/a-valider/{type}/{id}/refuser', 'admin_a_valider_refuser');
+
 route('GET', '/admin/envoyer', 'admin_envoi_page');
 route('GET', '/admin/envoyer/lot', 'admin_envoi_lot');
 route('POST', '/admin/envoyer/init', 'admin_envoi_init');

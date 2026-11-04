@@ -11,7 +11,9 @@
  *                    formulaire qui entoure le composant (false) ;
  *     titre:  string titre du bloc ;
  *     aide:   string phrase d'explication ;
- *     reprendre: array|null envoi à reprendre (nom, taille, token).
+ *     reprendre: array|null envoi à reprendre (nom, taille, token) ;
+ *     base:   string préfixe des adresses du protocole (/admin/envoyer par
+ *             défaut ; /propositions/fichier pour un journaliste).
  * }
  */
 $envoiOptions = $envoiOptions ?? [];
@@ -19,16 +21,18 @@ $creerFiche   = (bool) ($envoiOptions['creer'] ?? true);
 $titreBloc    = (string) ($envoiOptions['titre'] ?? 'Envoyer des fichiers');
 $aideBloc     = (string) ($envoiOptions['aide'] ?? '');
 $aReprendre   = $envoiOptions['reprendre'] ?? null;
+$baseEnvoi    = rtrim((string) ($envoiOptions['base'] ?? '/admin/envoyer'), '/');
+$afficherLot  = (bool) ($envoiOptions['lot'] ?? true);
 $reglages     = envoi_reglages();
 ?>
 <section class="envoi" data-envoi
-         data-envoi-init="/admin/envoyer/init"
-         data-envoi-morceau="/admin/envoyer/morceau"
-         data-envoi-etat="/admin/envoyer/etat"
-         data-envoi-terminer="/admin/envoyer/terminer"
-         data-envoi-decision="/admin/envoyer/decision"
-         data-envoi-annuler="/admin/envoyer/annuler"
-         data-envoi-lot="/admin/envoyer/lot"
+         data-envoi-init="<?= e($baseEnvoi) ?>/init"
+         data-envoi-morceau="<?= e($baseEnvoi) ?>/morceau"
+         data-envoi-etat="<?= e($baseEnvoi) ?>/etat"
+         data-envoi-terminer="<?= e($baseEnvoi) ?>/terminer"
+         data-envoi-decision="<?= e($baseEnvoi) ?>/decision"
+         data-envoi-annuler="<?= e($baseEnvoi) ?>/annuler"
+         data-envoi-lot="<?= e($baseEnvoi) ?>/lot"
          data-envoi-csrf="<?= e(csrf_token()) ?>"
          data-envoi-creer="<?= $creerFiche ? '1' : '0' ?>"
          data-envoi-morceau-octets="<?= (int) $reglages['morceau_octets'] ?>"
@@ -98,8 +102,10 @@ $reglages     = envoi_reglages();
         <button type="button" class="bouton bouton--secondaire" data-envoi-tout-pause>
             Tout mettre en pause
         </button>
+        <?php if ($afficherLot): ?>
         <a class="bouton bouton--secondaire" href="/admin/envoyer/lot" data-envoi-vers-lot hidden>
             Compléter ce lot d’un coup
         </a>
+        <?php endif; ?>
     </p>
 </section>

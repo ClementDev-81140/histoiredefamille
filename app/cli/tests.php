@@ -2396,7 +2396,19 @@ if ($filtre === '' || $filtre === 'composition') {
     $derniere = basename((string) end($migrations));
     $sql009   = (string) @file_get_contents(dirname(__DIR__) . '/migrations/009_articles_modele.sql');
     // Chaque lot ajoute SA migration ; les précédentes ne bougent jamais.
-    verifier('migration : 015 est la dernière migration', $derniere === '015_conversions.sql', $derniere);
+    verifier('migration : 016 est la dernière migration', $derniere === '016_propositions.sql', $derniere);
+    $migration016 = (string) @file_get_contents(dirname(__DIR__) . '/migrations/016_propositions.sql');
+    verifier(
+        'migration : 016 ajoute les colonnes de validation, sans rien publier par erreur',
+        str_contains($migration016, 'ALTER TABLE articles ADD COLUMN moderation_state')
+            && str_contains($migration016, 'ALTER TABLE documents ADD COLUMN moderation_state')
+            && str_contains($migration016, 'ALTER TABLE recipes ADD COLUMN moderation_state')
+            // Les contenus déjà en base restent publiés : c'est la valeur par
+            // défaut, et aucune ligne n'est mise à jour par la migration.
+            && substr_count($migration016, "DEFAULT 'publie'") === 3
+            && preg_match('/^\s*(DROP|DELETE|UPDATE)\b/mi', $migration016) === 0,
+        'migration 016'
+    );
     $migration015 = (string) @file_get_contents(dirname(__DIR__) . '/migrations/015_conversions.sql');
     verifier(
         'migration : 015 crée la file de conversion, sans toucher à l’existant',
@@ -2485,6 +2497,14 @@ require_once __DIR__ . '/tests_carte.php';
 require_once __DIR__ . '/tests_envoi.php';
 require_once __DIR__ . '/tests_conversion.php';
 require_once __DIR__ . '/tests_profils.php';
+
+// Les propositions des journalistes ont besoin des mêmes outils d'essai que
+// les profils (tests_envoi_requete) : ce bloc vient donc après eux.
+if ($filtre === '' || $filtre === 'propositions') {
+    require_once __DIR__ . '/tests_propositions.php';
+    tests_propositions();
+}
+
 
 if ($filtre === '' || $filtre === 'courriels') {
     tests_courriels();

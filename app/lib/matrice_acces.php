@@ -105,6 +105,12 @@ function matrice_famille(string $methode, string $motif): string
         || str_starts_with($motif, '/tchat')) {
         return 'famille';
     }
+    // Les propositions des journalistes : un lecteur reçoit 403 (il ne propose
+    // rien), un visiteur est renvoyé vers la connexion, et un journaliste ne
+    // voit que les siennes (une proposition d'un autre auteur répond 404).
+    if ($motif === '/propositions' || str_starts_with($motif, '/propositions/')) {
+        return 'propositions';
+    }
     // La gazette en ligne n'est lisible que par les ayants droit : un visiteur
     // est renvoyé vers la connexion, et un compte sans numéro reçoit un 404.
     if (str_starts_with($motif, '/gazette/')) {
@@ -154,6 +160,24 @@ function matrice_attendu(string $methode, string $motif, string $profil): int
             // POST sans jeton CSRF : refusé.
             return $methode === 'POST' ? 403 : 200;
 
+        case 'propositions':
+            if (!$connecte) {
+                return 303; // renvoi vers la page de connexion
+            }
+            if ($profil === 'lecteur') {
+                return 403; // un lecteur ne propose rien
+            }
+            // POST sans jeton CSRF : refusé.
+            if ($methode === 'POST') {
+                return 403;
+            }
+            // Une proposition d'un autre auteur répond exactement comme une
+            // proposition qui n'existe pas.
+            if ($motif === '/propositions/{type}/{id}') {
+                return 404;
+            }
+            return 200;
+
         case 'gazette':
             return $connecte ? 404 : 303;
 
@@ -182,7 +206,9 @@ function matrice_attendu(string $methode, string $motif, string $profil): int
  */
 function matrice_url(string $motif, array $f): string
 {
-    $url = $motif;
+    // Le type d'une proposition est une valeur fermée (article, document,
+    // recette) : la matrice emploie un document, dont l'identifiant existe.
+    $url = str_replace('{type}', 'document', $motif);
 
     if (str_contains($url, '{slug}')) {
         $slug = 'page';

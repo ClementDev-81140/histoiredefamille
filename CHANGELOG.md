@@ -3,6 +3,63 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.23.0] — 2026-11-04
+
+### Les propositions passent par les administrateurs
+
+Jusqu'ici, un journaliste pouvait ouvrir les formulaires d'administration et
+publier directement. Ce n'est plus le cas : il **propose**, un administrateur
+**valide**.
+
+- **Un espace « Mes propositions »** (menu, et un encart sur l'accueil de la
+  famille) : le journaliste y dépose un **article**, un **document ou une
+  photo** (envoi simple, ou **par morceaux** pour les gros fichiers), une
+  **recette**. Il y suit l'état de chacun et peut les corriger.
+- **Quatre états** : `brouillon` (gardé pour soi), `attente`, `publie`,
+  `refuse` — avec, en cas de refus, un **motif** que l'auteur lit. Toute
+  proposition naît **« en attente »** et **privée** : le journaliste ne choisit
+  pas la visibilité, il peut seulement la **suggérer** (un champ `visibility`
+  glissé dans le formulaire est ignoré).
+- **Rien ne fuit avant la validation.** Une condition SQL unique
+  (`proposition_clause`) rétrécit toutes les listes, la recherche, l'accueil,
+  le fil, la carte, la gazette et les courriels ; la **même règle** écrite en
+  PHP garde les adresses directes (`/f/{id}`, `/media/miniature/{id}`,
+  `/articles/{slug}`, `/recettes/{slug}`). Un lecteur, un autre journaliste ou
+  un visiteur reçoit exactement la réponse d'un contenu inexistant.
+- **Un seul écran « À valider »** dans l'administration (compteur dans le menu
+  et sur le tableau de bord) : type, titre, auteur, date, visibilité souhaitée,
+  puis un **aperçu complet** et deux décisions — **Valider** (choix de la
+  visibilité, **privé par défaut**) ou **Refuser** (motif obligatoire, refusé
+  s'il fait moins de trois caractères). Tout est noté au journal d'actions.
+- **Les contenus existants ne bougent pas** : la **migration 016** est en ajout
+  seul, et la valeur par défaut est `publie`. Les articles, documents et
+  recettes déjà en ligne restent publiés, avec la même visibilité.
+- **Les courriels attendent la validation** : les administrateurs peuvent être
+  prévenus qu'une proposition arrive (si l'envoi est configuré, un seul
+  message par proposition et par administrateur) ; les lecteurs ne sont
+  prévenus qu'**au moment de la publication**, selon la visibilité retenue.
+- **Modifier, c'est repasser en relecture** : tant qu'une proposition n'est pas
+  validée, son auteur la corrige librement (elle reste « en attente », ou
+  « refusée » avec son motif). S'il modifie un contenu **déjà publié**, celui-ci
+  repasse « en attente » et redevient invisible pour les autres jusqu'à la
+  prochaine validation — la trace de l'ancienne validation reste au journal
+  d'actions.
+- **Les événements du calendrier ne sont pas concernés** : il n'existe pas de
+  contenu « événement » dans le site. Le calendrier est calculé à partir des
+  dates des fiches de personnes, qui restent réservées aux administrateurs.
+- **Technique** : le routeur accepte un motif `{type}` (mot en minuscules), et
+  l'envoi par morceaux sert aussi les journalistes (`/propositions/fichier/*`)
+  sans jamais créer de fiche : le fichier reste « prêt » jusqu'à
+  l'enregistrement de la proposition.
+
+Tests : **862 au total (+60)**, dont une famille « propositions » complète —
+états, dépôt, file d'attente, validation (privé par défaut), refus sans motif
+(refusé) puis avec motif, correction, article déjà publié verrouillé, brouillon,
+et **onze vérifications de fuite** (article, document, recette × lecteur, autre
+journaliste, visiteur ; pages, fichier, téléchargement, vignette, liste,
+recherche, accueil, gazette, courriels). Matrice d'accès : **184 routes**,
+**736 vérifications**, **240 contrôles**, **0 anomalie**.
+
 ## [1.22.0] — 2026-11-04
 
 ### Trois profils, et seulement trois

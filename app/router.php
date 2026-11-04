@@ -3,7 +3,10 @@
  * Routeur minimaliste (aucun framework).
  *
  * Une route = méthode HTTP + motif (/admin/documents/{id}) + fonction.
- * Les motifs acceptent {id} (nombre) et {slug} (lettres, chiffres, tirets).
+ * Les motifs acceptent {id} (nombre), {slug} (lettres, chiffres, tirets) et
+ * {type} (un mot en minuscules : article, document, recette). Un motif ne
+ * fabrique jamais de nom de table : le contrôleur vérifie que le type reçu
+ * fait partie de sa liste fermée.
  */
 
 declare(strict_types=1);
@@ -26,7 +29,11 @@ function route_to_regex(string $pattern): array
         '/\{(\w+)\}/',
         static function (array $m) use (&$names): string {
             $names[] = $m[1];
-            return $m[1] === 'slug' ? '([a-z0-9][a-z0-9\-]*)' : '(\d+)';
+            return match ($m[1]) {
+                'slug'  => '([a-z0-9][a-z0-9\-]*)',
+                'type'  => '([a-z]{2,20})',
+                default => '(\d+)',
+            };
         },
         $pattern
     ) ?? $pattern;

@@ -116,6 +116,12 @@ function est_lecteur(): bool
     return compte_est_lecteur(current_account());
 }
 
+/** Le compte connecté est-il un journaliste ? */
+function est_journaliste(): bool
+{
+    return compte_est_journaliste(current_account());
+}
+
 /** Réserve une action aux journalistes et aux administrateurs (403 sinon). */
 function require_proposer(): void
 {

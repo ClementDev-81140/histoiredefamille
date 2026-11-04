@@ -464,7 +464,7 @@ histoiredefamille/
 │   │                        conversion des vidéos (conversion)…
 │   ├── views/               gabarits PHP (public, famille, admin)
 │   ├── migrations/          fichiers SQL numérotés
-│   │                        (001_init … 015_conversions)
+│   │                        (001_init … 016_propositions)
 │   └── cli/                 commandes : migrate, create-admin, demo, maintenance,
 │                            sauvegarde, restauration, verifier-mise-en-ligne,
 │                            convertir (vidéos), envoyer-courriels, tests
@@ -902,6 +902,26 @@ Il y a **trois profils**, et seulement trois :
 Les trois lisent la même chose : les documents publics, ceux ouverts à toutes
 les familles, et ceux de leur branche. Un journaliste ne publie jamais
 directement : ses propositions attendent la validation d'un administrateur.
+
+**Les propositions (1.23.0).** Un journaliste ouvre **Mes propositions** (menu,
+ou encart sur son accueil) et dépose un **article**, un **document ou une
+photo** (envoi simple, ou par morceaux pour les gros fichiers) ou une
+**recette**. Chaque proposition naît **en attente** et **privée** : elle n'est
+visible que de son auteur et des administrateurs, nulle part ailleurs (listes,
+recherche, fil, carte, gazette, courriels, adresses directes). Le journaliste ne
+choisit pas la visibilité : il peut seulement la **suggérer**.
+
+L'administrateur ouvre **Administration → À valider** (compteur dans le menu et
+sur le tableau de bord), lit l'aperçu, puis :
+- **Valider** — en choisissant la visibilité, **privé par défaut** ; le contenu
+  est publié comme s'il avait été créé par un administrateur, et les lecteurs
+  sont prévenus par courriel selon leurs préférences ;
+- **Refuser** — avec un **motif obligatoire**, que l'auteur lit dans son espace.
+
+Une proposition se corrige à tout moment : tant qu'elle n'est pas validée, elle
+reste « en attente » (ou « refusée », avec son motif) ; si son auteur modifie un
+contenu **déjà publié**, celui-ci repasse « en attente » et redevient invisible
+pour les autres jusqu'à la prochaine validation.
 
 La page **Comptes → Ajouter un compte** propose le profil **Lecteur** par
 défaut ; le champ « Profil » d'un compte existant permet de passer de Lecteur

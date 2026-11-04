@@ -5602,6 +5602,14 @@ legend {
     margin: 0;
 }
 
+/* Aperçu d'une proposition dans l'administration : l'image ne dépasse jamais
+   la colonne, quel que soit l'écran. */
+.apercu-image {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
 @media (max-width: 40rem) {
     .envoi {
         padding: 0.75rem;

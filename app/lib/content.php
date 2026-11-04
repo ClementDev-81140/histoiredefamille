@@ -743,7 +743,12 @@ function find_viewable_article(string $slug): ?array
     if ($article['status'] !== 'publie' || (int) $article['published_at'] > time()) {
         return null;
     }
-    if (!can_view((string) $article['visibility'], content_branch_ids('article', (int) $article['id']))) {
+    $compte = current_account();
+    $mienne = proposition_mienne($compte, 'article', $article);
+    if (!$mienne && !can_view((string) $article['visibility'], content_branch_ids('article', (int) $article['id']))) {
+        return null;
+    }
+    if (!proposition_visible($compte, 'article', $article)) {
         return null;
     }
     return $article;

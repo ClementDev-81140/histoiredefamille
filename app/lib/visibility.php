@@ -115,6 +115,23 @@ function visibility_clause(string $kind, string $alias, array &$params): string
 
     $visible = '(' . implode(' OR ', $conditions) . ')';
 
+    // Un auteur voit toujours ses propres propositions, même privées : il
+    // doit pouvoir les relire avant la validation. Cette ouverture ne
+    // concerne que ses lignes (submitted_by = son identifiant).
+    if (in_array($kind, ['article', 'document', 'recipe'], true) && proposition_migration_faite()) {
+        static $auteur = 0;
+        $auteur++;
+        $nom = ':propauteur' . $auteur;
+        $params[$nom] = (int) $account['id'];
+        $visible = '(' . $visible . ' OR ' . $a . '.submitted_by = ' . $nom . ')';
+    }
+
+    // Une proposition non validée (article, document, recette) n'est pas
+    // montrée aux autres : la condition ci-dessous ne fait que RÉTRÉCIR ce
+    // qui est visible. Les administrateurs sont déjà sortis plus haut, et
+    // l'auteur retrouve ses propositions dans « Mes propositions ».
+    $visible = '(' . $visible . ' AND ' . proposition_clause($kind, $a, $params) . ')';
+
     // Une vidéo encore dans la file de conversion n'est pas montrée aux
     // comptes de famille : son lecteur afficherait une erreur. Cette condition
     // ne fait que RÉTRÉCIR ce qui est visible : aucun droit n'est ouvert, et
@@ -218,13 +235,20 @@ function find_viewable_document(int $id): ?array
     if (!$doc) {
         return null;
     }
-    if (!can_view((string) $doc['visibility'], content_branch_ids('document', $id))) {
+    // Un auteur retrouve toujours sa proposition, même privée.
+    if (!proposition_mienne(current_account(), 'document', $doc)
+        && !can_view((string) $doc['visibility'], content_branch_ids('document', $id))) {
         return null;
     }
     // Une vidéo encore dans la file de conversion n'existe pas, pour la
     // famille : même réponse qu'un document interdit (404). L'administrateur,
     // lui, la voit et sa fiche indique l'avancement.
     if (!is_admin() && !conversion_document_pret($doc)) {
+        return null;
+    }
+    // Même règle pour une proposition en attente : elle ne se sert pas par
+    // une adresse directe, sauf à son auteur et aux administrateurs.
+    if (!proposition_visible(current_account(), 'document', $doc)) {
         return null;
     }
     return $doc;

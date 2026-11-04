@@ -17,6 +17,23 @@ $backupDays = $backup && !empty($backup['date']) ? days_since((int) $backup['dat
 
 <?php require __DIR__ . '/../partials/alertes_connexion.php'; ?>
 
+<?php
+// Compteur « À valider » : ce que les journalistes ont proposé et qui attend
+// une décision. Un défaut de lecture ne doit pas casser le tableau de bord.
+try {
+    $aValider = propositions_a_valider();
+} catch (Throwable) {
+    $aValider = 0;
+}
+?>
+<?php if ($aValider > 0): ?>
+    <div class="message message--info">
+        <strong><?= $aValider ?></strong> proposition<?= $aValider > 1 ? 's' : '' ?>
+        attend<?= $aValider > 1 ? 'ent' : '' ?> une décision de votre part.
+        <a href="/admin/a-valider">Examiner les propositions</a>
+    </div>
+<?php endif; ?>
+
 <?php if ($backup === null): ?>
     <div class="message message--info">
         Aucune sauvegarde enregistrée pour l’instant.

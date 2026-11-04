@@ -26,6 +26,14 @@ try {
     $alerteSauvegarde = null;
 }
 
+// Compteur « À valider » : nombre de propositions qui attendent une décision.
+// Un défaut de lecture ne doit jamais empêcher d'ouvrir l'administration.
+try {
+    $aValider = propositions_a_valider();
+} catch (Throwable) {
+    $aValider = 0;
+}
+
 $current   = $_SERVER['REQUEST_URI'] ?? '/admin';
 $current   = parse_url($current, PHP_URL_PATH) ?: '/admin';
 $pageTitle = (!empty($titre) ? $titre . ' — ' : '') . 'Administration — ' . $siteName;
@@ -72,6 +80,7 @@ $navLink = static function (string $href, string $label, bool $exact = false) us
 <div class="conteneur admin-corps">
     <aside class="admin-menu" aria-label="Menu de l'administration">
         <?= $navLink('/admin', 'Tableau de bord', true) ?>
+        <a href="/admin/a-valider"<?= str_starts_with($current, '/admin/a-valider') ? ' class="actif" aria-current="page"' : '' ?>>À valider<?php if ($aValider > 0): ?><span class="pastille" aria-label="propositions en attente"><?= $aValider > 99 ? '99+' : (int) $aValider ?></span><?php endif; ?></a>
 
         <p class="admin-menu__titre">Partie publique</p>
         <?= $navLink('/admin/articles', 'Articles') ?>

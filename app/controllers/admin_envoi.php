@@ -31,13 +31,27 @@ declare(strict_types=1);
  * comporte comme toutes les pages d'administration : renvoi vers la connexion
  * pour un visiteur, « Accès refusé » pour un compte de famille.
  */
-function envoi_exiger_admin_json(): void
+function envoi_exiger_admin_json(): bool
 {
     $estScript = ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'XMLHttpRequest';
 
+    // Les adresses /propositions/fichier/* réutilisent ce protocole pour un
+    // journaliste : même code, mêmes contrôles, mais la fiche n'est jamais
+    // créée (le fichier reste « prêt », à rattacher à une proposition).
+    //
+    // Le mode est lu puis remis à zéro : il ne vaut que pour l'appel en cours,
+    // jamais pour la requête suivante (les tests enchaînent les requêtes dans
+    // le même processus).
+    $journaliste = !empty($GLOBALS['hdf_envoi_journaliste']);
+    $GLOBALS['hdf_envoi_journaliste'] = false;
+
     if (!$estScript) {
-        require_admin();
-        return;
+        if ($journaliste) {
+            require_proposer();
+        } else {
+            require_admin();
+        }
+        return $journaliste;
     }
 
     if (!is_logged_in()) {
@@ -47,13 +61,17 @@ function envoi_exiger_admin_json(): void
             'code'   => 'session',
         ], 401);
     }
-    if (!is_admin()) {
+    if ($journaliste ? !peut_proposer() : !is_admin()) {
         json_response([
             'ok'     => false,
-            'erreur' => 'Cette action est réservée aux administrateurs.',
+            'erreur' => $journaliste
+                ? 'Votre compte ne permet pas de proposer des fichiers.'
+                : 'Cette action est réservée aux administrateurs.',
             'code'   => 'refus',
         ], 403);
     }
+
+    return $journaliste;
 }
 
 /** Refus JSON quand le jeton CSRF manque ou ne correspond pas. */
@@ -160,13 +178,19 @@ function admin_envoi_page(): void
 /** « init » : annonce un fichier, après tous les refus possibles. */
 function admin_envoi_init(): void
 {
-    envoi_exiger_admin_json();
+    $journaliste = envoi_exiger_admin_json();
     envoi_csrf_json();
 
     $nom    = post('nom');
     $taille = (int) post('taille');
     $mime   = post('type');
     $creer  = post('creer', '1') !== '0';
+
+    // Un journaliste ne crée jamais de fiche par l'envoi : son fichier reste
+    // « prêt » et ne devient un document que dans sa proposition.
+    if ($journaliste) {
+        $creer = false;
+    }
 
     $compte = (int) current_account()['id'];
 

@@ -19,6 +19,32 @@ $laterale        = composition_colonne('famille', 'laterale');
 $pleine          = composition_colonne('famille', 'pleine');
 $articlesVisibles = in_array('une', $principale, true) || in_array('colonnes', $principale, true);
 ?>
+<?php
+// Un journaliste retrouve ici son espace de propositions : c'est son travail
+// en cours, avec le nombre de propositions qui attendent une décision.
+$mesPropositions = 0;
+if (est_journaliste()) {
+    foreach (propositions_de((int) $account['id']) as $element) {
+        if (($element['row']['moderation_state'] ?? '') === 'attente') {
+            $mesPropositions++;
+        }
+    }
+}
+?>
+<?php if (est_journaliste()): ?>
+<section class="panneau panneau--famille">
+    <h2>Vous êtes journaliste</h2>
+    <p>
+        Vous proposez des articles, des documents et des recettes. Chaque proposition
+        est relue par un administrateur avant d’être publiée.
+    </p>
+    <p class="actions">
+        <a class="bouton" href="/propositions/nouvelle/article">Proposer un article</a>
+        <a class="bouton bouton--secondaire" href="/propositions">Mes propositions<?php if ($mesPropositions > 0): ?> <span class="pastille"><?= $mesPropositions ?></span><?php endif; ?></a>
+    </p>
+</section>
+<?php endif; ?>
+
 <section class="section une-intro">
     <h1 class="une-intro__titre">Bonjour<?= !empty($account['display_name']) ? ' ' . e($account['display_name']) : '' ?></h1>
     <p class="note">
