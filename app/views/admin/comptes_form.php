@@ -1,24 +1,33 @@
 <?php
 /**
- * Ajouter des personnes : une seule, ou toute une liste collée.
+ * Ajouter un compte : le profil d'abord, puis les champs qui vont avec.
  *
- * Les deux blocs envoient vers l'écran d'aperçu (aucune création directe).
+ *   - Lecteur (proposé par défaut) : la branche et son compte partagé ;
+ *   - Journaliste : les personnes (une seule, ou une liste collée), qui
+ *     passent par l'écran d'aperçu avant toute création.
  *
- * @var array $erreurs, $old, $branches
- * @var int   $maximum
+ * @var array  $erreurs, $old, $branches
+ * @var int    $maximum
+ * @var string $profil  « lecteur » ou « journaliste »
  */
 $val = static fn (string $cle, string $defaut = ''): string => (string) old_value($old, $cle, $defaut);
 ?>
 <div class="section__entete">
     <div>
-        <h1>Ajouter des personnes</h1>
+        <h1>Ajouter un compte</h1>
         <p class="note">
-            Chaque personne reçoit un identifiant (prénom.nom) et un mot de passe provisoire
-            que vous lui transmettrez. Rien n’est créé avant l’écran d’aperçu.
+            Trois profils existent : <strong>Lecteur</strong> (lit seulement), <strong>Journaliste</strong>
+            (propose des contenus, validés par un administrateur) et <strong>Administrateur</strong>
+            (géré dans « Administrateurs »).
         </p>
     </div>
     <a class="lien" href="/admin/comptes">← Retour aux comptes</a>
 </div>
+
+<p class="recherche__onglets">
+    <a class="<?= $profil === 'lecteur' ? 'actif' : '' ?>" href="/admin/comptes/nouvelle?profil=lecteur">Lecteur</a>
+    <a class="<?= $profil === 'journaliste' ? 'actif' : '' ?>" href="/admin/comptes/nouvelle?profil=journaliste">Journaliste</a>
+</p>
 
 <?php if ($erreurs !== []): ?>
     <div class="message message--erreur">
@@ -28,8 +37,46 @@ $val = static fn (string $cle, string $defaut = ''): string => (string) old_valu
     </div>
 <?php endif; ?>
 
+<?php if ($profil === 'lecteur'): ?>
 <section class="panneau comptes-bloc">
-    <h2>Une personne</h2>
+    <h2>Un lecteur (la branche et son compte)</h2>
+    <p class="aide">
+        Un lecteur est le compte partagé d’une branche : il lit ce que sa branche a le droit
+        de voir et ne peut rien écrire ni proposer. Créer un lecteur crée donc aussi sa branche.
+        Un seul lecteur par branche ; pour une personne de la famille qui souhaite proposer des
+        contenus, choisissez le profil « Journaliste ».
+    </p>
+
+    <form method="post" action="/admin/comptes/lecteur" class="formulaire">
+        <?= csrf_field() ?>
+
+        <div class="ligne-champs">
+            <div class="champ">
+                <label for="code">Identifiant de connexion</label>
+                <input type="text" id="code" name="code" maxlength="30" required
+                       pattern="[A-Z][A-Z0-9_]{1,29}" placeholder="MARTIN"
+                       autocapitalize="characters" spellcheck="false" value="<?= e($val('code')) ?>">
+            </div>
+            <div class="champ">
+                <label for="name">Nom de la branche</label>
+                <input type="text" id="name" name="name" maxlength="100" required
+                       placeholder="Famille Martin" value="<?= e($val('name')) ?>">
+            </div>
+        </div>
+
+        <label class="case">
+            <input type="checkbox" name="see_all" value="1" <?= checked($val('see_all') === '1') ?>>
+            Cette branche voit toutes les branches
+        </label>
+
+        <p class="actions">
+            <button type="submit" class="bouton">Créer le lecteur</button>
+        </p>
+    </form>
+</section>
+<?php else: ?>
+<section class="panneau comptes-bloc">
+    <h2>Un journaliste</h2>
 
     <form method="post" action="/admin/comptes/apercu" class="formulaire">
         <?= csrf_field() ?>
@@ -133,3 +180,4 @@ $val = static fn (string $cle, string $defaut = ''): string => (string) old_valu
         </p>
     </form>
 </section>
+<?php endif; ?>

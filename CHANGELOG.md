@@ -3,6 +3,53 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.22.0] — 2026-11-04
+
+### Trois profils, et seulement trois
+
+Le site avait deux sortes de comptes de famille aux droits identiques, ce qui
+prêtait à confusion : « compte de branche » et « compte personnel ». Il a
+maintenant **trois profils clairs**, et les mots employés partout sont les
+mêmes que dans la vie courante.
+
+- **Lecteur** (identifiant partagé d'une branche, en majuscules) : il **lit**
+  ce que sa branche a le droit de voir. Il ne peut **rien** écrire ni proposer :
+  aucun formulaire, aucun envoi de fichier. Il garde « Mon compte » (mot de
+  passe, courriels) et le tchat, comme avant.
+- **Journaliste** (compte personnel, `prenom.nom`) : il lit avec les droits de
+  sa branche et il **propose** des contenus — qui ne seront publiés qu'après
+  validation d'un administrateur.
+- **Administrateur** : tout, et c'est lui qui valide.
+
+Ce qui change concrètement :
+
+- **Les libellés** : formulaires de création, listes, filtres, message
+  d'accès copié dans un SMS (« Profil : Lecteur — lit ce que sa branche… »),
+  pages « Mon compte », README. **Les identifiants techniques en base ne
+  changent pas** (`branche`, `personne`, `admin`) : aucune migration, donc
+  aucun risque pour les comptes existants.
+- **Créer un lecteur** : la page **Comptes → Ajouter un compte** s'ouvre sur le
+  profil **Lecteur**, proposé par défaut. Un lecteur est le compte partagé
+  d'une branche : le formulaire crée la branche et son compte d'un seul geste,
+  affiche le mot de passe **une seule fois**, et le refuse en double (un seul
+  lecteur par branche).
+- **Changer de profil** : la fiche d'un compte comporte un champ « Profil ».
+  Passer un journaliste en lecteur (ou l'inverse) ne touche ni son identifiant,
+  ni son mot de passe. Repasser en journaliste redemande un nom et un prénom.
+  Un administrateur ne se transforme pas par cette page : il a son écran.
+- **Un lecteur ne reçoit que des refus** sur toutes les routes d'écriture
+  (documents, articles, recettes, albums, envois par morceaux, comptes), y
+  compris en POST direct : 403, ou renvoi vers la connexion pour un visiteur.
+  C'est vérifié route par route par la matrice d'accès.
+- **Matrice d'accès** : elle teste désormais les **quatre profils du site**
+  (visiteur, lecteur, journaliste, administrateur), sur **170 routes** —
+  **680 vérifications, 236 contrôles ciblés, 0 anomalie**.
+
+Tests : **802 au total (+42)**, dont une famille « profils » complète :
+libellés, aides de décision, création d'un lecteur (hachage seul, doublon
+refusé, identifiant en minuscules refusé), changement de profil dans les deux
+sens, et refus systématique d'un lecteur sur les écritures.
+
 ## [1.21.1] — 2026-11-04
 
 ### Les vidéos de téléphone arrivent enfin jusqu'au bout

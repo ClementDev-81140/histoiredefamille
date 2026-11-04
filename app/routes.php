@@ -224,6 +224,8 @@ route('POST', '/admin/categories/{id}/supprimer', 'admin_category_delete');
 // Comptes de la famille : personnes, comptes de branche, administrateurs.
 route('GET', '/admin/comptes', 'admin_comptes');
 route('GET', '/admin/comptes/nouvelle', 'admin_comptes_form');
+// Profil « Lecteur » : la branche et son compte partagé, créés ensemble.
+route('POST', '/admin/comptes/lecteur', 'admin_compte_lecteur_save');
 route('POST', '/admin/comptes/apercu', 'admin_comptes_apercu');
 route('POST', '/admin/comptes/creer', 'admin_comptes_creer');
 route('GET', '/admin/comptes/resultat/{slug}', 'admin_comptes_resultat');

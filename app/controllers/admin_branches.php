@@ -158,6 +158,8 @@ function admin_branch_save(array $params = []): void
                 'display_name'  => $data['name'],
                 'password_hash' => $passwordHash ?? password_make(password_generate()),
                 'role'          => 'famille',
+                // Profil « Lecteur » : le compte partagé de la branche.
+                'account_type'  => 'branche',
                 'branch_id'     => $branchId,
                 'is_active'     => $data['is_active'],
                 'created_at'    => $now,

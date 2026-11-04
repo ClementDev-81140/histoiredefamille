@@ -4,13 +4,12 @@
  *
  * Le test lit les routes dans `app/routes.php` (elles ne sont jamais recopiées
  * ici), crée des contenus fictifs dans toutes les visibilités, puis appelle
- * chaque page avec cinq profils :
+ * chaque page avec les quatre profils du site :
  *
  *   1. visiteur (personne non connectée) ;
- *   2. branche A (compte de branche) ;
- *   3. personne de la branche B ;
- *   4. personne qui voit toutes les branches ;
- *   5. administrateur.
+ *   2. lecteur (compte de branche, branche A) ;
+ *   3. journaliste (compte personnel, branche B) ;
+ *   4. administrateur.
  *
  * Les pages sont appelées DANS LE MÊME PROCESSUS que le test (aucun serveur
  * web n'est nécessaire), avec une sortie capturée. Les données de test sont
@@ -122,14 +121,13 @@ function matrice_famille(string $methode, string $motif): string
     return 'public';
 }
 
-/** Les cinq profils testés, dans l'ordre des colonnes du rapport. */
+/** Les quatre profils testés, dans l'ordre des colonnes du rapport. */
 function matrice_profils(): array
 {
     return [
         'visiteur'   => 'Visiteur (non connecté)',
-        'branche_a'  => 'Branche A',
-        'personne_b' => 'Personne de la branche B',
-        'voit_tout'  => 'Voit toutes les branches',
+        'lecteur'    => 'Lecteur (branche A)',
+        'journaliste' => 'Journaliste (branche B)',
         'admin'      => 'Administrateur',
     ];
 }
@@ -426,7 +424,7 @@ function matrice_fixtures(): array
     ]);
 
     // --- Un lieu de la carte, rattaché à la personne publique ci-dessus -----
-    // La fiche /lieu/{id} répond donc de la même façon pour les cinq profils.
+    // La fiche /lieu/{id} répond donc de la même façon pour les quatre profils.
     $nomPlace = 'Lieu matrice ' . $suffixe;
     $place = db_insert('places', [
         'nom' => $nomPlace, 'pays' => 'France', 'lat' => 44.0, 'lon' => 1.0, 'code' => '',
@@ -506,9 +504,8 @@ function matrice_supprimer_fichiers(array $f): void
 function matrice_compte(string $profil, array $f): ?int
 {
     return match ($profil) {
-        'branche_a'  => (int) $f['compte_branche_a'],
-        'personne_b' => (int) $f['compte_personne_b'],
-        'voit_tout'  => (int) $f['compte_voit_tout'],
+        'lecteur'    => (int) $f['compte_branche_a'],
+        'journaliste' => (int) $f['compte_personne_b'],
         'admin'      => (int) $f['account_admin'],
         default      => null,
     };
@@ -715,17 +712,17 @@ function matrice_controles(array $f): array
             // compte qui voit toutes les branches n'y a pas accès.
             return $profil === 'admin';
         }
-        if ($profil === 'admin' || $profil === 'voit_tout') {
+        if ($profil === 'admin') {
             return true;
         }
         if ($visibilite === 'famille') {
             return true;
         }
         if ($visibilite === 'branche A') {
-            return $profil === 'branche_a';
+            return $profil === 'lecteur';
         }
         if ($visibilite === 'branche B') {
-            return $profil === 'personne_b';
+            return $profil === 'journaliste';
         }
         return false;
     };
@@ -778,7 +775,7 @@ function matrice_controles(array $f): array
         (string) matrice_requete('GET', '/admin/export/gedcom', null)['code']
     );
     $ajouter(
-        'export GEDCOM — compte de branche refusé',
+        'export GEDCOM — lecteur refusé',
         '403',
         (string) matrice_requete('GET', '/admin/export/gedcom', (int) $f['compte_branche_a'])['code']
     );
@@ -854,7 +851,7 @@ function matrice_controles(array $f): array
             (string) matrice_requete('POST', $url, (int) $f['account_admin'])['code']
         );
         $ajouter(
-            'POST ' . $route['motif'] . ' — compte de branche',
+            'POST ' . $route['motif'] . ' — lecteur',
             '403',
             (string) matrice_requete('POST', $url, (int) $f['compte_branche_a'])['code']
         );
@@ -933,7 +930,7 @@ function matrice_rapport(array $lignes, array $anomalies, array $controles): str
 
     $notes = "| Point | Décision |\n|---|---|\n"
         . "| `GET` et `POST /admin/mon-compte` | ouverts à tout compte connecté : c'est la page « Mon compte » (chacun modifie **son** mot de passe), pas une page d'administration. Le menu d'administration n'est affiché qu'aux administrateurs. |\n"
-        . "| `GET /admin/comptes/{id}` | renvoie vers « Branches & comptes » ou « Administrateurs » pour un compte de branche : la fiche détaillée n'existe que pour les comptes « personne ». |\n"
+        . "| `GET /admin/comptes/{id}` | ouvre la fiche d'un lecteur ou d'un journaliste (profil modifiable) ; un administrateur est renvoyé vers « Administrateurs ». |\n"
         . "| `GET /famille`, `/tchat`, `/admin` pour un visiteur | **303** : renvoi vers `/connexion` (avec le chemin de retour), jamais la page elle-même. |\n"
         . "| Contenu non autorisé | **404** identique à une page qui n'existe pas : l'existence d'un document privé n'est pas révélée. |\n"
         . "| `POST` sans jeton CSRF | **403**, y compris pour un administrateur. |\n";
@@ -946,9 +943,8 @@ function matrice_rapport(array $lignes, array $anomalies, array $controles): str
         . "## Profils testés\n\n"
         . "| Profil | Qui c'est |\n|---|---|\n"
         . "| Visiteur | personne non connectée |\n"
-        . "| Branche A | compte de la branche A (ne voit pas la branche B) |\n"
-        . "| Personne de la branche B | compte « personne » rattaché à la branche B |\n"
-        . "| Voit toutes les branches | compte « personne » coché « voit toutes les branches » |\n"
+        . "| Lecteur | compte de branche (lecture seule), rattaché à la branche A |\n"
+        . "| Journaliste | compte personnel (peut proposer), rattaché à la branche B |\n"
         . "| Administrateur | compte administrateur actif |\n\n"
         . "## Codes attendus\n\n"
         . "- **200** : la page s'affiche ;\n"

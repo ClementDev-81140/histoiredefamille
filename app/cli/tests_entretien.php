@@ -959,7 +959,7 @@ class HdfTestArret extends Exception
 
 function tests_matrice(bool $ecrireRapport = false): void
 {
-    echo "Matrice d’accès — toutes les routes × cinq profils\n";
+    echo "Matrice d’accès — toutes les routes × quatre profils\n";
 
     $problemes = matrice_routes_problemes();
     verifier(
@@ -1035,10 +1035,12 @@ function tests_matrice(bool $ecrireRapport = false): void
             ))
     );
 
+    $nbProfils = count(matrice_profils());
     verifier(
         'matrice : tous les profils ont un code attendu pour chaque route',
         count($lignes) === count($routes)
-            && count(array_filter($lignes, static fn (array $l): bool => count($l['obtenu']) === 5)) === count($routes)
+            && count(array_filter($lignes, static fn (array $l): bool => count($l['obtenu']) === $nbProfils)) === count($routes),
+        $nbProfils . ' profil(s) attendu(s) par route'
     );
 
     if ($ecrireRapport) {

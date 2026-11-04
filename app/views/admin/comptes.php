@@ -12,16 +12,16 @@ $libelles = compte_types();
     <div>
         <h1>Comptes de la famille</h1>
         <p class="note">
-            Chaque personne peut avoir son propre compte (prénom.nom) avec son mot de passe.
-            Les comptes de branche, partagés par une famille, continuent de fonctionner.
+            Trois profils : <strong>Lecteur</strong> (lit seulement), <strong>Journaliste</strong>
+            (propose, un administrateur valide) et <strong>Administrateur</strong>.
         </p>
     </div>
-    <a class="bouton" href="/admin/comptes/nouvelle">Ajouter des personnes</a>
+    <a class="bouton" href="/admin/comptes/nouvelle">Ajouter un compte</a>
 </div>
 
 <p class="comptes-resume">
-    <span><strong><?= (int) ($parType['personne'] ?? 0) ?></strong> personne(s)</span>
-    <span><strong><?= (int) ($parType['branche'] ?? 0) ?></strong> compte(s) de branche</span>
+    <span><strong><?= (int) ($parType['branche'] ?? 0) ?></strong> lecteur(s)</span>
+    <span><strong><?= (int) ($parType['personne'] ?? 0) ?></strong> journaliste(s)</span>
     <span><strong><?= (int) ($parType['admin'] ?? 0) ?></strong> administrateur(s)</span>
 </p>
 
@@ -63,7 +63,7 @@ $libelles = compte_types();
 <?php if ($comptes === []): ?>
     <div class="panneau panneau--centre">
         <p>Aucun compte ne correspond à cette recherche.</p>
-        <p><a class="bouton" href="/admin/comptes/nouvelle">Ajouter des personnes</a></p>
+        <p><a class="bouton" href="/admin/comptes/nouvelle">Ajouter un compte</a></p>
     </div>
 <?php else: ?>
     <div class="tableau-defilant">
@@ -108,8 +108,10 @@ $libelles = compte_types();
                         </td>
                         <td><?= $compte['last_login_at'] ? e(format_date((int) $compte['last_login_at'], true)) : '—' ?></td>
                         <td class="colonne-actions">
-                            <?php if ($typeCompte === 'personne'): ?>
+                            <?php if ($typeCompte === 'personne' || $typeCompte === 'branche'): ?>
                                 <a href="/admin/comptes/<?= (int) $compte['id'] ?>">Modifier</a>
+                            <?php endif; ?>
+                            <?php if ($typeCompte === 'personne'): ?>
 
                                 <form method="post" action="/admin/comptes/<?= (int) $compte['id'] ?>/mot-de-passe"
                                       class="formulaire-en-ligne"

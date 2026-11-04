@@ -2484,6 +2484,7 @@ require_once __DIR__ . '/tests_gazette.php';
 require_once __DIR__ . '/tests_carte.php';
 require_once __DIR__ . '/tests_envoi.php';
 require_once __DIR__ . '/tests_conversion.php';
+require_once __DIR__ . '/tests_profils.php';
 
 if ($filtre === '' || $filtre === 'courriels') {
     tests_courriels();
@@ -2503,6 +2504,10 @@ if ($filtre === '' || $filtre === 'envoi') {
 
 if ($filtre === '' || $filtre === 'conversion') {
     tests_conversion();
+}
+
+if ($filtre === '' || $filtre === 'profils') {
+    tests_profils();
 }
 
 // ---------------------------------------------------------------------------

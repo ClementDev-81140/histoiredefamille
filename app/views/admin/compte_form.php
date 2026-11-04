@@ -6,6 +6,8 @@
  */
 $val = static fn (string $cle, string $defaut = ''): string => (string) old_value($old, $cle, $compte[$cle] ?? $defaut);
 $type = compte_type($compte);
+$profilActuel = $type === 'personne' ? 'journaliste' : 'lecteur';
+$profilChoisi = (string) old_value($old, 'profil', $profilActuel);
 ?>
 <div class="section__entete">
     <div>
@@ -29,17 +31,30 @@ $type = compte_type($compte);
 <form method="post" action="/admin/comptes/<?= (int) $compte['id'] ?>" class="formulaire panneau">
     <?= csrf_field() ?>
 
+    <div class="champ">
+        <label for="profil">Profil</label>
+        <select id="profil" name="profil">
+            <?php foreach ($profils as $cle => $libelle): ?>
+                <option value="<?= e($cle) ?>"<?= selected($profilChoisi === $cle) ?>><?= e($libelle) ?></option>
+            <?php endforeach; ?>
+        </select>
+        <p class="aide">
+            <strong>Lecteur</strong> : <?= e(compte_profil_resume('branche')) ?><br>
+            <strong>Journaliste</strong> : <?= e(compte_profil_resume('personne')) ?>
+        </p>
+    </div>
+
     <div class="ligne-champs">
         <div class="champ">
             <label for="nom">Nom</label>
-            <input type="text" id="nom" name="nom" maxlength="40" required
-                   autocomplete="family-name" value="<?= e($val('last_name')) ?>">
+            <input type="text" id="nom" name="nom" maxlength="40"
+                   autocomplete="family-name" value="<?= e($val($profilChoisi === 'journaliste' ? 'last_name' : 'display_name') ) ?>">
         </div>
         <div class="champ">
             <label for="prenom">Prénom</label>
-            <input type="text" id="prenom" name="prenom" maxlength="40" required
+            <input type="text" id="prenom" name="prenom" maxlength="40"
                    autocomplete="given-name" value="<?= e($val('first_name')) ?>">
-            <p class="aide">C’est ce prénom qui s’affiche dans « Bonjour … » et comme signature.</p>
+            <p class="aide">Journaliste : le prénom s’affiche dans « Bonjour … » et comme signature.</p>
         </div>
     </div>
 

@@ -1,13 +1,19 @@
 <?php
 /**
- * Comptes « personne » : création, identifiants, messages d'accès.
+ * Comptes : trois profils, et seulement trois.
  *
- * Deux types de comptes vivent côte à côte :
- *   - « branche » : un identifiant en majuscules (MARTIN) et un mot de passe
- *     partagé par la famille — rien ne change pour eux ;
- *   - « personne » : un compte par personne (elise.martin), avec son nom, son
- *     prénom, sa branche et son propre mot de passe ;
- *   - « admin » : les administrateurs (créés par la ligne de commande).
+ *   - « Lecteur » (account_type « branche ») : l'identifiant partagé d'une
+ *     branche (MARTIN). Il lit ce que sa branche a le droit de voir. Il ne
+ *     peut rien écrire ni proposer, sauf dans le tchat et « Mon compte » ;
+ *   - « Journaliste » (account_type « personne ») : un compte par personne
+ *     (elise.martin). Il lit avec les droits de sa branche, et il peut
+ *     PROPOSER des contenus (articles, documents, photos, recettes), qui
+ *     passent par la validation d'un administrateur ;
+ *   - « Administrateur » (role « admin ») : tout, et c'est lui qui valide.
+ *
+ * Les identifiants techniques en base ne changent pas (« branche »,
+ * « personne », « admin ») : seuls les libellés montrés aux gens changent.
+ * Du plus courant au plus rare : Lecteur, Journaliste, Administrateur.
  *
  * Règles tenues ici :
  *   - l'identifiant est fabriqué à partir du prénom et du nom : minuscules,
@@ -27,14 +33,31 @@ declare(strict_types=1);
 // Types de comptes
 // ---------------------------------------------------------------------------
 
-/** Types de comptes, du plus courant au plus rare. */
+/**
+ * Types techniques de comptes et leur libellé.
+ *
+ * Clé = valeur stockée dans accounts.account_type (jamais renommée : aucune
+ * migration risquée pour un simple changement de vocabulaire).
+ */
 function compte_types(): array
 {
     return [
-        'personne' => 'Personne',
-        'branche'  => 'Compte de branche',
+        'branche'  => 'Lecteur',
+        'personne' => 'Journaliste',
         'admin'    => 'Administrateur',
     ];
+}
+
+/** Ce que chaque profil a le droit de faire, en une phrase (écrans d'aide). */
+function compte_profil_resume(string $type): string
+{
+    return match ($type) {
+        'personne' => 'lit avec les droits de sa branche et propose des contenus, '
+            . 'publiés seulement après validation d’un administrateur.',
+        'admin'    => 'gère tout le site et valide les propositions.',
+        default    => 'lit ce que sa branche a le droit de voir ; ne peut rien écrire ni proposer '
+            . '(sauf dans le tchat).',
+    };
 }
 
 /** Type d'un compte (une base d'avant la migration répond « branche »). */
@@ -44,7 +67,7 @@ function compte_type(array $compte): string
     return array_key_exists($type, compte_types()) ? $type : 'branche';
 }
 
-/** Libellé lisible du type. */
+/** Libellé lisible du type (« Lecteur », « Journaliste », « Administrateur »). */
 function compte_type_libelle(array $compte): string
 {
     $type = compte_type($compte);
@@ -52,6 +75,60 @@ function compte_type_libelle(array $compte): string
         return 'Administrateur';
     }
     return compte_types()[$type];
+}
+
+/** Ce compte est-il un simple lecteur (compte de branche, sans écriture) ? */
+function compte_est_lecteur(?array $compte): bool
+{
+    if ($compte === null || ($compte['role'] ?? '') === 'admin') {
+        return false;
+    }
+
+    return compte_type($compte) === 'branche';
+}
+
+/** Ce compte est-il un journaliste (compte personnel, qui peut proposer) ? */
+function compte_est_journaliste(?array $compte): bool
+{
+    if ($compte === null || ($compte['role'] ?? '') === 'admin') {
+        return false;
+    }
+
+    return compte_type($compte) === 'personne';
+}
+
+/**
+ * Le compte connecté peut-il proposer des contenus ?
+ *
+ * Un journaliste oui ; un administrateur aussi (il publie directement, mais
+ * les mêmes écrans lui servent). Un lecteur et un visiteur, jamais.
+ */
+function peut_proposer(?array $compte = null): bool
+{
+    $compte = $compte ?? current_account();
+
+    return $compte !== null && (($compte['role'] ?? '') === 'admin' || compte_est_journaliste($compte));
+}
+
+/** Le compte connecté est-il un simple lecteur ? */
+function est_lecteur(): bool
+{
+    return compte_est_lecteur(current_account());
+}
+
+/** Réserve une action aux journalistes et aux administrateurs (403 sinon). */
+function require_proposer(): void
+{
+    require_login();
+    if (!peut_proposer()) {
+        http_response_code(403);
+        render('erreur', [
+            'titre'   => 'Accès refusé',
+            'message' => 'Votre compte de lecteur ne permet pas de proposer des contenus. '
+                . 'Demandez à un administrateur de vous ouvrir un compte journaliste.',
+        ]);
+        hdf_terminer();
+    }
 }
 
 /**
@@ -411,6 +488,81 @@ function comptes_branches_proposees(?int $brancheActuelle = null): array
 // ---------------------------------------------------------------------------
 
 /**
+ * Crée un lecteur : la branche et son compte de connexion, d'un seul geste.
+ *
+ * Un lecteur est le compte partagé d'une branche : sans branche, il n'aurait
+ * aucun droit de lecture. On crée donc les deux ensemble, comme le fait la
+ * page « Branches & comptes ».
+ *
+ * @return array{ok:bool, error:string, branche:int, identifiant:string, mot_de_passe:string}
+ */
+function compte_creer_lecteur(string $code, string $nom, bool $seeAll, int $adminId): array
+{
+    $resultat = ['ok' => false, 'error' => '', 'branche' => 0, 'identifiant' => '', 'mot_de_passe' => ''];
+
+    // Pas de mise en majuscules silencieuse : un identifiant en minuscules est
+    // refusé, avec un message qui explique la règle (comme la page Branches).
+    $code = trim($code);
+    $nom  = preg_replace('/\s+/u', ' ', trim($nom)) ?? '';
+
+    if (preg_match('/^[A-Z][A-Z0-9_]{1,29}$/', $code) !== 1) {
+        $resultat['error'] = 'L’identifiant doit être en majuscules, commencer par une lettre et ne '
+            . 'contenir que des lettres, chiffres et tirets bas (2 à 30 caractères). Exemple : RAVIART.';
+        return $resultat;
+    }
+    if ($nom === '' || mb_strlen($nom, 'UTF-8') > 100) {
+        $resultat['error'] = 'Le nom de la branche est obligatoire (100 caractères maximum).';
+        return $resultat;
+    }
+    if (db_one('SELECT id FROM branches WHERE code = ? COLLATE NOCASE', [$code]) !== null) {
+        $resultat['error'] = 'Une branche utilise déjà cet identifiant.';
+        return $resultat;
+    }
+    if (db_one('SELECT id FROM accounts WHERE username = ? COLLATE NOCASE', [$code]) !== null) {
+        $resultat['error'] = 'Cet identifiant est déjà utilisé par un autre compte.';
+        return $resultat;
+    }
+
+    $motDePasse = password_generate();
+    $now        = time();
+
+    $ids = db_transaction(static function () use ($code, $nom, $seeAll, $motDePasse, $now): array {
+        $brancheId = db_insert('branches', [
+            'code'        => $code,
+            'name'        => $nom,
+            'description' => null,
+            'see_all'     => $seeAll ? 1 : 0,
+            'is_active'   => 1,
+            'created_at'  => $now,
+            'updated_at'  => $now,
+        ]);
+
+        $compteId = db_insert('accounts', [
+            'username'      => $code,
+            'display_name'  => $nom,
+            'password_hash' => password_make($motDePasse),
+            'role'          => 'famille',
+            'branch_id'     => $brancheId,
+            'is_active'     => 1,
+            'account_type'  => 'branche',
+            'created_at'    => $now,
+            'updated_at'    => $now,
+        ]);
+
+        return ['branche' => $brancheId, 'compte' => $compteId];
+    });
+
+    log_activity($adminId > 0 ? $adminId : null, 'branche_ajoutee', $nom . ' (' . $code . ', profil lecteur)');
+
+    $resultat['ok']           = true;
+    $resultat['branche']      = (int) $ids['branche'];
+    $resultat['identifiant']  = $code;
+    $resultat['mot_de_passe'] = $motDePasse;
+
+    return $resultat;
+}
+
+/**
  * Crée les comptes d'une liste préparée.
  *
  * @param list<array{nom:string, prenom:string, identifiant:string, branche:int, see_all:bool}> $entrees
@@ -581,7 +733,9 @@ function compte_message_acces(array $compte, string $motDePasse): string
     $lignes[] = 'Adresse : ' . ($adresse !== '' ? $adresse : '(voir l’adresse du site)');
     $lignes[] = 'Identifiant : ' . (string) ($compte['identifiant'] ?? $compte['username'] ?? '');
     $lignes[] = 'Mot de passe : ' . $motDePasse;
-    $lignes[] = '(Tu pourras le changer dans « Mon compte ».)';
+    $libelle = compte_types()[compte_type($compte)] ?? 'Compte';
+    $lignes[] = 'Profil : ' . $libelle . ' — ' . compte_profil_resume(compte_type($compte));
+    $lignes[] = '(Tu pourras changer ton mot de passe dans « Mon compte ».)';
 
     return implode("\n", $lignes);
 }

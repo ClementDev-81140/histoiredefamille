@@ -71,10 +71,11 @@ et une installation qui tient en quelques commandes à copier-coller.
 
 - Tout ce que voit le public, **plus** les documents réservés à la famille ou
   à une branche précise.
-- Un **compte de branche** (identifiant en majuscules, un mot de passe partagé
-  par les membres de cette branche) ou un **compte personnel** (identifiant
-  `prenom.nom`, un mot de passe par personne). Les deux donnent exactement les
-  mêmes droits ; le compte personnel signe le tchat à son nom.
+- Un **compte Lecteur** (identifiant en majuscules, un mot de passe partagé
+  par les membres de cette branche) ou un **compte Journaliste** (identifiant
+  `prenom.nom`, un mot de passe par personne, et la possibilité de proposer
+  des contenus, publiés après validation d'un administrateur). Le compte
+  journaliste signe le tchat à son nom.
 - Une page **« Mon compte »** (menu, à côté de « Déconnexion ») pour changer
   son propre mot de passe.
 - Un **tchat** privé : un seul salon commun à toutes les branches et aux
@@ -239,9 +240,10 @@ Un onglet **Tchat** apparaît dans le menu **uniquement pour les personnes
 connectées**. C'est un seul salon commun : toutes les branches et les
 administrateurs y écrivent, tout le monde lit tout.
 
-- **Compte personnel** : la signature est automatique, c'est le prénom du
-  compte — « **MARTIN/Élise** » —, sans rien demander à la connexion.
-- **Compte de branche** : au premier passage, on indique le **prénom** qui
+- **Compte Journaliste** (compte personnel) : la signature est automatique,
+  c'est le prénom du compte — « **MARTIN/Élise** » —, sans rien demander à la
+  connexion.
+- **Compte Lecteur** (compte de branche) : au premier passage, on indique le **prénom** qui
   signera les messages (1 à 30 caractères, lettres, espace et tiret). La
   signature devient « **MARTIN/Jean** » ; un administrateur signe
   « **ADMIN/Clément** ».
@@ -385,16 +387,18 @@ Chaque document, page, personne et article a un niveau de visibilité :
 Points importants :
 
 - **Aucune inscription publique** : seuls les administrateurs créent des comptes.
-- Un compte de famille est rattaché à **une branche**, et il en existe de deux
-  sortes :
-  - le **compte de branche**, partagé par toute la famille (un seul mot de
-    passe : simple pour les cousins qui n'ont qu'un identifiant à retenir) ;
-  - le **compte personnel**, un par personne (`elise.martin`), avec son propre
-    mot de passe et son prénom sur le tchat. Il donne **exactement les mêmes
-    droits** que le compte de sa branche, jamais plus.
-- Un compte personnel (ou de branche) ne peut **pas** administrer le site : les
-  administrateurs se créent uniquement en ligne de commande
-  (`php app/cli/create-admin.php`).
+- Trois profils, et seulement trois :
+  - **Lecteur** : le compte partagé d'une branche (un seul mot de passe pour
+    les cousins qui n'ont qu'un identifiant à retenir). Il **lit** ce que sa
+    branche a le droit de voir et ne peut **rien** écrire ni proposer, sauf
+    dans le tchat et « Mon compte » ;
+  - **Journaliste** : un compte personnel (`elise.martin`), avec son propre mot
+    de passe et son prénom sur le tchat. Il lit avec les droits de sa branche,
+    et il peut **proposer** des articles, documents, photos et recettes — qui
+    ne sont publiés qu'après validation d'un administrateur ;
+  - **Administrateur** : tout, et c'est lui qui valide.
+- Seul un administrateur peut créer des comptes : les administrateurs
+  eux-mêmes se créent en ligne de commande (`php app/cli/create-admin.php`).
 - « Voit toutes les branches » est une **case à cocher sur la branche**, pas un
   nom en dur dans le code : aucune famille n'est privilégiée par le programme.
 - Après 5 échecs de connexion, l'identifiant **et** l'adresse IP sont bloqués
@@ -412,9 +416,8 @@ Points importants :
 ### La matrice d'accès (preuve, pas promesse)
 
 Le fichier **[docs/matrice-acces.md](docs/matrice-acces.md)** liste **toutes**
-les adresses du site (136) et ce que chacune répond aux cinq profils : visiteur,
-branche A, personne de la branche B, compte « voit toutes les branches »,
-administrateur.
+les adresses du site et ce que chacune répond aux quatre profils : visiteur,
+lecteur (branche A), journaliste (branche B), administrateur.
 
 Il est **engendré par les tests**, pas écrit à la main : il décrit ce que le
 site répond vraiment. Pour le régénérer après une modification :
@@ -888,16 +891,21 @@ pas à contourner la règle.
 
 ### 6.3 Créer les comptes de la famille
 
-Il y a **deux sortes de comptes**, et elles cohabitent très bien :
+Il y a **trois profils**, et seulement trois :
 
-| Compte | Qui l'utilise | Identifiant |
-|---|---|---|
-| **Compte de branche** | une famille entière, avec un seul mot de passe partagé | en majuscules : `MARTIN` |
-| **Compte personnel** | une personne, avec son propre mot de passe | `prenom.nom` : `elise.martin` |
+| Profil | Qui l'utilise | Identifiant | Peut écrire ? |
+|---|---|---|---|
+| **Lecteur** | une famille entière, avec un seul mot de passe partagé | en majuscules : `MARTIN` | non (sauf le tchat) |
+| **Journaliste** | une personne, avec son propre mot de passe | `prenom.nom` : `elise.martin` | propose, un administrateur valide |
+| **Administrateur** | le ou les gestionnaires du site | selon création | oui, tout |
 
-Les deux voient la même chose : les documents publics, ceux ouverts à toutes
-les familles, et ceux de leur branche. Un compte personnel n'a aucun droit de
-plus (et ne peut pas administrer le site).
+Les trois lisent la même chose : les documents publics, ceux ouverts à toutes
+les familles, et ceux de leur branche. Un journaliste ne publie jamais
+directement : ses propositions attendent la validation d'un administrateur.
+
+La page **Comptes → Ajouter un compte** propose le profil **Lecteur** par
+défaut ; le champ « Profil » d'un compte existant permet de passer de Lecteur
+à Journaliste (et inversement).
 
 **a. Ajouter une personne**
 

@@ -88,18 +88,60 @@ function admin_comptes(): void
 // Formulaire de création (une personne / plusieurs personnes)
 // ---------------------------------------------------------------------------
 
-/** Formulaire : « Une personne » et « Plusieurs personnes ». */
+/**
+ * Formulaire de création : le profil d'abord (Lecteur par défaut), puis les
+ * champs qui vont avec.
+ *
+ *   - Lecteur : la branche et son compte partagé, créés ensemble ;
+ *   - Journaliste : une personne, ou toute une liste collée, avec son compte
+ *     personnel et son propre mot de passe.
+ */
 function admin_comptes_form(): void
 {
     require_admin();
 
+    $profil = query('profil');
+    $profil = in_array($profil, ['lecteur', 'journaliste'], true) ? $profil : 'lecteur';
+
     render('admin/comptes_form', [
-        'titre'    => 'Ajouter des personnes',
+        'titre'    => 'Ajouter un compte',
         'erreurs'  => form_errors(),
         'old'      => form_old(),
         'branches' => comptes_branches_proposees(),
         'maximum'  => COMPTES_MAX_LIGNES,
+        'profil'   => $profil,
     ], 'layout_admin');
+}
+
+/**
+ * Crée un lecteur : la branche et son compte de connexion, en une fois.
+ *
+ * Le mot de passe est affiché UNE SEULE FOIS, comme pour les journalistes :
+ * seul son hachage part en base.
+ */
+function admin_compte_lecteur_save(): void
+{
+    require_admin();
+    csrf_check();
+
+    $code   = post('code');
+    $nom    = post('name');
+    $seeAll = post('see_all') === '1';
+
+    $resultat = compte_creer_lecteur($code, $nom, $seeAll, (int) current_account()['id']);
+
+    if (!$resultat['ok']) {
+        form_fail([$resultat['error']], ['code' => $code, 'name' => $nom, 'see_all' => $seeAll ? '1' : ''], '/admin/comptes/nouvelle');
+    }
+
+    $_SESSION['_new_password'] = [
+        'username' => $resultat['identifiant'],
+        'password' => $resultat['mot_de_passe'],
+        'context'  => 'compte lecteur de la branche ' . $nom,
+    ];
+
+    flash('succes', 'La branche et son compte lecteur ont été créés.');
+    redirect('/admin/branches');
 }
 
 // ---------------------------------------------------------------------------
@@ -422,15 +464,12 @@ function admin_compte_form(array $params): void
         return;
     }
 
-    // Les comptes de branche et les administrateurs se modifient là où ils
-    // ont été créés : on ne duplique pas les écrans.
-    if (compte_type($compte) !== 'personne') {
-        if (compte_type($compte) === 'admin') {
-            flash('info', 'Les comptes administrateurs se modifient dans « Administrateurs ».');
-            redirect('/admin/admins');
-        }
-        flash('info', 'Les comptes de branche se modifient dans « Branches & comptes ».');
-        redirect('/admin/branches');
+    // Les administrateurs se modifient là où ils ont été créés : on ne
+    // duplique pas les écrans. Un lecteur et un journaliste se modifient ici,
+    // y compris pour changer de profil (le mot de passe reste le même).
+    if (compte_type($compte) === 'admin') {
+        flash('info', 'Les comptes administrateurs se modifient dans « Administrateurs ».');
+        redirect('/admin/admins');
     }
 
     $brancheActuelle = $compte['branch_id'] !== null ? (int) $compte['branch_id'] : null;
@@ -441,6 +480,7 @@ function admin_compte_form(array $params): void
         'erreurs'  => form_errors(),
         'old'      => form_old(),
         'branches' => comptes_branches_proposees($brancheActuelle),
+        'profils'  => ['lecteur' => 'Lecteur', 'journaliste' => 'Journaliste'],
     ], 'layout_admin');
 }
 
@@ -453,10 +493,20 @@ function admin_compte_save(array $params): void
     $id     = (int) ($params['id'] ?? 0);
     $compte = db_one('SELECT * FROM accounts WHERE id = ?', [$id]);
 
-    if ($compte === null || compte_type($compte) !== 'personne') {
+    if ($compte === null || compte_type($compte) === 'admin') {
         flash('erreur', 'Compte introuvable.');
         redirect('/admin/comptes');
     }
+
+    // Profil : celui envoyé par le formulaire ; à défaut, celui du compte (on
+    // ne rétrograde jamais quelqu'un par accident).
+    $profilEnvoye = post('profil');
+    if (in_array($profilEnvoye, ['lecteur', 'journaliste'], true)) {
+        $profil = $profilEnvoye;
+    } else {
+        $profil = compte_type($compte) === 'personne' ? 'journaliste' : 'lecteur';
+    }
+    $type = $profil === 'journaliste' ? 'personne' : 'branche';
 
     $nom    = compte_nettoyer_nom(post('nom'));
     $prenom = compte_nettoyer_nom(post('prenom'));
@@ -467,11 +517,19 @@ function admin_compte_save(array $params): void
     $back   = '/admin/comptes/' . $id;
     $errors = [];
 
-    if ($nom === '') {
-        $errors[] = 'Le nom est obligatoire (lettres, trait d’union et apostrophe, 40 lettres au plus).';
+    // Un journaliste est une personne : nom et prénom sont nécessaires. Un
+    // lecteur est le compte partagé d'une branche : le nom affiché suffit.
+    if ($profil === 'journaliste' && $nom === '') {
+        $errors[] = 'Le nom est obligatoire pour un journaliste (lettres, trait d’union et apostrophe, 40 lettres au plus).';
     }
-    if ($prenom === '') {
-        $errors[] = 'Le prénom est obligatoire (lettres, trait d’union et apostrophe, 40 lettres au plus).';
+    if ($profil === 'journaliste' && $prenom === '') {
+        $errors[] = 'Le prénom est obligatoire pour un journaliste (lettres, trait d’union et apostrophe, 40 lettres au plus).';
+    }
+    if ($profil === 'lecteur' && $nom === '' && $prenom === '') {
+        $nom = trim((string) ($compte['display_name'] ?? ''));
+        if ($nom === '') {
+            $errors[] = 'Indiquez le nom affiché du compte lecteur.';
+        }
     }
     if (!compte_identifiant_valide($identifiant)) {
         $errors[] = 'L’identifiant doit contenir de 3 à 30 caractères : lettres minuscules, chiffres, '
@@ -509,10 +567,24 @@ function admin_compte_save(array $params): void
         $errors[] = 'Choisissez une branche.';
     } elseif ((int) $branche['is_active'] !== 1 && $brancheId !== (int) ($compte['branch_id'] ?? 0)) {
         $errors[] = 'Cette branche est désactivée : choisissez-en une autre.';
+    } elseif ($type === 'branche' && $branche !== null) {
+        // Un lecteur est LE compte de sa branche : deux comptes partagés sur
+        // la même branche rendraient le mot de passe de la branche ambigu.
+        $autre = db_one(
+            "SELECT id FROM accounts
+             WHERE branch_id = ? AND role = 'famille' AND id <> ?
+               AND COALESCE(account_type, 'branche') = 'branche'",
+            [$brancheId, $id]
+        );
+        if ($autre !== null) {
+            $errors[] = 'Cette branche a déjà un compte lecteur. Un lecteur par branche : '
+                . 'choisissez le profil « Journaliste » pour une personne de cette branche.';
+        }
     }
 
     if ($errors !== []) {
         form_fail($errors, [
+            'profil'      => $profil,
             'nom'         => $nom,
             'prenom'      => $prenom,
             'identifiant' => $identifiant,
@@ -526,10 +598,12 @@ function admin_compte_save(array $params): void
 
     db_update('accounts', $id, [
         'username'     => $identifiant,
-        // Le nom affiché d'un compte personnel reste le prénom.
-        'display_name' => $prenom,
-        'first_name'   => $prenom,
-        'last_name'    => $nom,
+        // Journaliste : le prénom s'affiche (« Bonjour Élise »). Lecteur : le
+        // nom du compte partagé (le nom de la branche).
+        'display_name' => $profil === 'journaliste' ? $prenom : $nom,
+        'first_name'   => $profil === 'journaliste' ? $prenom : '',
+        'last_name'    => $profil === 'journaliste' ? $nom : '',
+        'account_type' => $type,
         'branch_id'    => $brancheId,
         'see_all'      => $seeAll ? 1 : 0,
         'email'           => $email,
@@ -544,7 +618,7 @@ function admin_compte_save(array $params): void
     log_activity(
         (int) current_account()['id'],
         'compte_modifie',
-        sprintf('%s %s (%s)', $prenom, $nom, $identifiant)
+        sprintf('%s (%s, profil %s)', compte_nom_complet(['first_name' => $prenom, 'last_name' => $nom, 'display_name' => $nom]), $identifiant, compte_types()[$type])
     );
 
     flash('succes', 'Le compte a été modifié.');
