@@ -45,9 +45,11 @@ sans aucun service externe.
 - GEDCOM inchangé : aucune donnée n'est réécrite, aucun champ ajouté aux
   fiches.
 
-Tests : **599 au total (+55)**, dont la projection (bords, hors cadre,
+Tests : **601 au total (+58)**, dont la projection (bords, hors cadre,
 coordonnées impossibles), les suggestions de communes, les filtres, les droits,
-le cache et un contrôle du SVG (ni `style`, ni script, ni ressource externe).
+le cache, un contrôle du SVG (ni `style`, ni script, ni ressource externe) et
+un garde-fou sur le tracé lui-même (aucun segment ne doit traverser la carte :
+c'est ce qui arrivait quand un contour passait le méridien 180).
 
 ## [1.18.1] — 2026-11-04
 

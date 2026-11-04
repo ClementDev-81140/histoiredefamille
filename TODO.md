@@ -8,7 +8,7 @@ suivi automatique : cochez au fur et à mesure.
 - [x] **Page `/carte`** : les lieux de naissance, de décès et de mariage sur
   une carte **dessinée par le serveur** (SVG), sans service externe, sans
   JavaScript, sans ressource téléchargée.
-- [x] **Fond embarqué** (117 Ko) : Natural Earth 4.1.0, **domaine public**,
+- [x] **Fond embarqué** (37 Ko) : Natural Earth 4.1.0, **domaine public**,
   deux vues (France, monde entier) ; origine, licence et projection dans
   `docs/carte.md`.
 - [x] **Table `places`** (migration **012**, ajout seul : une table, deux
@@ -27,7 +27,7 @@ suivi automatique : cochez au fur et à mesure.
   même texte qu'un lieu inexistant.
 - [x] **Cache court** (5 min) par groupe de droits, filtres et version des
   données ; projection en PHP pur, < 300 ms avec 2 000 personnes.
-- [x] 55 vérifications de plus (599 au total) ; aucune règle d'accès modifiée,
+- [x] 58 vérifications de plus (601 au total) ; aucune règle d'accès modifiée,
   aucune migration existante touchée, aucune classe CSS renommée.
 
 ## Fait (2026-11-03, lot 10 — composition des pages)
