@@ -39,6 +39,7 @@ require_once __DIR__ . '/lib/editions.php';
 require_once __DIR__ . '/lib/comptes.php';
 require_once __DIR__ . '/lib/apparence.php';
 require_once __DIR__ . '/lib/composition.php';
+require_once __DIR__ . '/lib/dans_la_famille.php';
 require_once __DIR__ . '/lib/mise_en_ligne.php';
 require_once __DIR__ . '/lib/courriel.php';
 require_once __DIR__ . '/lib/gazette_mois.php';

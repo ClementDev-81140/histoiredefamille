@@ -31,6 +31,10 @@ function public_accueil(): void
         );
     }
 
+    // Bloc « Dans la famille » : réservé aux comptes connectés, et jamais
+    // calculé pour un visiteur (aucune requête, rien à filtrer).
+    $dansLaFamille = is_logged_in() && $visible('famille') ? dans_la_famille() : [];
+
     $nbDocs = $nbPages = $nbPersonnes = 0;
     if ($visible('chiffres')) {
         $nbDocs      = count_visible('documents', 'document');
@@ -45,6 +49,7 @@ function public_accueil(): void
         'articles'   => $articles,
         'pages'      => $pages,
         'personnes'  => $personnes,
+        'dansLaFamille' => $dansLaFamille,
         'nbDocs'     => $nbDocs,
         'nbPages'    => $nbPages,
         'nbPersonnes' => $nbPersonnes,

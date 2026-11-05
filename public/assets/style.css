@@ -305,10 +305,17 @@ input[type="file"].sr-only {
 /* « Se connecter » : la porte principale du site public. Elle se voit de
    loin, sans crier : un fond plein, un peu plus de place autour. */
 .nav__accent--connexion {
-    padding: 0.5rem 1.1rem;
+    padding: 0.55rem 1.25rem;
     border-radius: 999px;
     background: var(--accent);
     color: var(--texte-sur-accent) !important;
+}
+
+/* La marge intérieure de la pastille doit tenir : « .nav a » (plus précise)
+   la remet à zéro, et le texte touche alors le bord du fond plein. */
+body:not(.page-admin) .nav a.nav__accent--connexion {
+    padding: 0.55rem 1.25rem;
+    border-bottom-color: transparent;
 }
 
 /* Nouveautés de l'accueil connecté : une ligne par contenu, lisible d'un
@@ -338,6 +345,30 @@ input[type="file"].sr-only {
     letter-spacing: 0.06em;
     color: var(--texte-doux);
     min-width: 6.5rem;
+}
+
+/* Bloc « Dans la famille » de l'accueil connecté : quatre petits panneaux
+   côte à côte, sans marge basse (la grille s'occupe de l'espacement). */
+.dans-la-famille .panneau {
+    margin-bottom: 0;
+    /* Chaque panneau garde sa hauteur : une liste courte ne s'étire pas
+       jusqu'au bas du plus grand. */
+    align-self: start;
+    /* Colonnes de même largeur : un titre long ne prend pas la place des
+       autres panneaux. */
+    min-width: 0;
+}
+
+.dans-la-famille h3 {
+    margin-top: 0;
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.dans-la-famille .liste-personnes li:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
 }
 
 /* Les deux portes de la page d'accueil (Consulter / Se connecter). */
@@ -4417,6 +4448,12 @@ legend {
     body:not(.page-admin) .nav a {
         font-size: 0.62rem;
         letter-spacing: 0.1em;
+    }
+
+    /* Sur téléphone, la pastille « Se connecter » garde elle aussi sa marge
+       intérieure : un peu moins large, pour ne pas déborder. */
+    body:not(.page-admin) .nav a.nav__accent--connexion {
+        padding: 0.5rem 1rem;
     }
 
     /* Une seule colonne : aucune colonne CSS sur téléphone. */

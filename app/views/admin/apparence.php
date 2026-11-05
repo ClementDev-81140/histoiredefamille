@@ -196,7 +196,7 @@ $libelles = [
         <div class="champ">
             <label for="accueil">Phrase d’accueil de la page publique</label>
             <input type="text" id="accueil" name="accueil" maxlength="200" value="<?= e($v('accueil')) ?>"
-                   placeholder="<?= e(site_setting('description')) ?>">
+                   placeholder="<?= e(apparence_description_site()) ?>">
             <p class="aide">Vide : la description du site (réglages).</p>
         </div>
     </section>

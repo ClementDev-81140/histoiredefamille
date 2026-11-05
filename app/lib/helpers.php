@@ -283,10 +283,7 @@ function french_long_date(?int $timestamp = null, bool $withWeekday = true): str
         1 => 'lundi', 'mardi', 'mercredi', 'jeudi',
         'vendredi', 'samedi', 'dimanche',
     ];
-    $mois = [
-        1 => 'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
-        'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre',
-    ];
+    $mois = french_mois();
 
     $numeroJour = (int) date('j', $ts);
     $jourTexte  = $numeroJour === 1 ? '1er' : (string) $numeroJour;
@@ -294,6 +291,27 @@ function french_long_date(?int $timestamp = null, bool $withWeekday = true): str
     $date = $jourTexte . ' ' . $mois[(int) date('n', $ts)] . ' ' . date('Y', $ts);
 
     return $withWeekday ? $jours[(int) date('N', $ts)] . ' ' . $date : $date;
+}
+
+/** Noms des mois en français (1 = janvier). */
+function french_mois(): array
+{
+    return [
+        1 => 'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
+        'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre',
+    ];
+}
+
+/**
+ * Jour et mois en français, sans l'année : « 1er novembre ».
+ * Sert aux événements proches (anniversaires, calendrier).
+ */
+function french_day_month(?int $timestamp = null): string
+{
+    $ts = $timestamp ?? time();
+
+    $jour = (int) date('j', $ts);
+    return ($jour === 1 ? '1er' : (string) $jour) . ' ' . french_mois()[(int) date('n', $ts)];
 }
 
 /** Nombre de jours depuis un horodatage. */

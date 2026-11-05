@@ -5,7 +5,8 @@
  * Deux pages, deux rôles :
  *   - la page publique (/) présente le journal et **deux portes** : « Consulter »
  *     et « Se connecter » (la seconde mise en avant). L'arbre généalogique n'y
- *     figure plus, et ses adresses sont fermées au visiteur ;
+ *     figure plus, et ses adresses sont fermées au visiteur. Une fois connecté,
+ *     les deux portes disparaissent et « Dans la famille » les remplace :
  *   - l'accueil connecté (/famille) est la « une » du journal, strictement dans
  *     les droits du compte : articles, documents, personnes, anniversaires,
  *     nouveautés. Un journaliste y trouve « Proposer un article », un
@@ -26,6 +27,7 @@ function tests_accueil(): void
         db_transaction(static function (): void {
             tests_accueil_public();
             tests_accueil_connecte();
+            tests_accueil_dans_la_famille();
 
             throw new RuntimeException('fin du test, annulation');
         });
@@ -165,6 +167,156 @@ function tests_accueil_connecte(): void
         'accueil connecté : l’arbre s’ouvre à un compte connecté',
         (int) $arbre['code'] === 200,
         'code ' . $arbre['code']
+    );
+}
+
+/** 3. Le bloc « Dans la famille » : strictement les droits du compte. */
+function tests_accueil_dans_la_famille(): void
+{
+    $suffixe  = bin2hex(random_bytes(3));
+    $brancheA = tests_profils_branche('Branche famille A');
+    $brancheB = tests_profils_branche('Branche famille B');
+    $lecteur  = tests_profils_compte('branche', $brancheA);
+    $journaliste = tests_profils_compte('personne', $brancheA);
+    $admin    = tests_profils_compte('admin');
+
+    $maintenant = time();
+
+    // Un anniversaire dans deux jours : naissance en 1950, même jour et même
+    // mois que la date visée (l'âge affiché est celui de cette année-là).
+    $proche      = (new DateTimeImmutable('today'))->modify('+2 days');
+    $dateNaissance = static fn (): string => sprintf(
+        '%04d-%02d-%02d',
+        1950,
+        (int) $proche->format('n'),
+        (int) $proche->format('j')
+    );
+
+    // 1. Une personne visible par tous les comptes de famille.
+    $visibleId = db_insert('persons', [
+        'first_name' => 'Visible', 'last_name' => strtoupper($suffixe),
+        'birth_date' => $dateNaissance(), 'visibility' => 'famille',
+        'created_at' => $maintenant, 'updated_at' => $maintenant,
+    ]);
+
+    // 2. Une personne réservée à l'autre branche : un lecteur de A n'y a
+    //    pas droit, ni pour son anniversaire ni pour son ajout récent.
+    $autreId = db_insert('persons', [
+        'first_name' => 'Cachee', 'last_name' => strtoupper($suffixe),
+        'birth_date' => $dateNaissance(), 'visibility' => 'branches',
+        'created_at' => $maintenant, 'updated_at' => $maintenant,
+    ]);
+    set_content_branches('person', $autreId, [$brancheB]);
+
+    // 3. Une personne privée : administrateurs seulement.
+    $priveId = db_insert('persons', [
+        'first_name' => 'Privee', 'last_name' => strtoupper($suffixe),
+        'birth_date' => $dateNaissance(), 'visibility' => 'prive',
+        'created_at' => $maintenant, 'updated_at' => $maintenant,
+    ]);
+
+    // 4. Un document tout neuf, visible par les familles : il doit apparaître
+    //    dans « depuis votre dernière visite ».
+    $titreDocument = 'Nouveau document ' . $suffixe;
+    db_insert('documents', [
+        'title' => $titreDocument, 'kind' => 'document', 'visibility' => 'famille',
+        'rel_path' => 'essai/' . $suffixe . '.txt', 'original_name' => $suffixe . '.txt',
+        'mime' => 'text/plain', 'ext' => 'txt', 'size' => 1,
+        'created_at' => $maintenant, 'updated_at' => $maintenant,
+    ]);
+
+    $nomVisible = person_full_name(db_one('SELECT * FROM persons WHERE id = ?', [$visibleId]));
+    $nomAutre   = person_full_name(db_one('SELECT * FROM persons WHERE id = ?', [$autreId]));
+    $nomPrive   = person_full_name(db_one('SELECT * FROM persons WHERE id = ?', [$priveId]));
+
+    // Visiteur : jamais ce bloc, même quand les données existent.
+    $visiteur = tests_envoi_requete('GET', '/', null);
+    verifier(
+        'Dans la famille : la page publique d’un visiteur ne le montre pas',
+        (int) $visiteur['code'] === 200
+            && !str_contains((string) $visiteur['corps'], 'dans-la-famille')
+            && !str_contains((string) $visiteur['corps'], $nomVisible),
+        'le bloc apparaît pour un visiteur'
+    );
+
+    // Lecteur de la branche A : le bloc est là, avec ses anniversaires, mais
+    // seulement ce qu'il a le droit de voir.
+    $pageLecteur = tests_envoi_requete('GET', '/', $lecteur);
+    $corpsLecteur = (string) $pageLecteur['corps'];
+    verifier(
+        'Dans la famille : un lecteur voit le bloc et son anniversaire',
+        (int) $pageLecteur['code'] === 200
+            && str_contains($corpsLecteur, 'dans-la-famille')
+            && str_contains($corpsLecteur, 'Anniversaires')
+            && str_contains($corpsLecteur, $nomVisible),
+        'code ' . $pageLecteur['code']
+    );
+    verifier(
+        'Dans la famille : un lecteur ne voit ni l’anniversaire ni la personne d’une autre branche',
+        !str_contains($corpsLecteur, $nomAutre),
+        'la personne d’une autre branche apparaît'
+    );
+    verifier(
+        'Dans la famille : un lecteur ne voit pas un anniversaire privé',
+        !str_contains($corpsLecteur, $nomPrive),
+        'la personne privée apparaît pour un lecteur'
+    );
+    verifier(
+        'Dans la famille : un lecteur voit le document paru depuis sa dernière visite',
+        str_contains($corpsLecteur, $titreDocument)
+            && str_contains($corpsLecteur, 'Depuis votre dernière visite'),
+        'le document récent manque'
+    );
+
+    // Journaliste et administrateur ont le même bloc (droits différents).
+    $pageJournaliste = tests_envoi_requete('GET', '/', $journaliste);
+    verifier(
+        'Dans la famille : un journaliste voit aussi le bloc',
+        str_contains((string) $pageJournaliste['corps'], 'dans-la-famille')
+            && str_contains((string) $pageJournaliste['corps'], $nomVisible),
+        'code ' . $pageJournaliste['code']
+    );
+
+    $pageAdmin = tests_envoi_requete('GET', '/', $admin);
+    verifier(
+        'Dans la famille : un administrateur voit jusqu’aux anniversaires privés',
+        str_contains((string) $pageAdmin['corps'], 'dans-la-famille')
+            && str_contains((string) $pageAdmin['corps'], $nomVisible)
+            && str_contains((string) $pageAdmin['corps'], $nomPrive),
+        'code ' . $pageAdmin['code']
+    );
+
+    // Les deux portes du visiteur ont disparu pour un compte connecté.
+    verifier(
+        'accueil connecté : plus de porte « Consulter » sur la page publique',
+        !str_contains($corpsLecteur, 'actions--portes')
+            && !str_contains($corpsLecteur, '>Consulter<'),
+        'la porte du visiteur est encore là'
+    );
+
+    // Un bloc vide ne s'affiche pas ; la fenêtre « depuis » suit la visite.
+    verifier(
+        'Dans la famille : un bloc vide n’est pas affiché',
+        dans_la_famille_vide(['anniversaires' => [], 'evenements' => [], 'personnes' => [], 'nouveautes' => []])
+            && !dans_la_famille_vide(['anniversaires' => [['nom' => 'X']], 'evenements' => [], 'personnes' => [], 'nouveautes' => []])
+    );
+
+    $session = $_SESSION;
+    $_SESSION = [];
+    verifier(
+        'Dans la famille : un visiteur n’obtient rien de la fonction',
+        dans_la_famille() === ['anniversaires' => [], 'evenements' => [], 'personnes' => [], 'nouveautes' => []]
+    );
+    $_SESSION = $session;
+
+    $_SESSION['visite_precedente'] = 1000000000;
+    $depuisVisite = famille_depuis();
+    unset($_SESSION['visite_precedente']);
+    $depuisDefaut = famille_depuis();
+    verifier(
+        'Dans la famille : les nouveautés partent de la visite précédente (sinon sept jours)',
+        $depuisVisite === 1000000000 && $depuisDefaut > time() - 8 * 86400 && $depuisDefaut <= time(),
+        $depuisVisite . ' / ' . $depuisDefaut
     );
 }
 

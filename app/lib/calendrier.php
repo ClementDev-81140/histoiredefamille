@@ -260,6 +260,76 @@ function calendrier_evenements(int $mois): array
 }
 
 /**
+ * Les événements de l'arbre dans les prochains jours, du plus proche au plus
+ * lointain (naissances, mariages et décès), pour les personnes visibles par la
+ * personne connectée — les droits sont ceux de calendrier_evenements().
+ *
+ * @return list<array{genre:string, jour:int, mois:int, annee:int, ans:int, nom:string, lien:string, date:string}>
+ */
+function calendrier_prochains(int $jours = 30, int $limite = 40): array
+{
+    $jours      = max(1, $jours);
+    $aujourdhui = new DateTimeImmutable('today');
+    $fin        = $aujourdhui->modify('+' . $jours . ' days');
+    $prochains  = [];
+
+    // Le mois d'aujourd'hui et, si la fenêtre le dépasse, le mois suivant.
+    $mois = [(int) $aujourdhui->format('n')];
+    if ((int) $fin->format('n') !== $mois[0]) {
+        $mois[] = (int) $fin->format('n');
+    }
+
+    foreach ($mois as $m) {
+        // Année courante ou suivante selon le mois (passage décembre → janvier).
+        $annee = $m < (int) $aujourdhui->format('n') ? (int) $aujourdhui->format('Y') + 1 : (int) $aujourdhui->format('Y');
+        foreach (calendrier_evenements($m) as $jour => $liste) {
+            try {
+                $date = new DateTimeImmutable(sprintf('%04d-%02d-%02d', $annee, $m, (int) $jour));
+            } catch (Throwable) {
+                continue;
+            }
+            if ($date < $aujourdhui || $date > $fin) {
+                continue;
+            }
+            foreach ($liste as $evenement) {
+                $ans = $annee - (int) $evenement['annee'];
+                if ($evenement['genre'] === 'mariage') {
+                    $nom  = person_full_name($evenement['epoux']) . ' et ' . person_full_name($evenement['epouse']);
+                    $lien = '/arbre/' . (int) $evenement['epoux']['id'];
+                } else {
+                    $nom  = person_full_name($evenement['personne']);
+                    $lien = '/arbre/' . (int) $evenement['personne']['id'];
+                }
+                $prochains[] = [
+                    'genre' => (string) $evenement['genre'],
+                    'jour'  => (int) $jour,
+                    'mois'  => $m,
+                    'annee' => $annee,
+                    'ans'   => max(0, $ans),
+                    'nom'   => $nom,
+                    'lien'  => $lien,
+                    'date'  => $date->format('Y-m-d'),
+                ];
+            }
+        }
+    }
+
+    usort(
+        $prochains,
+        static fn (array $a, array $b): int => [$a['date'], $a['nom']] <=> [$b['date'], $b['nom']]
+    );
+
+    return array_slice($prochains, 0, max(1, $limite));
+}
+
+/** Date lisible d'un événement proche : « 12 novembre ». */
+function calendrier_jour_lisible(array $evenement): string
+{
+    $horodatage = strtotime((string) ($evenement['date'] ?? '') . ' 12:00:00');
+    return $horodatage === false ? '' : french_day_month($horodatage);
+}
+
+/**
  * Années extrêmes connues (naissance, décès, date de document), pour proposer
  * une période de frise pertinente.
  *

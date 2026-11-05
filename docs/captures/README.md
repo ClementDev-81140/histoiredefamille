@@ -6,6 +6,7 @@ versions. Elles sont **engendrées** : aucune n'est retouchée à la main.
 | Fichier | Page | Largeur |
 |---|---|---|
 | `ordinateur-accueil.png` / `mobile-accueil.png` | page publique `/` (deux portes : Consulter, Se connecter) | 1280 / 390 |
+| `ordinateur-accueil-dans-la-famille.png` / `mobile-accueil-dans-la-famille.png` | la même page `/` vue par un lecteur : plus de porte, et le bloc « Dans la famille » (anniversaires, événements, personnes, nouveautés) | 1280 / 390 |
 | `ordinateur-accueil-connecte.png` / `mobile-accueil-connecte.png` | accueil d'un lecteur (`/famille`) : nouveautés de la famille, une, encarts | 1280 / 390 |
 | `ordinateur-accueil-journaliste.png` / `mobile-accueil-journaliste.png` | accueil d'un journaliste : « Proposer un article » + « Mes propositions » | 1280 / 390 |
 | `ordinateur-mes-propositions.png` / `mobile-mes-propositions.png` | `/propositions` | 1280 / 390 |

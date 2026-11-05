@@ -61,6 +61,11 @@ function composition_catalogue(string $page): array
                 'colonne' => 'hero',
                 'aide'    => 'La phrase qui invite les familles à se connecter.',
             ],
+            'famille' => [
+                'nom'     => 'Dans la famille (compte connecté)',
+                'colonne' => 'pleine',
+                'aide'    => 'Anniversaires, événements, personnes et nouveautés de la personne connectée. Jamais montré à un visiteur.',
+            ],
             'une' => [
                 'nom'     => 'À la une (les articles)',
                 'colonne' => 'pleine',

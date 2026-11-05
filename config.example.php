@@ -19,7 +19,9 @@ return [
         'name'        => 'Histoire de famille',            // titre affiché
         'subtitle'    => 'Les souvenirs de notre famille', // sous-titre
         'url'         => 'https://histoiredefamille.eu',   // adresse publique (sans /)
-        'description' => 'Documents, photos, vidéos et arbre généalogique de la famille.',
+        // Phrase de la page d'accueil et description pour les moteurs de
+        // recherche. Elle ne parle pas de l'arbre : un visiteur ne le voit pas.
+        'description' => 'Les souvenirs de la famille : documents, photos, récits et nouvelles.',
         'contact'     => '',                               // adresse e-mail de contact (facultatif)
     ],
 

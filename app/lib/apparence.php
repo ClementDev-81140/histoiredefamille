@@ -61,6 +61,22 @@ const APPARENCE_TEXTES = [
 /** Pied de page et phrase d'accueil par défaut. */
 const APPARENCE_PIED_DEFAUT = 'Site privé de famille. Les documents sont protégés et accessibles uniquement selon les droits définis par les administrateurs.';
 
+/**
+ * Description du site livrée par défaut (page d'accueil et référencement).
+ *
+ * Elle ne parle plus de l'arbre généalogique : un visiteur ne le voit pas.
+ */
+const APPARENCE_DESCRIPTION_DEFAUT = 'Les souvenirs de la famille : documents, photos, récits et nouvelles.';
+
+/**
+ * Ancienne description par défaut, livrée jusqu'à la version 1.25.0.
+ *
+ * Les sites installés avant gardent ce texte dans « Réglages » ou dans
+ * `config.local.php` : on le reconnaît pour afficher la nouvelle phrase,
+ * sans jamais toucher à une description écrite par un administrateur.
+ */
+const APPARENCE_DESCRIPTION_ANCIENNE = 'Documents, photos, vidéos et arbre généalogique de la famille.';
+
 /** Modes de numéro d'édition. */
 const APPARENCE_NUMERO_MODES = [
     'auto'  => 'Automatique (numéro de la semaine)',
@@ -255,11 +271,34 @@ function apparence_pied(): string
     return apparence_texte('pied', APPARENCE_PIED_DEFAUT);
 }
 
+/**
+ * Description du site, telle qu'elle doit apparaître à un visiteur.
+ *
+ * Une description écrite par un administrateur est respectée telle quelle.
+ * Vide, elle reprend la phrase livrée avec le site ; si c'est encore
+ * l'ancienne phrase par défaut (celle qui mentionnait l'arbre), la nouvelle
+ * prend sa place — un visiteur ne doit plus lire cette mention.
+ */
+function apparence_description_site(): string
+{
+    $texte = trim((string) site_setting('description'));
+
+    if ($texte === '' || $texte === APPARENCE_DESCRIPTION_ANCIENNE) {
+        $config = trim((string) config('site.description', ''));
+        if ($config !== '' && $config !== APPARENCE_DESCRIPTION_ANCIENNE) {
+            return $config;
+        }
+        return APPARENCE_DESCRIPTION_DEFAUT;
+    }
+
+    return $texte;
+}
+
 /** Phrase d'accueil de la page publique (vide = description du site). */
 function apparence_accueil_phrase(): string
 {
     $phrase = apparence_nettoyer(apparence_brut()['accueil'] ?? '', APPARENCE_LONGUEURS['accueil']);
-    return $phrase !== '' ? $phrase : trim((string) site_setting('description'));
+    return $phrase !== '' ? $phrase : apparence_description_site();
 }
 
 /** Titre en gothique ? (décoché, repli Old Standard TT en petites capitales) */

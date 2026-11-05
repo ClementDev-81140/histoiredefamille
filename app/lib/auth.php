@@ -265,6 +265,9 @@ function auth_attempt(string $username, string $password): array
     $_SESSION['account_id']    = (int) $account['id'];
     $_SESSION['login_at']      = time();
     $_SESSION['last_activity'] = time();
+    // Connexion précédente, gardée avant d'écraser la colonne : elle sert au
+    // bloc « Dans la famille » (« nouveaux depuis votre dernière visite »).
+    $_SESSION['visite_precedente'] = (int) ($account['last_login_at'] ?? 0);
     unset($_SESSION['_csrf']); // nouveau jeton pour la nouvelle session
 
     db_update('accounts', (int) $account['id'], ['last_login_at' => time()]);

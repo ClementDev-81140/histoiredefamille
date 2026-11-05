@@ -3,6 +3,90 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.25.1] — 2026-11-05
+
+### L'accueil d'un compte connecté, et trois retouches
+
+Trois changements visibles seulement pour ceux qui les cherchaient : ce qu'un
+compte connecté trouve sur la page d'accueil, la phrase qui la présente, et le
+bouton « Se connecter » qui manquait d'air.
+
+#### « Dans la famille », à la place des portes
+
+- Sur la page d'accueil (`/`), un compte connecté — lecteur, journaliste,
+  administrateur — ne voit plus les deux portes du visiteur : « Consulter »
+  était une présentation destinée à qui découvre le site, elle n'a plus de
+  sens une fois entré. « Se connecter » avait déjà disparu pour lui.
+- À leur place, plus bas, un bloc **« Dans la famille »** en quatre panneaux :
+  **anniversaires** des trente prochains jours, **événements à venir** du
+  calendrier (mariages et souvenirs), **personnes ajoutées** récemment,
+  **documents et articles parus depuis la dernière visite**.
+- **Strictement dans les droits du compte** : les listes réutilisent le
+  calendrier (`calendrier_evenements()`, filtré par `visibility.php`) et les
+  conditions de visibilité des documents, articles et personnes. Aucune règle
+  d'accès n'est écrite pour ce bloc, donc aucune ne peut diverger. Les tests de
+  droits sont explicites : un lecteur de la branche A ne voit ni l'anniversaire
+  ni la personne réservée à la branche B, ni une personne privée ; un
+  administrateur, lui, les voit.
+- **« Depuis votre dernière visite »** part de la connexion précédente
+  (`accounts.last_login_at`, gardée dans la session avant d'être écrasée). À la
+  toute première visite, faute de repère, la fenêtre est de sept jours : le
+  bloc ne déverse pas tout le site.
+- **Bloc vide : pas de section.** Un visiteur n'obtient rien du tout (la
+  fonction n'est même pas appelée), et un compte qui n'a rien à voir ne reçoit
+  ni titre ni cadre vides.
+- Le bloc s'ajoute à la **composition des pages** (« Dans la famille (compte
+  connecté) », sous la une) : il peut être masqué ou déplacé comme les autres,
+  et un bloc masqué n'est pas calculé.
+- Au passage, `gazette_annonces()` et le nouveau bloc partagent le même calcul
+  d'événements (`calendrier_prochains()`) : les petites annonces du journal ne
+  peuvent plus diverger des anniversaires de l'accueil.
+
+#### La phrase d'accueil ne parle plus de l'arbre
+
+- « Documents, photos, vidéos et arbre généalogique de la famille » devient
+  **« Les souvenirs de la famille : documents, photos, récits et nouvelles. »**
+  Un visiteur ne voit pas l'arbre : la phrase qui l'accueille n'a plus à le
+  promettre. Nouvelle valeur dans `config.example.php` et dans les exemples du
+  README.
+- Les sites déjà installés ne sont pas oubliés : l'ancienne phrase par défaut
+  est **reconnue** (`APPARENCE_DESCRIPTION_ANCIENNE`) et remplacée à
+  l'affichage. Une description écrite par un administrateur, elle, est
+  respectée au caractère près.
+- La même phrase sert de **description pour les moteurs de recherche**
+  (`<meta name="description">`) : elle est corrigée là aussi, et le champ
+  « Réglages → Description » montre désormais le texte réellement affiché.
+- Deux autres mentions vues par un visiteur sont corrigées : le texte de la
+  page de démonstration « Bienvenue (démo) » et la phrase de la page
+  Recherche (« les personnes de l'arbre » → « les personnes »). Les pages
+  d'information écrites par un administrateur gardent leur texte : c'est le
+  sien.
+
+#### Le bouton « Se connecter » respire
+
+- La pastille du menu public n'avait **aucune marge intérieure** : le texte
+  touchait le fond plein. La règle `body:not(.page-admin) .nav a` (plus
+  précise) écrasait le `padding` de `.nav__accent--connexion`. Une règle
+  dédiée rétablit 0,55 rem / 1,25 rem (0,5 / 1 rem sur téléphone), vérifié sur
+  les captures à 1280 et 390 px.
+
+#### Vérifications
+
+- **916 tests** (`php app/cli/tests.php`), **0 échec** : 11 nouveaux sur le
+  bloc « Dans la famille » (visiteur sans bloc, lecteur avec ses anniversaires,
+  branche voisine invisible, personne privée invisible, document récent,
+  journaliste, administrateur, absence de la porte « Consulter », bloc vide non
+  affiché, fonction muette pour un visiteur, fenêtre « depuis ») et 2 sur la
+  description (nouvelle phrase, ancienne reconnue et remplacée). Les attentes
+  de la composition passent de sept à huit blocs.
+- Analyse syntaxique : **182 fichiers**, 0 erreur.
+- Captures refaites en 1280 et 390 px, palettes « papier ancien » et « bleu
+  d'origine » : page publique (visiteur) et la même page vue par un lecteur
+  (`docs/captures/README.md`). Aucun débordement horizontal, `scrollWidth`
+  égal à la largeur de la fenêtre dans les quatre cas.
+- Aucune route, aucun droit, aucune migration ne change : la matrice d'accès
+  de la 1.25.0 reste valable (184 routes, 736 vérifications, 0 anomalie).
+
 ## [1.25.0] — 2026-11-05
 
 ### Des pages plus calmes, et un site qui vit sans disque externe

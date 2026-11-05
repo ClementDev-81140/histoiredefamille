@@ -4,14 +4,16 @@
  *
  * Comme l'espace famille, elle se compose dans
  * « Administration → Composition des pages » : les blocs de l'en-tête
- * (« également publié », chiffres, mot sur l'espace réservé) puis les
- * rubriques, dans l'ordre choisi. Les trois entrées sont toujours là : ce
- * sont les portes du site.
+ * (« également publié », chiffres) puis les rubriques, dans l'ordre choisi.
+ * Les deux portes (« Consulter », « Se connecter ») ne s'affichent que pour
+ * un visiteur ; un compte connecté trouve à leur place, plus bas, le bloc
+ * « Dans la famille » — strictement dans ses droits.
  *
  * @var array $documents
  * @var array $photos
  * @var array $pages
  * @var array $personnes
+ * @var array $dansLaFamille
  * @var int   $nbDocs, $nbPages, $nbPersonnes
  */
 $siteName = site_setting('name');
@@ -34,17 +36,17 @@ $pleine   = composition_colonne('public', 'pleine');
     <?php foreach ($hero as $bloc): ?>
 
         <?php if ($bloc === 'entrees'): ?>
-            <?php /* Deux portes, pas une de plus : « Consulter » pour découvrir,
+            <?php /* Deux portes pour un visiteur : « Consulter » pour découvrir,
                      « Se connecter » pour entrer dans l'espace de la famille.
                      La seconde est mise en avant : c'est celle qu'on cherche.
-                     Les autres rubriques ne sont proposées que si elles
-                     contiennent vraiment quelque chose de public. */ ?>
-            <p class="actions actions--portes">
-                <a class="bouton bouton--large" href="/documents">Consulter</a>
-                <?php if (!is_logged_in()): ?>
+                     Un compte connecté, lui, n'a plus besoin de ces portes :
+                     le menu lui donne déjà toutes les rubriques. */ ?>
+            <?php if (!is_logged_in()): ?>
+                <p class="actions actions--portes">
+                    <a class="bouton bouton--large" href="/documents">Consulter</a>
                     <a class="bouton bouton--accent bouton--large bouton--porte" href="/connexion">Se connecter</a>
-                <?php endif; ?>
-            </p>
+                </p>
+            <?php endif; ?>
 
         <?php elseif ($bloc === 'egalement'): ?>
             <?php
@@ -87,7 +89,86 @@ $pleine   = composition_colonne('public', 'pleine');
 
 <?php foreach ($pleine as $bloc): ?>
 
-    <?php if ($bloc === 'une'): ?>
+    <?php if ($bloc === 'famille'): ?>
+        <?php if (!empty($dansLaFamille) && !dans_la_famille_vide($dansLaFamille)): ?>
+            <?php /* Ce qui concerne la personne connectée, et rien d'autre :
+                     les quatre listes sont déjà filtrées par ses droits
+                     (calendrier.php, visibility.php). Vide, le bloc
+                     disparaît : aucune section vide sur la page. */ ?>
+            <section class="section dans-la-famille">
+                <div class="section__entete">
+                    <h2>Dans la famille</h2>
+                    <a href="/famille">Votre espace famille →</a>
+                </div>
+                <div class="grille-pages">
+
+                    <?php if ($dansLaFamille['anniversaires'] !== []): ?>
+                        <section class="panneau panneau--famille">
+                            <h3>Anniversaires</h3>
+                            <ul class="liste-personnes">
+                                <?php foreach ($dansLaFamille['anniversaires'] as $evenement): ?>
+                                    <li>
+                                        <a href="<?= e($evenement['lien']) ?>"><?= e($evenement['nom']) ?></a>
+                                        <span class="discret"><?= e(calendrier_jour_lisible($evenement)) ?></span>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        </section>
+                    <?php endif; ?>
+
+                    <?php if ($dansLaFamille['evenements'] !== []): ?>
+                        <section class="panneau panneau--famille">
+                            <h3>Événements à venir</h3>
+                            <ul class="liste-personnes">
+                                <?php foreach ($dansLaFamille['evenements'] as $evenement): ?>
+                                    <li>
+                                        <a href="<?= e($evenement['lien']) ?>"><?= e($evenement['nom']) ?></a>
+                                        <span class="discret">
+                                            <?= e(calendrier_jour_lisible($evenement)) ?> —
+                                            <?= $evenement['genre'] === 'mariage'
+                                                ? 'mariage, ' . (int) $evenement['ans'] . ' an' . ((int) $evenement['ans'] > 1 ? 's' : '')
+                                                : 'souvenir, ' . (int) $evenement['ans'] . ' an' . ((int) $evenement['ans'] > 1 ? 's' : '') ?>
+                                        </span>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        </section>
+                    <?php endif; ?>
+
+                    <?php if ($dansLaFamille['personnes'] !== []): ?>
+                        <section class="panneau panneau--famille">
+                            <h3>Personnes ajoutées</h3>
+                            <ul class="liste-personnes">
+                                <?php foreach ($dansLaFamille['personnes'] as $personne): ?>
+                                    <li>
+                                        <a href="/arbre/<?= (int) $personne['id'] ?>"><?= e(person_full_name($personne)) ?></a>
+                                        <span class="discret"><?= e(format_date((int) $personne['created_at'])) ?></span>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        </section>
+                    <?php endif; ?>
+
+                    <?php if ($dansLaFamille['nouveautes'] !== []): ?>
+                        <section class="panneau panneau--famille">
+                            <h3>Depuis votre dernière visite</h3>
+                            <ul class="liste-personnes">
+                                <?php foreach ($dansLaFamille['nouveautes'] as $nouveaute): ?>
+                                    <li>
+                                        <span class="nouveautes__type"><?= e($nouveaute['type']) ?></span>
+                                        <a href="<?= e($nouveaute['lien']) ?>"><?= e($nouveaute['titre']) ?></a>
+                                        <span class="discret"><?= e(format_date((int) $nouveaute['date'])) ?></span>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        </section>
+                    <?php endif; ?>
+
+                </div>
+            </section>
+        <?php endif; ?>
+
+    <?php elseif ($bloc === 'une'): ?>
         <?php if ($articles !== []): ?>
             <section class="section">
                 <div class="section__entete">

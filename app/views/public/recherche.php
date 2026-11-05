@@ -23,7 +23,7 @@ $onglets = ['' => 'Tout'] + $types;
             <p class="aide">
                 La recherche ignore les accents et les majuscules : « begles »
                 trouve « Bègles ». Elle porte sur les documents, les articles,
-                les pages d’information et les personnes de l’arbre.
+                les pages d’information et les personnes.
             </p>
         </div>
         <?php if ($type !== ''): ?>

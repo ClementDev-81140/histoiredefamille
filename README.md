@@ -43,6 +43,8 @@ et une installation qui tient en quelques commandes à copier-coller.
 - Une page d'accueil qui tient en **deux entrées** : *Consulter* (les
   documents) et *Se connecter*, la seconde plus grosse et mise en avant. C'est
   voulu : le site se consulte d'abord en privé, avec le compte de sa branche.
+  Une fois connecté, ces deux portes disparaissent : la page montre à leur
+  place le bloc **« Dans la famille »** (voir plus bas).
   **L'arbre généalogique n'est plus public** : il s'ouvre une fois connecté.
 - Les autres rubriques (Articles, Vidéos, Albums, Calendrier, Recherche)
   n'apparaissent dans le menu et sur l'accueil **que si quelque chose y a été
@@ -59,9 +61,8 @@ et une installation qui tient en quelques commandes à copier-coller.
 - Les **témoignages sonores** (enregistrements, interviews) et les **recettes de
   famille**, chacun selon sa visibilité. Les pages s'impriment proprement.
 - Une **recherche générale** qui porte d'un seul coup sur les documents, les
-  articles, les pages d'information et les personnes de l'arbre.
+  articles, les pages d'information et les personnes.
 - Les pages d'information publiques (histoire de la famille, annonces).
-- L'arbre généalogique pour les personnes marquées « Public ».
 - Une **carte des lieux** (naissance, décès, mariage), dessinée par le site
   lui-même : aucun service externe, aucune connexion à Internet, aucun
   JavaScript. Chaque point mène à la liste des personnes rattachées à ce lieu.
@@ -70,7 +71,11 @@ et une installation qui tient en quelques commandes à copier-coller.
 ### Partie famille (après connexion)
 
 - Tout ce que voit le public, **plus** les documents réservés à la famille ou
-  à une branche précise.
+  à une branche précise, et **l'arbre généalogique**.
+- Sur la page d'accueil, un bloc **« Dans la famille »**, strictement dans les
+  droits du compte : anniversaires des trente prochains jours, événements du
+  calendrier à venir, personnes ajoutées récemment, documents et articles
+  parus depuis la dernière visite. Bloc vide : il n'est pas affiché.
 - Un **compte Lecteur** (identifiant en majuscules, un mot de passe partagé
   par les membres de cette branche) ou un **compte Journaliste** (identifiant
   `prenom.nom`, un mot de passe par personne, et la possibilité de proposer
@@ -665,7 +670,7 @@ Les seules lignes à vérifier :
     'name'        => 'Histoire de la famille Martin',   // le titre affiché
     'subtitle'    => 'Nos souvenirs, nos photos, notre histoire',
     'url'         => 'https://histoiredefamille.eu',
-    'description' => 'Documents, photos et arbre généalogique de la famille.',
+    'description' => 'Les souvenirs de la famille : documents, photos, récits et nouvelles.',
     'contact'     => '',                                // facultatif
 ],
 'https_only' => true,   // le site est servi en HTTPS par Cloudflare
@@ -1068,9 +1073,9 @@ trois boutons :
 
 Ce sont de vrais boutons : **aucun JavaScript n'est nécessaire**. Un bloc
 masqué **n'est pas calculé du tout** — le site ne va même pas chercher les
-vidéos ou les annonces, ce qui allège le Raspberry Pi. Les deux entrées de
-l'accueil (Consulter, Se connecter) restent toujours affichées : ce sont les
-portes du site.
+vidéos ou les annonces, ce qui allège le Raspberry Pi. Le bloc des deux
+entrées de l'accueil (Consulter, Se connecter) reste toujours là : ce sont les
+portes du site, et elles ne s'affichent que pour un visiteur.
 
 Les blocs de **l'espace famille** :
 
@@ -1081,8 +1086,8 @@ Les blocs de **l'espace famille** :
 | Toute la largeur | Dernières vidéos, Albums photos, Pages d'information, Derniers documents, Personnes récemment mises à jour |
 
 Ceux de **l'accueil public** : les deux entrées, « Également publié », les
-chiffres, le mot sur l'espace réservé, « À la une » (les articles), les
-derniers documents et « À lire » (les pages d'information).
+chiffres, « Dans la famille » (un compte connecté seulement), « À la une »
+(les articles), les derniers documents et « À lire » (les pages d'information).
 
 **Réglages de la une.** Sur la même page :
 
@@ -1280,7 +1285,10 @@ Rien à cocher : le site s'en occupe.
   l'arbre pour le calendrier). Pour la faire disparaître : repasser ce contenu
   en « Famille » ou « Privé ».
 - Le tchat reste toujours privé : il n'apparaît jamais dans le menu public.
-- Un compte de famille ou d'administration garde, lui, **tout** le menu.
+- Un compte de famille ou d'administration garde, lui, **tout** le menu. Sur
+  la page d'accueil, les deux portes du visiteur laissent la place au bloc
+  « Dans la famille » (anniversaires, événements, personnes ajoutées,
+  nouveautés depuis la dernière visite), toujours filtré par ses droits.
 
 ### 6.16 Vérifier qui s'est connecté
 

@@ -42,55 +42,24 @@ function gazette_fondee(): string
  */
 function gazette_annonces(int $limite = 5): array
 {
-    $aujourdhui = new DateTimeImmutable('today');
-    $fin        = $aujourdhui->modify('+30 days');
-    $annonces   = [];
-
-    $mois = [(int) $aujourdhui->format('n')];
-    if ((int) $fin->format('n') !== $mois[0]) {
-        $mois[] = (int) $fin->format('n');
-    }
-
-    foreach ($mois as $m) {
-        foreach (calendrier_evenements($m) as $jour => $liste) {
-            // Année courante ou suivante selon le mois (passage décembre → janvier).
-            $annee = $m < (int) $aujourdhui->format('n') ? (int) $aujourdhui->format('Y') + 1 : (int) $aujourdhui->format('Y');
-            try {
-                $date = new DateTimeImmutable(sprintf('%04d-%02d-%02d', $annee, $m, (int) $jour));
-            } catch (Throwable) {
-                continue;
-            }
-            if ($date < $aujourdhui || $date > $fin) {
-                continue;
-            }
-            foreach ($liste as $evenement) {
-                $ans = $annee - (int) $evenement['annee'];
-                if ($evenement['genre'] === 'mariage') {
-                    $nom   = person_full_name($evenement['epoux']) . ' et ' . person_full_name($evenement['epouse']);
-                    $texte = 'MARIAGE. ' . $nom . ' : ' . $ans . ' an' . ($ans > 1 ? 's' : '') . ' de mariage.';
-                    $lien  = '/arbre/' . (int) $evenement['epoux']['id'];
-                } else {
-                    $nom   = person_full_name($evenement['personne']);
-                    $lien  = '/arbre/' . (int) $evenement['personne']['id'];
-                    $texte = $evenement['genre'] === 'naissance'
-                        ? 'ANNIVERSAIRE. ' . $nom . ' aurait ' . $ans . ' ans.'
-                        : 'SOUVENIR. ' . $nom . ' nous quittait il y a ' . $ans . ' ans.';
-                }
-                $annonces[] = ['date' => $date, 'texte' => $texte, 'lien' => $lien];
-            }
-        }
-    }
-
-    usort($annonces, static fn (array $a, array $b): int => $a['date'] <=> $b['date']);
-
+    // Les événements sont calculés une seule fois, dans calendrier.php, avec
+    // les droits de la personne connectée : ici, on ne fait que les écrire.
     return array_map(
-        static fn (array $a): array => [
-            'jour'  => (int) $a['date']->format('j'),
-            'mois'  => (int) $a['date']->format('n'),
-            'texte' => $a['texte'],
-            'lien'  => $a['lien'],
-        ],
-        array_slice($annonces, 0, $limite)
+        static function (array $evenement): array {
+            $ans = (int) $evenement['ans'];
+            $texte = match ($evenement['genre']) {
+                'mariage'   => 'MARIAGE. ' . $evenement['nom'] . ' : ' . $ans . ' an' . ($ans > 1 ? 's' : '') . ' de mariage.',
+                'naissance' => 'ANNIVERSAIRE. ' . $evenement['nom'] . ' aurait ' . $ans . ' ans.',
+                default     => 'SOUVENIR. ' . $evenement['nom'] . ' nous quittait il y a ' . $ans . ' ans.',
+            };
+            return [
+                'jour'  => (int) $evenement['jour'],
+                'mois'  => (int) $evenement['mois'],
+                'texte' => $texte,
+                'lien'  => (string) $evenement['lien'],
+            ];
+        },
+        calendrier_prochains(30, $limite)
     );
 }
 

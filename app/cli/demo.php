@@ -300,7 +300,7 @@ if (db_one("SELECT id FROM pages WHERE slug = 'bienvenue'") === null) {
         'visibility' => 'public',
         'body'       => "Cette page est **publique** : elle est visible par tout le monde.\n\n"
             . "## À propos de ce site\n\n"
-            . "Ce site rassemble les documents, les photos, les vidéos et l’arbre généalogique "
+            . "Ce site rassemble les documents, les photos, les vidéos et les souvenirs "
             . "d’une famille. Une partie est publique, une autre est réservée aux familles.\n\n"
             . "- Les documents **publics** sont visibles par tous\n"
             . "- Les documents **famille** nécessitent un compte\n"

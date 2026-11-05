@@ -38,7 +38,9 @@ $navClass = static function (string $href) use ($currentPath): string {
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= e($pageTitle) ?></title>
-    <meta name="description" content="<?= e(site_setting('description')) ?>">
+    <?php /* La description affichée, jamais l'ancienne phrase qui parlait de
+             l'arbre : voir apparence_description_site(). */ ?>
+    <meta name="description" content="<?= e(apparence_description_site()) ?>">
     <meta name="robots" content="<?= is_logged_in() ? 'noindex, nofollow' : 'index, follow' ?>">
     <link rel="stylesheet" href="<?= e(asset_url('/assets/style.css')) ?>">
 <?php if (apparence_feuille_active()): ?>

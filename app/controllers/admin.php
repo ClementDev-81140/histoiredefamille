@@ -150,7 +150,9 @@ function admin_settings(): void
         'values'  => [
             'name'        => site_setting('name'),
             'subtitle'    => site_setting('subtitle'),
-            'description' => site_setting('description'),
+            // La description affichée sur le site, même quand elle vient de
+            // la phrase livrée par défaut : le champ dit ce que l'on voit.
+            'description' => apparence_description_site(),
             'contact'     => site_setting('contact'),
             // Adresse publique : elle sert dans les messages d'accès envoyés
             // aux personnes. Vide, on reprend celle du fichier de configuration.

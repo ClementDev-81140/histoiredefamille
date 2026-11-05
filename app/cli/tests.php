@@ -1852,6 +1852,14 @@ if ($filtre === '' || $filtre === 'apparence') {
                 'css'    => apparence_css(),
             ];
 
+            // Description : l'ancienne phrase livrée avec le site (celle qui
+            // parlait de l'arbre) cède la place à la nouvelle ; une phrase
+            // écrite par un administrateur, elle, est respectée telle quelle.
+            save_site_setting('description', APPARENCE_DESCRIPTION_ANCIENNE);
+            $essais['descriptionAncienne'] = apparence_description_site();
+            save_site_setting('description', 'Nos souvenirs, nos photos.');
+            $essais['descriptionEcrite'] = apparence_description_site();
+
             throw new RuntimeException('fin du test, annulation');
         });
     } catch (RuntimeException $e) {
@@ -1870,7 +1878,25 @@ if ($filtre === '' || $filtre === 'apparence') {
     verifier('apparence : texte de droite par défaut', $ok('defauts') && $essais['defauts']['droite'] === 'Prix : un sourire');
     verifier('apparence : numéro automatique par défaut', $ok('defauts') && $essais['defauts']['numero'] === gazette_numero(), $ok('defauts') ? $essais['defauts']['numero'] : '');
     verifier('apparence : pied de page par défaut', $ok('defauts') && $essais['defauts']['pied'] === APPARENCE_PIED_DEFAUT);
-    verifier('apparence : phrase d’accueil = description du site', $ok('defauts') && $essais['defauts']['accueil'] === site_setting('description'));
+    verifier(
+        'apparence : phrase d’accueil = description du site',
+        $ok('defauts') && $essais['defauts']['accueil'] === apparence_description_site(),
+        $ok('defauts') ? $essais['defauts']['accueil'] : ''
+    );
+    // La description par défaut ne parle plus de l'arbre : un visiteur ne le
+    // voit pas. L'ancienne phrase, elle, est reconnue et remplacée.
+    verifier(
+        'apparence : la description ne parle plus de l’arbre',
+        apparence_description_site() === APPARENCE_DESCRIPTION_DEFAUT
+            && !str_contains(APPARENCE_DESCRIPTION_DEFAUT, 'arbre'),
+        apparence_description_site()
+    );
+    verifier(
+        'apparence : l’ancienne description (mention de l’arbre) est remplacée',
+        ($essais['descriptionAncienne'] ?? '') === APPARENCE_DESCRIPTION_DEFAUT
+            && ($essais['descriptionEcrite'] ?? '') === 'Nos souvenirs, nos photos.',
+        json_encode([$essais['descriptionAncienne'] ?? '', $essais['descriptionEcrite'] ?? ''], JSON_UNESCAPED_UNICODE)
+    );
     verifier(
         'apparence : les sept titres d’encart par défaut',
         $ok('defauts') && $essais['defauts']['encarts'] === [
@@ -2207,8 +2233,8 @@ if ($filtre === '' || $filtre === 'composition') {
     // Composition d'origine : le site tel qu'il est aujourd'hui.
     $d = $ok('defauts') ? $essais['defauts'] : [];
     verifier(
-        'composition : les sept blocs de l’accueil, dans l’ordre d’origine',
-        ($d['public'] ?? []) === ['entrees', 'egalement', 'chiffres', 'reserve', 'une', 'documents', 'lire'],
+        'composition : les huit blocs de l’accueil, dans l’ordre d’origine',
+        ($d['public'] ?? []) === ['entrees', 'egalement', 'chiffres', 'reserve', 'famille', 'une', 'documents', 'lire'],
         json_encode($d['public'] ?? [], JSON_UNESCAPED_UNICODE)
     );
     verifier(
@@ -2273,8 +2299,8 @@ if ($filtre === '' || $filtre === 'composition') {
     $l = $ok('lecture') ? $essais['lecture'] : [];
     verifier(
         'composition : un JSON illisible redonne la composition d’origine',
-        ($l['invalide'] ?? []) === ['entrees', 'egalement', 'chiffres', 'reserve', 'une', 'documents', 'lire']
-            && ($l['vide'] ?? []) === ['entrees', 'egalement', 'chiffres', 'reserve', 'une', 'documents', 'lire'],
+        ($l['invalide'] ?? []) === ['entrees', 'egalement', 'chiffres', 'reserve', 'famille', 'une', 'documents', 'lire']
+            && ($l['vide'] ?? []) === ['entrees', 'egalement', 'chiffres', 'reserve', 'famille', 'une', 'documents', 'lire'],
         json_encode($l, JSON_UNESCAPED_UNICODE)
     );
     verifier(
@@ -2287,7 +2313,7 @@ if ($filtre === '' || $filtre === 'composition') {
     );
     verifier(
         'composition : une clé inconnue est ignorée, un doublon aussi',
-        count($l['inconnue'] ?? []) === 7 && count($l['doublon'] ?? []) === 7,
+        count($l['inconnue'] ?? []) === 8 && count($l['doublon'] ?? []) === 8,
         json_encode(['inconnue' => $l['inconnue'] ?? [], 'doublon' => $l['doublon'] ?? []], JSON_UNESCAPED_UNICODE)
     );
     verifier(
