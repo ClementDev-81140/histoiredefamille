@@ -82,33 +82,42 @@ $navLink = static function (string $href, string $label, bool $exact = false) us
         <?= $navLink('/admin', 'Tableau de bord', true) ?>
         <a href="/admin/a-valider"<?= str_starts_with($current, '/admin/a-valider') ? ' class="actif" aria-current="page"' : '' ?>>À valider<?php if ($aValider > 0): ?><span class="pastille" aria-label="propositions en attente"><?= $aValider > 99 ? '99+' : (int) $aValider ?></span><?php endif; ?></a>
 
-        <p class="admin-menu__titre">Partie publique</p>
+        <?php /* Le menu range le travail par nature, plus par « partie » du
+                 site : une même page sert souvent les deux (un article public,
+                 un document de famille). Les intitulés de groupe ne parlent
+                 donc ni de « public » ni de « famille ». */ ?>
+
+        <p class="admin-menu__titre">Contenus</p>
         <?= $navLink('/admin/articles', 'Articles') ?>
         <?= $navLink('/admin/pages', 'Pages d’informations') ?>
-        <?= $navLink('/admin/envoyer', 'Envoyer des fichiers') ?>
         <?= $navLink('/admin/documents', 'Documents & photos') ?>
         <?= $navLink('/admin/albums', 'Albums photos') ?>
+        <?= $navLink('/admin/videos', 'Vidéos') ?>
         <?= $navLink('/admin/recettes', 'Recettes') ?>
         <?= $navLink('/admin/categories', 'Catégories') ?>
 
-        <p class="admin-menu__titre">Partie famille</p>
-        <?= $navLink('/admin/videos', 'Vidéos') ?>
+        <p class="admin-menu__titre">Envois</p>
+        <?= $navLink('/admin/envoyer', 'Envoyer des fichiers') ?>
+        <?= $navLink('/admin/importer', 'Dossier arrivée') ?>
         <?= $navLink('/admin/conversions', 'Conversions') ?>
+        <?= $navLink('/admin/envois', 'Mes envois') ?>
+
+        <p class="admin-menu__titre">Personnes</p>
+        <?= $navLink('/admin/arbre', 'Arbre généalogique') ?>
         <?= $navLink('/admin/comptes', 'Comptes') ?>
         <?= $navLink('/admin/branches', 'Branches & comptes') ?>
-        <?= $navLink('/admin/arbre', 'Arbre généalogique') ?>
-        <?= $navLink('/admin/importer', 'Dossier arrivée') ?>
+        <?= $navLink('/admin/admins', 'Administrateurs') ?>
+        <?= $navLink('/admin/lieux', 'Lieux à placer') ?>
+
+        <p class="admin-menu__titre">Journal</p>
+        <?= $navLink('/admin/courriels', 'Courriels') ?>
+        <?= $navLink('/admin/gazette', 'Gazette du mois') ?>
+        <?= $navLink('/admin/apparence', 'Apparence du journal') ?>
+        <?= $navLink('/admin/composition', 'Composition des pages') ?>
 
         <p class="admin-menu__titre">Système</p>
         <?= $navLink('/admin/reglages', 'Réglages') ?>
-        <?= $navLink('/admin/apparence', 'Apparence du journal') ?>
-        <?= $navLink('/admin/composition', 'Composition des pages') ?>
-        <?= $navLink('/admin/admins', 'Administrateurs') ?>
         <?= $navLink('/admin/connexions', 'Journal des connexions') ?>
-        <?= $navLink('/admin/courriels', 'Courriels') ?>
-        <?= $navLink('/admin/gazette', 'Gazette du mois') ?>
-        <?= $navLink('/admin/lieux', 'Lieux à placer') ?>
-        <?= $navLink('/admin/envois', 'Mes envois') ?>
         <?= $navLink('/admin/etat', 'État du site') ?>
     </aside>
 

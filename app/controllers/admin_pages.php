@@ -10,15 +10,28 @@ function admin_pages(): void
 {
     require_admin();
 
+    // Filtre « Visibilité » en GET (même principe que la liste des articles).
+    $params     = [];
+    $where      = ['1 = 1'];
+    $visibility = query('visibilite');
+    if (array_key_exists($visibility, visibility_levels())) {
+        $where[] = 'p.visibility = :vis';
+        $params[':vis'] = $visibility;
+    }
+    $whereSql = implode(' AND ', $where);
+
     $pages = db_all(
-        'SELECT p.*, a.username AS auteur
+        "SELECT p.*, a.username AS auteur
          FROM pages p LEFT JOIN accounts a ON a.id = p.updated_by
-         ORDER BY p.position, p.title COLLATE NOCASE'
+         WHERE {$whereSql}
+         ORDER BY p.position, p.title COLLATE NOCASE",
+        $params
     );
 
     render('admin/pages', [
-        'titre' => 'Pages d’informations',
-        'pages' => $pages,
+        'titre'      => 'Pages d’informations',
+        'pages'      => $pages,
+        'visibility' => $visibility,
     ], 'layout_admin');
 }
 

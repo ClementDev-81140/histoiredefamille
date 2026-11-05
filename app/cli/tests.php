@@ -2543,6 +2543,11 @@ if ($filtre === '' || $filtre === 'accueil') {
     tests_accueil();
 }
 
+if ($filtre === '' || $filtre === 'admin') {
+    require_once __DIR__ . '/tests_admin.php';
+    tests_admin();
+}
+
 
 if ($filtre === '' || $filtre === 'courriels') {
     tests_courriels();

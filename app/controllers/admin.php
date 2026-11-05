@@ -6,30 +6,54 @@
 declare(strict_types=1);
 
 /**
- * Tableau de bord : deux parties clairement séparées,
- * « Partie publique » et « Partie famille ».
+ * Tableau de bord : une carte « Contenus » (tout ce que le site contient, et
+ * ce qui en est public), les derniers documents et le journal.
  */
 function admin_dashboard(): void
 {
     require_admin();
 
+    // Tout ce que le site contient, en une seule carte : les deux anciennes
+    // cartes « Partie publique » et « Partie famille » décrivaient le même
+    // contenu sous deux angles, et il fallait les additionner de tête.
+    $maintenant = time();
+
     $stats = [
-        'public_documents' => (int) db_value("SELECT COUNT(*) FROM documents WHERE visibility = 'public' AND is_attachment = 0", [], 0),
-        'public_pages'     => (int) db_value("SELECT COUNT(*) FROM pages WHERE visibility = 'public' AND is_published = 1", [], 0),
-        'public_persons'   => (int) db_value("SELECT COUNT(*) FROM persons WHERE visibility = 'public'", [], 0),
-        'family_documents' => (int) db_value("SELECT COUNT(*) FROM documents WHERE visibility IN ('famille','branches') AND is_attachment = 0", [], 0),
-        'private_documents' => (int) db_value("SELECT COUNT(*) FROM documents WHERE visibility = 'prive' AND is_attachment = 0", [], 0),
-        'family_pages'     => (int) db_value("SELECT COUNT(*) FROM pages WHERE visibility IN ('famille','branches')", [], 0),
+        // Documents de tout genre (photos, vidéos, PDF, sons), pièces jointes exclues.
+        'documents'        => (int) db_value('SELECT COUNT(*) FROM documents WHERE is_attachment = 0', [], 0),
+        'articles'         => (int) db_value('SELECT COUNT(*) FROM articles', [], 0),
+        'pages'            => (int) db_value('SELECT COUNT(*) FROM pages', [], 0),
+        'videos'           => (int) db_value("SELECT COUNT(*) FROM documents WHERE kind = 'video' AND is_attachment = 0", [], 0),
         'persons'          => (int) db_value('SELECT COUNT(*) FROM persons', [], 0),
         'families'         => (int) db_value('SELECT COUNT(*) FROM families', [], 0),
+        'accounts'         => (int) db_value('SELECT COUNT(*) FROM accounts WHERE is_active = 1', [], 0),
+        'admins'           => (int) db_value("SELECT COUNT(*) FROM accounts WHERE role = 'admin' AND is_active = 1", [], 0),
         'branches'         => (int) db_value('SELECT COUNT(*) FROM branches', [], 0),
         'branches_active'  => (int) db_value('SELECT COUNT(*) FROM branches WHERE is_active = 1', [], 0),
-        'admins'           => (int) db_value("SELECT COUNT(*) FROM accounts WHERE role = 'admin' AND is_active = 1", [], 0),
-        'documents_total'  => (int) db_value('SELECT COUNT(*) FROM documents WHERE is_attachment = 0', [], 0),
+        'propositions'     => propositions_a_valider(),
+        // « dont publics » : ce qu'un visiteur peut réellement voir. Les
+        // personnes ne comptent pas : l'arbre n'est plus public, même pour une
+        // fiche marquée « Public ».
+        'public_documents' => (int) db_value(
+            "SELECT COUNT(*) FROM documents WHERE visibility = 'public' AND is_attachment = 0",
+            [],
+            0
+        ),
+        'public_articles'  => (int) db_value(
+            "SELECT COUNT(*) FROM articles WHERE visibility = 'public' AND status = 'publie' AND published_at <= ?",
+            [$maintenant],
+            0
+        ),
+        'public_pages'     => (int) db_value(
+            "SELECT COUNT(*) FROM pages WHERE visibility = 'public' AND is_published = 1",
+            [],
+            0
+        ),
         'incoming'         => count(incoming_files()),
         'storage_free'     => storage_free_space(),
         'last_backup'      => backup_state(),
     ];
+    $stats['public_total'] = $stats['public_documents'] + $stats['public_articles'] + $stats['public_pages'];
 
     $documents = db_all(
         'SELECT d.*, c.name AS category_name FROM documents d

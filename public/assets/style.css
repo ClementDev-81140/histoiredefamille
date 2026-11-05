@@ -1124,6 +1124,12 @@ h1, h2, h3, h4, h5, h6 {
 
 .chiffres li { padding: 0.25rem 0; }
 
+/* « dont publics » : la part visible sans compte, sous les totaux. */
+.chiffres li.chiffres__dont {
+    padding-left: 0.9rem;
+    border-left: 2px solid var(--accent-clair);
+}
+
 .journal {
     list-style: none;
     padding: 0;

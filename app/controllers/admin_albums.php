@@ -13,18 +13,31 @@ function admin_albums(): void
 {
     require_admin();
 
+    // Filtre « Visibilité » en GET (même principe que la liste des articles).
+    $params     = [];
+    $where      = ['1 = 1'];
+    $visibility = query('visibilite');
+    if (array_key_exists($visibility, visibility_levels())) {
+        $where[] = 'a.visibility = :vis';
+        $params[':vis'] = $visibility;
+    }
+    $whereSql = implode(' AND ', $where);
+
     $albums = db_all(
-        'SELECT a.*,
+        "SELECT a.*,
                 (SELECT COUNT(*) FROM album_documents ad WHERE ad.album_id = a.id) AS nb_photos,
                 (SELECT COUNT(*) FROM content_branches cb
-                  WHERE cb.kind = \'album\' AND cb.content_id = a.id) AS nb_branches
+                  WHERE cb.kind = 'album' AND cb.content_id = a.id) AS nb_branches
          FROM albums a
-         ORDER BY a.position, a.title COLLATE NOCASE'
+         WHERE {$whereSql}
+         ORDER BY a.position, a.title COLLATE NOCASE",
+        $params
     );
 
     render('admin/albums', [
-        'titre'  => 'Albums photos',
-        'albums' => $albums,
+        'titre'      => 'Albums photos',
+        'albums'     => $albums,
+        'visibility' => $visibility,
     ], 'layout_admin');
 }
 

@@ -3,6 +3,98 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.25.2] — 2026-11-05
+
+### L'administration ne se coupe plus en deux
+
+Le menu rangeait ses pages en « Partie publique » et « Partie famille », et le
+tableau de bord avait deux cartes du même nom : il fallait additionner de tête
+pour savoir combien le site contient de documents. Un contenu n'a pourtant
+qu'une visibilité, pas un camp. **Aucune règle d'accès ne change** : c'est un
+rangement.
+
+#### Le menu latéral, rangé par métier
+
+Cinq groupes, sans les mots « public » ni « famille », et **tous les liens
+d'avant** :
+
+| Groupe | Pages |
+|---|---|
+| *(en tête)* | Tableau de bord, **À valider** avec son compteur |
+| **Contenus** | Articles, Pages d'informations, Documents & photos, Albums photos, Vidéos, Recettes, Catégories |
+| **Envois** | Envoyer des fichiers, Dossier arrivée, Conversions, Mes envois |
+| **Personnes** | Arbre généalogique, Comptes, Branches & comptes, Administrateurs, Lieux à placer |
+| **Journal** | Courriels, Gazette du mois, Apparence du journal, Composition des pages |
+| **Système** | Réglages, Journal des connexions, État du site |
+
+Deux précisions sur la répartition demandée : **Calendrier** ne figure pas dans
+*Contenus* parce que l'administration n'a **aucun écran de calendrier** (le
+calendrier est une page publique, alimentée par les fiches de personnes : rien
+n'a été inventé) ; et **Composition des pages** est restée dans *Journal*, avec
+*Apparence du journal*, parce qu'elle règle la forme du journal et non son
+contenu. Aucune page n'est supprimée, aucune adresse ne change, aucun droit ne
+bouge.
+
+#### Le tableau de bord : une carte « Contenus »
+
+- Les deux cartes côte à côte disparaissent au profit d'**une seule**, avec les
+  sept chiffres demandés : documents, articles, pages d'information, vidéos,
+  personnes, comptes (et branches actives) et propositions à valider.
+- **Une ligne « dont publics : N »** donne la part visible sans compte —
+  documents publics + articles publiés + pages publiées. Les personnes n'y
+  sont pas : l'arbre est fermé au visiteur depuis la 1.24.0.
+- **« Documents publics », « Articles publics », « Pages publiques »** sont
+  désormais de simples raccourcis vers les listes, filtre déjà posé
+  (`?visibilite=public`). « Voir le site public » reste un lien texte.
+- Le dossier arrivée n'apparaît plus en permanence : une ligne d'information
+  n'est affichée **que s'il y a des fichiers en attente**.
+
+#### Le filtre « Visibilité » partout
+
+- **Articles, Pages d'informations, Albums photos, Recettes** reçoivent le filtre
+  qui existait déjà sur Documents et Vidéos : *Toutes*, *Public*, *Familles*,
+  *Branches*, *Privé*. Formulaire **GET** (aucun JavaScript), choix conservé
+  dans l'adresse et donc partageable ; une valeur inventée est ignorée et
+  redonne la liste complète.
+- Un seul fichier de vue porte ce formulaire
+  (`views/admin/partials/filtre_visibilite.php`) pour les quatre nouvelles
+  listes ; Documents et Vidéos gardent le leur, qui propose aussi la recherche
+  et le type de fichier.
+
+#### Vidéos : les vieilles phrases, une dernière fois
+
+Un texte de démonstration disait encore « lecture par morceaux, **sans
+conversion** » (le site convertit depuis la 1.21.0). Il est corrigé, et un test
+relit les vues vidéo en cherchant huit tournures d'avant la conversion
+automatique ("ne convertit rien", "sans conversion", "reste telle quelle : le
+site"…). La page « Vidéos » et son formulaire disent la vérité : MP4 publié tel
+quel, tout autre format converti en arrière-plan.
+
+#### Vérifications
+
+- **947 tests** (`php app/cli/tests.php`), **0 échec**, dont **31 nouveaux**
+  (famille `admin`) : disparition des deux anciens titres, cinq groupes dans
+  l'ordre, aucun intitulé contenant « public » ou « famille », « À valider » en
+  tête, présence des 23 liens, carte unique, total « dont publics » comparé au
+  décompte réel de la base, sept compteurs, raccourcis filtrés, filtre des
+  quatre nouvelles listes dans les trois valeurs (tous/public/privé) et sur une
+  valeur inventée, absence des vieilles phrases vidéo.
+- Analyse syntaxique : **184 fichiers**, 0 erreur.
+- Matrice d'accès régénérée : **184 routes**, **736 vérifications**,
+  **240 contrôles**, **0 anomalie** — aucun droit n'a bougé. Une ligne
+  s'ajoute aux « Points examinés » pour dire que `?visibilite=` ne change rien
+  aux droits ; les numéros de fichiers de démonstration changent (l'ordre de la
+  base d'essai), les codes répondus sont identiques.
+- **Treize captures d'administration refaites** en 1265 px (la largeur des
+  images déjà en place : 1280 moins la barre de défilement) et palette **bleu
+  d'origine** : tableau de bord, listes (articles, documents, vidéos, albums,
+  recettes), fiches et formulaires, tchat et réglages. Les pages publiques et
+  les captures d'accueil n'ont pas bougé. Pages mesurées aussi en **390 px** :
+  `scrollWidth` égal à la largeur de la fenêtre partout, aucun débordement
+  (sauf le tableau des documents, déjà signalé avant cette version). Le
+  `README` des captures dit maintenant quelles captures ont été refaites, et
+  pourquoi leur largeur est 1265 et non 1280.
+
 ## [1.25.1] — 2026-11-05
 
 ### L'accueil d'un compte connecté, et trois retouches

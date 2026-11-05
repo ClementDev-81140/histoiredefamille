@@ -689,7 +689,7 @@ $videoSize  = (int) filesize(storage_absolute($videoRel));
 demo_document([
     'title'       => 'Film de famille fictif (démo)',
     'description' => "Petit film **fictif** de deux secondes, généré pour la démonstration.\n\n"
-        . "Il sert à vérifier la lecture dans le navigateur (lecture par morceaux, sans conversion).",
+        . "Il sert à vérifier la lecture dans le navigateur (lecture par morceaux).",
     'doc_date'    => '1958',
     'category_id' => $categoryIds['Photos de famille (démo)'],
     'visibility'  => 'famille',

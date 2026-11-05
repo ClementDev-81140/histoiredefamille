@@ -53,49 +53,53 @@ try {
     </div>
 <?php endif; ?>
 
-<div class="deux-colonnes">
-    <section class="panneau panneau--public">
-        <div class="section__entete">
-            <h2>Partie publique</h2>
-            <span class="badge badge-public">visible sans compte</span>
-        </div>
-        <ul class="chiffres">
-            <li><strong><?= (int) $stats['public_documents'] ?></strong> document(s) public(s)</li>
-            <li><strong><?= (int) $stats['public_pages'] ?></strong> page(s) publiée(s)</li>
-            <li><strong><?= (int) $stats['public_persons'] ?></strong> personne(s) publique(s)</li>
-        </ul>
+<?php /* Une seule carte : le contenu du site, et la part publique. Les deux
+         anciennes cartes « Partie publique » / « Partie famille » obligeaient à
+         additionner deux listes pour répondre à « combien ai-je de documents ? ».
+         Les raccourcis mènent aux listes, filtre « Visibilité » déjà posé. */ ?>
+<section class="panneau">
+    <div class="section__entete">
+        <h2>Contenus</h2>
+    </div>
 
-        <p class="actions">
-            <a class="bouton bouton--secondaire" href="/">Voir le site public</a>
-            <a class="bouton bouton--secondaire" href="/admin/pages">Pages d’informations</a>
-            <a class="bouton bouton--secondaire" href="/admin/documents?visibilite=public">Documents publics</a>
-        </p>
-    </section>
+    <ul class="chiffres">
+        <li><strong><?= (int) $stats['documents'] ?></strong> document<?= (int) $stats['documents'] > 1 ? 's' : '' ?></li>
+        <li><strong><?= (int) $stats['articles'] ?></strong> article<?= (int) $stats['articles'] > 1 ? 's' : '' ?></li>
+        <li><strong><?= (int) $stats['pages'] ?></strong> page<?= (int) $stats['pages'] > 1 ? 's' : '' ?> d’information</li>
+        <li><strong><?= (int) $stats['videos'] ?></strong> vidéo<?= (int) $stats['videos'] > 1 ? 's' : '' ?></li>
+        <li><strong><?= (int) $stats['persons'] ?></strong> personne<?= (int) $stats['persons'] > 1 ? 's' : '' ?></li>
+        <li>
+            <strong><?= (int) $stats['accounts'] ?></strong> compte<?= (int) $stats['accounts'] > 1 ? 's' : '' ?>
+            <span class="discret">— <?= (int) $stats['branches_active'] ?> branche<?= (int) $stats['branches_active'] > 1 ? 's' : '' ?> active<?= (int) $stats['branches_active'] > 1 ? 's' : '' ?> sur <?= (int) $stats['branches'] ?></span>
+        </li>
+        <li>
+            <a href="/admin/a-valider"><strong><?= (int) $stats['propositions'] ?></strong> proposition<?= (int) $stats['propositions'] > 1 ? 's' : '' ?> à valider</a>
+        </li>
+        <?php /* La part publique, en une ligne : ce qu'un visiteur voit sans
+                 compte. Les personnes n'y sont pas : l'arbre est fermé au
+                 visiteur, même pour une fiche marquée « Public ». */ ?>
+        <li class="chiffres__dont">
+            dont publics : <strong><?= (int) $stats['public_total'] ?></strong>
+            <span class="discret">— documents, articles publiés et pages publiées</span>
+        </li>
+    </ul>
 
-    <section class="panneau panneau--famille">
-        <div class="section__entete">
-            <h2>Partie famille</h2>
-            <span class="badge badge-famille">comptes de branche</span>
-        </div>
-        <ul class="chiffres">
-            <li><strong><?= (int) $stats['branches_active'] ?></strong> branche(s) active(s) sur <?= (int) $stats['branches'] ?></li>
-            <li><strong><?= (int) $stats['family_documents'] ?></strong> document(s) famille/branches</li>
-            <li><strong><?= (int) $stats['private_documents'] ?></strong> document(s) privé(s) (admin)</li>
-            <li><strong><?= (int) $stats['persons'] ?></strong> personne(s) — <?= (int) $stats['families'] ?> couple(s)</li>
-        </ul>
+    <p class="actions">
+        <a class="bouton bouton--secondaire" href="/admin/documents?visibilite=public">Documents publics</a>
+        <a class="bouton bouton--secondaire" href="/admin/articles?visibilite=public">Articles publics</a>
+        <a class="bouton bouton--secondaire" href="/admin/pages?visibilite=public">Pages publiques</a>
+        <a class="lien" href="/" target="_blank" rel="noopener">Voir le site public</a>
+    </p>
+</section>
 
-        <p class="actions">
-            <a class="bouton bouton--secondaire" href="/admin/branches">Branches &amp; comptes</a>
-            <a class="bouton bouton--secondaire" href="/admin/arbre">Arbre généalogique</a>
-            <a class="bouton bouton--secondaire" href="/admin/importer">
-                Dossier arrivée<?= (int) $stats['incoming'] > 0 ? ' (' . (int) $stats['incoming'] . ')' : '' ?>
-            </a>
-        </p>
-        <p class="note">
-            <?= (int) $stats['admins'] ?> compte(s) administrateur actif(s) — chacun est personnel.
-        </p>
-    </section>
-</div>
+<?php /* Dossier arrivée : seulement s'il y a quelque chose à ranger. */ ?>
+<?php if ((int) $stats['incoming'] > 0): ?>
+    <div class="message message--info">
+        <strong><?= (int) $stats['incoming'] ?></strong> fichier<?= (int) $stats['incoming'] > 1 ? 's' : '' ?>
+        attend<?= (int) $stats['incoming'] > 1 ? 'ent' : '' ?> dans le dossier arrivée.
+        <a href="/admin/importer">Ouvrir le dossier arrivée</a>
+    </div>
+<?php endif; ?>
 
 <section class="section">
     <div class="section__entete">

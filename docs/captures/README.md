@@ -14,13 +14,32 @@ versions. Elles sont **engendrées** : aucune n'est retouchée à la main.
 | `ordinateur-article-nouveau.png` | formulaire « Nouvel article », visibilité « Privé » cochée | 1280 |
 | `ordinateur-documents.png` | `/documents` | 1280 |
 
-Les autres fichiers (albums, articles, arbre, calendrier, frise, tchat, vidéos,
-recettes, administration) datent des versions précédentes : les pages
-correspondantes n'ont pas changé depuis.
+### Administration (1.25.2) — refaites en 1265 px, palette bleu d'origine
+
+Le menu de gauche ayant changé pour **toutes** les pages d'administration, les
+captures qui le montrent ont été refaites, avec la palette **bleu d'origine**
+— celle des captures d'administration existantes — quelle que soit la palette
+choisie sur le site :
+
+| Fichier | Page |
+|---|---|
+| `ordinateur-admin-tableau.png` | tableau de bord : une carte « Contenus », « dont publics : N » |
+| `ordinateur-admin-articles.png` / `ordinateur-admin-documents.png` / `ordinateur-admin-videos.png` | listes avec le filtre « Visibilité » |
+| `ordinateur-admin-album.png` / `ordinateur-admin-article-fiche.png` / `ordinateur-admin-recette.png` | fiches et formulaires |
+| `ordinateur-admin-video-fiche.png` / `ordinateur-admin-video-formulaire.png` | fiche et formulaire vidéo |
+| `ordinateur-admin-personnes-photo.png` | fiche de personne |
+| `ordinateur-videos-admin.png` | ancienne page « Vidéos » de l'administration |
+| `ordinateur-reglages-tchat.png` / `ordinateur-tchat-admin.png` | réglages et tchat vus par un administrateur |
+
+Les autres fichiers (albums publics, articles, arbre, calendrier, frise, tchat,
+vidéos, recettes) datent des versions précédentes : les pages correspondantes
+n'ont ni menu d'administration ni changement depuis.
 
 Comment elles sont faites : la base de démonstration (`php app/cli/demo.php`)
 est chargée dans une base d'essai, les pages sont rendues par le routeur du
 site lui-même (même code que la production), puis photographiées avec un
-navigateur en 1280 et 390 px de large. Les images servies par Apache sont
-intégrées pour que le rendu soit complet hors serveur. Aucune donnée réelle :
-tout le contenu est marqué « (démo) ».
+navigateur en 1280 et 390 px de large pour les pages publiques, et en **1265**
+pour l'administration (1265 = 1280 moins la barre de défilement : les captures
+d'administration gardent ainsi la même largeur d'une version à l'autre). Les
+images servies par Apache sont intégrées pour que le rendu soit complet hors
+serveur. Aucune donnée réelle : tout le contenu est marqué « (démo) ».

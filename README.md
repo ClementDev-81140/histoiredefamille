@@ -90,7 +90,15 @@ et une installation qui tient en quelques commandes à copier-coller.
 
 ### Administration (3 comptes personnels)
 
-- Tableau de bord séparé en deux blocs : **Partie publique** et **Partie famille**.
+- Un **menu de gauche rangé par métier**, pas par partie du site : *Contenus*
+  (articles, pages, documents, albums, vidéos, recettes, catégories), *Envois*,
+  *Personnes* (arbre, comptes, branches, administrateurs, lieux),
+  *Journal* (courriels, gazette, apparence, composition) et *Système*, avec
+  « À valider » et son compteur en tête.
+- Un **tableau de bord en une carte « Contenus »** : documents, articles,
+  pages, vidéos, personnes, comptes et propositions à valider, plus une ligne
+  « dont publics : N » et des raccourcis vers les listes déjà filtrées sur
+  « Public ».
 - Documents : envoi par le navigateur (photos, PDF, sons, documents bureautiques
   jusqu'à 50 Mo), titre, description, date, catégorie, étiquettes, **visibilité**,
   modification et suppression.
@@ -1006,8 +1014,8 @@ de passe**.
 
 ### 6.4 Changer les textes et les couleurs du journal
 
-**Administration → Apparence du journal** (menu de gauche, juste sous
-« Réglages »). Tout se règle sur une seule page, avec un aperçu du bandeau
+**Administration → Apparence du journal** (menu de gauche, groupe *Journal*).
+Tout se règle sur une seule page, avec un aperçu du bandeau
 en haut qui suit la saisie.
 
 - **Les textes de la une** : le texte du milieu du bandeau (« Édition des
@@ -1060,8 +1068,8 @@ contrastes en direct ne s'animent pas.
 
 ### 6.5 Composer les pages d'accueil
 
-**Administration → Composition des pages** (menu de gauche, juste sous
-« Apparence du journal »). Deux pages se règlent ici : l'accueil public
+**Administration → Composition des pages** (menu de gauche, groupe *Journal*,
+juste sous « Apparence du journal »). Deux pages se règlent ici : l'accueil public
 (`/`, visible par tous) et l'espace famille (`/famille`, après connexion).
 
 **Afficher, masquer, monter, descendre.** Chaque bloc de la page est listé avec
@@ -1289,6 +1297,11 @@ Rien à cocher : le site s'en occupe.
   la page d'accueil, les deux portes du visiteur laissent la place au bloc
   « Dans la famille » (anniversaires, événements, personnes ajoutées,
   nouveautés depuis la dernière visite), toujours filtré par ses droits.
+- Dans l'administration, chaque liste (articles, pages, documents, albums,
+  vidéos, recettes) porte un filtre **« Visibilité »** : *Toutes*, *Public*,
+  *Familles*, *Branches*, *Privé*. Le choix reste dans l'adresse
+  (`?visibilite=public`), donc il se met en favori et le tableau de bord peut
+  y renvoyer directement.
 
 ### 6.16 Vérifier qui s'est connecté
 

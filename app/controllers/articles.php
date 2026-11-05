@@ -187,15 +187,29 @@ function admin_articles(): void
 {
     require_admin();
 
+    // Filtre « Visibilité » en GET : l'adresse garde le choix, et le tableau
+    // de bord peut y renvoyer directement (?visibilite=public).
+    $params     = [];
+    $where      = ['1 = 1'];
+    $visibility = query('visibilite');
+    if (array_key_exists($visibility, visibility_levels())) {
+        $where[] = 'a.visibility = :vis';
+        $params[':vis'] = $visibility;
+    }
+    $whereSql = implode(' AND ', $where);
+
     $articles = db_all(
-        'SELECT a.*, u.username AS auteur FROM articles a
+        "SELECT a.*, u.username AS auteur FROM articles a
          LEFT JOIN accounts u ON u.id = a.author_id
-         ORDER BY a.published_at DESC, a.id DESC'
+         WHERE {$whereSql}
+         ORDER BY a.published_at DESC, a.id DESC",
+        $params
     );
 
     render('admin/articles', [
-        'titre'    => 'Articles',
-        'articles' => $articles,
+        'titre'      => 'Articles',
+        'articles'   => $articles,
+        'visibility' => $visibility,
     ], 'layout_admin');
 }
 

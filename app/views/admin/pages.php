@@ -2,7 +2,8 @@
 /**
  * Liste des pages d'informations.
  *
- * @var array $pages
+ * @var array       $pages
+ * @var string|null $visibility filtre « Visibilité » ('' = toutes)
  */
 ?>
 <div class="section__entete">
@@ -10,6 +11,10 @@
     <a class="bouton" href="/admin/pages/nouvelle">Nouvelle page</a>
 </div>
 
+<?php
+$action = '/admin/pages';
+require __DIR__ . '/partials/filtre_visibilite.php';
+?>
 
 <?php if ($pages === []): ?>
     <div class="panneau panneau--centre">

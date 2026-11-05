@@ -2,7 +2,8 @@
 /**
  * Liste des albums (administration).
  *
- * @var array $albums
+ * @var array       $albums
+ * @var string|null $visibility filtre « Visibilité » ('' = toutes)
  */
 ?>
 <div class="section__entete">
@@ -14,6 +15,11 @@
     Un album range des photos déjà envoyées : les fichiers ne sont ni copiés ni
     déplacés. Supprimer un album ne supprime aucune photo.
 </p>
+
+<?php
+$action = '/admin/albums';
+require __DIR__ . '/partials/filtre_visibilite.php';
+?>
 
 <?php if ($albums === []): ?>
     <div class="panneau panneau--centre">

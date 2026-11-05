@@ -2,13 +2,19 @@
 /**
  * Liste des recettes (administration).
  *
- * @var array $recettes
+ * @var array       $recettes
+ * @var string|null $visibility filtre « Visibilité » ('' = toutes)
  */
 ?>
 <div class="section__entete">
     <h1>Recettes</h1>
     <a class="bouton" href="/admin/recettes/nouvelle">Nouvelle recette</a>
 </div>
+
+<?php
+$action = '/admin/recettes';
+require __DIR__ . '/partials/filtre_visibilite.php';
+?>
 
 <?php if ($recettes === []): ?>
     <div class="panneau panneau--centre">

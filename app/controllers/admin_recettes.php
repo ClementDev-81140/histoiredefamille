@@ -10,11 +10,25 @@ function admin_recettes(): void
 {
     require_admin();
 
-    $recettes = db_all('SELECT r.* FROM recipes r ORDER BY r.title COLLATE NOCASE');
+    // Filtre « Visibilité » en GET (même principe que la liste des articles).
+    $params     = [];
+    $where      = ['1 = 1'];
+    $visibility = query('visibilite');
+    if (array_key_exists($visibility, visibility_levels())) {
+        $where[] = 'r.visibility = :vis';
+        $params[':vis'] = $visibility;
+    }
+    $whereSql = implode(' AND ', $where);
+
+    $recettes = db_all(
+        "SELECT r.* FROM recipes r WHERE {$whereSql} ORDER BY r.title COLLATE NOCASE",
+        $params
+    );
 
     render('admin/recettes', [
-        'titre'    => 'Recettes',
-        'recettes' => $recettes,
+        'titre'      => 'Recettes',
+        'recettes'   => $recettes,
+        'visibility' => $visibility,
     ], 'layout_admin');
 }
 

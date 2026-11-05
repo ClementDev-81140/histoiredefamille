@@ -967,7 +967,8 @@ function matrice_rapport(array $lignes, array $anomalies, array $controles): str
         . "| `GET /admin/comptes/{id}` | ouvre la fiche d'un lecteur ou d'un journaliste (profil modifiable) ; un administrateur est renvoyé vers « Administrateurs ». |\n"
         . "| `GET /famille`, `/tchat`, `/admin` pour un visiteur | **303** : renvoi vers `/connexion` (avec le chemin de retour), jamais la page elle-même. |\n"
         . "| Contenu non autorisé | **404** identique à une page qui n'existe pas : l'existence d'un document privé n'est pas révélée. |\n"
-        . "| `POST` sans jeton CSRF | **403**, y compris pour un administrateur. |\n";
+        . "| `POST` sans jeton CSRF | **403**, y compris pour un administrateur. |\n"
+        . "| Filtre `?visibilite=` des listes d'administration | **Aucun droit modifié** : c'est un filtre d'affichage réservé aux administrateurs (les pages concernées répondent déjà **303** à un visiteur, **200** à un administrateur). Une valeur inventée est ignorée et redonne la liste complète. |\n";
 
     return "# Matrice d'accès\n\n"
         . "> **Document engendré automatiquement.** Ne pas modifier à la main : il est\n"

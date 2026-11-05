@@ -2,7 +2,8 @@
 /**
  * Liste des articles (administration).
  *
- * @var array $articles
+ * @var array       $articles
+ * @var string|null $visibility filtre « Visibilité » ('' = toutes)
  */
 ?>
 <div class="section__entete">
@@ -13,6 +14,11 @@
 <p class="note">
     Une date future <strong>programme</strong> la publication.
 </p>
+
+<?php
+$action = '/admin/articles';
+require __DIR__ . '/partials/filtre_visibilite.php';
+?>
 
 <?php if ($articles === []): ?>
     <div class="panneau panneau--centre">
