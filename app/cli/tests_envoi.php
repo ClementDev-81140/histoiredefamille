@@ -798,4 +798,20 @@ function tests_envoi_menage(int $compte): void
             'class="sr-only"'
         )
     );
+
+    // Un chemin du Pi est un mot unique de quarante caractères : sans césure,
+    // « /var/www/histoiredefamille/config.local.php » poussait la page
+    // « Courriels » à 443 px de large sur un téléphone de 390.
+    verifier(
+        'mise en page : un long chemin dans <code> ne déborde pas de la page',
+        preg_match('/\ncode \{[^}]*overflow-wrap:\s*anywhere;/', $css) === 1,
+        'règle code de style.css'
+    );
+    verifier(
+        'mise en page : les chemins du Pi sont écrits dans <code> (donc coupés au besoin)',
+        str_contains(
+            (string) @file_get_contents(HDF_APP . '/views/admin/courriels.php'),
+            '<code>/var/www/histoiredefamille/config.local.php</code>'
+        )
+    );
 }

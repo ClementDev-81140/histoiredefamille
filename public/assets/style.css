@@ -139,6 +139,10 @@ code {
     background: var(--code-fond-doux);
     padding: 0.08em 0.3em;
     border-radius: 0;
+    /* Un chemin du Pi (/var/www/histoiredefamille/config.local.php) est un
+       mot unique de 40 caractères : sans césure, il pousse la page au-delà de
+       l'écran d'un téléphone. `anywhere` le coupe où il faut, sans espace. */
+    overflow-wrap: anywhere;
 }
 
 pre {

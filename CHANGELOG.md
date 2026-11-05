@@ -78,12 +78,25 @@ messages d'erreur restent explicites.
   tout sur la carte SD, surveillance de l'espace libre, copie manuelle par
   `scp` ou SFTP, transition à l'arrivée du disque.
 
+#### Une barre horizontale en moins sur un téléphone
+
+Les captures à 390 px ont révélé un débordement sur **Administration →
+Courriels** (443 px de large) : un chemin du Pi
+(`/var/www/histoiredefamille/config.local.php`) est un mot unique de quarante
+caractères et sortait de l'écran. La règle `code` de la feuille de style porte
+désormais `overflow-wrap: anywhere`, et deux tests la vérifient. Aucune autre
+page capturée ne déborde : accueil public, documents, vidéos, témoignages,
+accueil lecteur, accueil journaliste, Mon compte, Mes propositions, À valider,
+tableau de bord, Réglages, Apparence, Branches, Recettes et formulaire d'article
+tiennent à 390 comme à 1280 px.
+
 #### Vérifications
 
-- **899 tests** (`php app/cli/tests.php`), **0 échec** : dont 8 nouveaux sur la
+- **901 tests** (`php app/cli/tests.php`), **0 échec** : dont 8 nouveaux sur la
   marge d'espace de la conversion, 6 sur le mode « sans disque externe »
-  (refus par défaut, avertissement, bandeau permanent, sauvegarde réelle) et 4
-  sur l'avertissement de la vérification avant ouverture.
+  (refus par défaut, avertissement, bandeau permanent, sauvegarde réelle), 4
+  sur l'avertissement de la vérification avant ouverture et 2 sur les chemins
+  longs qui ne débordent plus.
 - Analyse syntaxique : **181 fichiers**, 0 erreur.
 - Matrice d'accès régénérée : **184 routes**, **736 vérifications**,
   **240 contrôles**, **0 anomalie**.
