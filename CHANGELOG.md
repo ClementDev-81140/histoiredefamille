@@ -78,6 +78,16 @@ messages d'erreur restent explicites.
   tout sur la carte SD, surveillance de l'espace libre, copie manuelle par
   `scp` ou SFTP, transition à l'arrivée du disque.
 
+#### Deux détails vus sur les captures
+
+- **« État du site »** affichait deux fois la même alerte de sauvegarde (le
+  bandeau de l'administration, puis le cadre de la page). Le bandeau est
+  maintenant réservé aux autres pages ; « État du site » garde son cadre, avec
+  le détail.
+- **« Clé montée »** répondait « oui (/) » en mode sans disque externe, ce qui
+  est faux et se contredit deux lignes plus haut. La page dit désormais :
+  « non — sauvegarde sur la carte SD (mode sans disque externe) ».
+
 #### Une barre horizontale en moins sur un téléphone
 
 Les captures à 390 px ont révélé un débordement sur **Administration →
@@ -92,11 +102,14 @@ tiennent à 390 comme à 1280 px.
 
 #### Vérifications
 
-- **901 tests** (`php app/cli/tests.php`), **0 échec** : dont 8 nouveaux sur la
-  marge d'espace de la conversion, 6 sur le mode « sans disque externe »
-  (refus par défaut, avertissement, bandeau permanent, sauvegarde réelle), 4
-  sur l'avertissement de la vérification avant ouverture et 2 sur les chemins
-  longs qui ne débordent plus.
+- **903 tests** (`php app/cli/tests.php`), **0 échec** : dont 8 nouveaux sur la
+  marge d'espace de la conversion, 8 sur le mode « sans disque externe »
+  (refus par défaut, avertissement, bandeau permanent, sauvegarde réelle,
+  « État du site » qui ne répète pas le bandeau), 4 sur l'avertissement de la
+  vérification avant ouverture et 2 sur les chemins longs qui ne débordent
+  plus. La suite donne **le même résultat avec et sans**
+  `backup_allow_same_disk` dans la configuration locale : les essais fixent
+  eux-mêmes ce réglage au lieu de dépendre de la machine.
 - Analyse syntaxique : **181 fichiers**, 0 erreur.
 - Matrice d'accès régénérée : **184 routes**, **736 vérifications**,
   **240 contrôles**, **0 anomalie**.

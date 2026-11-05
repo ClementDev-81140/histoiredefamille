@@ -207,8 +207,10 @@
         <dt>Dossier de sauvegarde</dt><dd><code><?= e((string) $sauvegarde['dossier']) ?></code></dd>
         <dt>Clé montée</dt>
         <dd>
-            <?php if ($sauvegarde['support']['ok']): ?>
-                oui (<?= e($sauvegarde['support']['montage']) ?>)
+            <?php if ($sauvegarde['support']['ok'] && ($sauvegarde['support']['same_disk'] ?? false)): ?>
+                non — sauvegarde sur la carte SD (mode sans disque externe)
+            <?php elseif ($sauvegarde['support']['ok']): ?>
+                oui<?= $sauvegarde['support']['montage'] !== '' ? ' (' . e($sauvegarde['support']['montage']) . ')' : '' ?>
             <?php else: ?>
                 non — <?= e($sauvegarde['support']['raison']) ?>
             <?php endif; ?>

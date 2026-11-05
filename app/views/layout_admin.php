@@ -113,7 +113,9 @@ $navLink = static function (string $href, string $label, bool $exact = false) us
     </aside>
 
     <main id="contenu" class="admin-contenu">
-        <?php if ($alerteSauvegarde !== null): ?>
+        <?php /* La page « État du site » montre l'alerte dans son propre cadre,
+                 en détail : pas la peine de l'afficher deux fois de suite. */ ?>
+        <?php if ($alerteSauvegarde !== null && $current !== '/admin/etat'): ?>
             <div class="message message--erreur" role="alert">
                 <strong>Sauvegarde :</strong>
                 <?= e($alerteSauvegarde['message']) ?>

@@ -22,7 +22,7 @@ suivi automatique : cochez au fur et à mesure.
 - [x] **README** : nouvelle section « Premiers jours sans disque externe »
   (tout sur la carte SD, surveillance de l'espace, copie manuelle `scp`/SFTP,
   transition à l'arrivée du disque).
-- [x] **901 tests** (`php app/cli/tests.php`), 0 échec ; matrice d'accès
+- [x] **903 tests** (`php app/cli/tests.php`), 0 échec ; matrice d'accès
   régénérée, 0 anomalie ; captures 1280 et 390 px de seize pages, sans
   débordement (un chemin du Pi forçait une barre horizontale sur
   « Courriels » : corrigé).

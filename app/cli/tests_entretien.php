@@ -151,6 +151,9 @@ function tests_preparer_site_temp(string $prefixe = 'hdf-sauvegarde-'): array
             'database'       => $base,
             'storage_root'   => $donnees,
             'exiger_montage' => false,
+            // Explicitement à false : les essais ne doivent pas changer de
+            // verdict selon ce que contient le config.local.php de la machine.
+            'allow_same_disk' => false,
             'utiliser_rsync' => false,
             'min_free_mb'    => 1,
         ],
@@ -476,11 +479,29 @@ function tests_sauvegarde(): void
             $essaiMeme['message']
         );
 
+        // Le défaut du logiciel, pas celui de la machine : la configuration
+        // locale peut avoir posé la dérogation, c'est justement son rôle.
+        $defauts = config_defaults()['maintenance'];
         verifier(
             'disque unique : jamais actif par défaut dans la configuration',
-            sauvegarde_options()['allow_same_disk'] === false
+            ($defauts['backup_allow_same_disk'] ?? null) === false
                 && str_contains((string) file_get_contents(dirname(__DIR__, 2) . '/app/config.php'), "'backup_allow_same_disk' => false")
-                && str_contains((string) file_get_contents(dirname(__DIR__, 2) . '/config.example.php'), "'backup_allow_same_disk' => true")
+                && str_contains((string) file_get_contents(dirname(__DIR__, 2) . '/config.example.php'), "// 'backup_allow_same_disk' => true")
+        );
+
+        // « État du site » ne répète pas le bandeau de l'administration : il
+        // montre l'alerte dans son propre cadre, avec le détail.
+        $miseEnPage = (string) file_get_contents(dirname(__DIR__) . '/views/layout_admin.php');
+        $vueEtat    = (string) file_get_contents(dirname(__DIR__) . '/views/admin/etat.php');
+        verifier(
+            'alerte : la page « État du site » n’affiche pas deux fois la même alerte',
+            str_contains($miseEnPage, "$current !== '/admin/etat'")
+                && str_contains($vueEtat, "<strong>Sauvegarde :</strong>")
+        );
+        verifier(
+            'disque unique : « État du site » dit que la clé n’est pas montée, même si la sauvegarde est acceptée',
+            str_contains($vueEtat, 'non — sauvegarde sur la carte SD')
+                && str_contains($vueEtat, "support']['same_disk']")
         );
 
         // Le titre « Sauvegarde : » est posé par les vues, jamais par le
@@ -754,6 +775,9 @@ function tests_verification(): void
                 'state' => $racine . '/cle-absente/dernier-etat.json',
                 'restore_state' => $racine . '/cle-absente/derniere-restauration.json',
                 'exiger_montage' => true,
+                // Comme pour les sauvegardes : l'essai ne dépend pas du
+                // config.local.php de la machine.
+                'allow_same_disk' => false,
             ],
         ]);
         verifier('vérification : clé absente → « à corriger »',
