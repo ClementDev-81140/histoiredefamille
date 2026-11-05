@@ -75,6 +75,9 @@ function config_defaults(): array
         'conversion' => [
             'ffmpeg'  => '/usr/bin/ffmpeg',
             'ffprobe' => '/usr/bin/ffprobe',
+            // Marge d'espace libre exigée avant de lancer une conversion
+            // (Mo) : sans elle, ffmpeg remplirait la carte SD.
+            'min_free_mb' => 1024,
         ],
         'security' => [
             'login_max_attempts'     => 5,
@@ -101,6 +104,11 @@ function config_defaults(): array
             'backup_min_free_mb' => 512,
             // Refuse d'écrire si la clé n'est pas montée (carte SD protégée).
             'backup_require_mount' => true,
+            // Dérogation pour les premiers jours, sans disque externe : la
+            // sauvegarde s'écrit alors sur la carte SD, à côté du site. À
+            // poser à la main dans config.local.php, jamais ici. Le bandeau
+            // rouge de l'administration reste affiché tant que c'est actif.
+            'backup_allow_same_disk' => false,
             // Alerte rouge de l'administration : sauvegarde trop ancienne,
             // espace libre faible.
             'backup_alert_days'    => 3,

@@ -16,7 +16,7 @@ $types = proposition_types();
 <h1>Mes propositions</h1>
 
 <div class="message message--info">
-    <p>Vos propositions ne sont pas visibles tout de suite : un administrateur les relit, puis choisit qui peut les voir. Vous pouvez les corriger tant qu’elles n’ont pas été validées.</p>
+    <p>Un administrateur relit chaque proposition avant de la valider. Vous pouvez la corriger jusque-là.</p>
 </div>
 
 <?php if ($echecs !== []): ?>

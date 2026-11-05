@@ -311,9 +311,17 @@ function mise_en_ligne_controles(array $options = []): array
     // 10 à 13. Sauvegarde ----------------------------------------------------
     $sauvegarde = sauvegarde_options((array) $o['sauvegarde']);
     $support = sauvegarde_support_ok($sauvegarde);
-    mise_en_ligne_ajouter($controles, 'sauvegarde_support', 'Clé de sauvegarde montée', $support['ok'] ? 'ok' : 'corriger',
-        $support['ok'] ? 'La clé est montée (' . $support['montage'] . ').' : $support['raison'],
-        $support['ok'] ? '' : 'Branchez la clé USB, vérifiez « df -h /mnt/sauvegarde », puis relancez la vérification.');
+    if ($support['ok'] && ($support['avertissement'] ?? '') !== '') {
+        // Mode « sans disque externe » demandé à la main dans config.local.php :
+        // c'est un avertissement, jamais un blocage. Le site peut ouvrir.
+        mise_en_ligne_ajouter($controles, 'sauvegarde_support', 'Clé de sauvegarde montée', 'avertir',
+            (string) $support['avertissement'],
+            'Branchez le disque dès qu’il arrive, retirez « backup_allow_same_disk » de config.local.php, puis relancez cette vérification.');
+    } else {
+        mise_en_ligne_ajouter($controles, 'sauvegarde_support', 'Clé de sauvegarde montée', $support['ok'] ? 'ok' : 'corriger',
+            $support['ok'] ? 'La clé est montée (' . $support['montage'] . ').' : $support['raison'],
+            $support['ok'] ? '' : 'Branchez la clé USB, vérifiez « df -h /mnt/sauvegarde », puis relancez la vérification.');
+    }
 
     $etat = sauvegarde_etat_lire((string) $sauvegarde['state']);
     if ($etat === null) {
@@ -663,9 +671,12 @@ function mise_en_ligne_verdict(array $controles): array
     $aCorriger = array_values(array_filter($controles, static fn (array $c): bool => $c['statut'] === 'corriger'));
     $infos     = count(array_filter($controles, static fn (array $c): bool => $c['statut'] === 'info'));
 
+    $avertissements = count(array_filter($controles, static fn (array $c): bool => $c['statut'] === 'avertir'));
+
     return [
         'pret'       => $aCorriger === [],
         'a_corriger' => count($aCorriger),
+        'avertissements' => $avertissements,
         'infos'      => $infos,
         'texte'      => $aCorriger === []
             ? 'PRÊT À OUVRIR'
@@ -683,6 +694,7 @@ function mise_en_ligne_enregistrer(array $controles, ?string $fichier = null): b
         'verdict'     => $verdict['texte'],
         'pret'        => $verdict['pret'],
         'a_corriger'  => $verdict['a_corriger'],
+        'avertissements' => $verdict['avertissements'],
         'controles'   => $controles,
     ];
 

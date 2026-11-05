@@ -26,12 +26,9 @@
                 — dont <?= (int) $nbFeatured ?> mise<?= $nbFeatured > 1 ? 's' : '' ?> en avant
             <?php endif; ?>.
         <?php endif; ?>
-        <?php if (!is_logged_in()): ?>
+        <?php if (!is_logged_in() && (int) $total > 0): ?>
             Une partie des vidéos est réservée aux familles :
             <a href="/connexion?next=%2Fvideos">connectez-vous</a> pour les voir.
-        <?php else: ?>
-            Les vidéos sont lues directement, sans conversion : le fichier doit
-            être au format MP4 (H.264 + AAC).
         <?php endif; ?>
     </p>
 

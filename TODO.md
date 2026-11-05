@@ -3,6 +3,28 @@
 Ce fichier liste ce qui reste à faire, classé par priorité. Il n'y a pas de
 suivi automatique : cochez au fur et à mesure.
 
+## Fait (2026-11-05, lot 4 — alléger, et vivre sans disque externe)
+
+- [x] **Textes explicatifs retirés** dans l'administration, l'espace famille et
+  les pages publiques : encadrés de rappel, aides longues, introductifs
+  répétés. Les libellés, les messages d'erreur, les avertissements de sécurité
+  et les aides courtes qui évitent une erreur sont conservés. Le tchat n'a pas
+  été touché. La liste complète est dans `CHANGELOG.md` (1.25.0).
+- [x] **« Sauvegarde : Sauvegarde : »** : le titre est posé une seule fois, par
+  la vue ; un test le vérifie.
+- [x] **Mode « premiers jours sans disque externe »** : `backup_allow_same_disk`
+  dans `config.local.php`, **jamais actif par défaut**. Bandeau rouge permanent
+  dans l'administration, avertissement (non bloquant) dans
+  `verifier-mise-en-ligne.php`, qui dit toujours « PRÊT À OUVRIR » ou non.
+- [x] **Conversion vidéo** : refus de démarrer sous la marge d'espace libre
+  (`conversion.min_free_mb`, 1 Go) ; la commande revérifie la place juste avant
+  de lancer ffmpeg. Les minuteurs de courriel ne changent pas.
+- [x] **README** : nouvelle section « Premiers jours sans disque externe »
+  (tout sur la carte SD, surveillance de l'espace, copie manuelle `scp`/SFTP,
+  transition à l'arrivée du disque).
+- [x] 899 tests (`php app/cli/tests.php`), 0 échec ; matrice d'accès
+  régénérée, 0 anomalie.
+
 ## Fait (2026-11-04, lot 3 — carte des lieux)
 
 - [x] **Page `/carte`** : les lieux de naissance, de décès et de mariage sur
@@ -223,6 +245,10 @@ famille : voir « Idées à étudier » plus bas.)
 - [ ] Changer le mot de passe SSH du Pi, et si possible passer par une clé.
 - [ ] Lancer une première sauvegarde à la main et vérifier
       `deploy/backup.sh --verifier`.
+- [ ] **Sans disque externe (début)** : lire la section 8.0 du README, faire une
+      copie manuelle du dossier `storage` sur un ordinateur, et ne poser
+      `'backup_allow_same_disk' => true` que si l'on accepte une sauvegarde sur
+      la carte SD, le temps que le disque arrive.
 
 ## Contenu (fait par la famille)
 

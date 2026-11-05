@@ -125,12 +125,6 @@ $filtreActif = $q !== '' || $visibility !== '';
             dossier « arrivée » du Pi par SFTP ou partage réseau, ils apparaîtront ici.
         </p>
     <?php else: ?>
-        <p class="aide">
-            Les fichiers sont déplacés dans le stockage au moment de l’import
-            (aucune copie en mémoire) : un film de plusieurs centaines de Mo passe
-            sans problème.
-        </p>
-
         <?php foreach ($enAttente as $fichier): ?>
             <form method="post" action="/admin/videos/importer" class="formulaire panneau">
                 <?= csrf_field() ?>

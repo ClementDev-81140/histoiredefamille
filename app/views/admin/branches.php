@@ -26,7 +26,7 @@
 <?php endif; ?>
 
 <p class="note">
-    Un compte unique par branche, identifiant en majuscules.
+    Un seul compte par branche. L’identifiant s’écrit en majuscules.
 </p>
 
 <?php if ($branches === []): ?>

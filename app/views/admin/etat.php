@@ -101,6 +101,8 @@
                                 OK
                             <?php elseif (($controle['statut'] ?? '') === 'corriger'): ?>
                                 À CORRIGER
+                            <?php elseif (($controle['statut'] ?? '') === 'avertir'): ?>
+                                AVERTISSEMENT
                             <?php else: ?>
                                 INFO
                             <?php endif; ?>

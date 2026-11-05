@@ -88,9 +88,7 @@ $profilChoisi = (string) old_value($old, 'profil', $profilActuel);
     <fieldset class="champ">
         <legend>Courriels</legend>
         <p class="aide">
-            Tout est facultatif. Ces cases ne se cochent <strong>qu’à la demande de la
-            personne</strong> : c’est elle qui décide de recevoir quelque chose, jamais
-            l’administrateur à sa place.
+            Ces cases ne se cochent qu’à la demande de la personne.
         </p>
 
         <div class="champ">

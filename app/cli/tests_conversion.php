@@ -219,6 +219,58 @@ function tests_conversion_file(int $compte): void
     );
     save_site_setting('conversion_qualite', 'equilibre');
 
+    // Marge d'espace libre : la conversion refuse de démarrer sous la marge.
+    $marge = conversion_marge_libre();
+    verifier(
+        'conversion : une marge d’espace libre est prévue (1 Go par défaut)',
+        $marge >= 1024 * 1048576,
+        (string) $marge
+    );
+    $filmLourd = ['size' => 5 * 1024 * 1048576];
+    $assez = conversion_espace_ok($filmLourd, $marge + $filmLourd['size'], $marge);
+    verifier(
+        'conversion : marge + taille du fichier libres → elle peut démarrer',
+        $assez['ok'] === true && $assez['requis'] === $marge + $filmLourd['size'],
+        json_encode($assez, JSON_UNESCAPED_UNICODE)
+    );
+    $justeTrop = conversion_espace_ok($filmLourd, $marge + $filmLourd['size'] - 1, $marge);
+    verifier(
+        'conversion : un octet sous la marge → refus de démarrer, message en français',
+        $justeTrop['ok'] === false
+            && str_contains($justeTrop['message'], 'Conversion impossible')
+            && str_contains($justeTrop['message'], 'libérez') === false,
+        $justeTrop['message']
+    );
+    $petitDisque = conversion_espace_ok($filmLourd, 100 * 1048576, $marge);
+    verifier(
+        'conversion : disque presque plein → refus, le fichier d’origine reste en place',
+        $petitDisque['ok'] === false && str_contains($petitDisque['message'], 'Libérez de la place')
+    );
+    verifier(
+        'conversion : la taille de l’original est comptée dans la place exigée',
+        conversion_espace_ok(['size' => 0], 2 * $marge, $marge)['ok'] === true
+            && conversion_espace_ok(['size' => 0], $marge - 1, $marge)['ok'] === false
+    );
+    verifier(
+        'conversion : espace inconnu → on ne bloque pas (le disque tranchera à l’écriture)',
+        conversion_espace_ok($filmLourd, null, $marge)['ok'] === true
+            && conversion_espace_ok($filmLourd, null, $marge)['libre'] === null
+    );
+
+    // La file et la commande appliquent réellement ce refus.
+    $codeFile = (string) file_get_contents(dirname(__DIR__) . '/lib/conversion.php');
+    verifier(
+        'conversion : mettre un fichier en file vérifie l’espace libre',
+        str_contains($codeFile, 'conversion_espace_ok($doc)')
+            && str_contains($codeFile, 'Conversion impossible')
+    );
+    $codeCommande = (string) file_get_contents(__DIR__ . '/convertir.php');
+    verifier(
+        'conversion : la commande revérifie l’espace AVANT de lancer ffmpeg',
+        strpos($codeCommande, 'conversion_espace_ok($doc)') !== false
+            && strpos($codeCommande, 'conversion_espace_ok($doc)') < strpos($codeCommande, 'proc_open(')
+    );
+
     // Quels fichiers ont besoin d'être convertis ?
     $cas = [
         ['video', 'mp4', 'video/mp4', false, 'un MP4 en H.264 reste tel quel'],

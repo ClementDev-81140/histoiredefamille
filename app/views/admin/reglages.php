@@ -118,8 +118,8 @@ $val = static fn (string $key, string $default = ''): string => (string) old_val
                        min="50" max="16384" step="1" value="<?= e($val('envoi_max_mo')) ?>">
                 <p class="aide">
                     Valeur par défaut : 4096 (4 Go). Un fichier plus gros est refusé
-                    <em>avant</em> le premier octet. Il faut aussi que le disque ait
-                    2 Go de marge libre.
+                    <em>avant</em> le premier octet. Le disque des données doit aussi
+                    garder 2 Go libres.
                 </p>
             </div>
         </div>
@@ -155,11 +155,6 @@ $val = static fn (string $key, string $default = ''): string => (string) old_val
                     <option value="equilibre"<?= selected($val('conversion_qualite') !== 'leger' && $val('conversion_qualite') !== 'haute') ?>>Équilibrée (1080p) — conseillée</option>
                     <option value="haute"<?= selected($val('conversion_qualite') === 'haute') ?>>Haute — plus lente, plus lourde</option>
                 </select>
-                <p class="aide">
-                    Le Raspberry Pi n’a pas de puce vidéo : une heure de film peut
-                    demander plusieurs heures de conversion. « Légère » divise ce
-                    temps par deux environ.
-                </p>
             </div>
         </div>
 
@@ -184,11 +179,3 @@ $val = static fn (string $key, string $default = ''): string => (string) old_val
     </p>
 </form>
 
-<section class="panneau">
-    <h2>Information</h2>
-    <p>
-        Ces réglages remplacent les valeurs du fichier <code>config.local.php</code>
-        (sauf si le champ est laissé vide). Les chemins, la base de données et les
-        limites techniques se modifient dans <code>config.local.php</code>.
-    </p>
-</section>

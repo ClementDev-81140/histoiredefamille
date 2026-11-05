@@ -47,6 +47,9 @@ function sauvegarde_options(array $override = []): array
         'mensuelles'      => (int) config('maintenance.backup_monthly', 6),
         'min_free_mb'     => (int) config('maintenance.backup_min_free_mb', 512),
         'exiger_montage'  => (bool) config('maintenance.backup_require_mount', true),
+        // Dérogation « premiers jours sans disque externe » : jamais par
+        // défaut, à poser à la main dans config.local.php.
+        'allow_same_disk' => (bool) config('maintenance.backup_allow_same_disk', false),
         'utiliser_rsync'  => true,
     ];
 
@@ -157,21 +160,33 @@ function sauvegarde_point_de_montage(string $path): string
  * dossier d'accueil existe quand même sur la carte SD. Écrire là remplirait la
  * carte et ferait perdre à la fois le site et sa sauvegarde.
  *
- * @return array{ok: bool, raison: string, montage: string}
+ * Une seule dérogation, jamais par défaut : `backup_allow_same_disk`, à poser
+ * à la main dans config.local.php pendant les premiers jours, avant que le
+ * disque externe n'arrive. La sauvegarde se fait alors sur la carte SD : elle
+ * fonctionne, mais elle ne protège de rien (même carte = même panne). Le
+ * retour `avertissement` porte cette phrase, et l'administration l'affiche en
+ * rouge en permanence tant que le mode est actif.
+ *
+ * @return array{ok: bool, raison: string, montage: string, same_disk: bool, avertissement: string}
  */
 function sauvegarde_support_ok(array $options): array
 {
+    $refus = static fn (string $raison, string $montage = ''): array => [
+        'ok' => false, 'raison' => $raison, 'montage' => $montage,
+        'same_disk' => false, 'avertissement' => '',
+    ];
+
     $dir      = (string) $options['backup_dir'];
     $donnees  = (string) $options['storage_root'];
     $base     = (string) $options['database'];
 
     if ($dir === '') {
-        return ['ok' => false, 'raison' => 'Le dossier de sauvegarde n’est pas indiqué (maintenance.backup_dir).', 'montage' => ''];
+        return $refus('Le dossier de sauvegarde n’est pas indiqué (maintenance.backup_dir).');
     }
 
     $reelDir = realpath(sauvegarde_ancetre_existant($dir));
     if ($reelDir === false || $reelDir === '') {
-        return ['ok' => false, 'raison' => 'Le dossier de sauvegarde n’existe pas encore : ' . $dir, 'montage' => ''];
+        return $refus('Le dossier de sauvegarde n’existe pas encore : ' . $dir);
     }
 
     foreach ([$donnees, dirname($base)] as $interdit) {
@@ -180,57 +195,69 @@ function sauvegarde_support_ok(array $options): array
             continue;
         }
         if ($reelDir === $reelInterdit || str_starts_with($reelDir . '/', rtrim($reelInterdit, '/') . '/')) {
-            return [
-                'ok'     => false,
-                'raison' => 'Le dossier de sauvegarde est à l’intérieur des données du site ('
-                    . $reelInterdit . '). Choisissez la clé USB.',
-                'montage' => '',
-            ];
+            return $refus('Le dossier de sauvegarde est à l’intérieur des données du site ('
+                . $reelInterdit . '). Choisissez la clé USB.');
         }
+    }
+
+    if (!is_dir($reelDir) || !is_writable($reelDir)) {
+        return $refus('Dossier de sauvegarde non inscriptible : ' . $dir);
     }
 
     $montage = sauvegarde_point_de_montage($reelDir);
 
+    // `exiger_montage` à false : la vérification du disque est volontairement
+    // éteinte (essais automatiques, installation particulière). On ne juge
+    // alors que l'écriture ; aucun avertissement n'est ajouté.
     if (empty($options['exiger_montage'])) {
-        return ['ok' => is_dir($reelDir) && is_writable($reelDir),
-            'raison' => is_dir($reelDir) && is_writable($reelDir) ? '' : 'Dossier non inscriptible : ' . $reelDir,
-            'montage' => $montage];
-    }
-
-    if ($montage === '') {
-        return [
-            'ok'     => false,
-            'raison' => 'Impossible de savoir si la clé USB est montée. Vérifiez « df -h ' . $dir . ' ».',
-            'montage' => '',
-        ];
-    }
-
-    if ($montage === '/') {
-        return [
-            'ok'     => false,
-            'raison' => 'La clé USB n’est pas montée : ' . $dir . ' se trouve sur la carte SD du Raspberry Pi.',
-            'montage' => $montage,
-        ];
+        return ['ok' => true, 'raison' => '', 'montage' => $montage,
+            'same_disk' => false, 'avertissement' => ''];
     }
 
     // Ceinture et bretelles : le disque de la clé doit être différent de
     // celui des données (même si le point de montage semble bon).
     $donneesExistantes = sauvegarde_ancetre_existant($donnees);
-    $statCle   = @stat($reelDir);
+    $statCle     = @stat($reelDir);
     $statDonnees = $donneesExistantes !== '' ? @stat($donneesExistantes) : false;
-    if (is_array($statCle) && is_array($statDonnees) && $statCle['dev'] === $statDonnees['dev']) {
+
+    if ($statDonnees === false) {
+        if ($montage === '') {
+            return $refus('Impossible de savoir si la clé USB est montée. Vérifiez « df -h ' . $dir . ' ».');
+        }
+        $memeDisque = $montage === '/';
+    } else {
+        $memeDisque = is_array($statCle) && $statCle['dev'] === $statDonnees['dev'];
+    }
+
+    if (!$memeDisque) {
+        return ['ok' => true, 'raison' => '', 'montage' => $montage,
+            'same_disk' => false, 'avertissement' => ''];
+    }
+
+    // Disque de sauvegarde confondu avec celui des données.
+    $raison = 'La clé USB n’est pas montée : ' . $dir . ' se trouve sur la carte SD du Raspberry Pi.';
+
+    if (empty($options['allow_same_disk'])) {
         return [
             'ok'     => false,
-            'raison' => 'La sauvegarde et les données sont sur le même disque : la clé USB n’est pas montée.',
+            'raison' => $raison,
             'montage' => $montage,
+            'same_disk' => true,
+            'avertissement' => '',
         ];
     }
 
-    if (!is_writable($reelDir)) {
-        return ['ok' => false, 'raison' => 'Dossier de sauvegarde non inscriptible : ' . $dir, 'montage' => $montage];
-    }
-
-    return ['ok' => true, 'raison' => '', 'montage' => $montage];
+    // Mode dérogatoire explicitement demandé : on accepte, mais on le dit
+    // partout (bandeau rouge de l'administration, État du site, vérification).
+    return [
+        'ok'     => true,
+        'raison' => '',
+        'montage' => $montage,
+        'same_disk' => true,
+        'avertissement' => 'Mode sans disque externe : les sauvegardes sont écrites sur la carte SD, '
+            . 'à côté du site. Elles ne protègent ni d’une carte perdue, ni d’une carte qui lâche. '
+            . 'Branchez un disque et retirez « backup_allow_same_disk » dès que possible.',
+    ];
 }
 
 /** Espace libre en octets sur un dossier (null si inconnu). */
@@ -886,6 +913,11 @@ function sauvegarde_alerte(array $options = []): ?array
     $support = sauvegarde_support_ok($options);
     if (!$support['ok']) {
         $details[] = $support['raison'];
+    }
+    // Mode dérogatoire : l'avertissement reste affiché tant qu'il est actif,
+    // même quand tout le reste est au vert. C'est voulu.
+    if (($support['avertissement'] ?? '') !== '') {
+        $details[] = (string) $support['avertissement'];
     }
 
     if ($etat === null) {

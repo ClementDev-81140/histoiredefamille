@@ -44,13 +44,14 @@ foreach ($controles as $controle) {
 
 foreach ($controles as $controle) {
     $etiquette = match ($controle['statut']) {
-        'ok'      => 'OK        ',
-        'corriger' => 'À CORRIGER',
-        default   => 'INFO      ',
+        'ok'      => 'OK           ',
+        'corriger' => 'À CORRIGER   ',
+        'avertir' => 'AVERTISSEMENT',
+        default   => 'INFO         ',
     };
 
     echo $etiquette, '  ', str_pad($controle['titre'], $largeur), '  ', $controle['detail'], "\n";
-    if ($controle['statut'] === 'corriger' && $controle['remede'] !== '') {
+    if (in_array($controle['statut'], ['corriger', 'avertir'], true) && $controle['remede'] !== '') {
         echo '            → ', $controle['remede'], "\n";
     }
 }
@@ -59,6 +60,9 @@ echo "\n";
 
 if ($verdict['pret']) {
     echo "PRÊT À OUVRIR\n";
+    if ($verdict['avertissements'] > 0) {
+        echo $verdict['avertissements'], " avertissement(s) : le site peut ouvrir, mais lisez-les ci-dessus.\n";
+    }
     if ($verdict['infos'] > 0) {
         echo $verdict['infos'], " information(s) affichée(s) ci-dessus (sans blocage).\n";
     }

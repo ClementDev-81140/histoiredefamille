@@ -1469,6 +1469,72 @@ dans la base ni dans les dossiers.
 
 ## 8. Sauvegarde et restauration
 
+### 8.0 Premiers jours sans disque externe
+
+Le SSD et la clé USB ne sont pas encore là ? Le site fonctionne quand même :
+**tout tient sur la carte SD**, dans `/var/www/histoiredefamille/storage` (ou
+le dossier indiqué par `storage.root`). Quelques règles suffisent pour ces
+premiers jours.
+
+**1. La sauvegarde reste possible, mais elle ne protège de rien.** Par défaut,
+la commande de sauvegarde **refuse** de tourner tant que la clé n'est pas
+montée : c'est voulu, pour ne pas remplir la carte SD avec des copies. Pour
+accepter une sauvegarde écrite sur la carte SD elle-même, décommentez une
+seule ligne dans `config.local.php` :
+
+```php
+'maintenance' => [
+    // … le reste du bloc ne change pas
+    'backup_allow_same_disk' => true,
+],
+```
+
+Ce mode n'est **jamais actif par défaut**. Tant qu'il est en place,
+l'administration affiche en permanence un **bandeau rouge** (« Mode sans
+disque externe : … »), et `php app/cli/verifier-mise-en-ligne.php` le signale
+en **avertissement** : le site peut ouvrir (« PRÊT À OUVRIR »), mais la
+sauvegarde est sur la même carte que le site. Une carte qui lâche emporte les
+deux. Retirez la ligne dès que le disque arrive, puis relancez une sauvegarde.
+
+**2. Surveillez l'espace libre.** Une carte SD de 32 Go suffit pour le texte,
+les photos et quelques vidéos, pas pour des heures de film. La page
+**Administration → État du site** affiche l'espace libre ; en ligne de commande :
+
+```bash
+df -h /var/www/histoiredefamille/storage
+```
+
+Sous 2 Go libres, arrêtez les envois de vidéos : une conversion peut réclamer
+la place d'un second fichier. Le site refuse d'ailleurs de lancer une
+conversion sous **1 Go de marge** (réglage `conversion.min_free_mb`), et
+refuse un envoi s'il n'y a pas la place pour le fichier plus 2 Go.
+
+**3. Faites une copie manuelle, hors du Pi.** C'est la seule vraie sauvegarde
+de ces premiers jours. Depuis votre ordinateur, avec `scp` :
+
+```bash
+scp -r pi@histoiredefamille.local:/var/www/histoiredefamille/storage ~/copie-$(date +%F)
+```
+
+Ou avec un client SFTP (FileZilla, Cyberduck) : même principe, on télécharge le
+dossier `storage` entier. À refaire après chaque grosse séance de saisie. Le
+fichier `config.local.php` se copie **à part** (il contient les réglages, pas
+les données).
+
+**4. Quand le disque arrive.** Montez-le (voir `deploy/montage-disques.md`),
+déplacez le dossier de données, adaptez `storage.root` et `maintenance` dans
+`config.local.php`, retirez `backup_allow_same_disk`, puis lancez une
+sauvegarde à la main :
+
+```bash
+sudo -u www-data php /var/www/histoiredefamille/app/cli/sauvegarde.php
+```
+
+Le bandeau rouge disparaît, la clé devient le lieu de sauvegarde, et la
+vérification avant ouverture repasse au vert. La copie manuelle faite la
+veille reste votre filet de sécurité jusqu'à la première sauvegarde réussie
+sur le disque.
+
 ### 8.1 Ce qui est sauvegardé
 
 Une seule commande fait tout :
@@ -1486,7 +1552,8 @@ Ce qu'elle fait, dans l'ordre :
 
 1. **Vérifie que la clé USB est montée.** Si la clé est absente, elle s'arrête
    et **n'écrit rien du tout** : sans cette précaution, la sauvegarde
-   atterrirait sur la carte SD et la remplirait.
+   atterrirait sur la carte SD et la remplirait. Seule exception, volontaire et
+   visible : le mode « premiers jours sans disque externe » (section 8.0).
 2. **Copie la base** avec l'API de SQLite (`VACUUM INTO`) : la copie est
    cohérente même pendant que le site tourne — **jamais `cp`**, qui donnerait
    un fichier abîmé. Le résultat est contrôlé (`PRAGMA integrity_check`) avant

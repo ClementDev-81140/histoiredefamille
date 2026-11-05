@@ -28,11 +28,6 @@ $photo  = (string) $val('une_photo', $unePhoto ? '1' : '0') === '1';
 
 <h1>Composition des pages</h1>
 
-<p class="note">
-    Un bloc masqué n’est pas calculé. Les droits d’accès et le contenu ne
-    changent pas : un bloc masqué n’est même pas calculé.
-</p>
-
 <?php if ($erreurs !== []): ?>
     <div class="message message--erreur" role="alert">
         <p><strong>Ces réglages n’ont pas été enregistrés :</strong></p>

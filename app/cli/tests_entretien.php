@@ -419,6 +419,70 @@ function tests_sauvegarde(): void
             json_encode($sansCle, JSON_UNESCAPED_UNICODE)
         );
 
+        // 12 bis. Mode « premiers jours sans disque externe ».
+        // La sauvegarde et les données sont volontairement sur le même disque
+        // (c'est le cas de la carte SD quand aucun disque n'est branché).
+        $memeDisque = array_replace($options, [
+            'backup_dir'      => $site['racine'] . '/meme-disque',
+            'state'           => $site['racine'] . '/meme-disque/dernier-etat.json',
+            'log'             => $site['racine'] . '/meme-disque/journal-sauvegarde.log',
+            'exiger_montage'  => true,
+            'allow_same_disk' => false,
+            'utiliser_rsync'  => false,
+        ]);
+        @mkdir($memeDisque['backup_dir'], 0700, true);
+
+        $refusMeme = sauvegarde_support_ok($memeDisque);
+        verifier(
+            'disque unique : refusé par défaut (la clé n’est pas branchée)',
+            $refusMeme['ok'] === false && $refusMeme['same_disk'] === true,
+            json_encode($refusMeme, JSON_UNESCAPED_UNICODE)
+        );
+
+        $accepteMeme = sauvegarde_support_ok(array_replace($memeDisque, ['allow_same_disk' => true]));
+        verifier(
+            'disque unique : accepté seulement si on le demande, avec un avertissement',
+            $accepteMeme['ok'] === true && $accepteMeme['same_disk'] === true
+                && $accepteMeme['avertissement'] !== '',
+            json_encode($accepteMeme, JSON_UNESCAPED_UNICODE)
+        );
+        verifier(
+            'disque unique : l’avertissement dit que la sauvegarde ne protège de rien',
+            str_contains($accepteMeme['avertissement'], 'carte SD')
+                && str_contains($accepteMeme['avertissement'], 'backup_allow_same_disk'),
+            $accepteMeme['avertissement']
+        );
+
+        // Le bandeau rouge est permanent : même avec une sauvegarde fraîche.
+        $alerteMeme = sauvegarde_alerte(array_replace($memeDisque, [
+            'allow_same_disk' => true,
+            'state'           => $site['cle'] . '/dernier-etat.json',
+            'backup_dir'      => $site['cle'],
+            'log'             => $site['cle'] . '/journal-sauvegarde.log',
+        ]));
+        verifier(
+            'disque unique : l’administration affiche un avertissement rouge en permanence',
+            is_array($alerteMeme) && $alerteMeme['niveau'] === 'rouge'
+                && !str_starts_with((string) $alerteMeme['message'], 'Sauvegarde')
+                && str_contains(implode(' ', $alerteMeme['details']), 'carte SD'),
+            json_encode($alerteMeme, JSON_UNESCAPED_UNICODE)
+        );
+
+        // Et la sauvegarde fonctionne vraiment dans ce mode.
+        $essaiMeme = sauvegarde_executer(array_replace($memeDisque, ['allow_same_disk' => true]));
+        verifier(
+            'disque unique : la sauvegarde se fait quand même (mode dérogatoire)',
+            $essaiMeme['ok'] === true && is_file($memeDisque['state']),
+            $essaiMeme['message']
+        );
+
+        verifier(
+            'disque unique : jamais actif par défaut dans la configuration',
+            sauvegarde_options()['allow_same_disk'] === false
+                && str_contains((string) file_get_contents(dirname(__DIR__, 2) . '/app/config.php'), "'backup_allow_same_disk' => false")
+                && str_contains((string) file_get_contents(dirname(__DIR__, 2) . '/config.example.php'), "'backup_allow_same_disk' => true")
+        );
+
         // Le titre « Sauvegarde : » est posé par les vues, jamais par le
         // message : sinon le bandeau affichait « Sauvegarde : Sauvegarde : … ».
         verifier(
@@ -644,7 +708,7 @@ function tests_verification(): void
     // 1. La liste elle-même.
     $controles = mise_en_ligne_controles(['http' => false, 'systeme' => false]);
     $cles = array_column($controles, 'cle');
-    $valides = ['ok', 'corriger', 'info'];
+    $valides = ['ok', 'corriger', 'info', 'avertir'];
     $bienFormes = array_filter($controles, static fn (array $c): bool =>
         $c['titre'] !== '' && $c['detail'] !== '' && in_array($c['statut'], $valides, true));
     verifier(
@@ -712,6 +776,35 @@ function tests_verification(): void
         verifier('vérification : clé présente et inscriptible → au vert',
             ($option($presente, 'sauvegarde_support')['statut'] ?? '') === 'ok',
             (string) ($option($presente, 'sauvegarde_support')['detail'] ?? ''));
+
+        // Mode « premiers jours sans disque externe » : avertissement, jamais
+        // blocage. Le site peut ouvrir.
+        $memeDisque = $racine . '/meme-disque';
+        mkdir($memeDisque, 0700, true);
+        $surCarte = mise_en_ligne_controles([
+            'http' => false, 'systeme' => false,
+            'sauvegarde' => [
+                'backup_dir' => $memeDisque,
+                'state' => $memeDisque . '/dernier-etat.json',
+                'restore_state' => $memeDisque . '/derniere-restauration.json',
+                'exiger_montage' => true,
+                'allow_same_disk' => true,
+            ],
+        ]);
+        verifier('vérification : sauvegarde sur la carte SD → « avertissement », pas « à corriger »',
+            ($option($surCarte, 'sauvegarde_support')['statut'] ?? '') === 'avertir',
+            (string) ($option($surCarte, 'sauvegarde_support')['detail'] ?? ''));
+        verifier('vérification : l’avertissement n’empêche jamais d’ouvrir le site',
+            ($option($surCarte, 'sauvegarde_support')['remede'] ?? '') !== ''
+                && array_column(array_filter($surCarte, static fn (array $c): bool => $c['statut'] === 'avertir'), 'cle') === ['sauvegarde_support']
+                && !in_array('sauvegarde_support', array_column(array_filter($surCarte, static fn (array $c): bool => $c['statut'] === 'corriger'), 'cle'), true),
+            json_encode(mise_en_ligne_verdict($surCarte), JSON_UNESCAPED_UNICODE));
+        verifier('vérification : le verdict ne compte que les points « à corriger » comme bloquants',
+            mise_en_ligne_verdict([['statut' => 'avertir', 'titre' => 'x', 'detail' => 'y', 'remede' => 'z', 'cle' => 'x']])['pret'] === true
+                && mise_en_ligne_verdict([['statut' => 'corriger', 'titre' => 'x', 'detail' => 'y', 'remede' => 'z', 'cle' => 'x']])['pret'] === false);
+        $commandeVerif = (string) file_get_contents(dirname(__DIR__) . '/cli/verifier-mise-en-ligne.php');
+        verifier('vérification : la commande affiche les avertissements et dit toujours « PRÊT À OUVRIR »',
+            str_contains($commandeVerif, 'AVERTISSEMENT') && str_contains($commandeVerif, 'PRÊT À OUVRIR'));
 
         // 4. Sauvegarde et restauration datées.
         sauvegarde_etat_ecrire([

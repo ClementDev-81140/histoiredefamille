@@ -94,6 +94,70 @@ function conversion_reglages(): array
 }
 
 /**
+ * Marge d'espace libre exigée avant de commencer une conversion.
+ *
+ * Une vidéo convertie pèse à peu près son original ; ffmpeg écrit le fichier
+ * temporaire dans `tmp/` pendant que l'original reste en place. Sur une carte
+ * SD presque pleine, lancer la conversion remplit le disque, casse la
+ * conversion… et empêche la base d'écrire. On refuse donc de démarrer sous la
+ * marge (1 Go par défaut, réglable dans config.local.php).
+ */
+function conversion_marge_libre(): int
+{
+    return max(0, (int) config('conversion.min_free_mb', 1024)) * 1048576;
+}
+
+/** Espace libre, en octets, sur le disque des données (null si inconnu). */
+function conversion_espace_libre(): ?int
+{
+    $racine = (string) config('storage.root');
+    if ($racine === '') {
+        return null;
+    }
+    $libre = @disk_free_space($racine);
+    return $libre === false ? null : (int) $libre;
+}
+
+/**
+ * Peut-on convertir ce document sans risquer de remplir le disque ?
+ *
+ * La place exigée est la marge plus la taille du fichier d'origine : le
+ * résultat peut être plus gros (rare) ou plus petit (fréquent), on prend
+ * l'hypothèse la plus prudente.
+ *
+ * Les deux derniers paramètres servent aux tests : ils évitent de dépendre de
+ * l'état réel du disque de la machine. `$libre` vaut -1 pour « interroger le
+ * disque » (le cas normal), null pour « espace inconnu ».
+ *
+ * @return array{ok:bool, libre:?int, requis:int, message:string}
+ */
+function conversion_espace_ok(array $doc, ?int $libre = -1, ?int $marge = null): array
+{
+    $marge  = $marge ?? conversion_marge_libre();
+    $libre  = $libre === -1 ? conversion_espace_libre() : $libre;
+    $requis = $marge + max(0, (int) ($doc['size'] ?? 0));
+
+    if ($libre === null) {
+        // Disque inconnu : on ne bloque pas une conversion pour ça, le reste
+        // du contrôle (écriture du fichier temporaire) tranchera.
+        return ['ok' => true, 'libre' => null, 'requis' => $requis, 'message' => ''];
+    }
+
+    if ($libre >= $requis) {
+        return ['ok' => true, 'libre' => $libre, 'requis' => $requis, 'message' => ''];
+    }
+
+    return [
+        'ok'      => false,
+        'libre'   => $libre,
+        'requis'  => $requis,
+        'message' => 'Conversion impossible : il faut '
+            . format_size($requis) . ' libres (marge de sécurité comprise) et il n’en reste que '
+            . format_size($libre) . '. Libérez de la place, puis relancez la conversion.',
+    ];
+}
+
+/**
  * Emplacements de ffmpeg et ffprobe.
  *
  * Deux endroits, dans cet ordre : config.local.php (clé `conversion.ffmpeg`)
@@ -272,6 +336,13 @@ function conversion_planifier(int $documentId, ?int $compteId = null, bool $forc
     if (!$forcer && !conversion_reglages()['active']) {
         $resultat['ignore'] = true;
         return $resultat;
+    }
+
+    // Pas de conversion qui remplirait la carte : le refus est explicite et
+    // le fichier d'origine reste en place, utilisable tel quel.
+    $espace = conversion_espace_ok($doc);
+    if (!$espace['ok']) {
+        return ['ok' => false, 'error' => $espace['message'], 'ignore' => false, 'id' => 0, 'state' => ''];
     }
 
     $rel = (string) $doc['rel_path'];

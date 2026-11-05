@@ -14,12 +14,6 @@
         <?php endif; ?>
     </div>
 
-    <p class="temoignages__intro">
-        Des voix de la famille : souvenirs enregistrés, interviews, chansons.
-        Chaque enregistrement est un document comme les autres, avec sa propre
-        visibilité.
-    </p>
-
     <p class="discret">
         <?= (int) $total ?> enregistrement<?= (int) $total > 1 ? 's' : '' ?>
         <?php if (!is_logged_in()): ?>

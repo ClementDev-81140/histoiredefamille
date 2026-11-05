@@ -3,6 +3,91 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.25.0] — 2026-11-05
+
+### Des pages plus calmes, et un site qui vit sans disque externe
+
+Deux chantiers : **enlever les textes qui expliquent au lieu de faire agir**, et
+**rendre le site utilisable dès les premiers jours**, avant l'arrivée du disque.
+
+#### Textes retirés (aucune fonctionnalité perdue)
+
+Rien de ce qui sert à agir n'a bougé : libellés, noms de champs, messages
+d'erreur, avertissements de sécurité réels, aides courtes qui évitent une
+erreur. Le **tchat n'a pas été touché**. Ce qui a été retiré :
+
+- **Page publique** : l'encadré de l'espace réservé (« …par n'importe quel
+  visiteur »), l'introduction des témoignages (« Des voix de la famille… chaque
+  enregistrement est un document comme les autres »), la fin de l'introduction
+  des vidéos (« les vidéos sont lues directement, sans conversion »), les
+  rappels de la page document et de la carte.
+- **Espace famille** : la phrase de droits sous « Bonjour » (remplacée par
+  « Branche X »), les commentaires de l'accueil sur les nouveautés.
+- **Mon compte** : explication longue du retard des courriels (remplacée par
+  une phrase : « un seul message par article, et seulement pour les articles
+  publiés après le moment où vous cochez »), rappel de désinscription en un
+  clic, mention « tout est facultatif » raccourcie.
+- **Mes propositions** : le paragraphe d'introduction est ramené à une phrase.
+- **Administration** : notes d'introduction de « Tableau de bord » (deux
+  panneaux + rappel vidéos), d'« Apparence du journal » (« rien n'est
+  enregistré avant… », explication des polices), de « Composition des pages »
+  (phrase dupliquée), des « Recettes », des « Albums », des « Vidéos »
+  (déplacement vers le stockage), des « Courriels » (renvoi au README), des
+  « Conversions », des « Réglages » (deux paragraphes et le panneau
+  « Information »), des comptes (cases de courriel), des pages de formulaire
+  (aide de visibilité, rappels de mise en forme, avertissements d'envoi).
+  Environ **28 blocs** au total, dans 25 vues.
+- **« Sauvegarde : Sauvegarde : »** ne s'affiche plus deux fois : le titre est
+  posé par la vue, jamais par le message ; un test le vérifie.
+
+#### Deux phrases ambiguës, corrigées
+
+Repérées en relisant les textes restants :
+
+- « Un compte unique par branche, identifiant en majuscules » (Branches et
+  comptes) laissait croire qu'il fallait un identifiant unique dans toute la
+  base. Devenu : « Un seul compte par branche. L'identifiant s'écrit en
+  majuscules. »
+- « Il faut aussi que le disque ait 2 Go de marge libre » (Réglages) ne disait
+  pas **quel** disque. Devenu : « Le disque des données doit aussi garder 2 Go
+  libres. »
+
+Aucune autre tournure n'a paru ambiguë : les mentions de visibilité et les
+messages d'erreur restent explicites.
+
+#### Vivre sans disque externe
+
+- **`backup_allow_same_disk`** : nouveau réglage **facultatif**, à poser à la
+  main dans `config.local.php` (`'maintenance' => ['backup_allow_same_disk' =>
+  true]`). **Jamais actif par défaut** : sans le disque, la sauvegarde continue
+  de refuser de s'écrire sur la carte SD. Avec lui, elle accepte, mais
+  l'administration affiche un **bandeau rouge permanent** et la page « État du
+  site » rappelle que cette copie ne protège d'aucune panne de la carte.
+- **`php app/cli/verifier-mise-en-ligne.php`** : nouveau statut
+  **AVERTISSEMENT**. Le mode « sans disque externe » y apparaît comme un
+  avertissement — **jamais bloquant** — et la commande dit toujours clairement
+  **« PRÊT À OUVRIR »** ou la liste des points à corriger. Le code de sortie ne
+  dépend que des points à corriger.
+- **Conversion vidéo** : elle **refuse de démarrer sous la marge d'espace
+  libre** prévue (`conversion.min_free_mb`, 1 Go par défaut), en comptant la
+  taille du fichier d'origine. La commande `app/cli/convertir.php` revérifie la
+  place **juste avant** de lancer ffmpeg : un disque rempli entre-temps arrête
+  le travail avec un message clair, l'original reste en place. Les minuteurs de
+  courriel ne changent pas.
+- **README** : nouvelle section **« Premiers jours sans disque externe »** —
+  tout sur la carte SD, surveillance de l'espace libre, copie manuelle par
+  `scp` ou SFTP, transition à l'arrivée du disque.
+
+#### Vérifications
+
+- **899 tests** (`php app/cli/tests.php`), **0 échec** : dont 8 nouveaux sur la
+  marge d'espace de la conversion, 6 sur le mode « sans disque externe »
+  (refus par défaut, avertissement, bandeau permanent, sauvegarde réelle) et 4
+  sur l'avertissement de la vérification avant ouverture.
+- Analyse syntaxique : **181 fichiers**, 0 erreur.
+- Matrice d'accès régénérée : **184 routes**, **736 vérifications**,
+  **240 contrôles**, **0 anomalie**.
+
 ## [1.24.0] — 2026-11-04
 
 ### Privé par défaut, et deux portes d'entrée

@@ -43,10 +43,6 @@ $etats = [
                 mot de passe, adresse d’expéditeur.</li>
             <li>Rechargez Apache, puis revenez ici et cliquez sur « Envoyer un essai ».</li>
         </ol>
-        <p class="aide">
-            Le README, section « Envoyer des courriels », donne les paramètres des fournisseurs
-            courants et la marche à suivre pas à pas.
-        </p>
     </section>
 <?php else: ?>
     <div class="message message--succes">

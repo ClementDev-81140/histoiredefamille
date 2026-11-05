@@ -58,11 +58,6 @@ $libelles = [
 
 <h1>Apparence du journal</h1>
 
-<p class="note">
-    Rien n’est enregistré avant le bouton « Enregistrer », et
-    tant que vous ne touchez à rien le site reste exactement comme aujourd’hui.
-</p>
-
 <?php if ($erreurs !== []): ?>
     <div class="message message--erreur" role="alert">
         <p><strong>Ces réglages n’ont pas été enregistrés :</strong></p>
@@ -321,10 +316,8 @@ $libelles = [
     <?= csrf_field() ?>
     <input type="hidden" name="action" value="retablir">
     <h2>Revenir en arrière</h2>
-    <p>
-        « Rétablir les valeurs d’origine » remet tous les réglages de cette page comme au premier jour :
-        bandeau, devise, « Fondée en », numéro d’édition, pied de page, phrase d’accueil, titres des
-        encarts et couleurs. Le titre du site revient aussi à la valeur du fichier de configuration.
+    <p class="aide">
+        Tout revient comme au premier jour, y compris le titre du site.
     </p>
     <p class="actions">
         <button type="submit" class="bouton bouton--danger">Rétablir les valeurs d’origine</button>

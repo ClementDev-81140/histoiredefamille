@@ -137,6 +137,15 @@ return [
         // sinon la sauvegarde atterrit sur la carte SD et la remplit).
         'backup_require_mount' => true,
 
+        // Premiers jours sans disque externe : décommenter la ligne suivante
+        // pour accepter une sauvegarde écrite sur la carte SD, à côté du site.
+        // Ce n'est PAS une sauvegarde : elle ne protège d'aucune panne de la
+        // carte. L'administration affiche un bandeau rouge tant que le mode
+        // est actif, et `php app/cli/verifier-mise-en-ligne.php` le signale
+        // en avertissement (jamais bloquant). À retirer dès que le disque
+        // arrive.
+        // 'backup_allow_same_disk' => true,
+
         // Alerte rouge dans l'administration : sauvegarde trop ancienne
         // (jours) ou espace libre faible (Mo).
         'backup_alert_days'    => 3,

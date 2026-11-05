@@ -16,10 +16,12 @@
  * Ce qu'elle fait, dans l'ordre :
  *   1. vérifie que ffmpeg et ffprobe sont là (sinon elle le dit et s'arrête) ;
  *   2. prend le travail le plus ancien de la file ;
- *   3. lit la durée du fichier, puis lance ffmpeg en notant l'avancement ;
- *   4. à la fin, range le fichier converti et met la fiche à jour (une seule
+ *   3. vérifie qu'il reste la marge d'espace libre prévue (sinon elle refuse
+ *      de démarrer : un disque plein casserait la conversion ET le site) ;
+ *   4. lit la durée du fichier, puis lance ffmpeg en notant l'avancement ;
+ *   5. à la fin, range le fichier converti et met la fiche à jour (une seule
  *      transaction) : la famille ne voit jamais un fichier à moitié écrit ;
- *   5. en cas d'échec, garde l'original, note la raison, et réessaie plus tard
+ *   6. en cas d'échec, garde l'original, note la raison, et réessaie plus tard
  *      (trois essais au total).
  *
  * Pendant tout le travail, la commande relit l'état du travail : si
@@ -153,6 +155,16 @@ function conversion_executer(array $travail, array $reglages): ?bool
     if (!is_file($source)) {
         conversion_echouer($id, 'Le fichier d’origine est introuvable sur le disque.');
         echo "  ! fichier introuvable\n";
+        return false;
+    }
+
+    // Assez de place ? Le travail a pu être mis en file alors que le disque
+    // était libre ; entre-temps, des photos sont arrivées. On vérifie donc
+    // encore une fois juste avant de lancer ffmpeg, jamais après.
+    $espace = conversion_espace_ok($doc);
+    if (!$espace['ok']) {
+        conversion_echouer($id, $espace['message']);
+        echo '  ! ', $espace['message'], "\n";
         return false;
     }
 

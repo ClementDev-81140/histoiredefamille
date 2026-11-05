@@ -10,12 +10,6 @@
     <a class="bouton" href="/admin/recettes/nouvelle">Nouvelle recette</a>
 </div>
 
-<p class="discret">
-    Les recettes forment une rubrique à part (« Recettes de famille ») avec leur
-    propre visibilité. Elles s’impriment proprement, pour les glisser dans un
-    carnet de cuisine.
-</p>
-
 <?php if ($recettes === []): ?>
     <div class="panneau panneau--centre">
         <p>Aucune recette pour le moment.</p>
