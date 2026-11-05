@@ -115,6 +115,10 @@ débordement, et le texte des boutons pleins reste lisible dans les deux.
 - Analyse syntaxique : **181 fichiers**, 0 erreur.
 - Matrice d'accès régénérée : **184 routes**, **736 vérifications**,
   **240 contrôles**, **0 anomalie**.
+- **Captures refaites** sur la base de démonstration : accueil public et accueil
+  connecté (lecteur, journaliste), Mes propositions, À valider, formulaire
+  d'article avec « Privé » coché, documents — en 1280 et 390 px. `docs/captures/README.md`
+  dit désormais quelle image montre quelle page.
 
 ## [1.24.0] — 2026-11-04
 
