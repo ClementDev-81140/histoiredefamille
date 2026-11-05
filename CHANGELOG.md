@@ -14,7 +14,8 @@ Deux chantiers : **enlever les textes qui expliquent au lieu de faire agir**, et
 
 Rien de ce qui sert à agir n'a bougé : libellés, noms de champs, messages
 d'erreur, avertissements de sécurité réels, aides courtes qui évitent une
-erreur. Le **tchat n'a pas été touché**. Ce qui a été retiré :
+erreur. Le **tchat n'a pas été touché**. Ce qui a été retiré (une partie pendant
+le travail de la 1.24.0, le reste ici — même branche, même publication) :
 
 - **Page publique** : l'encadré de l'espace réservé (« …par n'importe quel
   visiteur »), l'introduction des témoignages (« Des voix de la famille… chaque
