@@ -98,7 +98,9 @@ désormais `overflow-wrap: anywhere`, et deux tests la vérifient. Aucune autre
 page capturée ne déborde : accueil public, documents, vidéos, témoignages,
 accueil lecteur, accueil journaliste, Mon compte, Mes propositions, À valider,
 tableau de bord, Réglages, Apparence, Branches, Recettes et formulaire d'article
-tiennent à 390 comme à 1280 px.
+tiennent à 390 comme à 1280 px. Les deux palettes ont été revérifiées
+(« papier ancien » et « bleu d'origine ») : mêmes pages, mêmes mesures, aucun
+débordement, et le texte des boutons pleins reste lisible dans les deux.
 
 #### Vérifications
 
