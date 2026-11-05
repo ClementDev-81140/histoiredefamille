@@ -35,6 +35,21 @@ Les autres fichiers (albums publics, articles, arbre, calendrier, frise, tchat,
 vidéos, recettes) datent des versions précédentes : les pages correspondantes
 n'ont ni menu d'administration ni changement depuis.
 
+### 1.26.0 — aucune capture refaite
+
+La version 1.26.0 ne change **aucune page visible** : elle corrige des
+comportements (conversion, versions de propositions, purge de la démonstration,
+seuils de la vérification, espace disque). Les captures restent donc celles de
+la 1.25.2. Seule la page **Administration → État du site** gagne un tableau
+(« À regarder, sans bloquer l'ouverture ») : elle n'était pas capturée jusqu'ici
+et ne l'est pas davantage ici.
+
+Vérifié malgré tout, en 390 px, sur quatorze pages (accueil, documents, espace
+famille, tableau de bord, état, documents d'administration, propositions,
+à valider, carte, arbre, calendrier, conversions, comptes, réglages) : **aucun
+défilement horizontal de page**, et chaque élément qui dépasse son cadre est
+**dans un cadre qui défile** (`.tableau-defilant`), jamais nu.
+
 Comment elles sont faites : la base de démonstration (`php app/cli/demo.php`)
 est chargée dans une base d'essai, les pages sont rendues par le routeur du
 site lui-même (même code que la production), puis photographiées avec un
