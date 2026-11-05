@@ -317,7 +317,11 @@ function tests_profils_creation(): void
         $doublon['error']
     );
 
-    $invalide = compte_creer_lecteur('martin', 'Famille Martin', false, $admin);
+    // Identifiant volontairement improbable : la base peut déjà contenir un
+    // « MARTIN » (données de démonstration, vraie famille), et le test ne doit
+    // pas dépendre de ce qu'elle contient.
+    $refuse = 'Zz' . bin2hex(random_bytes(3));
+    $invalide = compte_creer_lecteur(strtolower($refuse), 'Famille Refusée', false, $admin);
     verifier(
         'création : un identifiant en minuscules est refusé (règle des comptes de branche)',
         $invalide['ok'] === false && str_contains($invalide['error'], 'majuscules'),
@@ -325,8 +329,10 @@ function tests_profils_creation(): void
     );
     verifier(
         'création : un identifiant refusé n’a créé ni branche ni compte',
-        db_one('SELECT id FROM branches WHERE code = ? COLLATE NOCASE', ['MARTIN']) === null
-            && db_one('SELECT id FROM accounts WHERE username = ? COLLATE NOCASE', ['MARTIN']) === null
+        db_one('SELECT id FROM branches WHERE code = ? COLLATE NOCASE', [strtolower($refuse)]) === null
+            && db_one('SELECT id FROM branches WHERE code = ? COLLATE NOCASE', [strtoupper($refuse)]) === null
+            && db_one('SELECT id FROM accounts WHERE username = ? COLLATE NOCASE', [strtolower($refuse)]) === null,
+        'une branche ou un compte a été créé pour ' . $refuse
     );
 }
 
