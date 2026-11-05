@@ -16,8 +16,12 @@
  * Ce qu'elle fait, dans l'ordre :
  *   1. vérifie que ffmpeg et ffprobe sont là (sinon elle le dit et s'arrête) ;
  *   2. prend le travail le plus ancien de la file ;
- *   3. vérifie qu'il reste la marge d'espace libre prévue (sinon elle refuse
- *      de démarrer : un disque plein casserait la conversion ET le site) ;
+ *   2 bis. remet d'aplomb les travaux laissés « en cours » par une coupure de
+ *      courant, et efface leurs fichiers temporaires ;
+ *   3. vérifie qu'il reste la marge d'espace libre prévue ET qu'aucun envoi
+ *      par morceaux n'est en cours (sinon elle reporte le travail au passage
+ *      suivant : un disque plein casserait la conversion ET le site, et deux
+ *      gros travaux ensemble épuisent le gigaoctet de mémoire) ;
  *   4. lit la durée du fichier, puis lance ffmpeg en notant l'avancement ;
  *   5. à la fin, range le fichier converti et met la fiche à jour (une seule
  *      transaction) : la famille ne voit jamais un fichier à moitié écrit ;
@@ -59,6 +63,18 @@ foreach ($arguments as $argument) {
 
 echo 'Conversion des vidéos — ', date('d/m/Y à H:i'), "\n";
 echo "--------------------------------------\n\n";
+
+// 0. Une coupure de courant a pu laisser un travail « en cours » et un fichier
+//    temporaire à moitié écrit. On remet la file d'aplomb AVANT de prendre du
+//    travail : sinon un seul blocage arrêterait la file pour de bon.
+$recuperation = conversion_recuperer();
+if ($recuperation['repris'] > 0 || $recuperation['abandonnes'] > 0) {
+    echo 'Après une interruption : ', $recuperation['repris'], ' travail(x) remis en attente, ',
+        $recuperation['abandonnes'], " abandonné(s).\n";
+}
+if ($recuperation['temporaires'] > 0) {
+    echo 'Fichiers temporaires effacés : ', $recuperation['temporaires'], ".\n";
+}
 
 $resume = conversion_resume();
 echo 'File : ', $resume['attente'], ' en attente, ', $resume['en_cours'], ' en cours, ',
@@ -104,8 +120,9 @@ if (!function_exists('proc_open')) {
     exit(1);
 }
 
-$faits   = 0;
-$echecs  = 0;
+$faits    = 0;
+$echecs   = 0;
+$reportes = 0;
 
 for ($i = 0; $i < $lot; $i++) {
     $travail = conversion_prendre();
@@ -119,6 +136,10 @@ for ($i = 0; $i < $lot; $i++) {
     $resultat = conversion_executer($travail, $reglages);
     if ($resultat === true) {
         $faits++;
+    } elseif ($resultat === 'reporte') {
+        // Envoi en cours ou disque trop plein : le minuteur repassera.
+        $reportes++;
+        break;
     } elseif ($resultat === false) {
         $echecs++;
     } else {
@@ -127,7 +148,11 @@ for ($i = 0; $i < $lot; $i++) {
     }
 }
 
-echo "\nRésultat : ", $faits, " converti(s), ", $echecs, " en échec.\n";
+echo "\nRésultat : ", $faits, " converti(s), ", $echecs, " en échec";
+if ($reportes > 0) {
+    echo ', ', $reportes, ' reporté(s) au prochain passage';
+}
+echo ".\n";
 echo "Détail dans le journal : journalctl -u histoiredefamille-conversion.service -n 50\n";
 
 exit($echecs > 0 ? 1 : 0);
@@ -135,9 +160,10 @@ exit($echecs > 0 ? 1 : 0);
 /**
  * Convertit un travail.
  *
- * @return bool|null true = réussi, false = échec, null = annulé
+ * @return bool|string|null true = réussi, false = échec, null = annulé,
+ *                          'reporte' = à refaire au prochain passage
  */
-function conversion_executer(array $travail, array $reglages): ?bool
+function conversion_executer(array $travail, array $reglages): bool|string|null
 {
     $id  = (int) $travail['id'];
     $doc = db_one('SELECT * FROM documents WHERE id = ?', [(int) $travail['document_id']]);
@@ -158,14 +184,17 @@ function conversion_executer(array $travail, array $reglages): ?bool
         return false;
     }
 
-    // Assez de place ? Le travail a pu être mis en file alors que le disque
-    // était libre ; entre-temps, des photos sont arrivées. On vérifie donc
-    // encore une fois juste avant de lancer ffmpeg, jamais après.
-    $espace = conversion_espace_ok($doc);
-    if (!$espace['ok']) {
-        conversion_echouer($id, $espace['message']);
-        echo '  ! ', $espace['message'], "\n";
-        return false;
+    // Peut-on vraiment démarrer ? Le travail a pu être mis en file alors que
+    // le disque était libre et qu'aucun envoi ne tournait ; entre-temps, des
+    // photos sont arrivées ou un fichier de 3 Go est en train de monter. On
+    // vérifie donc encore une fois juste avant de lancer ffmpeg : place libre
+    // suffisante ET aucun envoi en cours. Un report n'est PAS un échec : le
+    // travail repart au passage suivant du minuteur, sans consommer d'essai.
+    $demarrage = conversion_peut_demarrer($doc);
+    if (!$demarrage['ok']) {
+        conversion_reporter($id, $demarrage['message']);
+        echo '  · ', $demarrage['message'], "\n";
+        return 'reporte';
     }
 
     $duree = conversion_duree($source, $reglages['ffprobe']);
@@ -182,6 +211,10 @@ function conversion_executer(array $travail, array $reglages): ?bool
     $commande = $audio
         ? conversion_commande_audio($source, $temporaire, $reglages)
         : conversion_commande($source, $temporaire, $reglages);
+
+    // Priorité basse : ffmpeg ne doit jamais affamer le site ni le tunnel.
+    // `nice` est un programme séparé, donc toujours sans passer par le shell.
+    $commande = conversion_commande_nicee($commande, $reglages);
 
     $descripteurs = [
         0 => ['file', '/dev/null', 'r'],

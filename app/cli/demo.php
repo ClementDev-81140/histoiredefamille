@@ -43,6 +43,11 @@ if (!$force && ($existingPersons > 0 || $existingDocs > 0)) {
 $now = time();
 $passwords = [];
 
+// Ce que l'on avait avant : tout ce qui aura un identifiant plus grand aura
+// été créé par ce script. C'est ce que la commande de purge utilisera pour ne
+// supprimer QUE les données de démonstration (voir app/cli/purger-demo.php).
+$marquesAvant = demo_marques(demo_tables());
+
 // ---------------------------------------------------------------------------
 // Branches et comptes
 // ---------------------------------------------------------------------------
@@ -1035,4 +1040,35 @@ if ((int) db_value("SELECT COUNT(*) FROM accounts WHERE role = 'admin'", [], 0) 
     echo "Aucun administrateur : créez-en un avec\n  php app/cli/create-admin.php\n\n";
 }
 
+// ---------------------------------------------------------------------------
+// Registre des identifiants créés (pour la purge : app/cli/purger-demo.php)
+// ---------------------------------------------------------------------------
+$plages = [];
+foreach (demo_tables() as $table) {
+    $min = (int) ($marquesAvant[$table] ?? 0) + 1;
+    try {
+        $max = (int) db_value('SELECT COALESCE(MAX(id), 0) FROM ' . $table, [], 0);
+    } catch (Throwable) {
+        continue;
+    }
+    if ($max >= $min) {
+        $plages[$table] = ['min' => $min, 'max' => $max];
+    }
+}
+$registreExistant = demo_registry_read();
+// Un second passage complète le registre sans effacer la trace du premier.
+foreach ($registreExistant['tables'] as $table => $plage) {
+    if (!isset($plages[$table])) {
+        $plages[$table] = $plage;
+        continue;
+    }
+    $plages[$table] = [
+        'min' => min((int) $plage['min'], (int) $plages[$table]['min']),
+        'max' => max((int) $plage['max'], (int) $plages[$table]['max']),
+    ];
+}
+demo_registry_write($plages);
+
 echo "Rappel : ces contenus sont FICTIFS et servent uniquement aux tests.\n";
+echo "Pour tout retirer avant l’ouverture à la famille :\n";
+echo "  php app/cli/purger-demo.php\n";

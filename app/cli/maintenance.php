@@ -71,6 +71,16 @@ try {
     $effaces = conversion_liberer_originaux(7);
     echo "  · conversions : {$vieux} ancienne(s) ligne(s) effacée(s), "
         . ($effaces > 0 ? "{$effaces} original(aux) libéré(s)" : 'aucun original à effacer') . "\n";
+
+    // File bloquée par une coupure de courant : on la remet d'aplomb même si
+    // le minuteur de conversion ne tourne pas (machine arrêtée, service en
+    // échec). C'est le filet de sécurité de la maintenance quotidienne.
+    $recuperation = conversion_recuperer(60);
+    if ($recuperation['repris'] > 0 || $recuperation['abandonnes'] > 0 || $recuperation['temporaires'] > 0) {
+        echo "  · conversions bloquées : {$recuperation['repris']} remise(s) en attente, "
+            . "{$recuperation['abandonnes']} abandonnée(s), "
+            . "{$recuperation['temporaires']} fichier(s) temporaire(s) effacé(s)\n";
+    }
 } catch (Throwable $e) {
     cli_err("  ! entretien des conversions impossible : " . $e->getMessage() . "\n");
 }

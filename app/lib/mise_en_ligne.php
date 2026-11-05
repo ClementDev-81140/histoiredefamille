@@ -2,9 +2,12 @@
 /**
  * Vérification avant ouverture du site au public.
  *
- * Chaque contrôle rend un des trois verdicts :
+ * Chaque contrôle rend un des quatre verdicts :
  *   - « ok »       : c'est bon ;
  *   - « corriger » : il faut agir AVANT d'ouvrir le site ;
+ *   - « avertir »  : à lire avant d'ouvrir, mais qui ne bloque jamais
+ *                    l'ouverture (données de démonstration, HTTPS, courriels,
+ *                    minuteurs, âge de la dernière sauvegarde) ;
  *   - « info »     : à savoir, sans bloquer.
  *
  * Chaque verdict est accompagné d'une explication en français simple et d'un
@@ -30,7 +33,9 @@ function mise_en_ligne_options(array $override = []): array
         'config_file'   => (string) config('_config_file'),
         'admin_min'     => 2,
         'espace_min_mb' => 512,
-        'sauvegarde_max_jours' => 3,
+        // Une sauvegarde de plus de 48 h est signalée : sur une carte SD, deux
+        // jours de travail perdu, c'est déjà beaucoup.
+        'sauvegarde_max_jours' => 2,
         'restauration_max_jours' => 180,
         'https_only'    => (bool) config('https_only'),
         'adresse'       => mise_en_ligne_adresse(),
@@ -197,7 +202,7 @@ function mise_en_ligne_controles(array $options = []): array
         mise_en_ligne_ajouter($controles, 'https_only', 'HTTPS obligatoire', 'ok',
             'Le site force les cookies sécurisés et l’en-tête HSTS.');
     } else {
-        mise_en_ligne_ajouter($controles, 'https_only', 'HTTPS obligatoire', 'corriger',
+        mise_en_ligne_ajouter($controles, 'https_only', 'HTTPS obligatoire', 'avertir',
             'Le réglage « https_only » est à false : le site accepterait une connexion non chiffrée.',
             'Dans /var/www/histoiredefamille/config.local.php, mettez ' . "'https_only' => true" . ', puis rechargez Apache.');
     }
@@ -222,9 +227,11 @@ function mise_en_ligne_controles(array $options = []): array
         mise_en_ligne_ajouter($controles, 'demo', 'Aucune donnée de démonstration', 'ok',
             'Aucun contenu ni compte marqué « (démo) ».');
     } else {
-        mise_en_ligne_ajouter($controles, 'demo', 'Aucune donnée de démonstration', 'corriger',
+        mise_en_ligne_ajouter($controles, 'demo', 'Aucune donnée de démonstration', 'avertir',
             'Des données fictives sont encore présentes : ' . $demo . '.',
-            'Supprimez-les depuis l’administration (documents, articles, pages, albums, recettes, personnes, comptes), ou repartez d’une base vierge puis restaurez une vraie sauvegarde.');
+            'Lancez la commande de purge : sudo -u www-data php /var/www/histoiredefamille/app/cli/purger-demo.php '
+                . '(elle montre ce qu’elle supprimerait, demande de taper OUI, et fait une sauvegarde avant). '
+                . 'Les comptes ne sont jamais supprimés par cette commande : désactivez-les depuis Administration → Comptes.');
     }
 
     // 4. Au moins deux administrateurs actifs --------------------------------
@@ -233,7 +240,7 @@ function mise_en_ligne_controles(array $options = []): array
         mise_en_ligne_ajouter($controles, 'admins', 'Administrateurs actifs', 'ok',
             $admins . ' compte(s) administrateur actif(s).');
     } else {
-        mise_en_ligne_ajouter($controles, 'admins', 'Administrateurs actifs', 'corriger',
+        mise_en_ligne_ajouter($controles, 'admins', 'Administrateurs actifs', 'avertir',
             'Il n’y a que ' . $admins . ' administrateur actif : en cas d’oubli de mot de passe ou d’absence, personne ne peut gérer le site.',
             'Créez au moins deux comptes : sudo -u www-data php /var/www/histoiredefamille/app/cli/create-admin.php');
     }
@@ -334,10 +341,11 @@ function mise_en_ligne_controles(array $options = []): array
             mise_en_ligne_ajouter($controles, 'sauvegarde_recente', 'Dernière sauvegarde', 'ok',
                 'Réussie ' . (string) ($etat['date_humain'] ?? '') . ' (il y a ' . $jours . ' jour(s)).');
         } else {
-            mise_en_ligne_ajouter($controles, 'sauvegarde_recente', 'Dernière sauvegarde', 'corriger',
+            mise_en_ligne_ajouter($controles, 'sauvegarde_recente', 'Dernière sauvegarde', 'avertir',
                 ($etat['status'] ?? '') !== 'ok'
                     ? 'La dernière sauvegarde a échoué : ' . (string) ($etat['message'] ?? '')
-                    : 'La dernière sauvegarde date de ' . $jours . ' jours.',
+                    : 'Aucune sauvegarde réussie depuis ' . $jours . ' jour(s) : la dernière date de '
+                        . (string) ($etat['date_humain'] ?? '?') . ' (attendu : moins de 48 heures).',
                 'Lancez la commande de sauvegarde, lisez le message, puis vérifiez « Administration → État du site ».');
         }
     }
@@ -348,7 +356,7 @@ function mise_en_ligne_controles(array $options = []): array
             mise_en_ligne_ajouter($controles, 'sauvegarde_timer', 'Sauvegarde automatique planifiée', 'ok',
                 'Le minuteur systemd est activé (tous les jours à 3 h 30).');
         } else {
-            mise_en_ligne_ajouter($controles, 'sauvegarde_timer', 'Sauvegarde automatique planifiée', 'corriger',
+            mise_en_ligne_ajouter($controles, 'sauvegarde_timer', 'Sauvegarde automatique planifiée', 'avertir',
                 'Le minuteur de sauvegarde n’est pas activé : aucune sauvegarde ne sera faite la nuit.',
                 'sudo systemctl enable --now histoiredefamille-sauvegarde.timer puis sudo systemctl list-timers histoiredefamille-sauvegarde.timer');
         }
@@ -372,6 +380,37 @@ function mise_en_ligne_controles(array $options = []): array
                 'Le dernier test de restauration date de ' . $jours . ' jours ou a échoué.',
                 'Relancez la commande de contrôle de restauration (option --verifier).');
         }
+    }
+
+    // 13 bis. Courriels : configuration et minuteur d'envoi -------------------
+    // Ce sont des avertissements, jamais des blocages : un site sans courriel
+    // fonctionne (la file d'attente et les écrans suffisent), il prévient
+    // simplement moins bien la famille.
+    if (courriel_configure()) {
+        mise_en_ligne_ajouter($controles, 'courriel', 'Envoi de courriels', 'ok',
+            'Un serveur d’envoi est configuré : les notifications peuvent partir.');
+    } else {
+        mise_en_ligne_ajouter($controles, 'courriel', 'Envoi de courriels', 'avertir',
+            'Aucun courriel n’est configuré : aucune notification ne partira (création de compte, '
+                . 'article publié, mot de passe oublié).',
+            'Renseignez le bloc « mail » de config.local.php (voir le README, « Envoyer des courriels »), '
+                . 'puis vérifiez la file : Administration → Courriels.');
+    }
+
+    if ($o['systeme']) {
+        $timerCourriels = '/etc/systemd/system/timers.target.wants/histoiredefamille-courriels.timer';
+        if (is_link($timerCourriels) || is_file($timerCourriels)) {
+            mise_en_ligne_ajouter($controles, 'courriel_timer', 'Envoi automatique des courriels', 'ok',
+                'Le minuteur d’envoi est activé : la file part toute seule.');
+        } else {
+            mise_en_ligne_ajouter($controles, 'courriel_timer', 'Envoi automatique des courriels', 'avertir',
+                'Le minuteur d’envoi des courriels n’est pas activé : les messages resteront dans la file.',
+                'sudo systemctl enable --now histoiredefamille-courriels.timer '
+                    . 'puis sudo systemctl list-timers histoiredefamille-courriels.timer');
+        }
+    } else {
+        mise_en_ligne_ajouter($controles, 'courriel_timer', 'Envoi automatique des courriels', 'info',
+            'Vérifiable seulement en ligne de commande (systemctl list-timers).');
     }
 
     // 14. Espace disque ------------------------------------------------------
@@ -496,36 +535,19 @@ function mise_en_ligne_controles(array $options = []): array
     return $controles;
 }
 
-/** Détecte les restes du jeu de démonstration (marqueur « (démo) »). */
+/**
+ * Détecte les restes du jeu de démonstration.
+ *
+ * Deux sources, dans cet ordre : le registre écrit par demo.php (exact), puis
+ * le marqueur « (démo) » pour les bases remplies par une version antérieure.
+ * Les comptes sont comptés à part : ils ne sont jamais supprimés
+ * automatiquement, seulement désactivés à la main.
+ */
 function mise_en_ligne_demo(): string
 {
-    $trouves = [];
-    $tables = [
-        'document' => "SELECT COUNT(*) FROM documents WHERE title LIKE '%(démo)%'",
-        'article'  => "SELECT COUNT(*) FROM articles WHERE title LIKE '%(démo)%'",
-        'page'     => "SELECT COUNT(*) FROM pages WHERE title LIKE '%(démo)%'",
-        'album'    => "SELECT COUNT(*) FROM albums WHERE title LIKE '%(démo)%'",
-        'recette'  => "SELECT COUNT(*) FROM recipes WHERE title LIKE '%(démo)%'",
-        'personne' => "SELECT COUNT(*) FROM persons WHERE notes LIKE '%(démo)%'",
-        'branche'  => "SELECT COUNT(*) FROM branches WHERE name LIKE '%(démo)%'",
-    ];
-    foreach ($tables as $libelle => $sql) {
-        try {
-            $nombre = (int) db_value($sql, [], 0);
-        } catch (Throwable) {
-            $nombre = 0;
-        }
-        if ($nombre > 0) {
-            $trouves[] = $nombre . ' ' . $libelle . '(s)';
-        }
-    }
+    $present = demo_present();
 
-    $comptes = (int) db_value("SELECT COUNT(*) FROM accounts WHERE display_name LIKE '%(démo)%'", [], 0);
-    if ($comptes > 0) {
-        $trouves[] = $comptes . ' compte(s)';
-    }
-
-    return implode(', ', $trouves);
+    return $present['message'];
 }
 
 /**

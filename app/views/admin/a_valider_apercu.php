@@ -32,6 +32,26 @@ $retour   = '/admin/a-valider';
     </div>
 <?php endif; ?>
 
+<?php /* Motif d'un refus déjà prononcé : visible de l'auteur et des
+         administrateurs, jamais ailleurs (il n'est montré dans aucune page
+         publique, aucune liste, aucune recherche). */ ?>
+<?php if ((string) ($ligne['moderation_state'] ?? '') === 'refuse'
+    && trim((string) ($ligne['moderation_note'] ?? '')) !== ''): ?>
+    <div class="message message--info">
+        <strong>Motif du refus :</strong> <?= e((string) $ligne['moderation_note']) ?>
+    </div>
+<?php endif; ?>
+
+<?php /* Une version : le contenu publié reste en ligne tel quel tant que
+         cette modification n'est pas validée. */ ?>
+<?php if ((int) ($ligne['replaces_id'] ?? 0) > 0): ?>
+    <div class="message message--info">
+        <strong>Version d’un contenu déjà publié.</strong> Le texte actuellement
+        en ligne ne sera remplacé qu’au moment de la validation ; un refus
+        laisse le contenu publié intact.
+    </div>
+<?php endif; ?>
+
 <p class="discret">
     Proposé par <?= e($auteur) ?>
     le <?= e(format_date(proposition_date($ligne))) ?>.

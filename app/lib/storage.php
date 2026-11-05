@@ -467,6 +467,89 @@ function delete_document_files(array $doc): void
 }
 
 /** Espace disque disponible sur le stockage (octets), ou null. */
+/**
+ * État de l'espace disque, en trois couleurs.
+ *
+ * Trois seuils, lisibles par n'importe qui :
+ *   - **rouge**  : moins de 5 Go libres, OU moins de 10 % de la carte ;
+ *   - **orange** : moins de 20 % de la carte ;
+ *   - **vert**   : le reste.
+ *
+ * Le disque d'un Pi 3B+ fait souvent 32 Go : 5 Go représentent alors 15 %.
+ * Les deux règles se complètent donc : le pourcentage protège une grosse
+ * carte, les 5 Go protègent une petite. Aucun blocage : l'alerte se contente
+ * de prévenir avant que la base et les envois ne tombent en panne.
+ *
+ * Les deux paramètres servent aux tests : -1 (le défaut) signifie « interroge
+ * le disque », null signifie « espace inconnu », toute autre valeur impose le
+ * chiffre. Cela évite qu'un essai
+ * dépende de la taille réelle du disque de la machine.
+ *
+ * @param int|null $libre espace libre à considérer (-1 = interroger, null = inconnu)
+ * @param int $total taille totale à considérer (-1 = interroger le disque)
+ * @return array{libre:?int, total:?int, pourcentage:?float, niveau:string, message:string}
+ */
+function storage_space_state(?int $libre = -1, int $total = -1): array
+{
+    $racine = (string) config('storage.root');
+    $libre  = $libre === -1 ? storage_free_space() : $libre;
+
+    $total  = $total !== -1 ? $total : null;
+    if ($total === null && $racine !== '' && is_dir($racine)) {
+        $valeur = @disk_total_space($racine);
+        if ($valeur !== false) {
+            $total = (int) $valeur;
+        }
+    }
+
+    if ($libre === null) {
+        return [
+            'libre'       => null,
+            'total'       => $total,
+            'pourcentage' => null,
+            'niveau'      => 'inconnu',
+            'message'     => 'Espace disque inconnu : impossible de prévenir à l’avance.',
+        ];
+    }
+
+    $pourcentage = $total !== null && $total > 0 ? ($libre * 100) / $total : null;
+    // Le plancher en gigaoctets ne sert que si l'on connaît la taille de la
+    // carte : sans elle, 5 Go sur un disque de 64 Go ne veulent rien dire.
+
+    $seuilGo     = 5 * 1024 * 1024 * 1024;
+
+    if (($total !== null && $libre < $seuilGo) || ($pourcentage !== null && $pourcentage < 10)) {
+        return [
+            'libre'       => $libre,
+            'total'       => $total,
+            'pourcentage' => $pourcentage,
+            'niveau'      => 'rouge',
+            'message'     => 'Espace disque presque plein : ' . format_size($libre) . ' libres'
+                . ($pourcentage !== null ? ' (' . number_format($pourcentage, 0, ',', ' ') . ' %)' : ''),
+        ];
+    }
+
+    if ($pourcentage !== null && $pourcentage < 20) {
+        return [
+            'libre'       => $libre,
+            'total'       => $total,
+            'pourcentage' => $pourcentage,
+            'niveau'      => 'orange',
+            'message'     => 'Espace disque qui baisse : ' . format_size($libre) . ' libres ('
+                . number_format($pourcentage, 0, ',', ' ') . ' %)',
+        ];
+    }
+
+    return [
+        'libre'       => $libre,
+        'total'       => $total,
+        'pourcentage' => $pourcentage,
+        'niveau'      => 'vert',
+        'message'     => 'Espace disque suffisant : ' . format_size($libre) . ' libres'
+            . ($pourcentage !== null ? ' (' . number_format($pourcentage, 0, ',', ' ') . ' %)' : ''),
+    ];
+}
+
 function storage_free_space(): ?int
 {
     $path = (string) config('storage.root');

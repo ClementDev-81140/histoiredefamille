@@ -90,6 +90,12 @@ function conversion_reglages(): array
         'essais_max'         => 3,
         'timeout_minutes'    => 180,
         'garde_secondes'     => 120,
+        // Un Pi 3B+ n'a qu'un gigaoctet de mémoire pour quatre cœurs lents :
+        // x264 en « threads 1 » reste le seul réglage qui ne fait pas gonfler
+        // la mémoire ni échanger la carte SD. La priorité basse (nice 19)
+        // laisse le site répondre pendant la conversion.
+        'threads'            => 1,
+        'nice'               => 19,
     ];
 }
 
@@ -697,6 +703,216 @@ function conversion_purger(int $jours = 90): int
 }
 
 /**
+ * Un envoi par morceaux est-il en cours en ce moment ?
+ *
+ * Le site et la conversion tournent sur le même Pi, avec 1 Go de mémoire :
+ * assembler un fichier de 3 Go et encoder une vidéo en même temps met la
+ * machine à genoux (et la carte SD à genoux avec elle). La conversion attend
+ * donc que la place soit libre. Un envoi abandonné (navigateur fermé) cesse
+ * d'être « en cours » au bout du délai habituel : la conversion reprend alors
+ * au passage suivant du minuteur, sans intervention.
+ *
+ * @return array{id:int, nom:string, depuis:int}|null
+ */
+function conversion_envoi_en_cours(): ?array
+{
+    // La table des envois peut manquer sur une base très ancienne : dans ce
+    // cas, aucun envoi ne peut être en cours.
+    try {
+        $ligne = db_one(
+            "SELECT id, original_name, updated_at FROM uploads
+             WHERE state = 'en_cours' AND updated_at >= ?
+             ORDER BY updated_at DESC LIMIT 1",
+            [time() - max(5, (int) conversion_envoi_delai()) * 60]
+        );
+    } catch (Throwable) {
+        return null;
+    }
+
+    if ($ligne === null) {
+        return null;
+    }
+
+    return [
+        'id'     => (int) $ligne['id'],
+        'nom'    => (string) ($ligne['original_name'] ?? ''),
+        'depuis' => (int) $ligne['updated_at'],
+    ];
+}
+
+/**
+ * Délai (minutes) au bout duquel un envoi silencieux n'est plus « en cours ».
+ *
+ * Même valeur que pour l'écran « Mes envois » : un envoi sans nouvelle depuis
+ * ce délai est considéré comme abandonné.
+ */
+function conversion_envoi_delai(): int
+{
+    return max(5, min(240, (int) envoi_reglages()['actif_minutes']));
+}
+
+/**
+ * La conversion peut-elle démarrer maintenant ?
+ *
+ * Deux raisons de patienter, jamais d'échouer :
+ *   - un envoi par morceaux est en cours (mémoire et disque partagés) ;
+ *   - l'espace libre est sous la marge prévue (le disque se remplirait).
+ *
+ * Le travail reste alors « en attente » et repart au passage suivant du
+ * minuteur : aucun essai n'est consommé, aucun message d'échec n'est affiché.
+ *
+ * @return array{ok:bool, raison:string, message:string, libre:?int, requis:int}
+ */
+function conversion_peut_demarrer(array $doc, ?int $libre = -1, ?int $marge = null): array
+{
+    $espace = conversion_espace_ok($doc, $libre, $marge);
+    if (!$espace['ok']) {
+        return [
+            'ok'      => false,
+            'raison'  => 'espace',
+            'message' => $espace['message'],
+            'libre'   => $espace['libre'],
+            'requis'  => $espace['requis'],
+        ];
+    }
+
+    $envoi = conversion_envoi_en_cours();
+    if ($envoi !== null) {
+        $nom = $envoi['nom'] !== '' ? ' (« ' . $envoi['nom'] . ' »)' : '';
+        return [
+            'ok'      => false,
+            'raison'  => 'envoi',
+            'message' => 'Conversion reportée : un envoi de fichier est en cours' . $nom
+                . '. Elle reprendra au prochain passage du minuteur, une fois l’envoi terminé.',
+            'libre'   => $espace['libre'],
+            'requis'  => $espace['requis'],
+        ];
+    }
+
+    return [
+        'ok'      => true,
+        'raison'  => '',
+        'message' => '',
+        'libre'   => $espace['libre'],
+        'requis'  => $espace['requis'],
+    ];
+}
+
+/**
+ * Reporte un travail sans le compter comme un échec.
+ *
+ * C'est le geste à faire quand la conversion ne doit pas démarrer tout de
+ * suite (envoi en cours, disque trop plein). L'essai pris au démarrage est
+ * rendu : sinon trois reports sur une journée condamneraient la vidéo.
+ */
+function conversion_reporter(int $id, string $raison): void
+{
+    db_exec(
+        "UPDATE conversions SET state = 'attente', attempts = MAX(0, attempts - 1),
+                progress = 0, message = ?, started_at = NULL, updated_at = ?
+         WHERE id = ? AND state = 'en_cours'",
+        [mb_substr(trim($raison), 0, 300, 'UTF-8'), time(), $id]
+    );
+}
+
+/**
+ * Remet d'aplomb une file bloquée par une coupure de courant.
+ *
+ * Une conversion interrompue laisse un travail « en cours » et un fichier
+ * temporaire à moitié écrit. Au redémarrage : le travail repart en attente
+ * (sans consommer d'essai), et les fichiers temporaires abandonnés sont
+ * effacés. Rien de tout cela n'est montré à la famille : les fichiers
+ * temporaires vivent dans `tmp/`, hors de portée du serveur web, et une vidéo
+ * non terminée n'est jamais servie.
+ *
+ * @return array{repris:int, abandonnes:int, temporaires:int}
+ */
+function conversion_recuperer(?int $inactiviteMinutes = null, ?int $maintenant = null): array
+{
+    $maintenant = $maintenant ?? time();
+    $minutes    = $inactiviteMinutes ?? 30;
+    $limite     = $maintenant - max(5, $minutes) * 60;
+    $reglages   = conversion_reglages();
+
+    $resultat = ['repris' => 0, 'abandonnes' => 0, 'temporaires' => 0];
+
+    $bloques = db_all(
+        "SELECT * FROM conversions WHERE state = 'en_cours' AND updated_at <= ?",
+        [$limite]
+    );
+    foreach ($bloques as $ligne) {
+        $id     = (int) $ligne['id'];
+        $essais = (int) $ligne['attempts'];
+        if ($essais >= (int) $reglages['essais_max']) {
+            db_exec(
+                "UPDATE conversions SET state = 'echec', progress = 0,
+                        message = ?, finished_at = ?, updated_at = ?
+                 WHERE id = ? AND state = 'en_cours'",
+                [
+                    'Conversion interrompue (coupure de courant ou arrêt du Raspberry Pi) : '
+                        . $essais . ' essai(s) sans succès. Le fichier d’origine est conservé ; '
+                        . 'relancez la conversion depuis cette page.',
+                    $maintenant,
+                    $maintenant,
+                    $id,
+                ]
+            );
+            $resultat['abandonnes']++;
+            continue;
+        }
+
+        // L'essai interrompu est rendu : ce n'est pas la faute du fichier.
+        db_exec(
+            "UPDATE conversions SET state = 'attente', attempts = MAX(0, attempts - 1),
+                    progress = 0, started_at = NULL, updated_at = ?, message = ?
+             WHERE id = ? AND state = 'en_cours'",
+            [
+                $maintenant,
+                'Conversion interrompue (coupure de courant) : elle repart automatiquement.',
+                $id,
+            ]
+        );
+        $resultat['repris']++;
+    }
+
+    $resultat['temporaires'] = conversion_nettoyer_temporaires($minutes, $maintenant);
+
+    return $resultat;
+}
+
+/**
+ * Efface les fichiers temporaires laissés par une conversion interrompue.
+ *
+ * Uniquement les fichiers de travail (préfixe `conversion-`) et uniquement
+ * ceux qui n'ont pas bougé depuis N minutes : une conversion réellement en
+ * cours n'est jamais touchée.
+ */
+function conversion_nettoyer_temporaires(int $minutes = 30, ?int $maintenant = null): int
+{
+    $maintenant = $maintenant ?? time();
+    $limite     = $maintenant - max(5, $minutes) * 60;
+    $dossier    = storage_path((string) config('storage.tmp', 'tmp'));
+    if (!is_dir($dossier)) {
+        return 0;
+    }
+
+    $effaces = 0;
+    foreach (glob($dossier . '/conversion-*') ?: [] as $fichier) {
+        if (!is_file($fichier)) {
+            continue;
+        }
+        $age = @filemtime($fichier);
+        if ($age !== false && $age <= $limite) {
+            if (@unlink($fichier)) {
+                $effaces++;
+            }
+        }
+    }
+
+    return $effaces;
+}
+
+/**
  * Commande ffmpeg, construite en tableau : aucun passage par le shell, donc
  * aucun risque d'interprétation d'un nom de fichier.
  *
@@ -716,6 +932,9 @@ function conversion_commande(string $source, string $destination, array $reglage
         '-c:a', 'aac',
         '-b:a', $reglages['audio_kbps'] . 'k',
         '-ac', '2',
+        // Un seul fil de calcul : sur 1 Go de mémoire, quatre fils tueraient
+        // le site (le noyau finit par tuer ffmpeg, ou pire, Apache).
+        '-threads', (string) max(1, (int) ($reglages['threads'] ?? 1)),
         '-movflags', '+faststart',
         '-progress', 'pipe:1',
         '-nostats',
@@ -749,11 +968,41 @@ function conversion_commande_audio(string $source, string $destination, array $r
         '-c:a', 'aac',
         '-b:a', '96k',
         '-ac', '2',
+        '-threads', '1',
         '-movflags', '+faststart',
         '-progress', 'pipe:1',
         '-nostats',
         $destination,
     ];
+}
+
+/**
+ * Enveloppe la commande dans `nice` (priorité basse), si le programme existe.
+ *
+ * Sur un Pi 3B+, ffmpeg qui encode à pleine vitesse rend le site presque
+ * inutilisable : la page met dix secondes à s'afficher, et le tunnel
+ * Cloudflare finit par renvoyer une erreur. Une priorité basse change tout,
+ * pour un coût nul. Sans `nice` (installation inhabituelle), la commande part
+ * telle quelle : la conversion n'est jamais bloquée par ce détail.
+ *
+ * @param array<int, string> $commande commande ffmpeg complète
+ * @return array<int, string>
+ */
+function conversion_commande_nicee(array $commande, array $reglages): array
+{
+    $nice = null;
+    foreach (['/usr/bin/nice', '/bin/nice'] as $candidat) {
+        if (@is_file($candidat) && @is_executable($candidat)) {
+            $nice = $candidat;
+            break;
+        }
+    }
+    if ($nice === null) {
+        return $commande;
+    }
+
+    $niveau = max(1, min(19, (int) ($reglages['nice'] ?? 19)));
+    return array_merge([$nice, '-n', (string) $niveau], $commande);
 }
 
 /**
@@ -868,11 +1117,13 @@ function conversion_liberer_originaux(int $jours = 7): int
 /**
  * Condition SQL : « cette fiche est prête à être montrée ».
  *
- * Une vidéo qui attend sa conversion, ou qui est en train d'être convertie,
- * n'est pas montrée à la famille : son lecteur afficherait une erreur. Les
- * administrateurs, eux, voient tout (et la fiche leur dit où en est le
- * travail). Une conversion annulée ou en échec ne bloque rien : c'est le
- * fichier d'origine qui est servi, comme avant.
+ * Une vidéo qui attend sa conversion, qui est en train d'être convertie ou
+ * dont la conversion a échoué n'est pas montrée à la famille : son lecteur
+ * afficherait une erreur, ou pire, un fichier qu'aucun navigateur ne sait
+ * lire. Les administrateurs, eux, voient tout (et la fiche leur dit où en est
+ * le travail, avec la raison de l'échec) ; l'auteur de l'envoi aussi, pour sa
+ * propre fiche. Une conversion **annulée** ne bloque rien : l'administrateur a
+ * demandé que le fichier d'origine soit servi tel quel, il l'est.
  *
  * @param string $alias alias SQL de la table documents
  */
@@ -898,8 +1149,30 @@ function conversion_pretes_sql(string $alias = 'd'): string
 
     return "($alias.kind <> 'video' OR NOT EXISTS (
         SELECT 1 FROM conversions c
-        WHERE c.document_id = $alias.id AND c.state IN ('attente', 'en_cours')
+        WHERE c.document_id = $alias.id AND c.state IN ('attente', 'en_cours', 'echec')
     ))";
+}
+
+/**
+ * Cette vidéo en cours de conversion appartient-elle à ce compte ?
+ *
+ * Tant qu'une vidéo est dans la file, elle n'est montrée à personne — sauf à
+ * qui l'a déposée : l'auteur d'un envoi doit pouvoir relire sa fiche et lire
+ * « en préparation, 42 % » plutôt que de croire son fichier perdu. C'est un
+ * droit de LECTURE sur son propre dépôt, jamais sur celui d'un autre.
+ */
+function conversion_auteur_du_document(array $doc, ?array $compte): bool
+{
+    if ($compte === null) {
+        return false;
+    }
+    $id = (int) ($compte['id'] ?? 0);
+    if ($id <= 0) {
+        return false;
+    }
+
+    return ((int) ($doc['created_by'] ?? 0) === $id)
+        || ((int) ($doc['submitted_by'] ?? 0) === $id);
 }
 
 /** Une fiche est-elle prête à être montrée à la famille ? (même règle en PHP) */
@@ -914,7 +1187,7 @@ function conversion_document_pret(array $doc): bool
         // Base pas encore migrée : le fichier est servi comme avant.
         return true;
     }
-    return !in_array($etat['state'], ['attente', 'en_cours'], true);
+    return !in_array($etat['state'], ['attente', 'en_cours', 'echec'], true);
 }
 
 /**
@@ -930,7 +1203,8 @@ function conversion_avertissement(int $documentId): array
         'attente'  => 'Cette vidéo n’est pas encore au format lu par les navigateurs : elle est dans la file de conversion.',
         'en_cours' => 'Cette vidéo est en cours de conversion'
             . ($etat['progress'] > 0 ? ' (' . $etat['progress'] . ' %)' : '') . '.',
-        'echec'    => 'La conversion de cette vidéo a échoué. Le fichier d’origine est conservé et reste lisible tel quel par certains logiciels.',
+        'echec'    => 'La conversion de cette vidéo a échoué : elle n’est pas montrée à la famille. '
+            . 'Le fichier d’origine est conservé intact dans le stockage ; relancez la conversion après avoir lu la raison de l’échec.',
         'ignoree'  => 'La conversion de cette vidéo a été annulée : le fichier d’origine est servi tel quel.',
         default    => '',
     };
@@ -938,6 +1212,6 @@ function conversion_avertissement(int $documentId): array
     return [
         'state'    => $etat['state'],
         'phrase'   => $phrase,
-        'bloquant' => in_array($etat['state'], ['attente', 'en_cours'], true),
+        'bloquant' => in_array($etat['state'], ['attente', 'en_cours', 'echec'], true),
     ];
 }

@@ -63,6 +63,10 @@ $types = proposition_types();
                         <td><?= e($types[$type]['label'] ?? $type) ?></td>
                         <td>
                             <strong><?= e(proposition_titre($ligne, $type)) ?></strong>
+                            <?php if ((int) ($ligne['replaces_id'] ?? 0) > 0): ?>
+                                <span class="discret">Version proposée d’un contenu déjà publié :
+                                    le texte en ligne ne changera qu’après validation.</span>
+                            <?php endif; ?>
                             <?php if ($etat === 'refuse' && (string) ($ligne['moderation_note'] ?? '') !== ''): ?>
                                 <span class="discret">Motif du refus : <?= e((string) $ligne['moderation_note']) ?></span>
                             <?php endif; ?>
@@ -73,6 +77,13 @@ $types = proposition_types();
                         <td><?= e(format_date(proposition_date($ligne))) ?></td>
                         <td>
                             <a href="<?= e($lien) ?>">Modifier</a>
+                            <?php if ($etat !== 'publie'): ?>
+                                <form method="post" action="<?= e($lien) ?>/retirer" class="formulaire-en-ligne"
+                                      data-confirmation="Retirer cette proposition ? Elle ne sera pas publiée.">
+                                    <?= csrf_field() ?>
+                                    <button type="submit" class="lien-bouton lien-bouton--danger">Retirer</button>
+                                </form>
+                            <?php endif; ?>
                             <?php if ($etat === 'publie'): ?>
                                 <?php if ($type === 'article'): ?>
                                     <a href="/articles/<?= e((string) $ligne['slug']) ?>">Voir</a>

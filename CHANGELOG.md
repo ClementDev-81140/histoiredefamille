@@ -3,6 +3,167 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.26.0] — 2026-11-05
+
+### La dernière passe avant la mise en ligne
+
+Cette version **n'ajoute aucune fonctionnalité**. C'est une passe de contrôle :
+on a cherché ce qui casse, ce qui ment, et ce qui laisserait la famille devant
+une page blanche ou un fichier perdu — puis on a corrigé. Aucune règle de
+sécurité ne change : CSP stricte, CSRF, droits et matrice d'accès restent
+identiques, et **aucune classe CSS n'est renommée**. Une seule migration est
+ajoutée (`017`), en ajout seul (voir plus bas).
+
+#### 1. La conversion des vidéos ne perd plus de travail
+
+| Ce qui n'allait pas | Ce qui se passe maintenant |
+|---|---|
+| Un disque presque plein au moment de lancer `ffmpeg` = **échec définitif** de la vidéo | le travail est **reporté** au passage suivant du minuteur, sans consommer d'essai ; rien n'est abandonné |
+| Deux gros travaux en même temps (un envoi par morceaux + une conversion) : le Pi n'a qu'**1 Go de mémoire** | la conversion **attend** la fin de l'envoi en cours (même règle de délai que l'écran « Mes envois ») |
+| `ffmpeg` à pleine vitesse rendait le site et le tunnel Cloudflare presque inutilisables | la commande tourne sous **`nice`** (priorité basse), sans passer par un shell |
+| Une **coupure de courant** laissait un travail « en cours » pour toujours : la file ne repartait plus jamais | `conversion_recuperer()` remet d'aplomb la file (au démarrage de la commande **et** dans la maintenance quotidienne) et efface les fichiers temporaires à moitié écrits |
+| Une vidéo en conversion (ou en échec) était invisible pour tout le monde, **y compris pour la personne qui venait de l'envoyer** | son auteur la retrouve dans « Mes envois » avec l'état « en préparation, 42 % » ; les autres comptes de la famille ne la voient toujours pas |
+
+Rien de tout cela n'ouvre un droit : la vidéo d'un autre reste invisible tant
+qu'elle n'est pas prête, et les administrateurs continuent de tout voir.
+
+#### 2. Une vidéo en échec reste invisible (et le dit)
+
+Une conversion qui échoue est désormais traitée comme une vidéo « pas prête » :
+elle n'apparaît ni dans les listes, ni dans la recherche, ni par une adresse
+directe pour les comptes de famille. Avant, un échec pouvait laisser la famille
+devant un lecteur qui ne lisait rien. L'administrateur, lui, voit la fiche,
+l'état et le message d'erreur, avec **Relancer** et **Annuler**.
+
+#### 3. Les propositions déjà validées ont enfin des versions
+
+Jusqu'ici, un journaliste qui corrigeait **une proposition déjà validée**
+écrivait par-dessus le contenu publié : le texte visible des lecteurs changeait
+avant toute relecture, ou le contenu disparaissait le temps de la validation.
+Ce n'est pas ce que promet l'écran « Mes propositions ».
+
+- **Migration `017_versions_propositions.sql`, en ajout seul** : une colonne
+  `replaces_id`, vide par défaut, sur `articles`, `documents` et `recipes`.
+  Aucune ligne n'est modifiée ni supprimée ; sans elle, le site se comporte
+  exactement comme avant.
+- Modifier un contenu publié crée maintenant une **version en attente** : une
+  ligne de plus, invisible des lecteurs, qui porte le nouveau texte. L'original
+  continue d'être servi tel quel.
+- **À la validation**, le texte de la version remplace celui de l'original et
+  la version disparaît. **En cas de refus**, l'original n'est pas touché.
+- **Une seule version à la fois** : modifier deux fois de suite le même contenu
+  ne crée pas deux projets concurrents — c'est la version existante qu'on
+  reprend.
+- **L'adresse (le `slug`) d'un contenu publié ne change jamais** : les liens
+  déjà envoyés à la famille continuent de fonctionner. Une version a sa propre
+  adresse, ce qui évite un doublon dans la base.
+- Nouveau bouton **« Retirer »** dans « Mes propositions » :
+  `POST /propositions/{type}/{id}/retirer`. Seul l'auteur peut le faire, jamais
+  sur un contenu publié ; les fichiers déposés sont effacés **s'ils ne sont plus
+  référencés nulle part**. L'action est journalisée (`proposition_retiree`).
+- L'aperçu « À valider » affiche désormais le **motif du refus** et un bandeau
+  **« Version d'un contenu déjà publié »** avec le lien vers l'original.
+
+#### 4. Le motif d'un refus reste privé
+
+Le motif écrit par l'administrateur est visible **par l'auteur** (dans
+« Mes propositions ») et **par les administrateurs** (dans l'aperçu). Il
+n'apparaît **nulle part ailleurs** : ni dans les listes, ni dans la recherche,
+ni sur les pages publiques, ni dans le tchat. Un essai le vérifie page par page.
+
+#### 5. Retirer les données de démonstration, sans risque
+
+Jusqu'ici, le seul moyen de se débarrasser des contenus fictifs était de tout
+effacer. Deux nouveautés :
+
+- `app/cli/demo.php` **note ce qu'il crée** dans `storage/demo-registry.json`
+  (plages d'identifiants, par table) **et recopie la même liste dans les
+  réglages du site** : si le dossier `storage` est reconstruit ou si l'on ne
+  restaure que la base, la purge retrouve quand même sa trace.
+- Nouvelle commande **`app/cli/purger-demo.php`** :
+  `--liste` montre ce qui partirait (sans rien supprimer) ; `--oui` supprime.
+  Elle reconnaît les contenus au registre **et**, à défaut, au mot « (démo) »
+  écrit dans leurs titres — une base ancienne reste donc purgeable.
+- Les documents partent **avec leurs fichiers et leurs miniatures** ; un fichier
+  encore utilisé ailleurs est conservé.
+- Les **liens de branche** (`content_branches`) sont nettoyés : cette table n'a
+  pas de clé étrangère sur le contenu, donc une suppression ne l'efface pas
+  toute seule — la purge laissait sinon des liens pointant vers des lignes
+  disparues.
+- **Les comptes ne sont jamais supprimés** : la commande les compte et renvoie
+  vers *Comptes* pour les désactiver.
+- Elle lance une **sauvegarde d'abord** : si la sauvegarde échoue, **rien n'est
+  supprimé** et la commande s'arrête avec un code d'erreur.
+
+#### 6. « Étant prêt à ouvrir » veut enfin dire quelque chose
+
+La vérification avant mise en ligne gagne un quatrième état, **`AVERTIR`** :
+
+| État | Verdict |
+|---|---|
+| `OK` / `INFO` | rien à faire |
+| `À CORRIGER` | **bloque l'ouverture** |
+| `AVERTIR` | à lire, mais **n'empêche jamais d'ouvrir** |
+
+Passent en `AVERTIR` : HTTPS obligatoire, données de démonstration, nombre
+d'administrateurs, dernière sauvegarde et son minuteur, courriel de contact et
+son minuteur. Le seuil de sauvegarde passe de **3 jours à 48 heures**, et deux
+contrôles sont ajoutés (courriel configuré, minuteur d'envoi actif).
+
+La page **État du site** range maintenant ces avertissements dans **leur propre
+tableau** (« À regarder, sans bloquer l'ouverture »), au lieu de les mêler aux
+points bloquants.
+
+#### 7. L'espace disque, en trois couleurs
+
+Le tableau de bord et la page « État du site » affichent l'espace libre avec un
+seuil clair : **orange sous 20 %**, **rouge sous 10 % ou sous 5 Go**, et
+« inconnu » quand la mesure est impossible. Aucun blocage : c'est une alerte
+pour agir avant que les envois ne s'arrêtent. Le pourcentage protège les
+grandes cartes, le plancher de 5 Go protège les petites (un Pi 3B+ a souvent
+32 Go).
+
+#### 8. Corrections de détail
+
+- Page « État du site » : plus d'avertissement PHP (« variable indéfinie
+  `$espace` ») quand la vue est rendue hors de son contrôleur — elle recalcule
+  l'état du disque.
+- `tests_entretien.php` : un essai comparait une chaîne **interpolée** au lieu
+  du texte du code (`$current !== '/admin/etat'`) ; il vérifie maintenant ce
+  qu'il annonce.
+- `tests_profils.php` : l'essai « un visiteur ne peut rien proposer » vidait
+  mal la session et pouvait interroger le compte de l'essai précédent.
+
+#### 9. Essais et documentation
+
+- **1 028 essais** au total, dont les nouvelles familles « demo » (17 essais :
+  registre, inventaire, purge, fichiers, comptes intacts, commande) et les
+  « cas limites » des propositions (12 essais : motif privé, compte désactivé,
+  retrait, versions).
+- `README.md` : la purge des données de démonstration (§ 4.8), les quatre états
+  de la vérification et le seuil de 48 heures (§ 7).
+- `lint.php` : **187 fichiers** relus, 0 erreur.
+
+#### Ce qui n'a pas pu être vérifié ici
+
+- **La conversion réelle sur le Pi** : le banc d'essai n'a pas de PHP natif ni
+  de `proc_open`. La commande `ffmpeg` a été construite et **exécutée depuis
+  Node** sur un vrai fichier `.mov` (résultat MP4 lisible), mais pas par la
+  commande PHP elle-même. Le comportement de `nice`, du report et de la reprise
+  après coupure est vérifié par essais unitaires sur la base, pas par une vraie
+  coupure de courant.
+- **`fgets(STDIN)` de `purger-demo.php`** : le bac à sable n'a pas d'entrée
+  standard. La confirmation OUI est vérifiée par lecture du code (`--oui`
+  explicite), pas par une saisie réelle.
+- **`purger-demo.php` sur une base de production** : la purge a été jouée sur
+  une base d'essai, dans une transaction, avec de vrais fichiers. Le cas d'une
+  clé USB pleine au moment de la sauvegarde préalable n'a pas été reproduit.
+- **Les en-têtes HTTP réels d'Apache** : vérifiés par la commande
+  `verifier-mise-en-ligne.php` sur la machine cible, pas sur le banc.
+- **La migration `017` sur une base de plusieurs milliers de documents** : elle
+  a été jouée sur la base d'essai (rapide). Sur un Pi, `ALTER TABLE ADD COLUMN`
+  est instantané en SQLite, mais le temps réel n'a pas été mesuré.
+
 ## [1.25.2] — 2026-11-05
 
 ### L'administration ne se coupe plus en deux

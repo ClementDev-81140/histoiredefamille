@@ -3,6 +3,37 @@
 Ce fichier liste ce qui reste à faire, classé par priorité. Il n'y a pas de
 suivi automatique : cochez au fur et à mesure.
 
+## Fait (2026-11-05, 1.26.0 — dernière passe avant la mise en ligne)
+
+- [x] **Aucune fonctionnalité nouvelle** : contrôle et correction de ce qui
+  casse. Règles de sécurité inchangées, aucune classe CSS renommée.
+- [x] **Conversions vidéo** : report au passage suivant (au lieu d'un échec) si
+  le disque est trop plein ou si un envoi par morceaux est en cours ;
+  `nice` (priorité basse) ; reprise après coupure de courant
+  (`conversion_recuperer`, aussi dans la maintenance) ; fichiers temporaires
+  effacés ; l'auteur retrouve sa vidéo en préparation.
+- [x] **Vidéo en échec** : invisible pour la famille (liste, recherche,
+  adresse directe), visible de l'administrateur avec l'erreur.
+- [x] **Versions des propositions** (migration **017**, ajout seul
+  `replaces_id`) : modifier un contenu publié crée une version en attente ;
+  l'original reste servi tel quel ; validation = recopie, refus = rien ne
+  bouge ; une seule version à la fois ; le `slug` d'un contenu publié ne change
+  jamais ; bouton **Retirer** pour l'auteur ; motif de refus visible de
+  l'auteur et des administrateurs seulement.
+- [x] **Purge des données de démonstration** : `demo.php` tient un registre
+  (fichier **et** réglages du site) ; `app/cli/purger-demo.php --liste` /
+  `--oui`, sauvegarde obligatoire avant, fichiers et miniatures effacés,
+  liens de branche nettoyés, **comptes jamais supprimés**.
+- [x] **Vérification avant ouverture** : quatrième état **`AVERTIR`** (ne bloque
+  jamais), seuil de sauvegarde ramené à **48 h**, contrôles « courriel » et
+  « minuteur d'envoi », avertissements rangés à part dans « État du site ».
+- [x] **Espace disque en trois couleurs** (vert / orange < 20 % / rouge < 10 %
+  ou < 5 Go) sur le tableau de bord et « État du site ».
+- [x] **Essais** : familles « demo » et « cas limites » des propositions
+  ajoutées ; essais d'entretien remis d'aplomb après le passage à `AVERTIR`.
+- [x] **Documentation** : README (§ 4.8 purge, § 7 les quatre états, 48 h),
+  CHANGELOG 1.26.0 (une seule entrée, avec ce qui n'a pas pu être vérifié).
+
 ## Fait (2026-11-05, lot 4 — alléger, et vivre sans disque externe)
 
 - [x] **Textes explicatifs retirés** dans l'administration, l'espace famille et

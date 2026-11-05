@@ -123,6 +123,7 @@ function tests_propositions(): void
             tests_propositions_etats();
             tests_propositions_flux();
             tests_propositions_fuite($fichiers);
+            tests_propositions_cas_limites($fichiers);
 
             throw new RuntimeException('fin du test, annulation');
         });
@@ -433,27 +434,87 @@ function tests_propositions_flux(): void
         'état ' . ($corrige['moderation_state'] ?? '?')
     );
 
-    // Modifier un contenu déjà validé le remet « en attente » : il redevient
-    // invisible pour les autres jusqu'à la prochaine validation.
+    // Modifier un contenu DÉJÀ PUBLIÉ ne change rien pour les lecteurs : la
+    // modification devient une version en attente, et le texte en ligne reste
+    // celui qui a été validé jusqu'à la prochaine relecture.
     $modifValide = tests_envoi_requete('POST', '/propositions/article/' . (int) $article2['id'], $journaliste, [
         '_csrf' => tests_propositions_jeton(),
         'action' => 'proposer',
         'title' => $titreValide,
         'body' => 'Texte corrigé après publication.',
     ]);
-    $apresModif = (array) db_one('SELECT * FROM articles WHERE id = ?', [(int) $article2['id']]);
+    $original = (array) db_one('SELECT * FROM articles WHERE id = ?', [(int) $article2['id']]);
+    $version  = proposition_version_en_attente('article', (int) $article2['id']);
     verifier(
-        'propositions : modifier une proposition déjà publiée la remet « en attente »',
+        'propositions : modifier un contenu publié crée une VERSION, sans toucher au texte en ligne',
         (int) $modifValide['code'] === 303
-            && ($apresModif['moderation_state'] ?? '') === 'attente'
-            && ($apresModif['validated_at'] ?? null) === null,
-        'état ' . ($apresModif['moderation_state'] ?? '?')
+            && ($original['moderation_state'] ?? '') === 'publie'
+            && (string) ($original['body'] ?? '') === 'Texte validé.'
+            && $version !== null
+            && (string) $version['body'] === 'Texte corrigé après publication.'
+            && (string) $version['moderation_state'] === 'attente'
+            && (int) $version['replaces_id'] === (int) $article2['id'],
+        json_encode([$original['moderation_state'] ?? '?', $original['body'] ?? '?', (int) ($version['id'] ?? 0)])
     );
     $relecture = tests_envoi_requete('GET', '/articles/' . (string) $article2['slug'], $lecteur);
     verifier(
-        'propositions : la proposition remise en attente redevient invisible pour la famille',
-        (int) $relecture['code'] === 404,
+        'propositions : la famille lit toujours l’ANCIEN texte, publié, pendant la relecture',
+        (int) $relecture['code'] === 200
+            && str_contains((string) $relecture['corps'], 'Texte validé.')
+            && !str_contains((string) $relecture['corps'], 'Texte corrigé après publication.'),
         'code ' . $relecture['code']
+    );
+    verifier(
+        'propositions : la version attend dans « À valider » (le compteur la compte)',
+        propositions_a_valider() >= 1
+            && in_array((int) $version['id'], array_map(
+                static fn (array $l): int => (int) ($l['row']['id'] ?? 0),
+                array_values(array_filter(
+                    propositions_en_attente(),
+                    static fn (array $l): bool => (string) ($l['type'] ?? '') === 'article'
+                ))
+            ), true),
+        'compteur ' . propositions_a_valider()
+    );
+
+    // Une seule version en attente à la fois : la seconde modification
+    // reprend la version existante au lieu d'en créer une autre.
+    tests_envoi_requete('POST', '/propositions/article/' . (int) $article2['id'], $journaliste, [
+        '_csrf' => tests_propositions_jeton(),
+        'action' => 'proposer',
+        'title' => $titreValide,
+        'body' => 'Deuxième correction.',
+    ]);
+    verifier(
+        'propositions : une deuxième modification ne crée pas une seconde version (elle reprend celle qui attend)',
+        (int) db_value(
+            'SELECT COUNT(*) FROM articles WHERE replaces_id = ?',
+            [(int) $article2['id']],
+            0
+        ) === 1
+    );
+
+    // La validation de la version met à jour l'original, et la version
+    // disparaît : le contenu publié change à cet instant précis, pas avant.
+    $versionId = (int) $version['id'];
+    tests_envoi_requete('POST', '/admin/a-valider/article/' . $versionId . '/valider', $admin, [
+        '_csrf' => tests_propositions_jeton(),
+        'visibility' => 'famille',
+    ]);
+    $apresValidation = (array) db_one('SELECT * FROM articles WHERE id = ?', [(int) $article2['id']]);
+    verifier(
+        'propositions : valider la version met à jour le contenu publié et efface la version',
+        (string) $apresValidation['body'] === 'Texte corrigé après publication.'
+            && (string) $apresValidation['moderation_state'] === 'publie'
+            && db_one('SELECT * FROM articles WHERE id = ?', [$versionId]) === null,
+        json_encode([$apresValidation['body'] ?? '?', $apresValidation['moderation_state'] ?? '?'])
+    );
+    $relectureApres = tests_envoi_requete('GET', '/articles/' . (string) $apresValidation['slug'], $lecteur);
+    verifier(
+        'propositions : après validation, la famille lit le nouveau texte (même adresse)',
+        (int) $relectureApres['code'] === 200
+            && str_contains((string) $relectureApres['corps'], 'Texte corrigé après publication.'),
+        'code ' . $relectureApres['code']
     );
 
     // --- Le brouillon reste le sien --------------------------------------
@@ -695,4 +756,186 @@ function tests_propositions_fuite(array &$fichiers): void
         (int) db_value('SELECT COUNT(*) FROM email_queue WHERE account_id = ?', [$lecteur], 0) === 1,
         (string) (int) db_value('SELECT COUNT(*) FROM email_queue WHERE account_id = ?', [$lecteur], 0)
     );
+}
+
+/**
+ * 4. Cas limites demandés avant l'ouverture (1.26.0) : retrait d'une
+ * proposition, compte désactivé, motif de refus.
+ *
+ * @param array<int, string> $fichiers chemins relatifs à effacer à la fin
+ */
+function tests_propositions_cas_limites(array &$fichiers): void
+{
+    $admin       = tests_propositions_compte('admin');
+    $journaliste = tests_propositions_compte('personne');
+    $autre       = tests_propositions_compte('personne');
+    $lecteur     = tests_propositions_compte('branche');
+
+    // --- Retirer une proposition en attente --------------------------------
+    $titreRetire = 'Article à retirer ' . bin2hex(random_bytes(3));
+    tests_envoi_requete('POST', '/propositions/nouvelle/article', $journaliste, [
+        '_csrf'  => tests_propositions_jeton(),
+        'action' => 'proposer',
+        'title'  => $titreRetire,
+        'body'   => 'Texte jamais publié.',
+    ]);
+    $aRetirer = (array) db_one('SELECT * FROM articles WHERE title = ?', [$titreRetire]);
+    verifier(
+        'cas limite : la proposition à retirer existe et attend',
+        (int) ($aRetirer['id'] ?? 0) > 0 && (string) $aRetirer['moderation_state'] === 'attente'
+    );
+
+    $retraitAutre = tests_envoi_requete('POST', '/propositions/article/' . (int) $aRetirer['id'] . '/retirer', $autre, [
+        '_csrf' => tests_propositions_jeton(),
+    ]);
+    verifier(
+        'cas limite : un autre journaliste ne peut pas retirer la proposition de quelqu’un d’autre',
+        (int) $retraitAutre['code'] === 404
+            && db_one('SELECT * FROM articles WHERE id = ?', [(int) $aRetirer['id']]) !== null,
+        'code ' . $retraitAutre['code']
+    );
+
+    $retrait = tests_envoi_requete('POST', '/propositions/article/' . (int) $aRetirer['id'] . '/retirer', $journaliste, [
+        '_csrf' => tests_propositions_jeton(),
+    ]);
+    verifier(
+        'cas limite : l’auteur retire sa proposition en attente, elle disparaît de « À valider »',
+        (int) $retrait['code'] === 303
+            && db_one('SELECT * FROM articles WHERE id = ?', [(int) $aRetirer['id']]) === null
+            && !in_array('article', array_map(
+                static fn (array $l): string => (string) ($l['row']['id'] ?? 0) === (string) $aRetirer['id'] ? 'article' : '',
+                propositions_en_attente()
+            ), true),
+        'code ' . $retrait['code']
+    );
+
+    // Un document retiré ne laisse pas ses fichiers derrière lui.
+    $titreDocRetire = 'Document à retirer ' . bin2hex(random_bytes(3));
+    $docRetire = tests_propositions_document($journaliste, $titreDocRetire);
+    verifier(
+        'cas limite : les fichiers du document à retirer sont bien sur le disque avant retrait',
+        is_file($docRetire['abs'])
+    );
+    $retraitDoc = tests_envoi_requete('POST', '/propositions/document/' . (int) $docRetire['id'] . '/retirer', $journaliste, [
+        '_csrf' => tests_propositions_jeton(),
+    ]);
+    verifier(
+        'cas limite : retirer un document efface ses fichiers (aucun orphelin sur la carte SD)',
+        (int) $retraitDoc['code'] === 303
+            && db_one('SELECT * FROM documents WHERE id = ?', [(int) $docRetire['id']]) === null
+            && !is_file($docRetire['abs'])
+            && !is_file(storage_absolute($docRetire['thumb'])),
+        'code ' . $retraitDoc['code'] . ' — fichier ' . var_export(is_file($docRetire['abs']), true)
+    );
+
+    // Un contenu publié ne se retire pas par ce chemin.
+    $titrePublie = 'Article publié à ne pas retirer ' . bin2hex(random_bytes(3));
+    tests_envoi_requete('POST', '/propositions/nouvelle/article', $journaliste, [
+        '_csrf'  => tests_propositions_jeton(),
+        'action' => 'proposer',
+        'title'  => $titrePublie,
+        'body'   => 'Texte publié.',
+    ]);
+    $publie = (array) db_one('SELECT * FROM articles WHERE title = ?', [$titrePublie]);
+    tests_envoi_requete('POST', '/admin/a-valider/article/' . (int) $publie['id'] . '/valider', $admin, [
+        '_csrf'      => tests_propositions_jeton(),
+        'visibility' => 'famille',
+    ]);
+    $retraitPublie = tests_envoi_requete('POST', '/propositions/article/' . (int) $publie['id'] . '/retirer', $journaliste, [
+        '_csrf' => tests_propositions_jeton(),
+    ]);
+    verifier(
+        'cas limite : un contenu publié ne peut pas être retiré par son auteur (il faudrait le dépublier)',
+        (int) $retraitPublie['code'] === 303
+            && db_one('SELECT * FROM articles WHERE id = ?', [(int) $publie['id']]) !== null
+    );
+
+    // --- Motif de refus : auteur et administrateurs seulement --------------
+    $titreRefus = 'Article refusé avec motif ' . bin2hex(random_bytes(3));
+    tests_envoi_requete('POST', '/propositions/nouvelle/article', $journaliste, [
+        '_csrf'  => tests_propositions_jeton(),
+        'action' => 'proposer',
+        'title'  => $titreRefus,
+        'body'   => 'Texte à refuser.',
+    ]);
+    $aRefuser = (array) db_one('SELECT * FROM articles WHERE title = ?', [$titreRefus]);
+    $motif = 'Il manque les dates et les lieux, mots-du-motif-' . bin2hex(random_bytes(2));
+    tests_envoi_requete('POST', '/admin/a-valider/article/' . (int) $aRefuser['id'] . '/refuser', $admin, [
+        '_csrf' => tests_propositions_jeton(),
+        'motif' => $motif,
+    ]);
+    $vuAuteur = tests_envoi_requete('GET', '/propositions', $journaliste);
+    verifier(
+        'cas limite : l’auteur lit le motif du refus dans « Mes propositions »',
+        str_contains((string) $vuAuteur['corps'], 'mots-du-motif-'),
+        'code ' . $vuAuteur['code']
+    );
+    $vuAdmin = tests_envoi_requete('GET', '/admin/a-valider/article/' . (int) $aRefuser['id'], $admin);
+    verifier(
+        'cas limite : l’administrateur relit aussi le motif',
+        (int) $vuAdmin['code'] === 200 && str_contains((string) $vuAdmin['corps'], 'mots-du-motif-'),
+        'code ' . $vuAdmin['code']
+    );
+    $motifAilleurs = [];
+    foreach ([
+        'liste des articles' => tests_envoi_requete('GET', '/articles', $lecteur),
+        'accueil famille'    => tests_envoi_requete('GET', '/famille', $lecteur),
+        'site public'        => tests_envoi_requete('GET', '/', null),
+        'recherche'          => tests_envoi_requete('GET', '/recherche?q=' . urlencode($titreRefus), $lecteur),
+        'propositions'       => tests_envoi_requete('GET', '/propositions', $lecteur),
+    ] as $nom => $reponse) {
+        $motifAilleurs[$nom] = str_contains((string) $reponse['corps'], 'mots-du-motif-');
+    }
+    verifier(
+        'cas limite : le motif du refus n’apparaît nulle part ailleurs (lecteur, visiteur)',
+        array_filter($motifAilleurs) === [],
+        json_encode($motifAilleurs)
+    );
+
+    // --- Journaliste désactivé --------------------------------------------
+    $desactive = tests_propositions_compte('personne', null, [
+        'username'     => 'desactive-' . bin2hex(random_bytes(3)),
+        'password_hash' => password_make('MotDePasseEssai123!'),
+    ]);
+    $titreDesactive = 'Article d’un compte désactivé ' . bin2hex(random_bytes(3));
+    tests_envoi_requete('POST', '/propositions/nouvelle/article', $desactive, [
+        '_csrf'  => tests_propositions_jeton(),
+        'action' => 'proposer',
+        'title'  => $titreDesactive,
+        'body'   => 'Texte déposé avant la désactivation.',
+    ]);
+    $articleDesactive = db_one('SELECT * FROM articles WHERE title = ?', [$titreDesactive]);
+    db_update('accounts', $desactive, ['is_active' => 0]);
+    $_SESSION = [];
+
+    $identifiant = (string) db_one('SELECT username FROM accounts WHERE id = ?', [$desactive])['username'];
+    $connexion = auth_attempt($identifiant, 'MotDePasseEssai123!');
+    verifier(
+        'cas limite : un journaliste désactivé ne peut plus se connecter',
+        ($connexion['ok'] ?? true) === false && empty($_SESSION['account_id']),
+        json_encode(['ok' => $connexion['ok'] ?? null, 'message' => $connexion['error'] ?? ''])
+    );
+    $enAttente = propositions_en_attente();
+    $trouve = false;
+    foreach ($enAttente as $element) {
+        if ((int) ($element['row']['id'] ?? 0) === (int) ($articleDesactive['id'] ?? 0)
+            && (string) ($element['type'] ?? '') === 'article') {
+            $trouve = true;
+        }
+    }
+    verifier(
+        'cas limite : son article en attente reste visible des administrateurs',
+        $articleDesactive !== null && $trouve,
+        json_encode(array_map(static fn (array $l): string => (string) ($l['type'] ?? ''), $enAttente))
+    );
+    $fileAdmin = tests_envoi_requete('GET', '/admin/a-valider', $admin);
+    verifier(
+        'cas limite : la file « À valider » de l’administrateur cite encore ce dépôt',
+        (int) $fileAdmin['code'] === 200 && str_contains((string) $fileAdmin['corps'], $titreDesactive),
+        'code ' . $fileAdmin['code']
+    );
+
+    // Nettoyage : les fichiers créés ici sont effacés par l'appelant.
+    $fichiers[] = $docRetire['rel'];
+    $fichiers[] = $docRetire['thumb'];
 }

@@ -97,6 +97,8 @@ route('GET', '/propositions/nouvelle/{type}', 'proposition_form');
 route('POST', '/propositions/nouvelle/{type}', 'proposition_save');
 route('GET', '/propositions/{type}/{id}', 'proposition_form');
 route('POST', '/propositions/{type}/{id}', 'proposition_save');
+// Retirer une proposition en attente (l'auteur renonce).
+route('POST', '/propositions/{type}/{id}/retirer', 'proposition_retrait');
 
 // Envoi par morceaux réservé aux journalistes : le fichier reste « prêt » et
 // ne devient un document que dans une proposition.

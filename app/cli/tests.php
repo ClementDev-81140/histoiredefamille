@@ -2424,7 +2424,18 @@ if ($filtre === '' || $filtre === 'composition') {
     $derniere = basename((string) end($migrations));
     $sql009   = (string) @file_get_contents(dirname(__DIR__) . '/migrations/009_articles_modele.sql');
     // Chaque lot ajoute SA migration ; les précédentes ne bougent jamais.
-    verifier('migration : 016 est la dernière migration', $derniere === '016_propositions.sql', $derniere);
+    verifier('migration : 017 est la dernière migration', $derniere === '017_versions_propositions.sql', $derniere);
+    $migration017 = (string) @file_get_contents(dirname(__DIR__) . '/migrations/017_versions_propositions.sql');
+    verifier(
+        'migration : 017 ajoute « replaces_id » EN AJOUT SEUL (aucune ligne modifiée, aucune supprimée)',
+        str_contains($migration017, 'ALTER TABLE articles  ADD COLUMN replaces_id INTEGER')
+            && str_contains($migration017, 'ALTER TABLE documents ADD COLUMN replaces_id INTEGER')
+            && str_contains($migration017, 'ALTER TABLE recipes   ADD COLUMN replaces_id INTEGER')
+            && !str_contains($migration017, 'UPDATE ')
+            && !str_contains($migration017, 'DELETE ')
+            && !str_contains($migration017, 'DROP '),
+        $migration017 === '' ? 'fichier absent' : 'ok'
+    );
     $migration016 = (string) @file_get_contents(dirname(__DIR__) . '/migrations/016_propositions.sql');
     verifier(
         'migration : 016 ajoute les colonnes de validation, sans rien publier par erreur',
@@ -2511,6 +2522,10 @@ if ($filtre === '' || $filtre === 'restauration') {
     tests_restauration();
 }
 
+if ($filtre === '' || $filtre === 'espace') {
+    tests_espace_disque();
+}
+
 if ($filtre === '' || $filtre === 'matrice') {
     tests_matrice($filtre === 'matrice');
 }
@@ -2528,6 +2543,12 @@ require_once __DIR__ . '/tests_profils.php';
 
 // Les propositions des journalistes ont besoin des mêmes outils d'essai que
 // les profils (tests_envoi_requete) : ce bloc vient donc après eux.
+require_once __DIR__ . '/tests_demo.php';
+
+if ($filtre === '' || $filtre === 'demo') {
+    tests_demo();
+}
+
 if ($filtre === '' || $filtre === 'propositions') {
     require_once __DIR__ . '/tests_propositions.php';
     tests_propositions();

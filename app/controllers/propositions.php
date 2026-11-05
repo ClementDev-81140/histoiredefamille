@@ -66,6 +66,17 @@ function proposition_form(array $params = []): void
         return;
     }
 
+    // Une modification déjà en attente ? C'est elle que l'auteur reprend,
+    // plutôt que d'ouvrir un second projet sur le même contenu publié.
+    if ($row !== null && (string) ($row['moderation_state'] ?? '') === 'publie') {
+        $version = proposition_version_en_attente($type, $id);
+        if ($version !== null) {
+            flash('info', 'Une modification de ce contenu attend déjà la relecture : vous la reprenez ici.');
+            redirect('/propositions/' . $type . '/' . (int) $version['id']);
+            return;
+        }
+    }
+
     // Fichiers prêts du journaliste (envoi par morceaux déjà assemblé).
     $prets = db_all(
         "SELECT * FROM uploads WHERE account_id = ? AND state = 'pret' ORDER BY updated_at DESC LIMIT 20",
@@ -119,6 +130,15 @@ function proposition_save(array $params = []): void
         http_response_code(404);
         render('erreur', ['titre' => 'Proposition introuvable', 'message' => 'Cette proposition n’existe pas.']);
         return;
+    }
+
+    // Même règle à l'enregistrement : une seule version en attente par contenu.
+    if ($row !== null && (string) ($row['moderation_state'] ?? '') === 'publie') {
+        $version = proposition_version_en_attente($type, $id);
+        if ($version !== null) {
+            redirect('/propositions/' . $type . '/' . (int) $version['id']);
+            return;
+        }
     }
 
     $brouillon = post('action') === 'brouillon';
@@ -248,10 +268,14 @@ function proposition_save(array $params = []): void
     $donnees['submitted_at']          = time();
     $donnees['suggested_visibility']  = $suggeree;
 
-    // Modifier une proposition déjà validée la remet « en attente » : elle
-    // redevient invisible pour les autres jusqu'à la prochaine validation.
-    // La trace de l'ancienne validation reste au journal d'actions.
+    // Modifier une proposition déjà validée ne touche PAS au texte publié :
+    // la modification devient une version en attente (migration 017), que les
+    // lecteurs ne voient pas avant la validation. Sans la colonne des versions
+    // (base non migrée), on retombe sur l'ancien comportement : la ligne
+    // repasse « en attente » et disparaît des listes publiques.
     $remiseEnAttente = $row !== null && (string) ($row['moderation_state'] ?? '') === 'publie';
+    $creerVersion    = $remiseEnAttente && proposition_versions_faites();
+    $donnees['replaces_id'] = null;
     if ($remiseEnAttente) {
         $donnees['validated_by'] = null;
         $donnees['validated_at'] = null;
@@ -263,6 +287,12 @@ function proposition_save(array $params = []): void
             $slug = $type === 'article' ? 'article' : 'recette';
         }
         $table = proposition_table($type);
+        if ($creerVersion) {
+            // Une version est une ligne à part : elle a besoin d'une adresse
+            // libre, mais celle de l'original ne bougera pas (les liens déjà
+            // envoyés continuent de fonctionner après la validation).
+            $slug = mb_substr($slug, 0, 150, 'UTF-8') . '-version-' . bin2hex(random_bytes(3));
+        }
         $base  = $slug;
         $index = 2;
         while (db_one('SELECT id FROM ' . $table . ' WHERE slug = ? AND id <> ?', [$slug, $id]) !== null) {
@@ -272,10 +302,43 @@ function proposition_save(array $params = []): void
         $donnees['slug'] = $slug;
     }
 
-    if ($id > 0) {
+    if ($creerVersion) {
+        // La ligne d'origine garde son texte et sa visibilité : seuls les
+        // administrateurs voient la version dans « À valider ».
+        $contenu = [];
+        foreach (proposition_colonnes_contenu($type) as $colonne) {
+            if (array_key_exists($colonne, $donnees)) {
+                $contenu[$colonne] = $donnees[$colonne];
+            }
+        }
+        foreach (['rel_path', 'thumb_path', 'original_name', 'mime', 'ext', 'size', 'kind', 'width', 'height'] as $colonne) {
+            if (array_key_exists($colonne, $donnees)) {
+                $contenu[$colonne] = $donnees[$colonne];
+            }
+        }
+        // L'adresse de la version : libre, celle de l'original ne change pas.
+        if (isset($donnees['slug'])) {
+            $contenu['slug'] = $donnees['slug'];
+        }
+        $propositionId = proposition_creer_version(
+            $type,
+            $row,
+            $contenu,
+            ['suggested_visibility' => $suggeree]
+        );
+        if ($propositionId <= 0) {
+            // La version n'a pas pu être écrite : on ne touche PAS au contenu
+            // publié (le remplacer serait pire que de refuser la modification).
+            flash('erreur', 'Votre modification n’a pas pu être enregistrée. Le texte publié n’a pas été touché : réessayez.');
+            redirect('/propositions');
+            return;
+        }
+    }
+
+    if (!$creerVersion && $id > 0) {
         db_update($info['table'], $id, $donnees);
         $propositionId = $id;
-    } else {
+    } elseif (!$creerVersion || $propositionId === 0) {
         // La date de création n'est jamais laissée vide : la base la réclame.
         $donnees['created_at'] = $donnees['created_at'] ?? time();
         $propositionId = db_insert($info['table'], $donnees);
@@ -299,12 +362,55 @@ function proposition_save(array $params = []): void
         proposition_prevenir_admins($type, $propositionId);
         flash(
             'succes',
-            $remiseEnAttente
-                ? 'Proposition modifiée : elle repasse en attente de validation, et redevient invisible pour les autres.'
-                : 'Votre proposition est en attente de validation : elle n’est visible que de vous et des administrateurs.'
+            $creerVersion
+                ? 'Modification enregistrée : elle attend la relecture d’un administrateur. '
+                    . 'Le texte déjà publié reste en ligne, inchangé, jusque-là.'
+                : ($remiseEnAttente
+                    ? 'Proposition modifiée : elle repasse en attente de validation, et redevient invisible pour les autres.'
+                    : 'Votre proposition est en attente de validation : elle n’est visible que de vous et des administrateurs.')
         );
     } else {
         flash('succes', 'Brouillon enregistré : il n’est visible que de vous.');
+    }
+
+    redirect('/propositions');
+}
+
+/**
+ * Retire une proposition en attente (l'auteur renonce).
+ *
+ * Elle disparaît aussitôt de « À valider » et de « Mes propositions », et ses
+ * fichiers sont effacés s'ils ne servent plus à rien. Un contenu déjà publié
+ * n'est jamais retiré par ce chemin.
+ */
+function proposition_retrait(array $params = []): void
+{
+    require_proposer();
+    csrf_check();
+
+    $type  = (string) ($params['type'] ?? '');
+    $id    = (int) ($params['id'] ?? 0);
+    $info  = proposition_type($type);
+    $compte = current_account();
+
+    if ($info === null || $id <= 0) {
+        http_response_code(404);
+        render('erreur', ['titre' => 'Page introuvable', 'message' => 'Cette proposition n’existe pas.']);
+        return;
+    }
+
+    $row = proposition_obtenir($type, $id);
+    if ($row === null || !proposition_appartient($row, $compte)) {
+        http_response_code(404);
+        render('erreur', ['titre' => 'Proposition introuvable', 'message' => 'Cette proposition n’existe pas.']);
+        return;
+    }
+
+    $retrait = proposition_retirer($type, $id, (int) $compte['id']);
+    if (!$retrait['ok']) {
+        flash('erreur', $retrait['error']);
+    } else {
+        flash('succes', 'Proposition retirée. Elle n’attend plus de relecture et ses fichiers ont été rangés.');
     }
 
     redirect('/propositions');

@@ -122,8 +122,9 @@ function visibility_clause(string $kind, string $alias, array &$params): string
     // (ou par une adresse directe, voir find_viewable_article()).
     $visible = '(' . $visible . ' AND ' . proposition_clause($kind, $a, $params) . ')';
 
-    // Une vidéo encore dans la file de conversion n'est pas montrée aux
-    // comptes de famille : son lecteur afficherait une erreur. Cette condition
+    // Une vidéo encore dans la file de conversion — ou dont la conversion a
+    // échoué — n'est pas montrée aux comptes de famille : son lecteur
+    // afficherait une erreur (ou un format qu'aucun navigateur ne lit). Cette condition
     // ne fait que RÉTRÉCIR ce qui est visible : aucun droit n'est ouvert, et
     // les administrateurs (plus haut) continuent de tout voir.
     if ($kind === 'document') {
@@ -230,10 +231,12 @@ function find_viewable_document(int $id): ?array
         && !can_view((string) $doc['visibility'], content_branch_ids('document', $id))) {
         return null;
     }
-    // Une vidéo encore dans la file de conversion n'existe pas, pour la
-    // famille : même réponse qu'un document interdit (404). L'administrateur,
-    // lui, la voit et sa fiche indique l'avancement.
-    if (!is_admin() && !conversion_document_pret($doc)) {
+    // Une vidéo encore dans la file de conversion (ou en échec) n'existe pas,
+    // pour la famille : même réponse qu'un document interdit (404).
+    // L'administrateur, lui, la voit et sa fiche indique l'avancement ; son
+    // auteur la retrouve aussi (droit de lecture sur son propre dépôt).
+    if (!is_admin() && !conversion_document_pret($doc)
+        && !conversion_auteur_du_document($doc, current_account())) {
         return null;
     }
     // Même règle pour une proposition en attente : elle ne se sert pas par

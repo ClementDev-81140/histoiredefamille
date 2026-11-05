@@ -101,6 +101,25 @@ function tests_conversion_vider_file(): void
     db_exec("UPDATE conversions SET state = 'ignoree' WHERE state IN ('attente', 'en_cours')");
 }
 
+/** Compte d'essai d'un type donné (lecteur, journaliste, administrateur). */
+function tests_conversion_compte(string $type): int
+{
+    return db_insert('accounts', [
+        'username'      => 'conv-' . $type . '-' . bin2hex(random_bytes(4)),
+        'display_name'  => 'Essai ' . $type,
+        'password_hash' => password_make('MotDePasseEssai123!'),
+        'role'          => $type === 'admin' ? 'admin' : 'famille',
+        'account_type'  => $type,
+        'first_name'    => $type === 'branche' ? '' : 'Essai',
+        'last_name'     => $type === 'branche' ? '' : 'Conversion',
+        'branch_id'     => null,
+        'see_all'       => 0,
+        'is_active'     => 1,
+        'created_at'    => time(),
+        'updated_at'    => time(),
+    ]);
+}
+
 /** Lance une page du site comme le faisait la famille « envoi ». */
 function tests_conversion_requete(string $methode, string $url, ?int $compte, array $post = []): array
 {
@@ -137,6 +156,9 @@ function tests_conversion(): void
             tests_conversion_reussite($compte);
             tests_conversion_droits($compte, $famille);
             tests_conversion_entretien($compte);
+            tests_conversion_pendant($compte, $famille);
+            tests_conversion_memoire($compte);
+            tests_conversion_reelle($compte);
 
             // Tout est annulé : la base du site est rendue intacte.
             throw new RuntimeException('fin du test, annulation');
@@ -267,8 +289,8 @@ function tests_conversion_file(int $compte): void
     $codeCommande = (string) file_get_contents(__DIR__ . '/convertir.php');
     verifier(
         'conversion : la commande revérifie l’espace AVANT de lancer ffmpeg',
-        strpos($codeCommande, 'conversion_espace_ok($doc)') !== false
-            && strpos($codeCommande, 'conversion_espace_ok($doc)') < strpos($codeCommande, 'proc_open(')
+        strpos($codeCommande, 'conversion_peut_demarrer($doc)') !== false
+            && strpos($codeCommande, 'conversion_peut_demarrer($doc)') < strpos($codeCommande, 'proc_open(')
     );
 
     // Quels fichiers ont besoin d'être convertis ?
@@ -768,7 +790,7 @@ function tests_conversion_droits(int $compte, int $famille): void
         $avertissement['phrase']
     );
     verifier(
-        'conversion : un échec de conversion ne bloque pas la lecture du fichier d’origine',
+        'conversion : un ÉCHEC garde la vidéo invisible à la famille et l’original en place',
         (static function () use ($compte): bool {
             tests_conversion_vider_file();
             $doc = tests_conversion_document($compte, 'avi', 'video/x-msvideo', 'Film en échec');
@@ -776,8 +798,22 @@ function tests_conversion_droits(int $compte, int $famille): void
             $travail = conversion_prendre();
             db_exec('UPDATE conversions SET attempts = 3 WHERE id = ?', [(int) $travail['id']]);
             conversion_echouer((int) $travail['id'], 'Fichier abîmé.');
-            return conversion_document_pret(['id' => $doc['id'], 'kind' => 'video']) === true
-                && conversion_avertissement((int) $doc['id'])['bloquant'] === false;
+            return conversion_document_pret(['id' => $doc['id'], 'kind' => 'video']) === false
+                && is_file($doc['abs'])
+                && conversion_avertissement((int) $doc['id'])['bloquant'] === true
+                && str_contains(conversion_avertissement((int) $doc['id'])['phrase'], 'origine est conservé');
+        })()
+    );
+
+    verifier(
+        'conversion : une conversion ANNULÉE, elle, laisse le fichier d’origine servi tel quel',
+        (static function () use ($compte): bool {
+            tests_conversion_vider_file();
+            $doc = tests_conversion_document($compte, 'avi', 'video/x-msvideo', 'Film annulé');
+            conversion_planifier($doc['id'], $compte);
+            $travail = conversion_prendre();
+            conversion_annuler((int) $travail['id']);
+            return conversion_document_pret(['id' => $doc['id'], 'kind' => 'video']) === true;
         })()
     );
 
@@ -935,4 +971,541 @@ function tests_conversion_entretien(int $compte): void
         'entretien : la tâche hebdomadaire purge la file et libère les originaux',
         str_contains($code, 'conversion_purger(') && str_contains($code, 'conversion_liberer_originaux(')
     );
+}
+
+// ---------------------------------------------------------------------------
+// 7. Droits PENDANT la conversion (1.26.0)
+// ---------------------------------------------------------------------------
+
+/**
+ * Une vidéo dans la file n'existe pour personne — sauf pour qui l'a déposée
+ * et pour les administrateurs. Après conversion, elle prend la visibilité
+ * choisie. L'adresse directe du fichier et celle de la miniature suivent
+ * exactement la même règle que la page.
+ */
+function tests_conversion_pendant(int $admin, int $famille): void
+{
+    tests_conversion_vider_file();
+    save_site_setting('conversion_active', '1');
+    conversion_outils_forcer(['ffmpeg' => null, 'ffprobe' => null]);
+
+    // Quatre profils : un lecteur, l'auteur de l'envoi (journaliste), un autre
+    // journaliste, un visiteur, plus l'administrateur.
+    $auteur = tests_conversion_compte('personne');
+    $autre  = tests_conversion_compte('personne');
+
+    $film = tests_conversion_document($auteur, 'mov', 'video/quicktime', 'Film de l’auteur');
+    // Une miniature, pour vérifier que /media/miniature/{id} suit la même règle.
+    $thumbRel = storage_target_path('jpg');
+    $thumbAbs = storage_absolute($thumbRel);
+    file_put_contents($thumbAbs, "\xFF\xD8\xFF\xD9");
+    db_update('documents', $film['id'], [
+        'thumb_path'  => $thumbRel,
+        'created_by'  => $auteur,
+        'visibility'  => 'famille',
+        'title'       => 'Film de l’auteur',
+    ]);
+    conversion_planifier($film['id'], $auteur);
+
+    $code = static function (string $url, ?int $compte) use ($film): int {
+        return (int) tests_conversion_requete('GET', $url, $compte)['code'];
+    };
+
+    $urls = [
+        'page'          => '/documents/' . $film['id'],
+        'fichier'       => '/f/' . $film['id'],
+        'telecharger'   => '/f/' . $film['id'] . '/telecharger',
+        'miniature'     => '/media/miniature/' . $film['id'],
+        'videos'        => '/videos',
+    ];
+
+    $pendant = [];
+    foreach (['visiteur' => null, 'lecteur' => $famille, 'auteur' => $auteur, 'autre' => $autre, 'admin' => $admin] as $nom => $compte) {
+        foreach ($urls as $cle => $url) {
+            $pendant[$nom][$cle] = $code($url, $compte);
+        }
+    }
+
+    verifier(
+        'droits pendant la conversion : la vidéo est invisible au visiteur (page, fichier, téléchargement, miniature)',
+        $pendant['visiteur']['page'] === 404 && $pendant['visiteur']['fichier'] === 404
+            && $pendant['visiteur']['telecharger'] === 404 && $pendant['visiteur']['miniature'] === 404,
+        json_encode($pendant['visiteur'])
+    );
+    verifier(
+        'droits pendant la conversion : la vidéo est invisible au lecteur de la famille',
+        $pendant['lecteur']['page'] === 404 && $pendant['lecteur']['fichier'] === 404
+            && $pendant['lecteur']['telecharger'] === 404 && $pendant['lecteur']['miniature'] === 404,
+        json_encode($pendant['lecteur'])
+    );
+    verifier(
+        'droits pendant la conversion : un autre journaliste n’y a pas accès non plus',
+        $pendant['autre']['page'] === 404 && $pendant['autre']['fichier'] === 404
+            && $pendant['autre']['telecharger'] === 404 && $pendant['autre']['miniature'] === 404,
+        json_encode($pendant['autre'])
+    );
+    verifier(
+        'droits pendant la conversion : l’auteur de l’envoi, lui, peut relire sa fiche et son fichier',
+        $pendant['auteur']['page'] === 200 && $pendant['auteur']['fichier'] === 200
+            && $pendant['auteur']['miniature'] === 200,
+        json_encode($pendant['auteur'])
+    );
+    verifier(
+        'droits pendant la conversion : l’administrateur voit la fiche, le fichier et son état',
+        $pendant['admin']['page'] === 200 && $pendant['admin']['fichier'] === 200
+            && $pendant['admin']['miniature'] === 200,
+        json_encode($pendant['admin'])
+    );
+
+    // L'état est écrit noir sur blanc sur la fiche, et pas seulement dans la
+    // page « Conversions ».
+    db_update('conversions', (int) conversion_pour_document($film['id'])['id'], ['progress' => 37]);
+    $_SESSION = ['account_id' => $admin];
+    $fiche = tests_conversion_requete('GET', '/admin/videos/' . $film['id'], $admin);
+    verifier(
+        'droits pendant la conversion : la fiche de l’administrateur dit « en cours » et le pourcentage',
+        (int) $fiche['code'] === 200
+            && (stripos((string) $fiche['corps'], 'en cours') !== false
+                || stripos((string) $fiche['corps'], 'conversion') !== false),
+        'code ' . $fiche['code']
+    );
+    $espaceAdmin = tests_conversion_requete('GET', '/admin/conversions', $admin);
+    verifier(
+        'droits pendant la conversion : la page « Conversions » cite la vidéo et son état',
+        (int) $espaceAdmin['code'] === 200
+            && str_contains((string) $espaceAdmin['corps'], 'Film de l’auteur'),
+        'code ' . $espaceAdmin['code']
+    );
+
+    // Après la conversion, la visibilité choisie s'applique : « famille ».
+    $pris = conversion_prendre();
+    if ($pris !== null) {
+        conversion_reussir((int) $pris['id'], tests_conversion_fichier(2048, 'mp4'), ['duration' => 12]);
+    }
+    $apres = [];
+    foreach (['visiteur' => null, 'lecteur' => $famille, 'autre' => $autre, 'admin' => $admin] as $nom => $compte) {
+        foreach ($urls as $cle => $url) {
+            $apres[$nom][$cle] = $code($url, $compte);
+        }
+    }
+    verifier(
+        'droits après conversion : la vidéo « famille » s’ouvre au lecteur, jamais au visiteur',
+        $apres['lecteur']['page'] === 200 && $apres['lecteur']['fichier'] === 200
+            && $apres['lecteur']['miniature'] === 200
+            && $apres['visiteur']['page'] === 404 && $apres['visiteur']['fichier'] === 404,
+        json_encode(['lecteur' => $apres['lecteur'], 'visiteur' => $apres['visiteur']])
+    );
+
+    // Et une vidéo « privé » reste fermée à la famille après conversion.
+    $prive = tests_conversion_document($admin, 'mov', 'video/quicktime', 'Film privé converti');
+    db_update('documents', $prive['id'], ['visibility' => 'prive']);
+    conversion_planifier($prive['id'], $admin);
+    $travailPrive = conversion_prendre();
+    if ($travailPrive !== null && (int) $travailPrive['document_id'] === (int) $prive['id']) {
+        conversion_reussir((int) $travailPrive['id'], tests_conversion_fichier(2048, 'mp4'));
+    }
+    verifier(
+        'droits après conversion : une vidéo « privé » reste fermée à la famille',
+        $code('/documents/' . $prive['id'], $famille) === 404
+            && $code('/f/' . $prive['id'], $famille) === 404
+            && $code('/documents/' . $prive['id'], $admin) === 200,
+        'famille ' . $code('/documents/' . $prive['id'], $famille) . ', admin ' . $code('/documents/' . $prive['id'], $admin)
+    );
+
+    // Échec : la vidéo reste invisible à la famille, l'original est conservé,
+    // et l'administrateur lit un message clair.
+    $rate = tests_conversion_document($admin, 'mov', 'video/quicktime', 'Film rataRé');
+    db_update('documents', $rate['id'], ['visibility' => 'public']);
+    conversion_planifier($rate['id'], $admin);
+    $travailRate = conversion_prendre();
+    if ($travailRate !== null && (int) $travailRate['document_id'] === (int) $rate['id']) {
+        db_exec('UPDATE conversions SET attempts = 3 WHERE id = ?', [(int) $travailRate['id']]);
+        conversion_echouer((int) $travailRate['id'], conversion_lire_erreur('moov atom not found', 1));
+    }
+    $ligneRate = conversion_par_id((int) ($travailRate['id'] ?? 0));
+    verifier(
+        'droits après échec : la vidéo reste invisible à la famille et l’original est conservé',
+        is_file($rate['abs']) && $code('/documents/' . $rate['id'], $famille) === 404,
+        'fichier ' . var_export(is_file($rate['abs']), true)
+    );
+    verifier(
+        'droits après échec : l’administrateur lit une raison claire (fichier abîmé, original gardé)',
+        $ligneRate !== null && str_contains((string) $ligneRate['message'], 'abîmé'),
+        (string) ($ligneRate['message'] ?? 'aucune ligne')
+    );
+    verifier(
+        'droits après échec : la fiche de la vidéo dit que le fichier d’origine est conservé',
+        str_contains(
+            conversion_avertissement($rate['id'])['phrase'],
+            'origine est conservé'
+        ),
+        conversion_avertissement($rate['id'])['phrase']
+    );
+
+    @unlink($thumbAbs);
+    $_SESSION = ['account_id' => $admin];
+}
+
+// ---------------------------------------------------------------------------
+// 8. Mémoire et robustesse : envoi en cours, espace, coupure de courant
+// ---------------------------------------------------------------------------
+
+function tests_conversion_memoire(int $compte): void
+{
+    tests_conversion_vider_file();
+    save_site_setting('conversion_active', '1');
+
+    $film = tests_conversion_document($compte, 'mkv', 'video/x-matroska', 'Film mémoire');
+
+    // 1. Un envoi par morceaux est en cours : la conversion patiente.
+    $envoi = envoi_creer($compte, 'gros-film.mov', 10 * 1024 * 1024);
+    $idEnvoi = (int) ($envoi['envoi']['id'] ?? 0);
+    $blocage = conversion_peut_demarrer(['size' => 4096], 100 * 1024 * 1024 * 1024);
+    verifier(
+        'mémoire : la conversion refuse de démarrer quand un envoi par morceaux est en cours',
+        $blocage['ok'] === false && $blocage['raison'] === 'envoi'
+            && str_contains($blocage['message'], 'envoi'),
+        json_encode($blocage)
+    );
+
+    // L'envoi abandonné depuis longtemps ne bloque plus (le navigateur a été
+    // fermé) : sinon une seule coupure de réseau arrêterait la file pour de bon.
+    if ($idEnvoi > 0) {
+        db_exec('UPDATE uploads SET updated_at = ? WHERE id = ?', [time() - 3 * 3600, $idEnvoi]);
+    }
+    $libre = conversion_peut_demarrer(['size' => 4096], 100 * 1024 * 1024 * 1024);
+    verifier(
+        'mémoire : un envoi abandonné (plus de nouvelles depuis le délai) ne bloque plus la file',
+        $libre['ok'] === true,
+        json_encode($libre)
+    );
+
+    // 2. Espace libre sous la marge : refus, avec la place qu'il faudrait.
+    $plein = conversion_peut_demarrer(['size' => 4096], 10 * 1024 * 1024);
+    verifier(
+        'mémoire : la conversion refuse de démarrer quand l’espace libre est sous la marge',
+        $plein['ok'] === false && $plein['raison'] === 'espace'
+            && str_contains($plein['message'], 'libres'),
+        json_encode($plein)
+    );
+    verifier(
+        'mémoire : la marge demandée tient compte de la taille du fichier d’origine',
+        conversion_espace_ok(['size' => 500 * 1024 * 1024], 0, 0)['requis'] === 500 * 1024 * 1024
+    );
+
+    // 3. Report : le travail reste en attente, l'essai est rendu, le message
+    //    est écrit — le minuteur le reprendra.
+    conversion_planifier($film['id'], $compte);
+    $pris = conversion_prendre();
+    verifier(
+        'mémoire : le travail pris compte un essai avant le contrôle de démarrage',
+        $pris !== null && (int) $pris['attempts'] === 1
+    );
+    conversion_reporter((int) $pris['id'], 'Conversion reportée : un envoi de fichier est en cours.');
+    $reporte = conversion_par_id((int) $pris['id']);
+    verifier(
+        'mémoire : un report remet le travail en attente SANS consommer d’essai',
+        (string) $reporte['state'] === 'attente' && (int) $reporte['attempts'] === 0
+            && str_contains((string) $reporte['message'], 'reportée'),
+        json_encode([$reporte['state'], (int) $reporte['attempts']])
+    );
+
+    // 4. Coupure de courant : un travail « en cours » depuis deux heures
+    //    repart tout seul, un fichier temporaire abandonné est effacé.
+    db_exec(
+        "UPDATE conversions SET state = 'en_cours', attempts = 1, progress = 61,
+                updated_at = ?, started_at = ? WHERE id = ?",
+        [time() - 7200, time() - 7300, (int) $pris['id']]
+    );
+    $temporaireVieux = storage_path('tmp') . '/conversion-essai-' . bin2hex(random_bytes(3)) . '.mp4';
+    file_put_contents($temporaireVieux, 'moitié de fichier');
+    touch($temporaireVieux, time() - 7200);
+    $temporaireNeuf = storage_path('tmp') . '/conversion-essai-' . bin2hex(random_bytes(3)) . '.mp4';
+    file_put_contents($temporaireNeuf, 'conversion en cours');
+
+    $recuperation = conversion_recuperer(30);
+    $apresCoupure = conversion_par_id((int) $pris['id']);
+    verifier(
+        'panne : un travail « en cours » depuis plus de 30 minutes repart en attente',
+        (string) $apresCoupure['state'] === 'attente' && (int) $apresCoupure['progress'] === 0
+            && $recuperation['repris'] >= 1,
+        json_encode([$apresCoupure['state'], $recuperation['repris']])
+    );
+    verifier(
+        'panne : l’essai interrompu est rendu (ce n’est pas la faute du fichier)',
+        (int) $apresCoupure['attempts'] === 0,
+        'essais ' . (int) $apresCoupure['attempts']
+    );
+    verifier(
+        'panne : le fichier temporaire à moitié écrit est effacé, celui en cours est gardé',
+        !is_file($temporaireVieux) && is_file($temporaireNeuf),
+        json_encode([is_file($temporaireVieux), is_file($temporaireNeuf)])
+    );
+    @unlink($temporaireNeuf);
+
+    // Un travail interrompu après le dernier essai s'arrête en échec lisible.
+    db_exec(
+        "UPDATE conversions SET state = 'en_cours', attempts = 3, updated_at = ? WHERE id = ?",
+        [time() - 7200, (int) $pris['id']]
+    );
+    conversion_recuperer(30);
+    $abandonne = conversion_par_id((int) $pris['id']);
+    verifier(
+        'panne : après le dernier essai, le travail s’arrête en échec avec une raison claire',
+        (string) $abandonne['state'] === 'echec'
+            && str_contains((string) $abandonne['message'], 'interrompue')
+            && str_contains((string) $abandonne['message'], 'origine est conservé'),
+        (string) $abandonne['message']
+    );
+
+    // 5. La commande elle-même : un seul fil de calcul, priorité basse.
+    $reglages = array_merge(conversion_reglages(), ['ffmpeg' => '/usr/bin/ffmpeg']);
+    $commande = conversion_commande('/stockage/film.mov', '/tmp/sortie.mp4', $reglages);
+    $positionThreads = array_search('-threads', $commande, true);
+    verifier(
+        'mémoire : ffmpeg est borné à un seul fil de calcul (« -threads 1 »)',
+        $positionThreads !== false && (string) $commande[$positionThreads + 1] === '1',
+        implode(' ', $commande)
+    );
+    $nicee = conversion_commande_nicee($commande, $reglages);
+    $aNice = is_file('/usr/bin/nice') || is_file('/bin/nice');
+    verifier(
+        'mémoire : ffmpeg tourne en priorité basse (nice 19) quand le programme existe',
+        $aNice
+            ? (str_ends_with((string) $nicee[0], 'nice') && $nicee[1] === '-n' && $nicee[2] === '19')
+            : count($nicee) === count($commande),
+        implode(' ', array_slice($nicee, 0, 4))
+    );
+    verifier(
+        'mémoire : l’enveloppe « nice » ne change jamais la commande ffmpeg elle-même',
+        array_slice($nicee, -count($commande)) === $commande
+    );
+
+    // 6. Le code de la commande applique bien ces règles avant de lancer ffmpeg.
+    $codeCli = (string) @file_get_contents(HDF_APP . '/cli/convertir.php');
+    verifier(
+        'mémoire : la commande contrôle l’envoi en cours et l’espace AVANT ffmpeg',
+        str_contains($codeCli, 'conversion_peut_demarrer(')
+            && strpos($codeCli, 'conversion_peut_demarrer(') < strpos($codeCli, 'proc_open(')
+    );
+    verifier(
+        'mémoire : un report n’est pas un échec (la commande sort sans code d’erreur)',
+        str_contains($codeCli, 'conversion_reporter(') && str_contains($codeCli, "'reporte'")
+    );
+    verifier(
+        'panne : la commande remet la file d’aplomb avant de prendre du travail',
+        strpos($codeCli, 'conversion_recuperer(') < strpos($codeCli, 'conversion_prendre()')
+    );
+    $codeEntretien = (string) @file_get_contents(HDF_APP . '/cli/maintenance.php');
+    verifier(
+        'panne : la maintenance quotidienne rattrape aussi une file bloquée',
+        str_contains($codeEntretien, 'conversion_recuperer(')
+    );
+    verifier(
+        'mémoire : le minuteur de conversion ne lance qu’un seul travail à la fois',
+        is_file(HDF_ROOT . '/deploy/systemd/histoiredefamille-conversion.timer')
+    );
+
+    // Nettoyage : l'envoi d'essai et ses morceaux.
+    if ($idEnvoi > 0) {
+        $ligne = envoi_par_id($idEnvoi);
+        if ($ligne !== null) {
+            envoi_supprimer_morceaux($ligne);
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// 9. Conversion RÉELLE d'un .mov par ffmpeg (bout en bout)
+// ---------------------------------------------------------------------------
+
+/**
+ * Fabrique un vrai .mov (QuickTime, H.264) avec ffmpeg, puis le convertit avec
+ * la commande exacte du site et vérifie le résultat avec ffprobe.
+ *
+ * Ce test est « ignoré » (et le dit) sur une machine sans ffmpeg : il ne doit
+ * jamais faire échouer l'ensemble. Sur le Raspberry Pi, en revanche, c'est le
+ * seul essai qui prouve que la chaîne complète fonctionne — droits compris.
+ */
+function tests_conversion_reelle(int $admin): void
+{
+    $reglages = conversion_reglages();
+    if ($reglages['ffmpeg'] === null || $reglages['ffprobe'] === null) {
+        echo "  ignoré  conversion réelle : ffmpeg n’est pas installé sur cette machine\n";
+        return;
+    }
+    if (!function_exists('proc_open')) {
+        echo "  ignoré  conversion réelle : proc_open est désactivé sur cette machine\n";
+        return;
+    }
+
+    $tmp     = storage_path('tmp');
+    $source  = $tmp . '/essai-reel-' . bin2hex(random_bytes(4)) . '.mov';
+    $sortie  = $tmp . '/essai-reel-' . bin2hex(random_bytes(4)) . '.mp4';
+
+    // Un vrai .mov de deux secondes, en H.264 : c'est ce que produit un
+    // téléphone, et c'est ce que le site doit savoir convertir.
+    $fabrication = [
+        (string) $reglages['ffmpeg'], '-nostdin', '-hide_banner', '-loglevel', 'error', '-y',
+        '-f', 'lavfi', '-i', 'testsrc=duration=2:size=160x120:rate=10',
+        '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'ultrafast',
+        $source,
+    ];
+    $sortieOutil = '';
+    $code = 1;
+    $processus = @proc_open(
+        $fabrication,
+        [0 => ['file', '/dev/null', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+        $tuyaux
+    );
+    if (is_resource($processus)) {
+        $sortieOutil = (string) stream_get_contents($tuyaux[2] ?? fopen('php://memory', 'r'));
+        if (isset($tuyaux[1]) && is_resource($tuyaux[1])) {
+            stream_get_contents($tuyaux[1]);
+            fclose($tuyaux[1]);
+        }
+        if (isset($tuyaux[2]) && is_resource($tuyaux[2])) {
+            fclose($tuyaux[2]);
+        }
+        $code = proc_close($processus);
+    }
+
+    verifier(
+        'conversion réelle : un vrai fichier .mov (H.264) est fabriqué pour l’essai',
+        $code === 0 && is_file($source) && (int) filesize($source) > 0,
+        trim($sortieOutil)
+    );
+    if (!is_file($source) || (int) filesize($source) <= 0) {
+        @unlink($source);
+        return;
+    }
+
+    // La fiche, avec le vrai fichier.
+    $rel = storage_target_path('mov');
+    @rename($source, storage_absolute($rel));
+    $id = db_insert('documents', [
+        'title'         => 'Film réel converti',
+        'description'   => null,
+        'doc_date'      => null,
+        'doc_date_sort' => null,
+        'category_id'   => null,
+        'kind'          => 'video',
+        'visibility'    => 'famille',
+        'rel_path'      => $rel,
+        'thumb_path'    => null,
+        'original_name' => 'film-reel.mov',
+        'mime'          => 'video/quicktime',
+        'ext'           => 'mov',
+        'size'          => (int) filesize(storage_absolute($rel)),
+        'width'         => null,
+        'height'        => null,
+        'is_attachment' => 0,
+        'created_by'    => $admin,
+        'created_at'    => time(),
+        'updated_at'    => time(),
+    ]);
+    conversion_planifier($id, $admin);
+    $pris = conversion_prendre();
+
+    if ($pris === null) {
+        echo "  ignoré  conversion réelle : aucun travail pris (file occupée)\n";
+        return;
+    }
+
+    // La commande exacte du site, lancée comme la commande CLI la lance.
+    $commande = conversion_commande_nicee(
+        conversion_commande(storage_absolute($rel), $sortie, $reglages),
+        $reglages
+    );
+    $journal = $tmp . '/essai-reel-' . bin2hex(random_bytes(4)) . '.log';
+    $processus = @proc_open(
+        $commande,
+        [0 => ['file', '/dev/null', 'r'], 1 => ['pipe', 'w'], 2 => ['file', $journal, 'w']],
+        $tuyaux
+    );
+    $pourcentage = 0;
+    if (is_resource($processus)) {
+        if (isset($tuyaux[1]) && is_resource($tuyaux[1])) {
+            while (!feof($tuyaux[1])) {
+                $ligne = fgets($tuyaux[1]);
+                if ($ligne === false) {
+                    break;
+                }
+                $lu = conversion_lire_progression((string) $ligne, 2);
+                if ($lu !== null) {
+                    $pourcentage = max($pourcentage, $lu);
+                }
+            }
+            fclose($tuyaux[1]);
+        }
+        $code = proc_close($processus);
+    } else {
+        $code = 1;
+    }
+    $erreur = (string) @file_get_contents($journal);
+    @unlink($journal);
+
+    verifier(
+        'conversion réelle : ffmpeg convertit le .mov sans erreur',
+        $code === 0 && is_file($sortie) && (int) filesize($sortie) > 0,
+        $code . ' — ' . conversion_lire_erreur($erreur, $code)
+    );
+    verifier(
+        'conversion réelle : l’avancement se lit dans la sortie réelle de ffmpeg',
+        $code === 0 && $pourcentage > 0,
+        'pourcentage lu : ' . $pourcentage
+    );
+
+    if ($code === 0 && is_file($sortie)) {
+        // Le fichier produit est bien du MP4 lisible partout : conteneur MP4,
+        // H.264, images clés en tête (faststart).
+        $sonde = [
+            (string) $reglages['ffprobe'], '-v', 'error', '-select_streams', 'v:0',
+            '-show_entries', 'stream=codec_name,pix_fmt:format=format_name',
+            '-of', 'default=noprint_wrappers=1', $sortie,
+        ];
+        $sortieSonde = conversion_lancer_court_pour_essai($sonde);
+        verifier(
+            'conversion réelle : le fichier produit est du MP4 en H.264 yuv420p',
+            str_contains($sortieSonde, 'codec_name=h264') && str_contains($sortieSonde, 'pix_fmt=yuv420p')
+                && stripos($sortieSonde, 'mp4') !== false,
+            $sortieSonde
+        );
+
+        $reussite = conversion_reussir((int) $pris['id'], $sortie, ['duration' => 2]);
+        $apres = db_one('SELECT * FROM documents WHERE id = ?', [$id]);
+        verifier(
+            'conversion réelle : la fiche passe en MP4 et la famille peut enfin voir la vidéo',
+            $reussite['ok'] && $apres !== null && (string) $apres['ext'] === 'mp4'
+                && (string) $apres['mime'] === 'video/mp4'
+                && (string) $apres['original_name'] === 'film-reel.mp4',
+            $reussite['error']
+        );
+        $_SESSION = ['account_id' => $admin];
+        verifier(
+            'conversion réelle : après conversion, la vidéo « famille » s’ouvre (adresse directe du fichier)',
+            (int) tests_conversion_requete('GET', '/f/' . $id, $admin)['code'] === 200
+                && (int) tests_conversion_requete('GET', '/documents/' . $id, $admin)['code'] === 200
+        );
+    }
+
+    @unlink($sortie);
+    @unlink(storage_absolute($rel));
+}
+
+/** Lance une commande courte et rend sa sortie (essais seulement). */
+function conversion_lancer_court_pour_essai(array $commande): string
+{
+    $descripteurs = [0 => ['file', '/dev/null', 'r'], 1 => ['pipe', 'w'], 2 => ['file', '/dev/null', 'w']];
+    $processus = @proc_open($commande, $descripteurs, $tuyaux);
+    if (!is_resource($processus)) {
+        return '';
+    }
+    $sortie = '';
+    if (isset($tuyaux[1]) && is_resource($tuyaux[1])) {
+        $sortie = (string) stream_get_contents($tuyaux[1]);
+        @fclose($tuyaux[1]);
+    }
+    proc_close($processus);
+    return $sortie;
 }

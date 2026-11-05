@@ -47,6 +47,7 @@ require_once __DIR__ . '/lib/carte.php';
 require_once __DIR__ . '/lib/envoi.php';
 require_once __DIR__ . '/lib/conversion.php';
 require_once __DIR__ . '/lib/propositions.php';
+require_once __DIR__ . '/lib/demo.php';
 
 /**
  * Le script tourne-t-il en ligne de commande ?

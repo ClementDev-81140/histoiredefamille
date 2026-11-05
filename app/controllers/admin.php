@@ -51,6 +51,9 @@ function admin_dashboard(): void
         ),
         'incoming'         => count(incoming_files()),
         'storage_free'     => storage_free_space(),
+        // Trois couleurs (vert / orange / rouge) : le tableau de bord doit
+        // prévenir AVANT que la carte SD ne soit pleine, pas après.
+        'storage_state'    => storage_space_state(),
         'last_backup'      => backup_state(),
     ];
     $stats['public_total'] = $stats['public_documents'] + $stats['public_articles'] + $stats['public_pages'];
@@ -124,6 +127,7 @@ function admin_status(): void
         'dbSize'   => is_file($dbPath) ? (int) filesize($dbPath) : 0,
         'walSize'  => is_file($dbPath . '-wal') ? (int) filesize($dbPath . '-wal') : 0,
         'free'     => storage_free_space(),
+        'espace'   => storage_space_state(),
         'streams'  => stream_active_count(),
         'php'      => PHP_VERSION,
         'alerte'   => sauvegarde_alerte(),

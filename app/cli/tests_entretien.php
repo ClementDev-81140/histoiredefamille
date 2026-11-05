@@ -495,13 +495,23 @@ function tests_sauvegarde(): void
         $vueEtat    = (string) file_get_contents(dirname(__DIR__) . '/views/admin/etat.php');
         verifier(
             'alerte : la page « État du site » n’affiche pas deux fois la même alerte',
-            str_contains($miseEnPage, "$current !== '/admin/etat'")
+            // Guillemets simples : ici on cherche le TEXTE de la condition,
+            // pas sa valeur (une chaîne à double guillemet interpolait
+            // $current et comparait à côté).
+            str_contains($miseEnPage, '$current !== \'/admin/etat\'')
                 && str_contains($vueEtat, "<strong>Sauvegarde :</strong>")
         );
         verifier(
             'disque unique : « État du site » dit que la clé n’est pas montée, même si la sauvegarde est acceptée',
             str_contains($vueEtat, 'non — sauvegarde sur la carte SD')
                 && str_contains($vueEtat, "support']['same_disk']")
+        );
+        verifier(
+            'vérification : la page « État du site » range les avertissements à part, sans les confondre avec les points bloquants',
+            str_contains($vueEtat, 'À regarder, sans bloquer l’ouverture')
+                && str_contains($vueEtat, "=== 'avertir'")
+                && str_contains($vueEtat, 'À corriger avant d’ouvrir'),
+            'vue admin/etat.php'
         );
 
         // Le titre « Sauvegarde : » est posé par les vues, jamais par le
@@ -751,8 +761,9 @@ function tests_verification(): void
         'adresse'    => 'http://exemple.test',
         'http' => false, 'systeme' => false,
     ]);
-    verifier('vérification : https_only à false est un point à corriger',
-        ($option($ko, 'https_only')['statut'] ?? '') === 'corriger');
+    verifier('vérification : https_only à false AVERTIT sans bloquer l’ouverture',
+        ($option($ko, 'https_only')['statut'] ?? '') === 'avertir'
+            && ($option($ko, 'https_only')['remede'] ?? '') !== '');
     verifier('vérification : une adresse publique en http est un point à corriger',
         ($option($ko, 'adresse')['statut'] ?? '') === 'corriger');
 
@@ -820,7 +831,7 @@ function tests_verification(): void
             (string) ($option($surCarte, 'sauvegarde_support')['detail'] ?? ''));
         verifier('vérification : l’avertissement n’empêche jamais d’ouvrir le site',
             ($option($surCarte, 'sauvegarde_support')['remede'] ?? '') !== ''
-                && array_column(array_filter($surCarte, static fn (array $c): bool => $c['statut'] === 'avertir'), 'cle') === ['sauvegarde_support']
+                && in_array('sauvegarde_support', array_column(array_filter($surCarte, static fn (array $c): bool => $c['statut'] === 'avertir'), 'cle'), true)
                 && !in_array('sauvegarde_support', array_column(array_filter($surCarte, static fn (array $c): bool => $c['statut'] === 'corriger'), 'cle'), true),
             json_encode(mise_en_ligne_verdict($surCarte), JSON_UNESCAPED_UNICODE));
         verifier('vérification : le verdict ne compte que les points « à corriger » comme bloquants',
@@ -866,8 +877,25 @@ function tests_verification(): void
                 'exiger_montage' => false,
             ],
         ]);
-        verifier('vérification : sauvegarde vieille de cinq jours → « à corriger »',
-            ($option($vieille, 'sauvegarde_recente')['statut'] ?? '') === 'corriger');
+        verifier('vérification : sauvegarde vieille de cinq jours → « avertir » (48 h attendues)',
+            ($option($vieille, 'sauvegarde_recente')['statut'] ?? '') === 'avertir');
+
+        // Moins de 48 h : au vert. C'est la règle demandée avant l'ouverture.
+        sauvegarde_etat_ecrire([
+            'date' => time() - 30 * 3600, 'date_humain' => date('d/m/Y à H:i'),
+            'status' => 'ok', 'message' => '',
+        ], $dossierCle . '/dernier-etat.json');
+        $veille = mise_en_ligne_controles([
+            'http' => false, 'systeme' => false,
+            'sauvegarde' => [
+                'backup_dir' => $dossierCle,
+                'state' => $dossierCle . '/dernier-etat.json',
+                'restore_state' => $dossierCle . '/derniere-restauration.json',
+                'exiger_montage' => false,
+            ],
+        ]);
+        verifier('vérification : sauvegarde de la veille (30 h) → au vert',
+            ($option($veille, 'sauvegarde_recente')['statut'] ?? '') === 'ok');
 
         // 5. En-têtes HTTP et cookies, sur une réponse réelle simulée.
         $reponseOk = mise_en_ligne_analyser_reponse(
@@ -1072,6 +1100,81 @@ function tests_verification(): void
  */
 class HdfTestArret extends Exception
 {
+}
+
+/**
+ * Seuils d'alerte de l'espace disque (1.26.0).
+ *
+ * La règle est double : un pourcentage (20 % orange, 10 % rouge) ET un
+ * plancher en gigaoctets (5 Go rouges). Elle est vérifiée ici sans toucher au
+ * disque, en passant la valeur « libre » en paramètre.
+ */
+function tests_espace_disque(): void
+{
+    echo "Espace disque — trois couleurs, sur le tableau de bord et « État du site »\n";
+
+    $go = 1024 * 1024 * 1024;
+
+    // Une carte de 64 Go, comme la plus courante sur un Pi 3B+.
+    $carte  = 64 * $go;
+    $vert   = storage_space_state(40 * $go, $carte);
+    $orange = storage_space_state(12 * $go, $carte);   // 18 %
+    $limite = storage_space_state(13 * $go, $carte);   // 20 % → vert
+    $rouge  = storage_space_state(6 * $go, $carte);    // 9 %
+    $vide   = storage_space_state(2 * $go, $carte);    // 3 %
+    $petite = storage_space_state(4 * $go, 32 * $go);  // 4 Go < 5 Go → rouge
+    $inconnu = storage_space_state(null, 0);
+
+    verifier(
+        'espace : 40 Go libres = vert, avec le pourcentage affiché',
+        $vert['niveau'] === 'vert' && $vert['pourcentage'] !== null,
+        json_encode($vert)
+    );
+    verifier(
+        'espace : sous 20 % libres = orange, avec un message qui prévient',
+        $orange['niveau'] === 'orange' && str_contains($orange['message'], 'baisse'),
+        json_encode($orange)
+    );
+    verifier(
+        'espace : sous 10 % libres = rouge',
+        $rouge['niveau'] === 'rouge' && str_contains($rouge['message'], 'presque plein'),
+        json_encode($rouge)
+    );
+    verifier(
+        'espace : sous 5 Go libres = rouge, même si le pourcentage est confortable',
+        $vide['niveau'] === 'rouge',
+        json_encode($vide)
+    );
+    verifier(
+        'espace : un disque inconnu est signalé comme tel, sans bloquer',
+        $inconnu['niveau'] === 'inconnu' && $inconnu['libre'] === null,
+        json_encode($inconnu)
+    );
+    verifier(
+        'espace : les seuils sont les mêmes pour tous (20 %, 10 %, 5 Go)',
+        $limite['niveau'] === 'vert' && $orange['niveau'] === 'orange'
+            && $petite['niveau'] === 'rouge'
+            && storage_space_state(21 * $go, $carte)['niveau'] === 'vert'
+    );
+
+    // Les deux écrans qui doivent le montrer.
+    $codeTableau = (string) @file_get_contents(HDF_APP . '/views/admin/tableau.php');
+    verifier(
+        'espace : le tableau de bord affiche l’alerte (rouge en erreur, orange en information)',
+        str_contains($codeTableau, "storage_state")
+            && str_contains($codeTableau, "niveau'] === 'rouge'")
+            && str_contains($codeTableau, 'message message--erreur')
+            && str_contains($codeTableau, "niveau'] === 'orange'")
+    );
+    $codeEtat = (string) @file_get_contents(HDF_APP . '/views/admin/etat.php');
+    verifier(
+        'espace : « État du site » affiche la même alerte et rappelle les seuils',
+        str_contains($codeEtat, "espace['niveau']") && str_contains($codeEtat, 'sous 5 Go')
+    );
+    verifier(
+        'espace : aucune classe CSS n’a été inventée pour l’alerte (les boîtes existantes servent)',
+        !str_contains($codeTableau, 'message--espace') && !str_contains($codeEtat, 'message--espace')
+    );
 }
 
 function tests_matrice(bool $ecrireRapport = false): void

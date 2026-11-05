@@ -184,10 +184,17 @@ function tests_profils_droits(): void
         'profils : un administrateur peut proposer (et publier)',
         peut_proposer($compte($admin)) === true
     );
+    // « Visiteur » se vérifie session vide : sans cela, le compte connecté par
+    // un essai précédent répondrait à la place du visiteur (peut_proposer()
+    // sans argument lit le compte courant).
+    $sessionAvant = $_SESSION;
+    $_SESSION = [];
     verifier(
         'profils : un visiteur ne peut rien proposer',
-        peut_proposer(null) === false
+        peut_proposer(null) === false && peut_proposer() === false,
+        json_encode(['compte courant' => current_account()])
     );
+    $_SESSION = $sessionAvant;
 
     // --- Un lecteur est refusé partout où l'on écrit -----------------------
     $_SESSION = ['account_id' => $lecteur];

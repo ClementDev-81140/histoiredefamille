@@ -7,14 +7,32 @@
  * @var string $logFile
  * @var int    $dbSize, $walSize, $streams
  * @var int|null $free
+ * @var array  $espace état de l'espace disque (libre, total, pourcentage, niveau, message)
  * @var string $php
  * @var array|null $alerte
  * @var array  $sauvegarde (dossier, libre_cle, support, rotation)
  * @var array|null $verification dernier résultat de app/cli/verifier-mise-en-ligne.php
  */
 ?>
+<?php
+// L'état du disque est calculé par le contrôleur ; s'il manque (page rendue
+// par un essai, vue reprise ailleurs), on le recalcule plutôt que d'afficher
+// un avertissement PHP au milieu de la page.
+$espace = $espace ?? storage_space_state();
+?>
 <?php $aDecocher = array_values(array_filter($checks, static fn ($c) => !$c['ok'])); ?>
 <h1>État du site</h1>
+
+<?php if ($espace['niveau'] === 'rouge'): ?>
+    <div class="message message--erreur" role="alert">
+        <strong>Espace disque presque plein.</strong> <?= e($espace['message']) ?>.
+        Libérez de la place avant que le site ne puisse plus enregistrer.
+    </div>
+<?php elseif ($espace['niveau'] === 'orange'): ?>
+    <div class="message message--info">
+        <strong>Espace disque qui baisse.</strong> <?= e($espace['message']) ?>.
+    </div>
+<?php endif; ?>
 
 <?php if ($alerte !== null): ?>
     <div class="message message--erreur" role="alert">
@@ -52,6 +70,7 @@
     <?php else: ?>
         <?php
         $aCorriger = array_values(array_filter((array) ($verification['controles'] ?? []), static fn ($c) => ($c['statut'] ?? '') === 'corriger'));
+        $aAvertir  = array_values(array_filter((array) ($verification['controles'] ?? []), static fn ($c) => ($c['statut'] ?? '') === 'avertir'));
         $ageJours  = (int) floor((time() - (int) ($verification['date'] ?? 0)) / 86400);
         ?>
         <div class="message <?= $verification['pret'] ? 'message--succes' : 'message--erreur' ?>" role="alert">
@@ -63,6 +82,30 @@
         <?php if ($ageJours >= 7): ?>
             <div class="message message--info">
                 Ce résultat a plus d’une semaine : relancez la vérification pour être sûr de l’état du site.
+            </div>
+        <?php endif; ?>
+
+        <?php if ($aAvertir !== []): ?>
+            <h3>À regarder, sans bloquer l’ouverture</h3>
+            <p class="note">
+                Ces points n’empêchent pas le site de fonctionner : on peut ouvrir
+                sans eux, puis les régler tranquillement.
+            </p>
+            <div class="tableau-defilant">
+            <table class="tableau">
+                <thead>
+                    <tr><th scope="col">Point</th><th scope="col">Ce qu’il faut savoir</th><th scope="col">Quoi faire</th></tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($aAvertir as $controle): ?>
+                        <tr>
+                            <td><?= e((string) ($controle['titre'] ?? '')) ?></td>
+                            <td><?= e((string) ($controle['detail'] ?? '')) ?></td>
+                            <td><?= e((string) ($controle['remede'] ?? '')) ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
             </div>
         <?php endif; ?>
 
@@ -218,7 +261,17 @@
         <dt>Espace libre sur la clé</dt>
         <dd><?= $sauvegarde['libre_cle'] !== null ? e(format_size((int) $sauvegarde['libre_cle'])) : 'inconnu (clé absente ?)' ?></dd>
         <dt>Espace libre sur les données</dt>
-        <dd><?= $free !== null ? e(format_size($free)) : 'inconnu' ?></dd>
+        <dd>
+            <?= $free !== null ? e(format_size($free)) : 'inconnu' ?>
+            <?php if ($espace['pourcentage'] !== null): ?>
+                (<?= e(number_format((float) $espace['pourcentage'], 0, ',', ' ')) ?> %
+                <?php if ($espace['total'] !== null): ?>
+                    sur <?= e(format_size((int) $espace['total'])) ?>
+                <?php endif; ?>)
+            <?php endif; ?>
+        </dd>
+        <dt>Seuils d’alerte</dt>
+        <dd>orange sous 20 % — rouge sous 10 % ou sous 5 Go</dd>
         <dt>Copies conservées</dt>
         <dd>
             <?= (int) $sauvegarde['rotation']['quotidiennes'] ?> quotidienne(s) (7 au maximum),

@@ -474,13 +474,15 @@ histoiredefamille/
 │   │                        composition des pages et modèles d'article,
 │   │                        vérification avant ouverture (mise_en_ligne),
 │   │                        carte des lieux, envoi de gros fichiers (envoi),
-│   │                        conversion des vidéos (conversion)…
+│   │                        conversion des vidéos (conversion), données de
+│   │                        démonstration et purge de ces données (demo)…
 │   ├── views/               gabarits PHP (public, famille, admin)
 │   ├── migrations/          fichiers SQL numérotés
-│   │                        (001_init … 016_propositions)
-│   └── cli/                 commandes : migrate, create-admin, demo, maintenance,
-│                            sauvegarde, restauration, verifier-mise-en-ligne,
-│                            convertir (vidéos), envoyer-courriels, tests
+│   │                        (001_init … 017_versions_propositions)
+│   └── cli/                 commandes : migrate, create-admin, demo, purger-demo,
+│                            maintenance, sauvegarde, restauration,
+│                            verifier-mise-en-ligne, convertir (vidéos),
+│                            envoyer-courriels, tests
 ├── deploy/
 │   ├── install.sh           installation complète sur le Pi
 │   ├── systemd/             minuteurs : sauvegarde (3 h 30), courriels
@@ -729,8 +731,32 @@ sudo -u www-data php app/cli/demo.php
 
 Le script affiche à la fin les mots de passe (aléatoires) des comptes de
 branche de démonstration. Les contenus sont imaginaires : noms, dates et
-personnes n'ont aucun rapport avec votre famille. Pour repartir de zéro,
-voir « Repartir d'une base vierge » au § 8.6.
+personnes n'ont aucun rapport avec votre famille.
+
+**Retirer la démonstration avant d'ouvrir le site** — sans toucher aux
+comptes, ni à vos propres fiches, ni à vos fichiers :
+
+```bash
+cd /var/www/histoiredefamille
+# 1. Voir ce qui serait retiré (ne supprime rien)
+sudo -u www-data php app/cli/purger-demo.php --liste
+# 2. Supprimer, après avoir lu la liste
+sudo -u www-data php app/cli/purger-demo.php --oui
+```
+
+La commande ne supprime que les contenus **créés par `demo.php`** : elle les
+reconnaît au registre laissé à l'installation
+(`storage/demo-registry.json`, recopié dans les réglages du site pour survivre
+à une reconstruction du dossier `storage`) et, à défaut, au mot « (démo) »
+écrit dans leurs titres. Les documents partent avec leurs fichiers et leurs miniatures ;
+les fichiers encore utilisés ailleurs sont conservés. **Les comptes ne sont
+jamais supprimés** : la commande les compte et vous renvoie vers
+*Comptes* pour les désactiver. Avant d'effacer quoi que ce soit elle lance une
+**sauvegarde** ; si la sauvegarde échoue (clé absente, disque plein), **rien
+n'est supprimé** et la commande s'arrête avec un message clair.
+
+Pour tout effacer, y compris les comptes, voir « Repartir d'une base vierge »
+au § 8.8.
 
 ---
 
@@ -2357,19 +2383,32 @@ La commande passe tout en revue et rend un verdict :
   **ce qui ne va pas et quoi faire** (la flèche `→`). Corrigez, puis relancez
   la commande jusqu'à obtenir `PRÊT À OUVRIR`.
 
-Les lignes `INFO` sont des informations : elles ne bloquent pas.
+Quatre états, et deux seulement comptent pour le verdict :
+
+| État | Ce que cela veut dire |
+|---|---|
+| `OK` | tout va bien |
+| `INFO` | une information (minuteur, en-têtes) : rien à faire |
+| `À CORRIGER` | **bloque l'ouverture** : le site n'est pas prêt |
+| `AVERTIR` | à regarder, mais **n'empêche jamais d'ouvrir** : le site fonctionne |
+
+Les avertissements sont là pour être lus, pas pour empêcher d'ouvrir : une clé
+USB qu'on branchera demain, un courriel pas encore réglé, un HTTPS obligatoire
+qu'on activera après le premier essai en local. La commande les affiche à part
+et conclut quand même `PRÊT À OUVRIR`.
 
 Ce qui est contrôlé, et pourquoi :
 
 | Contrôle | Ce que cela évite |
 |---|---|
-| HTTPS obligatoire, adresse publique en `https://` | un mot de passe qui circule en clair |
-| Aucun contenu marqué « (démo) », aucun compte fictif | ouvrir le site avec des données qui ne sont pas les vôtres |
-| Deux administrateurs actifs au moins, aucun mot de passe d'essai connu | un site que personne ne peut plus administrer |
+| Adresse publique en `https://` (bloquant) et HTTPS obligatoire (avertissement) | un mot de passe qui circule en clair |
+| Aucun contenu marqué « (démo) », aucun compte fictif (avertissement) | ouvrir le site avec des données qui ne sont pas les vôtres |
+| Deux administrateurs actifs au moins, aucun mot de passe d'essai connu (avertissement) | un site que personne ne peut plus administrer |
 | `config.local.php` en 600 ou 640, base et données hors de `public/` | des données familiales téléchargeables par n'importe qui |
 | `public/` sans fichier sensible (`.git`, base, sauvegarde, configuration) | la même chose, par un chemin détourné |
 | PHP 8.1 ou plus, extensions SQLite, GD, mbstring, fileinfo, sodium/Argon2id | des photos sans miniature, des mots de passe mal protégés |
-| Clé montée et inscriptible, dernière sauvegarde de moins de 3 jours, minuteur actif, test de restauration daté | découvrir le problème le jour où l'on a besoin de la sauvegarde |
+| Clé montée et inscriptible, dernière sauvegarde de **moins de 48 heures**, minuteur actif, test de restauration daté | découvrir le problème le jour où l'on a besoin de la sauvegarde |
+| Courriel de contact et minuteur d'envoi (avertissement) | des messages qui restent dans la file sans que personne ne le voie |
 | Espace libre sur le SSD et sur la clé | un site qui tombe en panne parce que le disque est plein |
 | Purge planifiée | des tables de journal qui grossissent sans fin |
 | En-têtes HTTP réellement envoyés par Apache (CSP, X-Frame-Options, nosniff, HSTS) et signature masquée | une page piégée qui lit les données de la famille |
@@ -2810,4 +2849,5 @@ dessin ne contient ni `style`, ni script, ni adresse extérieure. Le jeu complet
 ## Licence
 
 Code privé, réservé à l'usage familial. Aucune donnée de tiers n'est incluse.
-Les contenus de démonstration (`app/cli/demo.php`) sont entièrement fictifs.
+Les contenus de démonstration (`app/cli/demo.php`) sont entièrement fictifs,
+et se retirent d'une commande (`app/cli/purger-demo.php`, § 4.8).

@@ -141,9 +141,31 @@ try {
 
 <section class="section">
     <h2>Espace disque et journal</h2>
+
+    <?php /* L'alerte d'espace disque, visible dès le tableau de bord : orange
+             sous 20 %, rouge sous 10 % ou sous 5 Go. Aucune classe renommée :
+             on réutilise les deux boîtes de message existantes. */ ?>
+    <?php $espace = $stats['storage_state']; ?>
+    <?php if ($espace['niveau'] === 'rouge'): ?>
+        <div class="message message--erreur" role="alert">
+            <strong>Espace disque presque plein.</strong>
+            <?= e($espace['message']) ?>. Libérez de la place (vidéos, anciennes
+            sauvegardes) avant que le site ne puisse plus enregistrer.
+        </div>
+    <?php elseif ($espace['niveau'] === 'orange'): ?>
+        <div class="message message--info">
+            <strong>Espace disque qui baisse.</strong>
+            <?= e($espace['message']) ?>. Pensez à faire de la place : au-delà,
+            les envois et la conversion s’arrêteront.
+        </div>
+    <?php endif; ?>
+
     <p>
         Stockage : <code><?= e((string) config('storage.root')) ?></code> —
         <?= $stats['storage_free'] !== null ? e(format_size((int) $stats['storage_free'])) . ' libres' : 'espace inconnu' ?>
+        <?php if ($espace['pourcentage'] !== null): ?>
+            (<?= e(number_format((float) $espace['pourcentage'], 0, ',', ' ')) ?> % de la carte)
+        <?php endif; ?>
     </p>
 
     <?php if ($activity === []): ?>
