@@ -260,6 +260,12 @@ function proposition_save(array $params = []): void
         form_fail($erreurs, array_merge($_POST, ['suggested_visibility' => $suggeree]), $back);
     }
 
+    // Fichier assemblé par morceaux : réservé une seule fois, ici, avant
+    // d'écrire quoi que ce soit (un double envoi ne peut pas le réutiliser).
+    if ($envoi !== null && !envoi_reserver($envoi)) {
+        form_fail(['Ce fichier vient d’être utilisé pour une autre fiche. Redéposez-le.'], array_merge($_POST, ['suggested_visibility' => $suggeree]), $back);
+    }
+
     // La proposition naît privée : elle ne devient jamais publique ici.
     $donnees['visibility']            = $row !== null ? (string) $row['visibility'] : 'prive';
     $donnees['moderation_state']      = $etat;

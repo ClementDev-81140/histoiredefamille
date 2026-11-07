@@ -217,6 +217,7 @@ function tests_envoi(): void
             tests_envoi_refus($compte);
             tests_envoi_doublons($compte);
             tests_envoi_droits($compte, $autre, $famille);
+            tests_envoi_formulaire($compte, $autre, $famille);
             tests_envoi_menage($compte);
 
             // Tout est annulé : la base du site est rendue intacte.
@@ -448,6 +449,9 @@ function tests_envoi_protocole(int $compte): void
         'updated_at'    => time(),
     ]);
 
+    // Nouvelle séquence (1.26.2) : on réserve le fichier, puis on le lie.
+    verifier('envoi : un fichier préparé peut être réservé une fois', envoi_reserver($pret));
+    verifier('envoi : un fichier déjà réservé ne peut pas l’être une seconde fois', !envoi_reserver($pret));
     envoi_marquer_utilise($pret, $documentEssai);
     verifier(
         'envoi : un fichier préparé ne peut être utilisé qu’une fois',
@@ -619,6 +623,334 @@ function tests_envoi_doublons(int $compte): void
     );
 
     @unlink($fichier);
+}
+
+/** Faux film QuickTime d'essai : en-tête `ftyp`/`qt`, comme un téléphone. */
+function tests_envoi_film_mov(int $octets = 65536): string
+{
+    $chemin = storage_path('tmp') . '/essai-form-mov-' . bin2hex(random_bytes(6)) . '.mov';
+    $entete = pack('N', 20) . 'ftypqt  ' . pack('N', 0) . 'qt  ';
+    file_put_contents($chemin, $entete . str_repeat("\0", max(0, $octets - strlen($entete))));
+    return $chemin;
+}
+
+/** Faux film MP4 d'essai : en-tête `ftyp`/`isom`, déjà au bon format. */
+function tests_envoi_film_mp4(int $octets = 65536): string
+{
+    $chemin = storage_path('tmp') . '/essai-form-mp4-' . bin2hex(random_bytes(6)) . '.mp4';
+    $entete = pack('N', 24) . 'ftypisom' . pack('N', 0) . 'isomiso2';
+    file_put_contents($chemin, $entete . str_repeat("\0", max(0, $octets - strlen($entete))));
+    return $chemin;
+}
+
+/**
+ * Un fichier assemblé, prêt pour un formulaire (état « pret »).
+ *
+ * Le contenu reçoit une marque aléatoire : sans elle, deux fichiers d'essai
+ * identiques déclencheraient la détection de doublon et l'envoi resterait
+ * « doublon » au lieu de « prêt ».
+ *
+ * @return array<string, mixed>|null
+ */
+function tests_envoi_pret(int $compte, string $chemin, string $nom): ?array
+{
+    file_put_contents($chemin, hex2bin(bin2hex(random_bytes(8))), FILE_APPEND);
+    $resultat = tests_envoi_jouer($compte, $nom, $chemin, [], false);
+    $envoi    = $resultat['envoi'];
+    if (!is_array($envoi) || !($resultat['terminer']['ok'] ?? false)) {
+        return null;
+    }
+    return envoi_fichier_pret($compte, (string) $envoi['token']);
+}
+
+/** 5. Le formulaire : le fichier assemblé remplace le champ « Fichier ». */
+function tests_envoi_formulaire(int $compte, int $autre, int $famille): void
+{
+    // --- a. Un document arrive par morceaux, puis le formulaire l'enregistre
+    // sans que personne ne touche au champ « Fichier ».
+    $source = tests_envoi_texte(200_000);
+    $pret   = tests_envoi_pret($compte, $source, 'lettre-essai.txt');
+    @unlink($source);
+    verifier('formulaire : un fichier assemblé est prêt à être rattaché', $pret !== null);
+
+    if ($pret === null) {
+        return;
+    }
+
+    // Chaque requête repart d'une session propre avec un jeton CSRF neuf :
+    // c'est ce que fait un vrai navigateur, et cela évite qu'un jeton d'une
+    // requête précédente ne fasse échouer la suivante pour la mauvaise raison.
+    $nouveauJeton = static function () use ($compte): string {
+        $_SESSION = ['account_id' => $compte];
+        return csrf_token();
+    };
+
+    $reponse = tests_envoi_requete('POST', '/admin/documents/nouveau', $compte, [
+        '_csrf'      => $nouveauJeton(),
+        'title'      => 'Lettre venue par morceaux',
+        'visibility' => 'prive',
+        'envoi'      => (string) $pret['token'],
+    ]);
+    $doc = db_one('SELECT * FROM documents WHERE title = ?', ['Lettre venue par morceaux']);
+    verifier(
+        'formulaire : sans champ « Fichier », le jeton `envoi` crée la fiche',
+        $doc !== null && (string) $doc['rel_path'] === (string) $pret['rel_path'],
+        $reponse['code'] . ' ' . $reponse['location'] . ' ' . $reponse['erreur']
+    );
+    verifier(
+        'formulaire : l’envoi est alors lié à cette fiche, une seule fois',
+        $doc !== null
+            && (string) envoi_par_id((int) $pret['id'])['state'] === 'termine'
+            && (int) envoi_par_id((int) $pret['id'])['document_id'] === (int) $doc['id']
+    );
+
+    // --- b. Le même jeton, réutilisé : refusé, et aucune seconde fiche.
+    $avant = (int) db_value('SELECT COUNT(*) FROM documents', [], 0);
+    $_SESSION = ['account_id' => $compte];
+    $rejoue = tests_envoi_requete('POST', '/admin/documents/nouveau', $compte, [
+        '_csrf'      => $nouveauJeton(),
+        'title'      => 'Deuxième fiche avec le même fichier',
+        'visibility' => 'prive',
+        'envoi'      => (string) $pret['token'],
+    ]);
+    $erreurs = (array) ($_SESSION['_form_errors'] ?? []);
+    verifier(
+        'formulaire : un jeton déjà utilisé est refusé (aucune seconde fiche)',
+        (int) db_value('SELECT COUNT(*) FROM documents', [], 0) === $avant
+            && db_one('SELECT id FROM documents WHERE title = ?', ['Deuxième fiche avec le même fichier']) === null
+            && $erreurs !== [],
+        $rejoue['code'] . ' ' . implode(' | ', $erreurs)
+    );
+    unset($_SESSION['_form_errors'], $_SESSION['_form_old']);
+
+    // --- c. Le fichier d'un autre administrateur : refusé.
+    $sourceAutre = tests_envoi_texte(120_000);
+    $pretAutre   = tests_envoi_pret($autre, $sourceAutre, 'lettre-autre.txt');
+    @unlink($sourceAutre);
+    verifier('formulaire : le second administrateur a bien son propre fichier prêt', $pretAutre !== null);
+
+    if ($pretAutre !== null) {
+        $avantAutre = (int) db_value('SELECT COUNT(*) FROM documents', [], 0);
+        $_SESSION = ['account_id' => $compte];
+        tests_envoi_requete('POST', '/admin/documents/nouveau', $compte, [
+            '_csrf'      => $nouveauJeton(),
+            'title'      => 'Fiche volée',
+            'visibility' => 'prive',
+            'envoi'      => (string) $pretAutre['token'],
+        ]);
+        $erreurs = (array) ($_SESSION['_form_errors'] ?? []);
+        verifier(
+            'formulaire : le jeton d’un autre compte est refusé',
+            (int) db_value('SELECT COUNT(*) FROM documents', [], 0) === $avantAutre
+                && db_one('SELECT id FROM documents WHERE title = ?', ['Fiche volée']) === null
+                && $erreurs !== []
+                && (string) envoi_par_id((int) $pretAutre['id'])['state'] === 'pret',
+            implode(' | ', $erreurs)
+        );
+        unset($_SESSION['_form_errors'], $_SESSION['_form_old']);
+    }
+
+    // --- d. Un jeton inventé (bien formé, mais inconnu) : refusé aussi.
+    $avantFaux = (int) db_value('SELECT COUNT(*) FROM documents', [], 0);
+    $_SESSION = ['account_id' => $compte];
+    tests_envoi_requete('POST', '/admin/documents/nouveau', $compte, [
+        '_csrf'      => $nouveauJeton(),
+        'title'      => 'Fiche fantôme',
+        'visibility' => 'prive',
+        'envoi'      => str_repeat('b', 32),
+    ]);
+    $erreurs = (array) ($_SESSION['_form_errors'] ?? []);
+    verifier(
+        'formulaire : un jeton inconnu est refusé (aucune fiche créée)',
+        (int) db_value('SELECT COUNT(*) FROM documents', [], 0) === $avantFaux && $erreurs !== [],
+        implode(' | ', $erreurs)
+    );
+    unset($_SESSION['_form_errors'], $_SESSION['_form_old']);
+
+    // --- e. Sans fichier ET sans jeton : le message le dit.
+    $_SESSION = ['account_id' => $compte];
+    tests_envoi_requete('POST', '/admin/documents/nouveau', $compte, [
+        '_csrf'      => $nouveauJeton(),
+        'title'      => 'Rien du tout',
+        'visibility' => 'prive',
+    ]);
+    $erreurs = implode(' | ', (array) ($_SESSION['_form_errors'] ?? []));
+    verifier(
+        'formulaire : sans fichier ni jeton, l’erreur demande un fichier',
+        str_contains($erreurs, 'Choisissez un fichier'),
+        $erreurs
+    );
+    unset($_SESSION['_form_errors'], $_SESSION['_form_old']);
+
+    // --- f. Formulaire vidéo, fichier MP4 déjà bon : la vidéo est créée et
+    // visible tout de suite (aucune conversion à attendre).
+    $mp4 = tests_envoi_film_mp4();
+    $pretMp4 = tests_envoi_pret($compte, $mp4, 'film-essai.mp4');
+    @unlink($mp4);
+    verifier('formulaire : un MP4 assemblé est prêt pour le formulaire vidéo', $pretMp4 !== null);
+
+    if ($pretMp4 !== null) {
+        $_SESSION = ['account_id' => $compte];
+        tests_envoi_requete('POST', '/admin/videos/nouvelle', $compte, [
+            '_csrf'      => $nouveauJeton(),
+            'title'      => 'Film venu par morceaux',
+            'visibility' => 'famille',
+            'envoi'      => (string) $pretMp4['token'],
+        ]);
+        $film = db_one("SELECT * FROM documents WHERE title = ? AND kind = 'video'", ['Film venu par morceaux']);
+        verifier(
+            'formulaire vidéo : le film assemblé crée la fiche, sans champ « Fichier »',
+            $film !== null && (string) $film['rel_path'] === (string) $pretMp4['rel_path'],
+            implode(' | ', (array) ($_SESSION['_form_errors'] ?? []))
+        );
+        verifier(
+            'formulaire vidéo : un MP4 déjà bon n’entre pas dans la file de conversion',
+            $film !== null && conversion_pour_document((int) $film['id']) === null
+        );
+
+        // --- g. Formulaire vidéo, fichier .mov : la vidéo existe, mais reste
+        // invisible pour la famille tant que la conversion n'est pas finie.
+        $mov = tests_envoi_film_mov();
+        $pretMov = tests_envoi_pret($compte, $mov, 'film-telephone.mov');
+        @unlink($mov);
+        verifier('formulaire : un MOV assemblé est prêt pour le formulaire vidéo', $pretMov !== null);
+
+        if ($pretMov !== null) {
+            unset($_SESSION['_form_errors'], $_SESSION['_form_old']);
+            $_SESSION = ['account_id' => $compte];
+            tests_envoi_requete('POST', '/admin/videos/nouvelle', $compte, [
+                '_csrf'      => $nouveauJeton(),
+                'title'      => 'Film de téléphone',
+                'visibility' => 'famille',
+                'envoi'      => (string) $pretMov['token'],
+            ]);
+            $telephone = db_one("SELECT * FROM documents WHERE title = ? AND kind = 'video'", ['Film de téléphone']);
+            verifier(
+                'formulaire vidéo : un MOV assemblé crée la fiche et part en conversion',
+                $telephone !== null && conversion_pour_document((int) $telephone['id']) !== null,
+                implode(' | ', (array) ($_SESSION['_form_errors'] ?? []))
+            );
+
+            if ($telephone !== null) {
+                $_SESSION = ['account_id' => $famille];
+                verifier(
+                    'formulaire vidéo : tant que la conversion n’est pas finie, la famille ne la voit pas',
+                    find_viewable_document((int) $telephone['id']) === null
+                );
+
+                $_SESSION = ['account_id' => $compte];
+                verifier(
+                    'formulaire vidéo : l’administrateur, lui, voit la fiche pendant la conversion',
+                    find_viewable_document((int) $telephone['id']) !== null
+                );
+            }
+        }
+    }
+
+    // --- j. Une erreur de formulaire ne fait pas perdre le fichier reçu.
+    // Le jeton est conservé avec les valeurs saisies ; la page le réaffiche
+    // dans le champ caché (sinon il faudrait renvoyer plusieurs gigaoctets
+    // pour une faute de frappe dans le titre).
+    $sourceErr = tests_envoi_texte(70_000);
+    $pretErr   = tests_envoi_pret($compte, $sourceErr, 'lettre-erreur.txt');
+    @unlink($sourceErr);
+    if ($pretErr !== null) {
+        $_SESSION = ['account_id' => $compte];
+        tests_envoi_requete('POST', '/admin/documents/nouveau', $compte, [
+            '_csrf'      => $nouveauJeton(),
+            'title'      => '',
+            'visibility' => 'prive',
+            'envoi'      => (string) $pretErr['token'],
+        ]);
+        $garde = (string) ($_SESSION['_form_old']['envoi'] ?? '');
+        verifier(
+            'formulaire : une erreur de saisie conserve le fichier déjà reçu',
+            $garde === (string) $pretErr['token']
+                && (string) envoi_par_id((int) $pretErr['id'])['state'] === 'pret',
+            'jeton conservé : ' . ($garde !== '' ? 'oui' : 'NON')
+        );
+        unset($_SESSION['_form_errors'], $_SESSION['_form_old']);
+
+        // Les trois formulaires réaffichent ce jeton dans un champ caché.
+        $vues = ['/app/views/admin/document_form.php', '/app/views/admin/video_form.php', '/app/views/propositions/form.php'];
+        $sansChamp = [];
+        foreach ($vues as $vue) {
+            $texte = (string) @file_get_contents(HDF_ROOT . $vue);
+            if (preg_match('#<input type="hidden" name="envoi" value="<\?= e\(\(string\) old_value\(\$old, \'envoi\', \'\'\)\) \?>"#', $texte) !== 1) {
+                $sansChamp[] = $vue;
+            }
+        }
+        verifier(
+            'formulaire : les trois vues réaffichent le jeton reçu (champ caché)',
+            $sansChamp === [],
+            implode(', ', $sansChamp)
+        );
+    }
+
+    // --- i. La page elle-même : ce que voit la personne.
+    // Sans cela, on pourrait casser le formulaire sans qu'aucun essai serveur
+    // ne s'en aperçoive : champ caché absent, ancre sans cible, message qui
+    // ne nomme pas le vrai bouton.
+    $pageVideo = tests_envoi_requete('GET', '/admin/videos/nouvelle', $compte);
+    verifier(
+        'page vidéo : le bouton d’enregistrement porte l’ancre « enregistrer »',
+        str_contains($pageVideo['corps'], 'id="enregistrer"')
+            && str_contains($pageVideo['corps'], 'Envoyer la vidéo'),
+        'code ' . $pageVideo['code']
+    );
+    verifier(
+        'page vidéo : le champ caché « envoi » est présent, vide au départ',
+        (bool) preg_match('#<input type="hidden" name="envoi" value=""#', $pageVideo['corps'])
+    );
+
+    $pageDoc = tests_envoi_requete('GET', '/admin/documents/nouveau', $compte);
+    verifier(
+        'page document : même ancre et même champ caché',
+        str_contains($pageDoc['corps'], 'id="enregistrer"')
+            && str_contains($pageDoc['corps'], 'Envoyer le document')
+            && (bool) preg_match('#<input type="hidden" name="envoi" value=""#', $pageDoc['corps']),
+        'code ' . $pageDoc['code']
+    );
+
+    $script = (string) @file_get_contents(HDF_ROOT . '/public/assets/envoi.js');
+    verifier(
+        'script : le message nomme le vrai bouton et propose l’ancre',
+        str_contains($script, 'Le fichier est prêt : cliquez sur')
+            && str_contains($script, 'Aller au bouton d’enregistrement')
+            && str_contains($script, "ancre.href = '#' + cible")
+    );
+    verifier(
+        'script : la case « Fichier » visée est celle du formulaire, pas celle du composant',
+        str_contains($script, 'input[type="file"][name="fichier"]')
+            && str_contains($script, "hasAttribute('data-envoi-champ')"),
+        'la sélection doit exclure le champ interne du bloc d’envoi'
+    );
+    verifier(
+        'script : le jeton est écrit dans le champ « envoi » du formulaire',
+        str_contains($script, "champ.name = 'envoi'") && str_contains($script, 'champ.value = tache.token')
+    );
+
+    // --- h. Formulaire vidéo, fichier qui n'est pas une vidéo : refusé.
+    $sourceTxt = tests_envoi_texte(80_000);
+    $pretTxt   = tests_envoi_pret($compte, $sourceTxt, 'pas-une-video.txt');
+    @unlink($sourceTxt);
+    if ($pretTxt !== null) {
+        unset($_SESSION['_form_errors'], $_SESSION['_form_old']);
+        $_SESSION = ['account_id' => $compte];
+        tests_envoi_requete('POST', '/admin/videos/nouvelle', $compte, [
+            '_csrf'      => $nouveauJeton(),
+            'title'      => 'Pas une vidéo',
+            'visibility' => 'prive',
+            'envoi'      => (string) $pretTxt['token'],
+        ]);
+        $erreurs = implode(' | ', (array) ($_SESSION['_form_errors'] ?? []));
+        verifier(
+            'formulaire vidéo : un fichier qui n’est pas une vidéo est refusé',
+            str_contains($erreurs, 'pas une vidéo'),
+            $erreurs
+        );
+        unset($_SESSION['_form_errors'], $_SESSION['_form_old']);
+    }
 }
 
 /** 4. Droits : visiteur, compte de famille, autre administrateur, CSRF. */

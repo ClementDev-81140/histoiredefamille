@@ -76,6 +76,10 @@ $reglages     = envoi_reglages();
         <p class="discret">
             Photos, PDF, vidéos, sons. Plusieurs fichiers à la fois : chacun a sa
             propre barre de progression.
+            <?php if (!$creerFiche): ?>
+                Une fois l’envoi terminé, un lien vous amène au bouton
+                d’enregistrement, tout en bas du formulaire.
+            <?php endif; ?>
         </p>
     </div>
 

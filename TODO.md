@@ -3,6 +3,36 @@
 Ce fichier liste ce qui reste à faire, classé par priorité. Il n'y a pas de
 suivi automatique : cochez au fur et à mesure.
 
+## Fait (2026-11-07, 1.26.2 — l'envoi par morceaux remplit enfin le formulaire)
+
+- [x] **Le vrai défaut** : le script visait le premier `input[type=file]` de la
+  page — celui, masqué, du bloc d'envoi — et laissait `required` sur la case
+  « Fichier ». Le navigateur bloquait avant que le serveur ne voie la requête.
+  Il vise maintenant `input[type="file"][name="fichier"]` (et exclut le champ
+  du bloc avec `data-envoi-champ`).
+- [x] **Message qui nomme le vrai bouton** : « Envoyé. Le fichier est prêt :
+  cliquez sur « Envoyer la vidéo » » — le libellé est lu dans le formulaire
+  (« Envoyer le document », « Enregistrer »…).
+- [x] **Lien-ancre** « Aller au bouton d'enregistrement » sous le message
+  (`#enregistrer`, lien simple, sans JavaScript ni style en ligne) ; le bouton
+  des trois formulaires porte `id="enregistrer"`.
+- [x] **Champ caché `envoi` rendu par le serveur** (document, vidéo,
+  proposition) : le fichier reçu survit à une erreur de formulaire (titre vide).
+- [x] **Serveur** : jeton de l'administrateur connecté seulement, envoi terminé,
+  réservé une seule fois (`UPDATE … WHERE state = 'pret'`), aucun chemin venu
+  du navigateur, validations rejouées, refus explicites pour un jeton inconnu,
+  réutilisé ou appartenant à un autre compte.
+- [x] **Fuite corrigée** : remplacer un fichier par l'envoi par morceaux
+  supprime enfin l'ancien (documents et vidéos).
+- [x] **Essais** : famille « envoi » **92/92** (+25) ; suite complète **1 071
+  essais, 0 échec** ; lint **188 fichiers, 0 erreur** ; matrice **185 routes,
+  740 vérifications, 0 anomalie**.
+- [x] **Vrai navigateur** (Chromium) : 14 vérifications × 4 combinaisons
+  (vidéo/document, 390/1280 px), toutes vertes ; outil fourni dans
+  `tools/navigateur/` et documenté.
+- [x] **Documentation** : CHANGELOG 1.26.2, README § 6.18 (« Dans le formulaire
+  d'une vidéo ou d'un document »), `tools/navigateur/README.md`.
+
 ## Fait (2026-11-07, 1.26.1 — les en-têtes de sécurité partaient deux fois)
 
 - [x] **Une seule source par en-tête** : `nosniff`, `X-Frame-Options`,

@@ -1421,6 +1421,26 @@ famille, même lents.
      branche, visibilité), puis vous ajustez titre, date et visibilité fichier
      par fichier.
 
+**Dans le formulaire d'une vidéo ou d'un document**
+
+Le même bloc d'envoi par morceaux est présent dans les formulaires
+**Nouvelle vidéo** et **Nouveau document**, pour un fichier plus gros que la
+limite de l'envoi simple. Une fois l'envoi terminé :
+
+- le message nomme le **vrai bouton** : « Envoyé. Le fichier est prêt : cliquez
+  sur « Envoyer la vidéo » en bas du formulaire » (ou « Envoyer le
+  document ») ;
+- un lien **« Aller au bouton d'enregistrement »** amène directement au bouton,
+  tout en bas de la page ;
+- la case **Fichier** n'est plus obligatoire : le fichier déjà reçu remplace ce
+  qu'elle aurait envoyé. Rien à cocher, rien à re-choisir ;
+- si le formulaire revient avec une erreur (titre vide, par exemple), le
+  fichier reste rattaché : il n'y a pas à le renvoyer.
+
+Côté serveur, le fichier n'est accepté que s'il appartient à l'administrateur
+connecté, s'il est terminé et s'il n'a pas déjà servi : un même envoi ne peut
+pas être rattaché à deux fiches.
+
 La page **Administration → Mes envois** liste vos envois des 30 derniers jours
 et tout ce qui n'est pas terminé, avec le bouton **Reprendre**. Une vue
 « Tous les envois » montre ceux de tous les administrateurs, en lecture seule :

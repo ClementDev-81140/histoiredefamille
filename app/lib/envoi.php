@@ -982,13 +982,33 @@ function envoi_fichier_pret(int $compteId, string $token): ?array
     return $envoi;
 }
 
-/** Marque un fichier préparé comme utilisé par une fiche (jamais deux fois). */
-function envoi_marquer_utilise(array $envoi, int $documentId): void
+/**
+ * Réserve un fichier préparé pour la fiche en cours d'enregistrement.
+ *
+ * C'est le seul point où un envoi « prêt » quitte cet état, et il est
+ * conditionnel (`WHERE state = 'pret'`) : deux enregistrements simultanés —
+ * un double clic, deux onglets — ne peuvent pas rattacher le même fichier à
+ * deux fiches. Le second reçoit `false` et un message clair.
+ */
+function envoi_reserver(array $envoi): bool
 {
-    db_exec(
-        'UPDATE uploads SET state = ?, document_id = ?, updated_at = ? WHERE id = ?',
-        ['termine', $documentId, time(), (int) $envoi['id']]
-    );
+    return db_exec(
+        "UPDATE uploads SET state = 'termine', updated_at = ? WHERE id = ? AND state = 'pret'",
+        [time(), (int) $envoi['id']]
+    ) > 0;
+}
+
+/**
+ * Rattache le fichier réservé à sa fiche.
+ *
+ * @return bool false si l'envoi n'était pas réservé (déjà lié ailleurs)
+ */
+function envoi_marquer_utilise(array $envoi, int $documentId): bool
+{
+    return db_exec(
+        "UPDATE uploads SET document_id = ?, updated_at = ? WHERE id = ? AND state = 'termine'",
+        [$documentId, time(), (int) $envoi['id']]
+    ) > 0;
 }
 
 /**

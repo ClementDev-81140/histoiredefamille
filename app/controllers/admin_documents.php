@@ -115,6 +115,10 @@ function admin_document_save(array $params = []): void
         'visibility'  => sanitize_visibility(post('visibility')),
         'branches'    => array_map('intval', post_array('branches')),
         'tags'        => post('tags'),
+        // Conservé pour réafficher le fichier déjà assemblé si le formulaire
+        // revient avec une erreur (titre vide, par exemple) : sans lui, la
+        // personne devrait renvoyer plusieurs gigaoctets.
+        'envoi'       => post('envoi'),
     ];
 
     $errors = [];
@@ -178,6 +182,12 @@ function admin_document_save(array $params = []): void
         form_fail($errors, $old, $back);
     }
 
+    // Le fichier assemblé par morceaux est réservé MAINTENANT, une seule fois :
+    // un double clic ne peut pas le rattacher à deux fiches (voir envoi.php).
+    if ($envoiPrepare !== null && !envoi_reserver($envoiPrepare)) {
+        form_fail(['Ce fichier vient d’être utilisé pour une autre fiche. Redéposez-le.'], $old, $back);
+    }
+
     $docDate = $old['doc_date'] !== '' ? mb_substr($old['doc_date'], 0, 100) : null;
 
     $data = [
@@ -230,8 +240,11 @@ function admin_document_save(array $params = []): void
     // entre dans la file de conversion (jamais pendant la visite).
     conversion_planifier_document($documentId);
 
-    // Remplacement de fichier : on supprime l'ancien après succès.
-    if ($id > 0 && is_array($stored) && !empty($stored['ok']) && $doc) {
+    // Remplacement de fichier : on supprime l'ancien après succès, qu'il
+    // vienne de l'envoi simple ou de l'envoi par morceaux (sinon le fichier
+    // remplacé resterait sur le disque pour toujours).
+    $remplace = (is_array($stored) && !empty($stored['ok'])) || $envoiPrepare !== null;
+    if ($id > 0 && $remplace && $doc) {
         delete_document_files($doc);
     }
 

@@ -169,6 +169,10 @@ $dureeActuelle = $isEdit && !empty($video['duration_seconds'])
     ];
     require __DIR__ . '/partials/envoi.php';
     ?>
+    <?php // Fichier déjà assemblé par l'envoi par morceaux : le script le remplit,
+           // et il survit à une erreur de formulaire (titre vide, par exemple). ?>
+    <input type="hidden" name="envoi" value="<?= e((string) old_value($old, 'envoi', '')) ?>">
+
     <div class="champ">
         <label for="fichier"><?= $isEdit ? 'Remplacer le fichier' : 'Fichier vidéo' ?><?= $isEdit ? '' : ' *' ?></label>
         <input type="file" id="fichier" name="fichier" <?= $isEdit ? '' : 'required' ?>
@@ -191,7 +195,8 @@ $dureeActuelle = $isEdit && !empty($video['duration_seconds'])
     </div>
 
     <p class="actions">
-        <button type="submit" class="bouton"><?= $isEdit ? 'Enregistrer' : 'Envoyer la vidéo' ?></button>
+        <?php // id : cible du lien « Aller au bouton d’enregistrement » (envoi par morceaux). ?>
+        <button type="submit" class="bouton" id="enregistrer"><?= $isEdit ? 'Enregistrer' : 'Envoyer la vidéo' ?></button>
         <a class="bouton bouton--secondaire" href="/admin/videos">Annuler</a>
         <?php if ($isEdit): ?>
             <a class="bouton bouton--secondaire" href="/videos/<?= (int) $video['id'] ?>">Voir la fiche</a>

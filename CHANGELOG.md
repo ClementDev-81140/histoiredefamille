@@ -3,6 +3,86 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.26.2] — 2026-11-07
+
+### Le fichier envoyé par morceaux ne remplissait pas le formulaire
+
+Constat en navigateur, sur **Nouvelle vidéo** et **Nouveau document** : après un
+envoi par morceaux réussi, le formulaire refusait de partir. Le navigateur
+affichait « Veuillez sélectionner un fichier » et pointait la case **Fichier**,
+restée vide ; le message, lui, disait seulement « enregistrez le formulaire
+ci-dessous », et le bouton — nommé « Envoyer la vidéo » — se trouvait tout en
+bas, hors de l'écran. Une personne a conclu qu'il n'y avait pas de bouton.
+
+#### La cause exacte
+
+Le script **écrivait bien** le jeton dans le champ caché `envoi`, et croyait
+retirer l'obligation de la case « Fichier ». Mais il cherchait
+`input[type="file"]` — et le bloc d'envoi a **son propre** champ de fichier,
+masqué (`data-envoi-champ`). Le script tombait donc sur ce champ-là, qui n'a
+jamais été obligatoire, et laissait `required` sur la vraie case `fichier` :
+le navigateur bloquait, sans que le serveur voie jamais la requête.
+
+#### Ce qui change pour la personne qui envoie
+
+| Avant | Maintenant |
+|---|---|
+| « Le fichier est prêt : enregistrez le formulaire ci-dessous » | « Envoyé. Le fichier est prêt : cliquez sur « Envoyer la vidéo » » (le libellé est lu dans le formulaire : « Envoyer le document », « Enregistrer »…) |
+| aucun moyen de retrouver le bouton, tout en bas de la page | un lien **« Aller au bouton d'enregistrement »** sous le message, lien-ancre ordinaire (`#enregistrer`, sans JavaScript, sans style en ligne) |
+| la case **Fichier** restait obligatoire, le navigateur bloquait | elle n'est plus obligatoire dès que l'envoi est terminé, et le navigateur ne réclame plus rien |
+| une erreur de formulaire (titre vide) faisait perdre le fichier reçu | le jeton est écrit dans un champ caché **rendu par le serveur** : le fichier reste rattaché après une erreur, sans le renvoyer |
+
+#### Ce qui change côté serveur
+
+Le fichier assemblé remplace `$_FILES['fichier']` **seulement** si le jeton est
+valide, et la vérification est stricte :
+
+- il doit appartenir à **l'administrateur connecté** (le jeton d'un autre compte
+  est refusé, et reste « prêt » chez son propriétaire) ;
+- il doit être **terminé** (état `pret`) : un jeton inconnu, expiré ou inventé
+  est refusé avec un message clair ;
+- il ne peut servir qu'à **une seule fiche** : la réservation est un
+  `UPDATE … WHERE state = 'pret'` conditionnel, donc deux enregistrements
+  simultanés (double clic, deux onglets) ne peuvent pas le rattacher deux fois ;
+- **aucun chemin ne vient du navigateur** : le jeton ne sert qu'à retrouver une
+  ligne de la base, le nom et l'emplacement du fichier sont ceux enregistrés à
+  l'assemblage ;
+- les **validations habituelles** (extension autorisée, type réel par `finfo`,
+  taille, nom nettoyé) ont déjà été rejouées à l'assemblage, et le genre de
+  fichier est contrôlé une seconde fois par le formulaire (une vidéo pour
+  « Nouvelle vidéo »).
+
+Deux défauts voisins corrigés au passage :
+
+- en **modification**, remplacer un fichier par l'envoi par morceaux laissait
+  l'ancien fichier sur le disque pour toujours ; il est maintenant supprimé
+  après succès, comme pour l'envoi simple ;
+
+#### Comment cela a été vérifié
+
+- **vrai navigateur** (Chromium), sur les deux formulaires, à **390 px** et
+  **1280 px** : 14 vérifications par combinaison, toutes vertes — message
+  nommant le vrai bouton, lien-ancre qui amène le bouton dans l'écran, case
+  « Fichier » non obligatoire, champ caché rempli, clic sur le bouton **sans**
+  choisir de fichier et formulaire bien posté (`envoi` présent, aucun fichier
+  joint), aucune erreur JavaScript, aucun défilement horizontal. L'outil est
+  fourni : [`tools/navigateur/`](tools/navigateur/README.md) ;
+- **essais serveur** (`php app/cli/tests.php envoi`, **92/92**) : création d'un
+  document et d'une vidéo **sans** `$_FILES`, jeton réutilisé refusé, jeton d'un
+  autre compte refusé, jeton inconnu refusé, absence de fichier et de jeton
+  signalée, fichier qui n'est pas une vidéo refusé, MP4 déjà bon non converti,
+  MOV en conversion donc invisible pour la famille, administrateur qui la voit ;
+- **suite complète** : **1 071 essais, 0 échec** ; lint **188 fichiers, 0
+  erreur** ; matrice d'accès **185 routes, 740 vérifications, 0 anomalie**.
+
+#### Ce qui n'a pas pu être vérifié ici
+
+- le **téléversement réel sur le Pi** (Apache, Cloudflare, vrais gros
+  fichiers) : le contrat est vérifié par essais, le navigateur par un serveur
+  local qui renvoie exactement les réponses du site ;
+- la **conversion réelle** d'un MOV (pas de `ffmpeg` sur la machine d'essai) :
+  seule la mise en file et l'invisibilité pendant la conversion sont vérifiées.
+
 ## [1.26.1] — 2026-11-07
 
 ### Les en-têtes de sécurité partaient deux fois

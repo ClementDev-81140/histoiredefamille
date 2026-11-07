@@ -127,6 +127,9 @@ function admin_video_save(array $params = []): void
         'display_order' => post('display_order'),
         'allow_download' => post('allow_download') === '1' ? '1' : '0',
         'duration'      => $dureeSaisie,
+        // Même raison que pour les documents : le fichier assemblé survit à
+        // une erreur de formulaire (titre vide, visibilité sans branche…).
+        'envoi'         => post('envoi'),
     ];
 
     $errors = [];
@@ -204,6 +207,12 @@ function admin_video_save(array $params = []): void
         form_fail($errors, $old, $back);
     }
 
+    // Le film assemblé par morceaux est réservé maintenant, une seule fois :
+    // deux enregistrements simultanés ne le rattachent pas à deux fiches.
+    if ($envoiPrepare !== null && !envoi_reserver($envoiPrepare)) {
+        form_fail(['Ce fichier vient d’être utilisé pour une autre fiche. Redéposez-le.'], $old, $back);
+    }
+
     $docDate = $old['doc_date'] !== '' ? mb_substr($old['doc_date'], 0, 100) : null;
 
     $data = [
@@ -260,7 +269,10 @@ function admin_video_save(array $params = []): void
     // Format non lisible par les navigateurs : conversion en MP4 en arrière-plan.
     conversion_planifier_document($videoId);
 
-    if ($id > 0 && is_array($stored) && !empty($stored['ok']) && $video) {
+    // Même règle que pour les documents : le fichier remplacé (envoi simple
+    // ou par morceaux) est supprimé après succès, jamais avant.
+    $remplace = (is_array($stored) && !empty($stored['ok'])) || $envoiPrepare !== null;
+    if ($id > 0 && $remplace && $video) {
         delete_document_files($video);
     }
 

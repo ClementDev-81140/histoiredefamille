@@ -100,6 +100,7 @@
         this.derniereAnnonce = 0;
 
         this.brancher();
+        this.prepareFormulaire();
         this.remplirDossierDepart();
     }
 
@@ -611,6 +612,21 @@
         });
     };
 
+    /**
+     * Libellé du bouton d'enregistrement du formulaire qui entoure le bloc.
+     * C'est ce libellé qui est nommé dans le message de réussite : « cliquez
+     * sur « Envoyer la vidéo » » plutôt que « enregistrez le formulaire »,
+     * qu'une personne cherchait sans le trouver, tout en bas de la page.
+     */
+    Televerseur.prototype.libelleEnregistrer = function (formulaire) {
+        if (!formulaire) {
+            return 'Enregistrer';
+        }
+        var bouton = formulaire.querySelector('button[type="submit"], input[type="submit"]');
+        var texte = bouton ? (bouton.textContent || bouton.value || '').trim() : '';
+        return texte !== '' ? texte : 'Enregistrer';
+    };
+
     Televerseur.prototype.reussir = function (tache, reponse) {
         tache.termine = true;
         tache.ligne.setAttribute('data-etat', 'termine');
@@ -618,11 +634,14 @@
         tache.boutonAnnuler.hidden = true;
         tache.jauge.value = 100;
 
+        var formulaire = this.creer ? null : this.racine.closest('form');
+        var libelle = this.libelleEnregistrer(formulaire);
+
         var texte = 'Envoyé. ';
         if (this.creer) {
             texte += 'La fiche est créée en privé : complétez-la pour la publier.';
         } else {
-            texte += 'Le fichier est prêt : enregistrez le formulaire ci-dessous.';
+            texte += 'Le fichier est prêt : cliquez sur « ' + libelle + ' » en bas du formulaire.';
         }
         tache.statut.textContent = texte;
 
@@ -635,28 +654,101 @@
 
         // Formulaire qui entoure le composant : on lui donne le fichier prêt.
         if (!this.creer) {
-            var formulaire = this.racine.closest('form');
-            if (formulaire) {
-                var champ = formulaire.querySelector('input[name="envoi"]');
-                if (!champ) {
-                    champ = element('input');
-                    champ.type = 'hidden';
-                    champ.name = 'envoi';
-                    formulaire.appendChild(champ);
-                }
-                champ.value = tache.token;
-
-                // Le champ « Fichier » du formulaire n'est plus obligatoire :
-                // le fichier est déjà sur le serveur.
-                var champFichier = formulaire.querySelector('input[type="file"]');
-                if (champFichier) {
-                    champFichier.removeAttribute('required');
-                }
+            var cible = this.remplirFormulaire(tache, formulaire, libelle);
+            if (cible !== '') {
+                // Lien-ancre simple (aucun JavaScript, aucun style en ligne) :
+                // il amène au bouton d'enregistrement, tout en bas de la page.
+                var ancre = element('a', 'lien', 'Aller au bouton d’enregistrement');
+                ancre.href = '#' + cible;
+                tache.boutons.appendChild(document.createTextNode(' '));
+                tache.boutons.appendChild(ancre);
             }
         }
 
-        this.annoncer(tache.fichier.name + ' : envoyé.', true);
+        this.annoncer(tache.fichier.name + ' : envoyé. ' + texte, true);
         this.finFichier(tache);
+    };
+
+    /**
+     * Le champ « Fichier » du formulaire n'est plus obligatoire : le fichier
+     * est déjà sur le serveur. Attention : le bloc d'envoi a son PROPRE champ
+     * de fichier (data-envoi-champ) ; c'est celui du formulaire qu'il faut
+     * viser, sinon le navigateur continue de réclamer « Veuillez sélectionner
+     * un fichier » — c'était le défaut corrigé en 1.26.2.
+     */
+    Televerseur.prototype.alegerChampFichier = function (formulaire) {
+        if (!formulaire) {
+            return;
+        }
+        var champFichier = formulaire.querySelector('input[type="file"][name="fichier"]');
+        if (!champFichier) {
+            var tous = formulaire.querySelectorAll('input[type="file"]');
+            for (var i = 0; i < tous.length; i++) {
+                if (!tous[i].hasAttribute('data-envoi-champ')) {
+                    champFichier = tous[i];
+                    break;
+                }
+            }
+        }
+        if (champFichier) {
+            champFichier.removeAttribute('required');
+            champFichier.setAttribute('aria-required', 'false');
+        }
+    };
+
+    /**
+     * Page rechargée après une erreur de formulaire alors qu'un fichier est
+     * déjà assemblé : le champ caché `envoi` porte le jeton, le champ
+     * « Fichier » ne doit donc plus être obligatoire.
+     */
+    Televerseur.prototype.prepareFormulaire = function () {
+        if (this.creer) {
+            return;
+        }
+        var formulaire = this.racine.closest('form');
+        if (!formulaire) {
+            return;
+        }
+        var champ = formulaire.querySelector('input[name="envoi"]');
+        if (champ && champ.value !== '') {
+            this.alegerChampFichier(formulaire);
+        }
+    };
+
+    /**
+     * Donne au formulaire le fichier assemblé par morceaux : champ caché
+     * `envoi` (le serveur s'en sert quand `$_FILES['fichier']` est vide) et
+     * champ « Fichier » qui n'est plus obligatoire.
+     *
+     * Rend l'identifiant du bouton d'enregistrement (cible de l'ancre), ou ''
+     * si le composant n'est pas dans un formulaire.
+     */
+    Televerseur.prototype.remplirFormulaire = function (tache, formulaire, libelle) {
+        if (!formulaire) {
+            return '';
+        }
+
+        var champ = formulaire.querySelector('input[name="envoi"]');
+        if (!champ) {
+            champ = element('input');
+            champ.type = 'hidden';
+            champ.name = 'envoi';
+            formulaire.appendChild(champ);
+        }
+        champ.value = tache.token;
+        this.alegerChampFichier(formulaire);
+
+        var bouton = formulaire.querySelector('button[type="submit"], input[type="submit"]');
+        if (!bouton) {
+            return '';
+        }
+        if (!bouton.id) {
+            bouton.id = 'enregistrer';
+        }
+        if (!bouton.hasAttribute('data-libelle')) {
+            bouton.setAttribute('data-libelle', libelle);
+        }
+        return bouton.id;
     };
 
     /** Doublon : on demande à l'administrateur, rien n'est supprimé d'office. */

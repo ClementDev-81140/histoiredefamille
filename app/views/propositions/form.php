@@ -84,6 +84,9 @@ $action     = $isEdit ? '/propositions/' . $type . '/' . (int) $ligne['id'] : '/
         </div>
 
         <?php if (!$isEdit): ?>
+            <?php // Fichier assemblé par l'envoi par morceaux (rempli par le script). ?>
+            <input type="hidden" name="envoi" value="<?= e((string) old_value($old, 'envoi', '')) ?>">
+
             <div class="champ">
                 <label for="fichier">Fichier (photo, vidéo, son, PDF…)</label>
                 <input type="file" id="fichier" name="fichier">
@@ -154,7 +157,8 @@ $action     = $isEdit ? '/propositions/' . $type . '/' . (int) $ligne['id'] : '/
     </fieldset>
 
     <p class="actions">
-        <button type="submit" name="action" value="proposer" class="bouton">
+        <?php // id : cible du lien « Aller au bouton d’enregistrement » (envoi par morceaux). ?>
+        <button type="submit" name="action" value="proposer" class="bouton" id="enregistrer">
             <?= $isEdit ? 'Enregistrer et proposer' : 'Proposer' ?>
         </button>
         <button type="submit" name="action" value="brouillon" class="bouton bouton--secondaire">

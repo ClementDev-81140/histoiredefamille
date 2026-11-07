@@ -133,6 +133,10 @@ $visibility = (string) $v('visibility', 'prive');
     ];
     require __DIR__ . '/partials/envoi.php';
     ?>
+    <?php // Fichier déjà assemblé par l'envoi par morceaux : le script le remplit,
+           // et il survit à une erreur de formulaire (titre vide, par exemple). ?>
+    <input type="hidden" name="envoi" value="<?= e((string) old_value($old, 'envoi', '')) ?>">
+
     <div class="champ">
         <label for="fichier"><?= $isEdit ? 'Remplacer le fichier' : 'Fichier' ?><?= $isEdit ? '' : ' *' ?></label>
         <input type="file" id="fichier" name="fichier" <?= $isEdit ? '' : 'required' ?>
@@ -154,7 +158,8 @@ $visibility = (string) $v('visibility', 'prive');
     </div>
 
     <p class="actions">
-        <button type="submit" class="bouton"><?= $isEdit ? 'Enregistrer' : 'Envoyer le document' ?></button>
+        <?php // id : cible du lien « Aller au bouton d’enregistrement » (envoi par morceaux). ?>
+        <button type="submit" class="bouton" id="enregistrer"><?= $isEdit ? 'Enregistrer' : 'Envoyer le document' ?></button>
         <a class="bouton bouton--secondaire" href="<?= $isEdit ? '/documents/' . (int) $doc['id'] : '/admin/documents' ?>">Annuler</a>
     </p>
 </form>
