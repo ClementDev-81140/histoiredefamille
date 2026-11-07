@@ -173,7 +173,9 @@ function require_admin(): void
 /** Adresse « espace famille » ou « admin » selon le rôle. */
 function home_for_account(): string
 {
-    return is_admin() ? '/admin' : '/famille';
+    // Tout le monde, administrateur compris, arrive sur l'accueil du journal.
+    // Le tableau de bord reste à un clic (menu « Administration »).
+    return '/';
 }
 
 /**

@@ -3,6 +3,20 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.31.1] — 2026-11-07
+
+### Après la connexion, tout le monde arrive sur l'accueil
+
+Un administrateur était envoyé sur le tableau de bord, un lecteur sur « Espace
+famille ». Tous les profils (lecteur, journaliste, administrateur) arrivent
+maintenant sur l'accueil du journal (`/`). Le tableau de bord reste à un clic,
+par « Administration » dans le menu.
+
+- `home_for_account()` renvoie `/` pour tout le monde.
+- Le paramètre « next » est inchangé : une adresse locale connue est conservée,
+  les adresses externes (`https://…`, `//…`, `/\…`) restent refusées.
+- 6 essais ajoutés (famille « accueil »). Aucun droit modifié.
+
 ## [1.29.0] — 2026-11-07
 
 ### La une d'abord, pour tout compte connecté
