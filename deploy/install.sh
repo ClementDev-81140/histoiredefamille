@@ -80,21 +80,61 @@ fi
 
 chown -R root:root "${SITE_DIR}"
 find "${SITE_DIR}" -type d -exec chmod 755 {} \;
-find "${SITE_DIR}" -type f -exec chmod 644 {} \;
+# config.local.php est traité à part (étape 4) : il ne doit jamais être élargi
+# à 644, même une seconde, car il contient la configuration du site.
+find "${SITE_DIR}" -type f ! -name 'config.local.php' -exec chmod 644 {} \;
 chmod 750 "${SITE_DIR}/deploy" 2>/dev/null || true
 chmod 750 "${SITE_DIR}"/deploy/*.sh 2>/dev/null || true
 
 # --- 4. Configuration locale ----------------------------------------------
 bleu "Fichier de configuration"
-if [ ! -f "${SITE_DIR}/config.local.php" ]; then
-    cp "${SITE_DIR}/config.example.php" "${SITE_DIR}/config.local.php"
-    chown root:www-data "${SITE_DIR}/config.local.php"
-    chmod 640 "${SITE_DIR}/config.local.php"
-    vert "config.local.php créé à partir du modèle."
+CONFIG_LOCALE="${SITE_DIR}/config.local.php"
+
+# Droits de config.local.php : 640 root:www-data.
+#
+# Le fichier peut contenir l'identifiant et le mot de passe du serveur
+# d'envoi : il ne doit être lisible que par root et par le site (www-data).
+# Relancer l'installation ne doit donc PAS l'élargir. On CONSERVE les droits
+# trouvés s'ils sont au moins aussi stricts que 640 ; on les remet à
+# 640 root:www-data s'ils sont plus larges (644, 664, 777…).
+#
+# « Plus large » = bits d'écriture ou d'exécution pour le groupe (0030) et
+# tout ce qui concerne les autres (0007), soit le masque 0037.
+droits_config_local() {
+    local fichier="$1"
+    local mode=""
+    mode="$(stat -c '%a' "${fichier}" 2>/dev/null || true)"
+    if [ -z "${mode}" ]; then
+        return 0
+    fi
+    # stat donne p. ex. « 640 » ou « 2755 » : on ne garde que les droits.
+    mode="${mode: -3}"
+    if [ $(( 8#${mode} & 8#037 )) -ne 0 ]; then
+        chown root:www-data "${fichier}"
+        chmod 640 "${fichier}"
+        vert "config.local.php était lisible trop largement (${mode}) : droits remis à 640 root:www-data."
+    else
+        # Droits conservés ; seuls le propriétaire et le groupe changent, pour
+        # que root l'administre et que le site puisse le lire.
+        chown root:www-data "${fichier}"
+        vert "config.local.php : droits conservés (${mode})."
+        if [ $(( 8#${mode} & 8#040 )) -eq 0 ]; then
+            rouge "  Attention : avec ces droits, www-data ne peut pas lire le fichier."
+            rouge "  Le site ne démarrerait pas. Corrigez avec : sudo chmod 640 ${fichier}"
+        fi
+    fi
+}
+
+if [ ! -f "${CONFIG_LOCALE}" ]; then
+    cp "${SITE_DIR}/config.example.php" "${CONFIG_LOCALE}"
+    chown root:www-data "${CONFIG_LOCALE}"
+    chmod 640 "${CONFIG_LOCALE}"
+    vert "config.local.php créé à partir du modèle (640 root:www-data)."
     rouge "À VÉRIFIER : adaptez les chemins et les réglages dans"
     rouge "  sudo nano ${SITE_DIR}/config.local.php"
 else
-    vert "config.local.php existe déjà : inchangé."
+    vert "config.local.php existe déjà : contenu inchangé."
+    droits_config_local "${CONFIG_LOCALE}"
 fi
 
 # --- 5. Dossiers de stockage ----------------------------------------------
@@ -132,13 +172,27 @@ else
     exit 1
 fi
 
+# --- 7 bis. État de l'installation ----------------------------------------
+# Deux réponses viennent du SITE, pas du shell : « les courriels sont-ils
+# activés ? » (un réglage en base) et « le mode sans disque externe est-il
+# assumé ? » (config.local.php). Seul PHP sait les lire.
+ETAT_INSTALLATION="$(sudo -u www-data php "${SITE_DIR}/app/cli/etat-installation.php" 2>/dev/null || true)"
+COURRIELS_ACTIFS="$(printf '%s\n' "${ETAT_INSTALLATION}" | sed -n 's/^courriels_actifs=//p' | head -n 1)"
+SAUVEGARDE_SANS_DISQUE="$(printf '%s\n' "${ETAT_INSTALLATION}" | sed -n 's/^sauvegarde_sans_disque=//p' | head -n 1)"
+
 # --- 8. Sauvegarde quotidienne (minuteur systemd) --------------------------
 bleu "Sauvegarde quotidienne à 3 h 30 (minuteur systemd)"
 
 # La clé USB doit déjà être montée (voir deploy/montage-disques.md). Sans
-# elle, la sauvegarde refusera de s'exécuter pour ne pas remplir la carte SD.
+# elle, la sauvegarde refusera de s'exécuter pour ne pas remplir la carte SD —
+# SAUF si le mode « sans disque externe » a été assumé dans config.local.php
+# (backup_allow_same_disk) : dans ce cas, ce n'est pas une erreur à signaler.
 if mountpoint -q /mnt/sauvegarde; then
     vert "La clé USB est montée sur /mnt/sauvegarde."
+elif [ "${SAUVEGARDE_SANS_DISQUE}" = "1" ]; then
+    vert "Mode sans disque externe actif (backup_allow_same_disk) : la sauvegarde écrit sur la carte SD,"
+    vert "  dans /mnt/sauvegarde/histoiredefamille. C'est un choix assumé pour les premiers jours."
+    vert "  Branchez la clé (deploy/montage-disques.md) et retirez ce réglage dès que possible."
 else
     rouge "ATTENTION : /mnt/sauvegarde n'est pas un point de montage."
     rouge "  La sauvegarde refusera de s'exécuter tant que la clé ne sera pas montée."
@@ -164,10 +218,25 @@ bleu "Envoi des courriels en attente (minuteur systemd, toutes les 5 minutes)"
 install -m 644 "${SITE_DIR}/deploy/systemd/histoiredefamille-courriels.service" /etc/systemd/system/
 install -m 644 "${SITE_DIR}/deploy/systemd/histoiredefamille-courriels.timer" /etc/systemd/system/
 systemctl daemon-reload
-systemctl enable --now histoiredefamille-courriels.timer >/dev/null 2>&1
-vert "Minuteur installé et activé : toutes les 5 minutes."
-vert "Vérification : systemctl list-timers histoiredefamille-courriels.timer"
-vert "Sans configuration d'envoi (config.local.php), la commande ne fait rien : les messages attendent."
+
+# Le site n'envoie aucun courriel par défaut (réglage « courriels_actifs »,
+# faux depuis la 1.28.0). Dans ce cas, l'unité est posée mais le minuteur reste
+# ARRÊTÉ : le réactiver ferait tourner une tâche toutes les cinq minutes pour
+# ne rien faire, et donnerait l'impression que le site envoie des messages.
+# Relancer ce script ne doit pas non plus rallumer un minuteur éteint exprès :
+# il est donc explicitement arrêté.
+if [ "${COURRIELS_ACTIFS}" = "1" ]; then
+    systemctl enable --now histoiredefamille-courriels.timer >/dev/null 2>&1
+    vert "Minuteur installé et activé : toutes les 5 minutes."
+    vert "Vérification : systemctl list-timers histoiredefamille-courriels.timer"
+    vert "Sans configuration d'envoi (config.local.php), la commande ne fait rien : les messages attendent."
+else
+    systemctl disable --now histoiredefamille-courriels.timer >/dev/null 2>&1 || true
+    vert "Courriels désactivés : minuteur laissé arrêté."
+    vert "  Les unités sont installées, prêtes à servir. Pour les courriels : cochez"
+    vert "  « Le site envoie des courriels » dans Administration → Réglages, remplissez"
+    vert "  le bloc « mail » de config.local.php, puis relancez ce script."
+fi
 
 # --- 8 ter. Conversion des vidéos (minuteur systemd, toutes les 10 minutes) --
 bleu "Conversion des vidéos en MP4 (minuteur systemd, toutes les 10 minutes)"

@@ -81,6 +81,37 @@ function mise_en_ligne_adresse(): string
 }
 
 /**
+ * État de l'installation, pour deploy/install.sh.
+ *
+ * L'installateur doit savoir deux choses avant d'activer des minuteurs, et il
+ * ne peut pas les deviner tout seul : elles vivent dans les réglages du site
+ * (base) et dans config.local.php, que seul PHP sait lire.
+ *
+ *   - « courriels_actifs » : depuis la 1.28.0, le site n'envoie aucun courriel
+ *     par défaut. Activer le minuteur d'envoi n'aurait aucun sens : il
+ *     tournerait toutes les cinq minutes pour ne rien faire. L'installateur
+ *     l'installe mais le laisse arrêté.
+ *   - « sauvegarde_sans_disque » : le mode « premiers jours sans disque
+ *     externe » (backup_allow_same_disk) est une dérogation assumée, pas une
+ *     erreur d'installation. L'installateur doit le dire autrement qu'en
+ *     criant « ATTENTION ».
+ *
+ * Aucune écriture, aucune commande système : deux booléens, lus par la commande
+ * `php app/cli/etat-installation.php`.
+ *
+ * @return array{courriels_actifs: bool, sauvegarde_sans_disque: bool}
+ */
+function installation_etat(): array
+{
+    $sauvegarde = sauvegarde_options();
+
+    return [
+        'courriels_actifs'       => site_courriels_actifs(),
+        'sauvegarde_sans_disque' => !empty($sauvegarde['allow_same_disk']),
+    ];
+}
+
+/**
  * Envoie une vraie requête HTTP à un serveur local et renvoie l'état, les
  * en-têtes et le corps (limité).
  *

@@ -3,6 +3,88 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.28.1] — 2026-11-07
+
+### Relancer l'installateur ne doit rien défaire
+
+Trois corrections dans `deploy/install.sh`, toutes visibles au **deuxième**
+passage — celui qu'on fait après avoir changé un réglage, branché un disque ou
+mis le code à jour.
+
+#### 1. La configuration garde ses droits
+
+Le script finissait par `chmod 644` sur **tous** les fichiers du site, y compris
+`config.local.php` : après chaque installation, la configuration — qui peut
+contenir l'identifiant et le mot de passe du serveur d'envoi — devenait lisible
+par n'importe quel compte de la machine. Le message « config.local.php existe
+déjà : inchangé » était donc trompeur : le contenu ne changeait pas, mais les
+droits, si.
+
+Désormais le `chmod` global **exclut** `config.local.php`, et une fonction
+s'occupe de lui :
+
+- les droits trouvés sont **conservés** s'ils sont au moins aussi stricts que
+  `640` (600, 640, 440…) ;
+- ils sont **remis à `640 root:www-data`** s'ils sont plus larges (644, 664,
+  777…), avec la raison affichée : « config.local.php était lisible trop
+  largement (644) : droits remis à 640 root:www-data » ;
+- le propriétaire est toujours `root`, le groupe toujours `www-data` (c'est le
+  compte du site) ; si les droits conservés empêchent `www-data` de lire le
+  fichier (600, 400), le script le dit au lieu de laisser le site tomber en
+  panne à la première page.
+
+#### 2. Le minuteur des courriels n'est plus rallumé pour rien
+
+Depuis la 1.28.0, le site n'envoie aucun courriel par défaut. L'installateur
+activait malgré tout `histoiredefamille-courriels.timer` : une tâche toutes les
+cinq minutes pour ne rien faire, et l'impression que le site correspond.
+
+Le script demande maintenant son état **au site**, par une commande nouvelle :
+`php app/cli/etat-installation.php` (deux lignes, `courriels_actifs=0|1` et
+`sauvegarde_sans_disque=0|1`), qui s'appuie sur `installation_etat()`.
+
+- réglage **vrai** : les unités sont installées et le minuteur activé, comme
+  avant ;
+- réglage **faux** (le cas normal) : les unités sont posées, prêtes à servir,
+  mais le minuteur est **arrêté** — et relancer l'installation ne le rallume
+  pas. Le script affiche **« Courriels désactivés : minuteur laissé arrêté »**,
+  avec les deux gestes à faire pour l'envoi (la case dans Administration →
+  Réglages, le bloc `mail` de `config.local.php`).
+
+#### 3. « Sans disque externe » n'est plus une erreur
+
+Le mode « premiers jours sans clé USB » (`backup_allow_same_disk`) est une
+dérogation **assumée** : le site sauvegarde sur la carte SD. L'installateur
+affichait pourtant « ATTENTION : /mnt/sauvegarde n'est pas un point de montage »
+et « la sauvegarde refusera de s'exécuter », ce qui était faux dans ce mode et
+inquiétant pour rien.
+
+Trois cas, maintenant, dans cet ordre : clé montée (message vert habituel) ;
+sinon, mode sans disque externe actif → « **Mode sans disque externe actif
+(backup_allow_same_disk) : la sauvegarde écrit sur la carte SD** », avec le
+rappel de brancher la clé et de retirer le réglage ; sinon seulement, l'alerte
+d'origine.
+
+#### Essais
+
+Nouvelle famille **« installation »** : **24/24**. Elle vérifie le `chmod` global
+qui exclut la configuration, la fonction de réparation (masque 0037, `640
+root:www-data`, avertissement quand `www-data` ne pourrait pas lire), les deux
+branches du minuteur et le message exact, les trois cas du disque, et — pour de
+vrai — `installation_etat()` sous trois réglages, ainsi que la commande
+`etat-installation.php` (deux lignes `clé=valeur`, réservée à la ligne de
+commande, code 0 en marche normale).
+
+Deux familles existantes supposaient, sans le dire, que les courriels étaient
+allumés : `admin` (le lien « Courriels » du menu) et `propositions` (le message
+mis en file à la validation). Elles passaient sur une base où la 1.28.0 avait
+laissé le réglage à `1`, et échouaient sur une base neuve — celle d'une
+installation réelle. Elles appellent maintenant `tests_courriels_activer()` en
+tête, et le réglage est rendu à la fin de la suite.
+
+Suite complète : **1 224 essais, 0 échec**. Lint : **195 fichiers, 0 erreur**.
+Matrice regénérée : 190 routes, 760 vérifications, 0 anomalie.
+
 ## [1.28.0] — 2026-11-07
 
 ### Le site n'envoie plus de courriel ; il affiche deux adresses

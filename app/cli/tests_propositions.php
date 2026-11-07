@@ -117,6 +117,11 @@ function tests_propositions(): void
 {
     echo "Propositions des journalistes — validation par les administrateurs\n";
 
+    // Une validation met un message en file aux inscrits (1.28.0 : seulement
+    // si l'envoi est réactivé). Cette famille éprouve ce message : elle allume
+    // donc les courriels, et le réglage est rendu à la fin de la suite.
+    tests_courriels_activer();
+
     $fichiers = [];
     try {
         db_transaction(static function () use (&$fichiers): void {

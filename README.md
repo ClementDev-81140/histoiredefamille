@@ -665,7 +665,10 @@ Ce script :
    `php-mbstring`, `php-curl`), `sqlite3`, `rsync`, `curl` ;
 2. active les modules Apache `rewrite`, `headers`, `expires`, `deflate` ;
 3. copie le site dans `/var/www/histoiredefamille` ;
-4. crée `config.local.php` à partir du modèle ;
+4. crée `config.local.php` à partir du modèle, en `640 root:www-data` — et,
+   s'il existe déjà, **conserve ses droits** ou les remet à `640 root:www-data`
+   s'ils étaient plus larges (relancer l'installation n'ouvre jamais la
+   configuration à tout le monde) ;
 5. crée les dossiers de stockage sur le SSD, avec les droits de `www-data` ;
 6. applique les réglages PHP adaptés au Pi (mémoire, envois, opcache) ;
 7. active le VirtualHost sur le port 80 ;
@@ -678,6 +681,10 @@ Ce script :
 ```bash
 sudo nano /var/www/histoiredefamille/config.local.php
 ```
+
+Le fichier appartient à `root` et se lit avec le groupe `www-data` (`640`) : il
+reste ainsi hors de portée des autres comptes de la machine, et relancer
+`deploy/install.sh` ne change ni ses droits ni son contenu.
 
 Les seules lignes à vérifier :
 
@@ -2819,11 +2826,16 @@ systemctl list-timers histoiredefamille-courriels.timer
 journalctl -u histoiredefamille-courriels.service -n 30
 ```
 
-Tant que les courriels sont désactivés, la tâche continue de tourner mais
-**ne fait rien** : elle écrit « Les courriels sont désactivés volontairement »
-dans son journal et sort sans erreur. Ce message n'est pas une panne, c'est le
-réglage ; il disparaît quand vous cochez la case dans Administration →
-Réglages.
+Tant que les courriels sont désactivés, **il n'y a rien à voir** : `deploy/
+install.sh` installe les unités mais laisse le minuteur **arrêté** (« Courriels
+désactivés : minuteur laissé arrêté »), et relancer le script ne le rallume pas.
+La liste des minuteurs ne montre donc pas celui des courriels — c'est normal.
+
+Si le minuteur tourne malgré tout (installation antérieure, ou tâche lancée à la
+main), la commande ne fait rien et l'écrit : « Les courriels sont désactivés
+volontairement ». Ce message n'est pas une panne, c'est le réglage ; il
+disparaît quand vous cochez la case dans Administration → Réglages, remplissez
+le bloc `mail` de `config.local.php`, et relancez `deploy/install.sh`.
 ```
 
 La première commande doit afficher une prochaine exécution (toutes les

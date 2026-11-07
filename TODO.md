@@ -3,6 +3,29 @@
 Ce fichier liste ce qui reste à faire, classé par priorité. Il n'y a pas de
 suivi automatique : cochez au fur et à mesure.
 
+## Fait (2026-11-07, 1.28.1 — relancer install.sh ne défait plus rien)
+
+- [x] **`config.local.php` garde ses droits** : le `chmod 644` global l'exclut ;
+  une fonction conserve les droits s'ils sont au moins aussi stricts que `640`,
+  les remet à `640 root:www-data` s'ils sont plus larges, et prévient si
+  `www-data` ne pourrait pas lire le fichier.
+- [x] **Minuteur des courriels** : `deploy/install.sh` demande l'état au site
+  (`php app/cli/etat-installation.php` → `installation_etat()`) et, quand
+  `courriels_actifs` est faux, installe les unités mais **laisse le minuteur
+  arrêté** — « Courriels désactivés : minuteur laissé arrêté » — sans le
+  rallumer au passage suivant.
+- [x] **Mode sans disque externe** : `backup_allow_same_disk` vrai donne
+  « Mode sans disque externe actif … la sauvegarde écrit sur la carte SD » au
+  lieu de « ATTENTION : /mnt/sauvegarde n'est pas un point de montage » ;
+  l'alerte ne reste que si rien n'est assumé.
+- [x] **Essais** : famille « installation » **24/24** ; suite complète **1 224
+  essais, 0 échec** ; `sauvegarde` 52/52, `conversion` 130/130, `contacts` 43/43 ;
+  lint **195 fichiers, 0 erreur** ; matrice 0 anomalie.
+- [x] **Deux essais qui mentaient corrigés** : `admin` et `propositions`
+  supposaient les courriels allumés (vrai sur une base d'essai ancienne, faux
+  sur une base neuve) ; ils les allument explicitement.
+- [x] **Documentation** : CHANGELOG 1.28.1, README § 4.4, § 4.5 et § 14.7, TODO.
+
 ## Fait (2026-11-07, 1.28.0 — aucun courriel, deux adresses affichées)
 
 - [x] **Le site n'envoie aucun courriel** : `courriels_actifs` **faux par

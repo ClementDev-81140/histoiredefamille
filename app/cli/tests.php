@@ -2562,6 +2562,7 @@ if ($filtre === '' || $filtre === 'composition') {
 // Lots « mise en ligne » (sauvegarde, restauration, matrice, vérification)
 // ---------------------------------------------------------------------------
 require_once __DIR__ . '/tests_entretien.php';
+require_once __DIR__ . '/tests_installation.php';
 
 if ($filtre === '' || $filtre === 'sauvegarde') {
     tests_sauvegarde();
@@ -2573,6 +2574,10 @@ if ($filtre === '' || $filtre === 'restauration') {
 
 if ($filtre === '' || $filtre === 'espace') {
     tests_espace_disque();
+}
+
+if ($filtre === '' || $filtre === 'installation') {
+    tests_installation();
 }
 
 if ($filtre === '' || $filtre === 'matrice') {

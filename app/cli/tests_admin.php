@@ -18,6 +18,11 @@ function tests_admin(): void
 {
     echo "Administration — menu, tableau de bord et filtres de visibilité\n";
 
+    // Le lien « Courriels » du menu n'existe que si l'envoi est réactivé
+    // (1.28.0). Cette famille vérifie qu'aucun écran n'a été perdu : elle a
+    // donc besoin des courriels allumés, et le réglage est rendu à la fin.
+    tests_courriels_activer();
+
     try {
         db_transaction(static function (): void {
             tests_admin_menu();
