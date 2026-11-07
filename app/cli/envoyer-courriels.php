@@ -44,6 +44,18 @@ $essais = 3;      // tentatives avant abandon
 echo "Envoi des courriels — ", date('d/m/Y à H:i'), "\n";
 echo "--------------------------------\n\n";
 
+// 1.28.0 : le site n'envoie aucun courriel. La commande reste branchée (le
+// minuteur ne tombe pas en erreur) mais elle ne fait rien — et elle le dit,
+// pour qu'on ne croie pas à une file bloquée.
+if (!site_courriels_actifs()) {
+    echo "Les courriels sont désactivés volontairement sur ce site.\n";
+    echo "Aucun message n’a été préparé, envoyé ni purgé.\n";
+    echo "Pour les réactiver : Administration → Réglages (case « Le site envoie\n";
+    echo "des courriels »), puis remplir le bloc « mail » de config.local.php.\n";
+    echo "\nRésultat : 0 envoyé, 0 en échec (courriel désactivé).\n";
+    exit(0);
+}
+
 // Tout le travail se fait dans courriel_traiter_file() : cette commande ne
 // fait que choisir les réglages et rapporter ce qui a été fait.
 $resultat = courriel_traiter_file(

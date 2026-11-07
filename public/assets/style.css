@@ -627,6 +627,16 @@ body:not(.page-admin) .nav a.nav__accent--connexion {
 
 .hero .actions { justify-content: center; }
 
+/* « Nous écrire » sur la page d'accueil publique (1.28.0) : une adresse, un
+   lien mailto ordinaire, sobre. */
+.hero__ecrire {
+    margin: 0.2rem 0 1.2rem;
+    font-size: 0.92rem;
+    color: var(--texte-doux);
+}
+
+.hero__ecrire a { color: inherit; }
+
 .hero .note,
 .note {
     border: 1px solid var(--info-bordure-2);
@@ -1589,6 +1599,15 @@ h1, h2, h3, h4, h5, h6 {
 
 .pied p { margin: 0 0 0.35rem; }
 .pied__note { font-size: 0.8rem; }
+
+/* Adresse affichée en pied de page (1.28.0) : le site n'envoie aucun courriel,
+   il donne seulement celle à qui écrire. */
+.pied__contact {
+    margin: 0.2rem 0 0;
+    font-size: 0.82rem;
+}
+
+.pied__contact a { color: inherit; }
 .pied--admin { border-top: var(--filet-double); font-style: normal; }
 
 /* --------------------------------------------------------------------------

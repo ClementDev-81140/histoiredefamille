@@ -61,11 +61,55 @@ $val = static fn (string $key, string $default = ''): string => (string) old_val
         </p>
     </div>
 
-    <div class="champ">
-        <label for="contact">Adresse de contact (facultatif)</label>
-        <input type="email" id="contact" name="contact" maxlength="190" value="<?= e($val('contact')) ?>">
-        <p class="aide">Utilisée uniquement pour indiquer à qui demander un accès.</p>
-    </div>
+    <fieldset class="champ">
+        <legend>Adresses affichées</legend>
+
+        <p class="aide">
+            Le site <strong>n’envoie aucun courriel</strong> : ces deux adresses sont seulement
+            écrites sur les pages, pour qu’on puisse vous joindre depuis l’extérieur. Un clic
+            ouvre le logiciel de courriel de la personne (lien <code>mailto:</code> ordinaire).
+        </p>
+
+        <div class="ligne-champs">
+            <div class="champ">
+                <label for="contact">Adresse de contact</label>
+                <input type="email" id="contact" name="contact" maxlength="190"
+                       value="<?= e($val('contact')) ?>" placeholder="contact@histoiredefamille.eu">
+                <p class="aide">
+                    Affichée en bas de chaque page (« Une question ? … ») et sur la page
+                    d’accueil (« Nous écrire : … »).
+                </p>
+            </div>
+
+            <div class="champ">
+                <label for="support">Adresse d’assistance</label>
+                <input type="email" id="support" name="support" maxlength="190"
+                       value="<?= e($val('support')) ?>" placeholder="support@histoiredefamille.eu">
+                <p class="aide">
+                    Affichée sur la page de connexion (« Mot de passe oublié ou besoin d’un
+                    compte ? »), dans « Mon compte » et sur les pages d’erreur.
+                </p>
+            </div>
+        </div>
+    </fieldset>
+
+    <fieldset class="champ">
+        <legend>Courriels</legend>
+
+        <label class="case">
+            <input type="checkbox" id="courriels_actifs" name="courriels_actifs" value="1"
+                   <?= checked($val('courriels_actifs') === '1') ?>>
+            Le site envoie des courriels
+        </label>
+        <p class="aide">
+            <strong>Décoché (par défaut)</strong>, le site n’envoie rien : aucune notification,
+            aucune gazette par courriel, aucun lien de désinscription. La communication passe par
+            le tchat et les écrans du site ; les comptes se transmettent à la main avec
+            « Copier le message », et un administrateur redonne un mot de passe.
+            Coché, l’envoi reprend — à condition de remplir aussi le bloc <code>'mail'</code> de
+            <code>config.local.php</code>.
+        </p>
+    </fieldset>
 
     <fieldset class="champ">
         <legend>Tchat de la famille</legend>

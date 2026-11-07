@@ -227,6 +227,18 @@ function courriel_jeton_compte(string $jeton, string $but): ?int
     return $ligne !== null ? (int) $ligne['account_id'] : null;
 }
 
+/**
+ * Phrase expliquant que l'envoi est coupé par le réglage, pas par un défaut de
+ * configuration : c'est un choix, et le site fonctionne sans courriel.
+ */
+function courriel_raison_desactive(): string
+{
+    return 'Les courriels sont désactivés volontairement sur ce site : '
+        . 'aucun message n’est préparé ni envoyé. '
+        . 'Le tchat et les écrans du site restent la seule communication. '
+        . '(Réglage dans Administration → Réglages.)';
+}
+
 /** Adresse complète du site (pour les liens des courriels). */
 function courriel_adresse_site(): string
 {
@@ -284,6 +296,12 @@ function courriel_adresse_reponse(): string
  */
 function courriel_enfiler(array $message): int
 {
+    // Réglage « courriels_actifs » faux (défaut depuis la 1.28.0) : rien n'est
+    // mis en file. Le code d'envoi reste en place, prêt à repartir.
+    if (!site_courriels_actifs()) {
+        return 0;
+    }
+
     $destinataire = courriel_adresse_normaliser((string) ($message['recipient'] ?? ''));
     if (!courriel_adresse_valide($destinataire)) {
         return 0;
@@ -419,6 +437,17 @@ function courriel_traiter_file(array $options = [], ?callable $trace = null, $co
             $trace($ligne);
         }
     };
+
+    // 0. Réglage « courriels_actifs » faux : rien n'est préparé, rien ne part,
+    //    et la file existante est laissée telle quelle (elle ne grossit plus).
+    if (!site_courriels_actifs()) {
+        $res['raison'] = courriel_raison_desactive();
+        $res['arret']  = 'desactive';
+        $dire($res['raison']);
+        $dire('Aucun message n’a été préparé ni envoyé.');
+
+        return $res;
+    }
 
     // 1. Articles programmés dont l'heure est arrivée. C'est ici, et pas à la
     //    création de l'article, qu'ils sont mis en file.
@@ -866,6 +895,14 @@ function courriel_message_brut(array $c, string $vers, string $sujet, string $te
  */
 function courriel_envoyer(array $message, $connexion = null, array $surcharge = []): array
 {
+    if (!site_courriels_actifs()) {
+        return [
+            'ok'        => false,
+            'message'   => courriel_raison_desactive(),
+            'definitif' => false,
+        ];
+    }
+
     if (!courriel_configure($surcharge)) {
         return [
             'ok'         => false,

@@ -21,6 +21,9 @@ function admin_courriels(): void
 
     render('admin/courriels', [
         'titre'     => 'Courriels',
+        // 1.28.0 : page masquée du menu, mais on peut encore y arriver par une
+        // adresse directe : elle dit alors franchement que tout est coupé.
+        'desactive' => !site_courriels_actifs(),
         'configure' => courriel_configure(),
         'raison'    => courriel_raison_non_configuree(),
         'plafond'   => courriel_plafond_jour(),
@@ -40,6 +43,12 @@ function admin_courriels_reglages(): void
 {
     require_admin();
     csrf_check();
+
+    // 1.28.0 : rien ne se règle et rien ne part quand l'envoi est coupé.
+    if (!site_courriels_actifs()) {
+        flash('erreur', 'Les courriels sont désactivés : réactivez-les dans « Réglages » avant de régler ou d’envoyer quoi que ce soit.');
+        redirect('/admin/reglages');
+    }
 
     $plafond = (int) post('plafond');
     if ($plafond < 1 || $plafond > 500) {
@@ -66,6 +75,12 @@ function admin_courriels_essai(): void
 {
     require_admin();
     csrf_check();
+
+    // 1.28.0 : rien ne se règle et rien ne part quand l'envoi est coupé.
+    if (!site_courriels_actifs()) {
+        flash('erreur', 'Les courriels sont désactivés : réactivez-les dans « Réglages » avant de régler ou d’envoyer quoi que ce soit.');
+        redirect('/admin/reglages');
+    }
 
     $compte  = current_account();
     $adresse = courriel_adresse_normaliser((string) ($compte['email'] ?? ''));

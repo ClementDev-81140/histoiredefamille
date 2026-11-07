@@ -85,6 +85,10 @@ $profilChoisi = (string) old_value($old, 'profil', $profilActuel);
         familles et ceux de sa branche.
     </p>
 
+    <?php /* 1.28.0 : le site n'envoie aucun courriel par défaut. Ni adresse,
+             ni case de consentement : rien à saisir, et les valeurs déjà
+             enregistrées ne sont ni montrées ni modifiées. */ ?>
+    <?php if (site_courriels_actifs()): ?>
     <fieldset class="champ">
         <legend>Courriels</legend>
         <p class="aide">
@@ -125,6 +129,7 @@ $profilChoisi = (string) old_value($old, 'profil', $profilActuel);
             </p>
         <?php endif; ?>
     </fieldset>
+    <?php endif; ?>
 
     <p class="actions">
         <button type="submit" class="bouton">Enregistrer</button>

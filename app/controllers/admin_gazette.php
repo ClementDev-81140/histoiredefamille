@@ -140,6 +140,13 @@ function admin_gazette_envoyer(array $params): void
         redirect('/admin/gazette');
     }
 
+    // 1.28.0 : sans courriel, « Envoyer » n'a plus d'objet — mieux vaut le dire
+    // que de mettre zéro message en file sans explication.
+    if (!site_courriels_actifs()) {
+        flash('erreur', 'Les courriels sont désactivés : ce numéro ne peut pas être envoyé. Il reste lisible en ligne.');
+        redirect('/admin/gazette/' . $id);
+    }
+
     $mis = gazette_envoyer($id);
     if ($mis === 0) {
         flash('erreur', 'Rien n’a été mis en file : ce numéro est vide, déjà envoyé, ou plus personne ne reçoit la gazette.');

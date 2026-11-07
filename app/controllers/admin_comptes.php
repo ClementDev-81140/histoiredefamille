@@ -542,15 +542,28 @@ function admin_compte_save(array $params): void
     // mais il le fait « à la demande de la personne ». Une adresse qu'il
     // saisit lui-même ne vaut jamais accord : les cases repassent à zéro.
     $emailAvant = courriel_adresse_normaliser((string) ($compte['email'] ?? ''));
-    $email      = courriel_adresse_normaliser(post('email'));
+    if (!site_courriels_actifs()) {
+        // 1.28.0 : le champ adresse n'est pas affiché. On ne touche donc à
+        // rien : ni l'adresse déjà enregistrée, ni les accords, qui restent
+        // tels quels (aucune adresse n'est montrée à l'écran).
+        $email = $emailAvant;
+    } else {
+        $email = courriel_adresse_normaliser(post('email'));
+    }
     if ($email !== '' && !courriel_adresse_valide($email)) {
         $errors[] = 'L’adresse électronique n’est pas valide (ou dépasse 190 caractères).';
     } elseif ($email !== '' && !courriel_adresse_libre($email, $id)) {
         $errors[] = 'Cette adresse est déjà utilisée par un autre compte actif.';
     }
     $adresseNouvelle = $email !== $emailAvant;
-    $notifyArticles  = !$adresseNouvelle && post('notify_articles') === '1';
-    $notifyGazette   = !$adresseNouvelle && post('notify_gazette') === '1';
+    if (!site_courriels_actifs()) {
+        // Les cases ne sont pas affichées : on conserve les accords existants.
+        $notifyArticles = (int) ($compte['notify_articles'] ?? 0) === 1;
+        $notifyGazette  = (int) ($compte['notify_gazette'] ?? 0) === 1;
+    } else {
+        $notifyArticles = !$adresseNouvelle && post('notify_articles') === '1';
+        $notifyGazette  = !$adresseNouvelle && post('notify_gazette') === '1';
+    }
     if ($email === '') {
         $notifyArticles = false;
         $notifyGazette  = false;

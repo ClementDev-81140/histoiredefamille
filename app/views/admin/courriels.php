@@ -25,6 +25,33 @@ $etats = [
     </div>
 </div>
 
+<?php if (!empty($desactive)): ?>
+    <?php /* 1.28.0 : le site n'envoie aucun courriel. La page reste accessible
+             par une adresse directe, et dit exactement ce qui est coupé. */ ?>
+    <div class="message message--info" role="status">
+        <strong>Les courriels sont désactivés sur ce site.</strong>
+        Aucun message n’est préparé ni envoyé : ni notification d’article, ni gazette par
+        courriel, ni lien de désinscription. La communication passe par le
+        <a class="lien" href="/tchat">tchat</a> et par les écrans du site.
+        <a class="lien" href="/admin/reglages">Réglages</a>
+    </div>
+
+    <section class="panneau">
+        <h2>Ce que cela change</h2>
+        <ul class="liste-personnes">
+            <li>les comptes se transmettent à la main : « Copier le message » après la création ;</li>
+            <li>un mot de passe perdu se redonne par un administrateur, dans « Comptes » ;</li>
+            <li>la gazette du mois se lit <a class="lien" href="/gazette">en ligne</a> ;</li>
+            <li>les nouveautés s’affichent sur l’accueil et dans « Dans la famille ».</li>
+        </ul>
+        <p class="aide">
+            Pour réactiver l’envoi : cocher « Le site envoie des courriels » dans les réglages,
+            puis remplir le bloc <code>'mail'</code> de <code>config.local.php</code>.
+        </p>
+    </section>
+    <?php return; ?>
+<?php endif; ?>
+
 <?php if (!$configure): ?>
     <div class="message message--alerte" role="alert">
         <strong>L’envoi de courriels n’est pas configuré.</strong>

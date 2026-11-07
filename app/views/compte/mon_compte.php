@@ -38,8 +38,16 @@ $type = compte_type($account);
         Pour changer de nom, de prénom, d’identifiant ou de branche, demandez à un
         administrateur : ces informations ne se modifient pas ici.
     </p>
+    <p class="note">
+        Besoin d’aide ? Écrivez à
+        <a href="mailto:<?= e(site_adresse('support')) ?>"><?= e(site_adresse('support')) ?></a>.
+    </p>
 </section>
 
+<?php /* 1.28.0 : le site n'envoie aucun courriel par défaut. La section
+         n'apparaît que si un administrateur a réactivé l'envoi ; sinon, ni
+         champ d'adresse, ni case de consentement, ni lien de désinscription. */ ?>
+<?php if (site_courriels_actifs()): ?>
 <section class="panneau" id="courriels">
     <h2>Mes courriels</h2>
 
@@ -114,6 +122,7 @@ $type = compte_type($account);
         </p>
     <?php endif; ?>
 </section>
+<?php endif; ?>
 
 <section class="panneau">
     <h2>Changer mon mot de passe</h2>

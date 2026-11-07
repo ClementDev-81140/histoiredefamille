@@ -31,7 +31,9 @@
     </form>
 
     <p class="note">
-        Mot de passe oublié ? Contactez un administrateur : il peut en générer un
-        nouveau en un clic. Après 5 échecs, la connexion est bloquée 15 minutes.
+        Mot de passe oublié ou besoin d’un compte ? Écrivez à
+        <a href="mailto:<?= e(site_adresse('support')) ?>"><?= e(site_adresse('support')) ?></a>.
+        Un administrateur vous répond : il peut ouvrir un compte et donner un mot de passe
+        provisoire. Après 5 échecs, la connexion est bloquée 15 minutes.
     </p>
 </section>

@@ -85,6 +85,13 @@ $pleine   = composition_colonne('public', 'pleine');
         <?php endif; ?>
 
     <?php endforeach; ?>
+
+    <?php /* Adresse affichée, jamais utilisée par le site pour envoyer : un
+             simple lien mailto, que chacun peut aussi copier à la main. */ ?>
+    <p class="hero__ecrire">
+        Nous écrire :
+        <a href="mailto:<?= e(site_adresse('contact')) ?>"><?= e(site_adresse('contact')) ?></a>
+    </p>
 </section>
 
 <?php foreach ($pleine as $bloc): ?>

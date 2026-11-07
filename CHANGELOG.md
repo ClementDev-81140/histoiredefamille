@@ -3,6 +3,119 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.28.0] — 2026-11-07
+
+### Le site n'envoie plus de courriel ; il affiche deux adresses
+
+Un site de famille n'a pas besoin d'une messagerie. Les courriels apportaient
+leur lot de pannes (mot de passe SMTP, plafond du fournisseur, messages classés
+indésirables, liens de désinscription périmés) pour un service que le **tchat**
+rend déjà : depuis la 1.28.0, **le site n'envoie aucun courriel**. Tout ce qui
+relevait de l'envoi est **coupé**, pas supprimé : le code est toujours là, prêt à
+repartir.
+
+Deux adresses restent, et servent seulement à **être jointes depuis
+l'extérieur** : `contact@histoiredefamille.eu` et
+`support@histoiredefamille.eu`. Le site les **affiche** ; il ne s'en sert jamais
+pour écrire, et ne les met ni en expéditeur ni en destinataire.
+
+#### Les deux adresses se règlent dans l'administration
+
+**Administration → Réglages → Adresses affichées** contient deux champs,
+« Adresse de contact » et « Adresse d'assistance ». Elles sont rangées dans les
+**réglages du site** (table `settings`), jamais dans le code : on les change
+sans toucher à un fichier. Le format est vérifié à l'enregistrement (une adresse
+invalide est refusée, avec un exemple), l'adresse est rangée en minuscules, et
+un champ laissé vide remet la valeur livrée avec le site — il n'y a donc jamais
+de page sans adresse à écrire.
+
+Une **seule fonction** lit ces adresses, `site_adresse('contact' | 'support')` :
+toutes les pages passent par elle. Si la valeur enregistrée était abîmée, elle
+retombe sur celle livrée avec le site plutôt que d'afficher une adresse cassée.
+
+#### Où elles apparaissent
+
+Un lien `mailto:` ordinaire, en texte lisible et copiable — pas de JavaScript,
+pas de style en ligne, pas de formulaire :
+
+| Page | Ligne affichée |
+|---|---|
+| Pied de page de **toutes** les pages, site et administration | « Une question ? » suivi de l'adresse de contact |
+| `/connexion` | « Mot de passe oublié ou besoin d'un compte ? Écrivez à » l'assistance |
+| **Mon compte** | « Besoin d'aide ? » suivi de l'adresse d'assistance |
+| Accueil public | « Nous écrire : » suivi de l'adresse de contact |
+| Pages d'erreur (404 et accès refusé) | une ligne vers l'adresse d'assistance |
+
+Aucune adresse personnelle de compte n'est affichée, nulle part : les adresses
+déjà saisies dans les comptes restent en base, invisibles à l'écran.
+
+#### Ce qui est coupé tant que les courriels sont désactivés
+
+Le réglage `courriels_actifs` est **faux par défaut**, et **faux quand il est
+absent** : une installation neuve, ou une base d'avant la 1.28.0, n'envoie donc
+rien. Dans cet état :
+
+- **rien n'entre dans la file** et rien ne part : article publié, gazette,
+  création de compte, mot de passe — les fonctions d'envoi refusent en le
+  disant (« Les courriels sont désactivés volontairement… »), pour qu'on ne
+  prenne pas une décision pour une panne ;
+- `php app/cli/envoyer-courriels.php` ne fait rien, **écrit pourquoi** et sort
+  sans erreur : la tâche automatique ne casse pas, elle s'arrête ;
+- `verifier-mise-en-ligne.php` ne réclame plus de configuration : la ligne
+  « Envoi de courriels » passe en **OK**, « courriels désactivés
+  volontairement » (elle réclamait auparavant un serveur SMTP) ;
+- le **menu « Courriels »** disparaît de l'administration ; la page
+  `/admin/courriels`, atteinte par une adresse directe, explique la décision et
+  n'offre plus ni réglage d'envoi ni essai ;
+- **Mon compte** n'a plus de section « Mes courriels » : ni champ d'adresse, ni
+  cases de consentement, ni lien de désinscription ;
+- les formulaires de **création et de modification d'un compte** n'ont plus de
+  bloc courriel ; enregistrer un compte **conserve** l'adresse et les accords
+  déjà en base (ils ne sont pas remis à zéro par un champ absent) ;
+- la **gazette** perd son envoi par courriel : plus de bouton « Envoyer la
+  gazette », plus de colonne « Envoyé le », plus de panneau « Envoi
+  automatique », et l'aperçu n'explique plus l'envoi. « Passer ce mois-ci »
+  reste ; la lecture en ligne, elle, ne change pas ;
+- la page publique de la gazette n'affiche plus « Gérer mes courriels » ;
+- le formulaire d'article n'a plus la case « Prévenir les inscrits par
+  courriel ».
+
+La **création d'un compte** garde le bouton **« Copier le message »** : le mot de
+passe se transmet à la main, comme avant. Une **réinitialisation** de mot de
+passe passe par un **administrateur**.
+
+#### Ce qui ne change pas
+
+Le **tchat** et les notifications **dans le site** (accueil, « Dans la
+famille », « À valider ») sont intacts. Aucune règle d'accès ne bouge : la
+matrice rejoue les mêmes 190 routes et les mêmes 760 vérifications, sans une
+anomalie. Aucune migration n'est nécessaire : les colonnes `email`,
+`notify_articles` et `notify_gazette` restent telles quelles, et les adresses
+déjà enregistrées ne sont ni effacées ni affichées.
+
+#### Réactiver l'envoi, si un jour
+
+Le code d'envoi est **toujours là**. Il repart en deux gestes :
+
+1. cocher **« Le site envoie des courriels »** dans Administration →
+   Réglages (case décrite plus bas dans le formulaire) ;
+2. remplir le bloc `mail` de `config.local.php` sur le Raspberry Pi, comme
+   décrit au README § 14.
+
+Décocher la case suffit à tout recouper : les messages déjà en file restent en
+file, sans être traités.
+
+#### Essais
+
+Nouvelle famille **« contacts »** : **43/43**. Elle vérifie les adresses (repli,
+réglage, format, normalisation, enregistrement par le formulaire), leur
+présence aux cinq endroits demandés en lien `mailto:`, l'absence de toute
+adresse de compte à l'écran, le refus d'enfiler et d'envoyer quand le réglage
+est faux, l'arrêt de la commande, la ligne « désactivé volontairement » de la
+vérification avant ouverture, chaque écran masqué — et leur retour quand le
+réglage est rallumé. Suite complète : **1 200 essais, 0 échec**. Lint :
+**192 fichiers, 0 erreur**.
+
 ## [1.27.0] — 2026-11-07
 
 ### Ranger des photos dans un album demandait deux détours

@@ -87,6 +87,8 @@ $envoye   = $gazette['status'] === 'envoye';
     <?php endif; ?>
 
     <p class="note">
-        <a class="lien" href="/mon-compte">Gérer mes courriels</a>
+        <?php if (site_courriels_actifs()): ?>
+            <a class="lien" href="/mon-compte">Gérer mes courriels</a>
+        <?php endif; ?>
     </p>
 </article>

@@ -15,6 +15,11 @@
         <pre class="erreur-details"><?= e((string) $details) ?></pre>
     <?php endif; ?>
 
+    <p class="note">
+        Besoin d’aide ? Écrivez à
+        <a href="mailto:<?= e(site_adresse('support')) ?>"><?= e(site_adresse('support')) ?></a>.
+    </p>
+
     <p class="actions">
         <a class="bouton" href="/">Retour à l’accueil</a>
         <?php if (!is_logged_in()): ?>

@@ -434,7 +434,14 @@ function mise_en_ligne_controles(array $options = []): array
     // Ce sont des avertissements, jamais des blocages : un site sans courriel
     // fonctionne (la file d'attente et les écrans suffisent), il prévient
     // simplement moins bien la famille.
-    if (courriel_configure()) {
+    if (!site_courriels_actifs()) {
+        // 1.28.0 : le site n'envoie aucun courriel, volontairement. Ce n'est ni
+        // un défaut ni un oubli : rien à configurer, rien à corriger.
+        mise_en_ligne_ajouter($controles, 'courriel', 'Envoi de courriels', 'ok',
+            'Courriel désactivé volontairement : le site n’envoie aucun message '
+                . '(réglage « courriels_actifs » dans Administration → Réglages). '
+                . 'La communication passe par le tchat et les écrans du site.');
+    } elseif (courriel_configure()) {
         mise_en_ligne_ajouter($controles, 'courriel', 'Envoi de courriels', 'ok',
             'Un serveur d’envoi est configuré : les notifications peuvent partir.');
     } else {
@@ -445,7 +452,11 @@ function mise_en_ligne_controles(array $options = []): array
                 . 'puis vérifiez la file : Administration → Courriels.');
     }
 
-    if ($o['systeme']) {
+    if (!site_courriels_actifs()) {
+        mise_en_ligne_ajouter($controles, 'courriel_timer', 'Envoi automatique des courriels', 'info',
+            'Sans objet : les courriels sont désactivés. Le minuteur peut rester en place, '
+                . 'la commande ne fait rien.');
+    } elseif ($o['systeme']) {
         $timerCourriels = '/etc/systemd/system/timers.target.wants/histoiredefamille-courriels.timer';
         if (is_link($timerCourriels) || is_file($timerCourriels)) {
             mise_en_ligne_ajouter($controles, 'courriel_timer', 'Envoi automatique des courriels', 'ok',

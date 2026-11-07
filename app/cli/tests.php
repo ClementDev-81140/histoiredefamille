@@ -83,6 +83,32 @@ function verifier_contient(string $nom, string $aiguille, string $foin, bool $at
     );
 }
 
+/**
+ * Active l'envoi de courriels le temps d'une famille d'essais.
+ *
+ * Depuis la 1.28.0, le site n'envoie aucun courriel par défaut : les familles
+ * qui éprouvent le code d'envoi (file, SMTP, notifications, gazette) doivent
+ * donc l'allumer explicitement. Le réglage est rétabli à la fin de la suite par
+ * tests_courriels_rendre_etat(), dans tous les cas.
+ */
+function tests_courriels_activer(): void
+{
+    if (!array_key_exists('hdf_tests_courriels_avant', $GLOBALS)) {
+        $GLOBALS['hdf_tests_courriels_avant'] = site_setting('courriels_actifs');
+    }
+    save_site_setting('courriels_actifs', '1');
+}
+
+/** Remet le réglage « courriels_actifs » tel qu'il était avant la suite. */
+function tests_courriels_rendre_etat(): void
+{
+    if (!array_key_exists('hdf_tests_courriels_avant', $GLOBALS)) {
+        return;
+    }
+    save_site_setting('courriels_actifs', (string) $GLOBALS['hdf_tests_courriels_avant']);
+    unset($GLOBALS['hdf_tests_courriels_avant']);
+}
+
 // ---------------------------------------------------------------------------
 // Tchat : mise en forme du texte des messages
 // ---------------------------------------------------------------------------
@@ -2561,6 +2587,7 @@ require_once __DIR__ . '/tests_courriels.php';
 require_once __DIR__ . '/tests_gazette.php';
 require_once __DIR__ . '/tests_carte.php';
 require_once __DIR__ . '/tests_envoi.php';
+require_once __DIR__ . '/tests_contacts.php';
 require_once __DIR__ . '/tests_conversion.php';
 require_once __DIR__ . '/tests_profils.php';
 require_once __DIR__ . '/tests_album.php';
@@ -2622,6 +2649,12 @@ if ($filtre === '' || $filtre === 'album') {
     tests_album();
 }
 
+// Adresses affichées et courriels coupés (1.28.0) : après les autres familles,
+// qui peuvent avoir allumé l'envoi pour éprouver leur propre code.
+if ($filtre === '' || $filtre === 'contacts') {
+    tests_contacts();
+}
+
 // ---------------------------------------------------------------------------
 // Adresses des fichiers du site : le numéro de version force le rechargement
 // ---------------------------------------------------------------------------
@@ -2638,6 +2671,10 @@ if ($filtre === '' || $filtre === 'assets') {
         str_contains((string) @file_get_contents(dirname(__DIR__) . '/views/layout.php'), "asset_url('/assets/style.css')")
         && str_contains((string) @file_get_contents(dirname(__DIR__) . '/views/layout_admin.php'), "asset_url('/assets/style.css')"));
 }
+
+// Le réglage « courriels_actifs » est remis dans l'état où il était avant la
+// suite (les familles d'essai de l'envoi l'allument le temps de leurs tests).
+tests_courriels_rendre_etat();
 
 $total = $reussis + count($echecs);
 echo "\n", $total, " test(s) — ", $reussis, " ok, ", count($echecs), " échec(s).\n";

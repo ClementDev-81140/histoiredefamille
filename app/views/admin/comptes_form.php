@@ -90,6 +90,7 @@ $val = static fn (string $cle, string $defaut = ''): string => (string) old_valu
             </div>
         </div>
 
+        <?php if (site_courriels_actifs()): ?>
         <div class="champ">
             <label for="email">Adresse électronique (facultatif)</label>
             <input type="email" id="email" name="email" maxlength="190"
@@ -100,6 +101,7 @@ $val = static fn (string $cle, string $defaut = ''): string => (string) old_valu
                 personne qui coche ses cases dans « Mon compte ».
             </p>
         </div>
+        <?php endif; ?>
 
         <div class="champ">
             <label for="branche_une">Branche</label>

@@ -3,6 +3,41 @@
 Ce fichier liste ce qui reste à faire, classé par priorité. Il n'y a pas de
 suivi automatique : cochez au fur et à mesure.
 
+## Fait (2026-11-07, 1.28.0 — aucun courriel, deux adresses affichées)
+
+- [x] **Le site n'envoie aucun courriel** : `courriels_actifs` **faux par
+  défaut** (absent = faux). Tant qu'il est faux, rien n'entre dans la file et
+  rien ne part (article, gazette, création de compte, proposition, mot de
+  passe) ; `courriel_enfiler()`, `courriel_envoyer()` et
+  `courriel_traiter_file()` refusent en disant que c'est **volontaire**.
+- [x] **Deux adresses affichées seulement** : `contact@histoiredefamille.eu` et
+  `support@histoiredefamille.eu`, en **réglages** (Administration → Réglages),
+  jamais dans le code, lues par **une seule fonction** `site_adresse()`. Format
+  vérifié, minuscules, champ vide → valeur livrée, valeur abîmée jamais affichée.
+- [x] **Affichage** en lien `mailto:` ordinaire, texte lisible et copiable,
+  **sans JavaScript, sans style en ligne, sans formulaire** : pied de page de
+  toutes les pages, page de connexion, « Mon compte », accueil public, pages
+  d'erreur 404 et accès refusé.
+- [x] **Écrans masqués** : menu « Courriels » (et la page elle-même, qui
+  explique la décision), réglages d'envoi et essai, bouton « Envoyer la
+  gazette », colonne « Envoyé le », panneau « Envoi automatique », case
+  « Prévenir les inscrits », champs d'adresse et cases de consentement de
+  « Mon compte » et des formulaires de comptes, lien « Gérer mes courriels ».
+- [x] **Rien de perdu** : le code d'envoi n'est pas supprimé (réactivation par
+  la case + le bloc `mail` de `config.local.php`) ; enregistrer un compte
+  **conserve** l'adresse et les accords déjà en base ; « Copier le message »
+  reste à la création d'un compte ; réinitialisation de mot de passe par un
+  administrateur ; **tchat et notifications du site inchangés** ; **aucune règle
+  d'accès modifiée**, **aucune migration**, aucune adresse personnelle affichée.
+- [x] **Commande et vérification** : `app/cli/envoyer-courriels.php` s'arrête en
+  l'écrivant ; `verifier-mise-en-ligne.php` affiche « Envoi de courriels » en
+  **OK** — « courriels désactivés volontairement ».
+- [x] **Essais** : famille « contacts » **43/43** ; suite complète **1 200
+  essais, 0 échec** ; lint **192 fichiers, 0 erreur** ; matrice regénérée.
+- [x] **Documentation** : CHANGELOG 1.28.0, README § 6.20 et § 14 (bandeau
+  « désactivés, comment réactiver »), § 15 (gazette sans envoi), TODO,
+  `config.example.php`.
+
 ## Fait (2026-11-07, 1.27.0 — ajouter des photos dans un album)
 
 - [x] **Bouton « Ajouter des photos »** sur le formulaire d'un album

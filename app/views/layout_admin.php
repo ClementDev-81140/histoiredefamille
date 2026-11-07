@@ -110,7 +110,9 @@ $navLink = static function (string $href, string $label, bool $exact = false) us
         <?= $navLink('/admin/lieux', 'Lieux à placer') ?>
 
         <p class="admin-menu__titre">Journal</p>
-        <?= $navLink('/admin/courriels', 'Courriels') ?>
+        <?php if (site_courriels_actifs()): ?>
+            <?= $navLink('/admin/courriels', 'Courriels') ?>
+        <?php endif; ?>
         <?= $navLink('/admin/gazette', 'Gazette du mois') ?>
         <?= $navLink('/admin/apparence', 'Apparence du journal') ?>
         <?= $navLink('/admin/composition', 'Composition des pages') ?>
@@ -140,6 +142,10 @@ $navLink = static function (string $href, string $label, bool $exact = false) us
     <div class="conteneur">
         <p class="pied__note">
             Les comptes administrateurs sont personnels. Chaque action est enregistrée dans le journal.
+        </p>
+        <p class="pied__contact">
+            Une question ?
+            <a href="mailto:<?= e(site_adresse('contact')) ?>"><?= e(site_adresse('contact')) ?></a>
         </p>
     </div>
 </footer>

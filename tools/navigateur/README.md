@@ -5,8 +5,9 @@ PHP ne peut voir : le comportement du formulaire pendant et après un envoi par
 morceaux (champ « Fichier », champ caché `envoi`, lien-ancre, clic sur le
 bouton d'enregistrement), les deux boutons de la liste des fichiers reçus
 (**Créer le document**, **Supprimer** et sa confirmation), et l'ajout de photos
-dans un album (**Ajouter des photos**, dépôt, formulaires de la liste), à
-390 px et à 1280 px, en thème **papier** et **bleu**.
+dans un album (**Ajouter des photos**, dépôt, formulaires de la liste), et les
+**adresses affichées** avec les écrans de courriel masqués (1.28.0), à 390 px et
+à 1280 px, en thème **papier** et **bleu**.
 
 Ils ne font **pas** partie du site : `tools/` est hors de la racine web et rien
 n'y est chargé en production.
@@ -105,6 +106,44 @@ ALBUM_ID=7 SKU_ADMIN=album-admin-banc SKU_VISITEUR=album-visiteur-banc \
 # THEME_CSS=/tmp/theme-bleu.css (rendu après avoir choisi le thème « bleu »
 # dans Administration → Apparence).
 ```
+
+### Les adresses affichées, et les écrans de courriel masqués (1.28.0)
+
+Quatre pages suffisent : l'accueil public, la connexion, « Mon compte » (compte
+1) et une adresse qui n'existe pas (la page 404). Les courriels doivent être
+**coupés** dans la base d'essai (`courriels_actifs` à `0`), sinon « Mes
+courriels » réapparaît dans « Mon compte » — c'est justement ce que le contrôle
+vérifie.
+
+```bash
+# 1. Les pages par le routeur réel (compte 0 = visiteur).
+for trio in "/ accueil 0" "/connexion connexion 0" "/mon-compte moncompte 1" \
+            "/page-qui-n-existe-vraiment-pas erreur404 0"; do
+    set -- $trio
+    HDF_CONFIG=/chemin/config.local.php php tools/navigateur/rendre.php \
+        "$1" "/tmp/$2.html" "$3"
+done
+
+# 2. Le serveur d'essai (serveur.mjs), dans un autre terminal.
+PAGES_ALBUM='{"/":"/tmp/accueil.html","/connexion":"/tmp/connexion.html",
+  "/mon-compte":"/tmp/moncompte.html",
+  "/page-qui-n-existe-vraiment-pas":"/tmp/erreur404.html"}' \
+THEME_CSS=/tmp/theme-papier.css CAPTURES=/tmp node tools/navigateur/serveur.mjs
+
+# 3. Le contrôle, aux deux largeurs et dans les deux thèmes.
+THEME=papier THEME_FOND='rgb(243, 231, 206)' \
+    node tools/navigateur/actions-contacts.mjs 390
+# puis 1280, puis THEME=bleu THEME_FOND='rgb(246, 245, 242)' avec
+# THEME_CSS=/tmp/theme-bleu.css (rendu après avoir choisi le thème « bleu »
+# dans Administration → Apparence).
+```
+
+Il vérifie que chaque adresse est un lien `mailto:` **ordinaire** (ni `onclick`,
+ni style en ligne), qu'elle est visible et **tient dans la largeur** à 390 px,
+que son **contraste** dépasse 4,5 dans les deux palettes, que la page ne
+déborde pas horizontalement, que « Mon compte » n'a **ni champ d'adresse, ni case
+de consentement, ni section « Mes courriels »**, et qu'aucune page ne lève
+d'erreur JavaScript.
 
 Les captures d'écran et le corps du formulaire posté (fichiers `capture-*.txt`)
 sont écrits dans `/tmp` (ou dans `CAPTURES=`).

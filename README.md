@@ -93,7 +93,8 @@ et une installation qui tient en quelques commandes à copier-coller.
 - Un **menu de gauche rangé par métier**, pas par partie du site : *Contenus*
   (articles, pages, documents, albums, vidéos, recettes, catégories), *Envois*,
   *Personnes* (arbre, comptes, branches, administrateurs, lieux),
-  *Journal* (courriels, gazette, apparence, composition) et *Système*, avec
+  *Journal* (gazette, apparence, composition, et « courriels » **seulement si
+  l'envoi est réactivé** — voir § 14) et *Système*, avec
   « À valider » et son compteur en tête.
 - Un **tableau de bord en une carte « Contenus »** : documents, articles,
   pages, vidéos, personnes, comptes et propositions à valider, plus une ligne
@@ -478,7 +479,9 @@ histoiredefamille/
 │   │                        vérification avant ouverture (mise_en_ligne),
 │   │                        carte des lieux, envoi de gros fichiers (envoi),
 │   │                        conversion des vidéos (conversion), données de
-│   │                        démonstration et purge de ces données (demo)…
+│   │                        démonstration et purge de ces données (demo),
+│   │                        adresses affichées et réglage des courriels
+│   │                        (contacts)…
 │   ├── views/               gabarits PHP (public, famille, admin)
 │   ├── migrations/          fichiers SQL numérotés
 │   │                        (001_init … 017_versions_propositions)
@@ -960,7 +963,8 @@ L'administrateur ouvre **Administration → À valider** (compteur dans le menu 
 sur le tableau de bord), lit l'aperçu, puis :
 - **Valider** — en choisissant la visibilité, **privé par défaut** ; le contenu
   est publié comme s'il avait été créé par un administrateur, et les lecteurs
-  sont prévenus par courriel selon leurs préférences ;
+  sont prévenus par courriel selon leurs préférences (si l'envoi a été
+  réactivé : par défaut, le site n'envoie rien, voir § 14) ;
 - **Refuser** — avec un **motif obligatoire**, que l'auteur lit dans son espace.
 
 Une proposition se corrige à tout moment : tant qu'elle n'est pas validée, elle
@@ -1564,6 +1568,33 @@ Seul un **administrateur** voit et utilise ce bouton ; un visiteur, un lecteur
 ou un journaliste ne l'a jamais. Côté serveur, tout envoi vers un album est
 réservé au compte connecté, protégé par le jeton CSRF, et la création de la
 fiche est atomique : un double clic ne peut pas créer deux photos.
+
+### 6.20 Écrire au site : les deux adresses affichées
+
+Le site **n'envoie aucun courriel**. La seule conversation entre les personnes,
+c'est le **tchat** (§ 6.10) et les notifications affichées dans le site
+(accueil, « Dans la famille », « À valider »). Deux adresses servent uniquement
+à **être jointes depuis l'extérieur** :
+
+| Adresse | À quoi elle sert |
+|---|---|
+| `contact@histoiredefamille.eu` | la question générale, le pied de page de toutes les pages, « Nous écrire » sur l'accueil |
+| `support@histoiredefamille.eu` | le coup de main : mot de passe oublié, besoin d'un compte, page d'erreur, « Mon compte » |
+
+Elles s'affichent en **texte lisible et copiable**, sous forme de lien `mailto:`
+ordinaire : cliquer dessus ouvre votre logiciel de courrier, avec l'adresse déjà
+écrite. Rien d'autre ne se passe — pas de formulaire, pas de JavaScript, et le
+site ne voit jamais votre message.
+
+**Les changer** : Administration → Réglages → *Adresses affichées*. Deux champs,
+« Adresse de contact » et « Adresse d'assistance ». Ils sont enregistrés dans les
+réglages du site (pas dans le code), leur format est vérifié, et un champ laissé
+vide remet l'adresse livrée avec le site — il n'y a donc jamais de page sans
+adresse à écrire. Une adresse enregistrée mais illisible n'est jamais montrée :
+le site retombe alors sur celle livrée avec lui.
+
+Aucune adresse personnelle de compte (celle d'un lecteur, d'un journaliste) n'est
+jamais affichée, ni dans l'administration, ni ailleurs.
 
 ## 7. Mettre à jour le site
 
@@ -2520,8 +2551,10 @@ Quatre états, et deux seulement comptent pour le verdict :
 | `AVERTIR` | à regarder, mais **n'empêche jamais d'ouvrir** : le site fonctionne |
 
 Les avertissements sont là pour être lus, pas pour empêcher d'ouvrir : une clé
-USB qu'on branchera demain, un courriel pas encore réglé, un HTTPS obligatoire
-qu'on activera après le premier essai en local. La commande les affiche à part
+USB qu'on branchera demain, un HTTPS obligatoire qu'on activera après le premier
+essai en local. (L'envoi de courriels, lui, n'est plus une source
+d'avertissement : désactivé volontairement, il est annoncé **OK** —
+« courriels désactivés volontairement ».) La commande les affiche à part
 et conclut quand même `PRÊT À OUVRIR`.
 
 Ce qui est contrôlé, et pourquoi :
@@ -2603,6 +2636,23 @@ C'est fait. Envoyez l'adresse et les identifiants à la famille.
 ---
 
 ## 14. Envoyer des courriels
+
+> **Les courriels sont désactivés sur ce site.** Depuis la 1.28.0, le site
+> **n'envoie rien** : pas de message à la création d'un compte, à la
+> publication d'un article, à la validation d'une proposition, ni de gazette
+> par courriel. Rien n'entre dans la file d'envoi, la tâche automatique
+> s'arrête en le disant, et la vérification avant ouverture ne réclame plus de
+> configuration SMTP. Tout le reste marche : **tchat**, et notifications
+> affichées dans le site. Pour joindre la famille depuis l'extérieur, ce sont
+> les deux adresses affichées (§ 6.20).
+>
+> **Pour réactiver l'envoi**, si le besoin revient : (1) dans
+> **Administration → Réglages**, cocher **« Le site envoie des courriels »** ;
+> (2) remplir le bloc `mail` de `config.local.php` sur le Raspberry Pi comme ce
+> chapitre l'explique, puis recharger Apache. Les écrans masqués reviennent
+> d'eux-mêmes ; décocher la case les recoupe. Le code n'a rien perdu : les
+> colonnes `email`, `notify_articles` et `notify_gazette` sont intactes, et les
+> adresses déjà saisies n'ont pas été effacées.
 
 Le site peut prévenir la famille de deux façons, **toujours avec l'accord de la
 personne** :
@@ -2769,6 +2819,13 @@ systemctl list-timers histoiredefamille-courriels.timer
 journalctl -u histoiredefamille-courriels.service -n 30
 ```
 
+Tant que les courriels sont désactivés, la tâche continue de tourner mais
+**ne fait rien** : elle écrit « Les courriels sont désactivés volontairement »
+dans son journal et sort sans erreur. Ce message n'est pas une panne, c'est le
+réglage ; il disparaît quand vous cochez la case dans Administration →
+Réglages.
+```
+
 La première commande doit afficher une prochaine exécution (toutes les
 5 minutes). La seconde montre les derniers envois, avec les adresses masquées.
 
@@ -2811,9 +2868,9 @@ journal → Titres des encarts** (les six titres « Gazette : … »).
 
 | Quand | Ce qui se passe |
 |---|---|
-| Le **1er du mois** | La tâche automatique (celle qui envoie les courriels, toutes les 5 minutes) prépare un numéro par groupe de droits, à partir du mois écoulé. Le numéro porte l'état **« À valider »**. |
+| Le **1er du mois** | La tâche automatique (celle qui envoie les courriels, toutes les 5 minutes) prépare un numéro par groupe de droits, à partir du mois écoulé. Le numéro porte l'état **« À valider »**. Elle ne le fait que si l'envoi est réactivé (§ 14) ; sinon, le numéro se crée à la demande depuis **Administration → Gazette du mois**. |
 | Quand vous voulez | **Administration → Gazette du mois** : vous relisez le numéro, vous pouvez **retirer un élément** (il ne partira pas), le remettre, et écrire un **mot de l'éditeur** (600 caractères). |
-| Vous cliquez **Envoyer** | Le site met un message en file pour chaque personne du groupe. Les messages partent dans les cinq minutes. Le numéro passe à « Envoyé ». |
+| Vous cliquez **Envoyer** (envoi réactivé seulement) | Le site met un message en file pour chaque personne du groupe. Les messages partent dans les cinq minutes. Le numéro passe à « Envoyé ». |
 | Vous cliquez **Passer ce mois-ci** | Aucun message ne part. Le numéro reste consultable dans l'administration. |
 
 ### 15.3 L'aperçu est fidèle
@@ -2849,9 +2906,11 @@ La page « Lire en ligne » ne montre aucun bouton d'administration : elle sert
 
 ### 15.6 Ce qu'il faut savoir avant d'ouvrir
 
-- La gazette utilise la tâche d'envoi des courriels : sans configuration SMTP
-  (voir la section précédente), les numéros sont préparés mais **rien ne
-  part**. La page d'administration vous le rappelle.
+- **Les courriels sont désactivés sur ce site** (§ 14) : un numéro se prépare,
+  se relit, se publie **en ligne** — mais rien ne part par courriel, et le
+  bouton « Envoyer la gazette » n'est pas proposé. Pour l'envoi par courriel,
+  réactivez-le d'abord (§ 14) : sans configuration SMTP, les numéros seraient
+  préparés mais **rien ne partirait**.
 - Un numéro déjà envoyé ne peut plus être modifié (ni élément, ni mot).
 - Les liens du numéro mènent aux pages du site : si un contenu a été supprimé
   depuis, le lien répond simplement « introuvable ».

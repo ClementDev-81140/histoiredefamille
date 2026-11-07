@@ -25,7 +25,12 @@ function config_defaults(): array
             'subtitle'    => '',
             'url'         => '',
             'description' => '',
-            'contact'     => '',
+            // Adresses **affichées** (jamais utilisées pour envoyer) : elles se
+            // règlent dans Administration → Réglages (table `settings`). Ici,
+            // seulement les valeurs de départ, si le réglage n'existe pas.
+            'contact'           => 'contact@histoiredefamille.eu',
+            'support'           => 'support@histoiredefamille.eu',
+            'courriels_actifs'  => '0',
         ],
         'https_only' => true,
         'debug'      => false,

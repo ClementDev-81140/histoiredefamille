@@ -56,6 +56,13 @@ function mon_compte_courriels(): void
     require_login();
     csrf_check();
 
+    // 1.28.0 : les courriels sont désactivés par défaut. La section n'est même
+    // pas affichée ; une requête directe est refusée proprement.
+    if (!site_courriels_actifs()) {
+        flash('erreur', 'Les courriels sont désactivés sur ce site : la communication passe par le tchat.');
+        redirect('/mon-compte');
+    }
+
     $account = current_account();
     if ($account === null) {
         redirect('/connexion');

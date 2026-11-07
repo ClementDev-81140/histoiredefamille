@@ -69,6 +69,10 @@ function tests_courriels(): void
 {
     echo "Courriels — adresses, accords, jetons, file, SMTP, notifications\n";
 
+    // 1.28.0 : l'envoi est coupé par défaut. Cette famille éprouve le code
+    // d'envoi lui-même : elle l'allume, et la suite rétablit le réglage.
+    tests_courriels_activer();
+
     // -----------------------------------------------------------------------
     // 1. Adresses
     // -----------------------------------------------------------------------

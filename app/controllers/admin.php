@@ -181,7 +181,12 @@ function admin_settings(): void
             // La description affichée sur le site, même quand elle vient de
             // la phrase livrée par défaut : le champ dit ce que l'on voit.
             'description' => apparence_description_site(),
-            'contact'     => site_setting('contact'),
+            // Adresses **affichées** (jamais utilisées pour envoyer) : la
+            // valeur effective, donc celle livrée avec le site si le réglage
+            // n'a pas encore été enregistré.
+            'contact'     => site_adresse('contact'),
+            'support'     => site_adresse('support'),
+            'courriels_actifs' => site_courriels_actifs() ? '1' : '0',
             // Adresse publique : elle sert dans les messages d'accès envoyés
             // aux personnes. Vide, on reprend celle du fichier de configuration.
             'adresse'     => site_setting('adresse') !== ''
@@ -213,6 +218,9 @@ function admin_settings_save(): void
         'subtitle'    => post('subtitle'),
         'description' => post('description'),
         'contact'     => post('contact'),
+        'support'     => post('support'),
+        // Case à cocher : absente de l'envoi quand elle est décochée.
+        'courriels_actifs' => post('courriels_actifs') === '1' ? '1' : '0',
         'adresse'     => rtrim(post('adresse'), '/'),
         // Ligne de conduite du journal (facultatif).
         'devise'      => post('devise'),
@@ -235,8 +243,19 @@ function admin_settings_save(): void
     if (mb_strlen($values['subtitle']) > 150 || mb_strlen($values['description']) > 500) {
         $errors[] = 'Le sous-titre (150) ou la description (500) est trop long.';
     }
-    if ($values['contact'] !== '' && !filter_var($values['contact'], FILTER_VALIDATE_EMAIL)) {
-        $errors[] = 'L’adresse de contact n’est pas valide.';
+    // Les deux adresses affichées : vides, elles reprennent celles livrées avec
+    // le site (jamais de page sans adresse) ; remplies, leur format est vérifié.
+    foreach (['contact' => 'contact', 'support' => 'assistance'] as $cle => $libelle) {
+        $adresse = courriel_adresse_normaliser((string) $values[$cle]);
+        if ($adresse === '') {
+            $values[$cle] = SITE_ADRESSES_DEFAUT[$cle];
+            continue;
+        }
+        if (!courriel_adresse_valide($adresse)) {
+            $errors[] = 'L’adresse de ' . $libelle . ' n’est pas valide (exemple : '
+                . SITE_ADRESSES_DEFAUT[$cle] . ').';
+        }
+        $values[$cle] = $adresse;
     }
     if ($values['adresse'] !== '') {
         $parties = parse_url($values['adresse']);
@@ -280,6 +299,9 @@ function admin_settings_save(): void
         (int) current_account()['id'],
         'reglages',
         'Modification des réglages du site (tchat : retour en arrière possible dans « Réglages »)'
+            . ' — courriels ' . ($values['courriels_actifs'] === '1' ? 'activés' : 'désactivés')
+            . ', adresses affichées ' . courriel_masquer($values['contact'])
+            . ' et ' . courriel_masquer($values['support'])
     );
     flash('succes', 'Les réglages ont été enregistrés.');
     redirect('/admin/reglages');

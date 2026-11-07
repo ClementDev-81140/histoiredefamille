@@ -170,6 +170,12 @@ $navClass = static function (string $href) use ($currentPath): string {
             <?php if ($siteSub !== ''): ?> — <?= e($siteSub) ?><?php endif; ?>
         </p>
         <p class="pied__note"><?= e(apparence_pied()) ?></p>
+        <?php /* Un lien mailto ordinaire : le site n'envoie aucun courriel, il
+                 affiche seulement l'adresse (réglable dans « Réglages »). */ ?>
+        <p class="pied__contact">
+            Une question ?
+            <a href="mailto:<?= e(site_adresse('contact')) ?>"><?= e(site_adresse('contact')) ?></a>
+        </p>
     </div>
 </footer>
 

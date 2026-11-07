@@ -22,7 +22,16 @@ return [
         // Phrase de la page d'accueil et description pour les moteurs de
         // recherche. Elle ne parle pas de l'arbre : un visiteur ne le voit pas.
         'description' => 'Les souvenirs de la famille : documents, photos, récits et nouvelles.',
-        'contact'     => '',                               // adresse e-mail de contact (facultatif)
+        // Adresses AFFICHÉES seulement (le site ne s'en sert jamais pour
+        // écrire). Elles se règlent dans Administration → Réglages, qui les
+        // range dans la base ; ces deux lignes ne servent que de valeurs de
+        // départ si le réglage n'existe pas encore. Un champ vide dans les
+        // réglages remet l'adresse livrée avec le site.
+        'contact'     => 'contact@histoiredefamille.eu',   // « Une question ? », accueil
+        'support'     => 'support@histoiredefamille.eu',   // mot de passe oublié, aide
+        // Le site n'envoie aucun courriel par défaut (voir README § 14). Ne
+        // passez à '1' qu'après avoir rempli le bloc « mail » plus bas.
+        'courriels_actifs' => '0',
     ],
 
     // Mettre à true en production (le site est servi en HTTPS par Cloudflare).
@@ -158,9 +167,11 @@ return [
     // Courriels (facultatif)
     // ------------------------------------------------------------------
     // Le site n'envoie des courriels que si ce bloc est rempli ET si la
-    // personne a coché son accord dans « Mon compte ». Sans ce bloc, tout le
-    // reste du site fonctionne : les messages attendent simplement dans la
-    // file (« Administration → Courriels »).
+    // personne a coché son accord. **Le site n'envoie aucun courriel par
+    // défaut** (depuis la 1.28.0) : remplir ce bloc ne suffit donc pas, il faut
+    // aussi cocher « Le site envoie des courriels » dans Administration →
+    // Réglages. Tant que l'envoi est désactivé, rien n'entre dans la file et
+    // tout le reste du site fonctionne (tchat, notifications dans le site).
     //
     // Où trouver ces renseignements ? Voir README, section
     // « Envoyer des courriels » : ce sont les paramètres SMTP de votre

@@ -155,7 +155,15 @@ $publishedAt = (string) old_value($old, 'published_at', date('Y-m-d\TH:i', $ts))
             ? (string) old_value($old, 'notify', '1') === '1'
             : (int) ($article['notify'] ?? 1) === 1;
         ?>
-        <?php if ($status === 'publie'): ?>
+        <?php if (!site_courriels_actifs()): ?>
+            <?php /* 1.28.0 : le site n'envoie aucun courriel ; la case n'a plus
+                     d'objet, et l'article paraît sans prévenir personne. */ ?>
+            <p class="aide">
+                Les courriels sont désactivés : l’article paraîtra dans le journal, sans
+                notification. Il apparaît dans <strong>Nouveautés</strong> et dans la gazette
+                du mois, que chacun lit en ligne.
+            </p>
+        <?php elseif ($status === 'publie'): ?>
             <label class="case">
                 <input type="checkbox" name="notify" value="1" <?= checked($prevenir) ?>>
                 Prévenir les inscrits par courriel

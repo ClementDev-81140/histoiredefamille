@@ -35,6 +35,20 @@ Les autres fichiers (albums publics, articles, arbre, calendrier, frise, tchat,
 vidéos, recettes) datent des versions précédentes : les pages correspondantes
 n'ont ni menu d'administration ni changement depuis.
 
+### 1.28.0 — pages refaites dans le banc, PNG de référence inchangés
+
+La 1.28.0 change des pages visibles sur **toutes** les pages (une ligne « Une
+question ? » avec l'adresse de contact dans le pied de page), sur l'accueil
+(« Nous écrire »), la connexion, « Mon compte », les pages d'erreur, la gazette
+et les réglages. Les PNG de référence ci-dessus **n'ont pas été refaits** : ils
+demandent la base de démonstration et l'intégration des images. En attendant,
+les captures de contrôle ont été prises dans le banc (`tools/navigateur/
+actions-contacts.mjs`) en **390 px et 1280 px**, palette **papier** et **bleu**,
+pour l'accueil, la connexion, « Mon compte » et la page 404 : **14 contrôles ×
+4, 0 échec**. Elles servent à vérifier la place et la lisibilité des adresses,
+pas à illustrer le README ; les PNG de référence seront refaits à la prochaine
+version qui touche la démonstration.
+
 ### 1.26.0 — aucune capture refaite
 
 La version 1.26.0 ne change **aucune page visible** : elle corrige des

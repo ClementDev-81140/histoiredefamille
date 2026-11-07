@@ -117,7 +117,9 @@ foreach ($gazette['contenu_array']['sections'] as $section) {
 <?php if ($retires !== []): ?>
     <section class="panneau">
         <h2>Éléments retirés</h2>
-        <p class="aide">Ils ne figureront ni dans l’aperçu ci-dessus, ni dans le courriel.</p>
+        <p class="aide">
+            Ils ne figureront ni dans l’aperçu ci-dessus<?= site_courriels_actifs() ? ', ni dans le courriel' : '' ?>.
+        </p>
         <ul class="gazette__liste">
             <?php foreach ($retires as $item): ?>
                 <li class="gazette__element gazette__element--retire">
@@ -153,18 +155,28 @@ foreach ($gazette['contenu_array']['sections'] as $section) {
 <?php if ($ouvert): ?>
     <section class="panneau">
         <h2>Envoyer, ou passer</h2>
-        <p>
-            « Envoyer » met un message en file pour chaque personne de ce groupe qui a coché
-            « Je veux recevoir la gazette ». Les messages partent dans les cinq minutes, par la
-            tâche automatique — jamais pendant une visite du site.
-        </p>
+        <?php if (site_courriels_actifs()): ?>
+            <p>
+                « Envoyer » met un message en file pour chaque personne de ce groupe qui a coché
+                « Je veux recevoir la gazette ». Les messages partent dans les cinq minutes, par
+                la tâche automatique — jamais pendant une visite du site.
+            </p>
+        <?php else: ?>
+            <p>
+                <strong>Les courriels sont désactivés :</strong> ce numéro ne part à personne. Il
+                reste consultable <a class="lien" href="/gazette">en ligne</a>, et
+                « Passer ce mois-ci » le classe sans rien envoyer.
+            </p>
+        <?php endif; ?>
         <div class="actions">
+            <?php if (site_courriels_actifs()): ?>
             <form method="post" action="/admin/gazette/<?= (int) $gazette['id'] ?>/envoyer">
                 <?= csrf_field() ?>
                 <button type="submit" class="bouton" <?= $sections === [] ? 'disabled' : '' ?>>
                     Envoyer la gazette
                 </button>
             </form>
+            <?php endif; ?>
             <form method="post" action="/admin/gazette/<?= (int) $gazette['id'] ?>/passer">
                 <?= csrf_field() ?>
                 <button type="submit" class="bouton bouton--secondaire">Passer ce mois-ci</button>
