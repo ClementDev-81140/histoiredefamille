@@ -188,6 +188,54 @@ function mise_en_ligne_analyser_reponse(string $brut): array
 }
 
 /**
+ * Valeurs réellement reçues pour un en-tête, quelle que soit la casse de son
+ * nom — et même s'il est arrivé plusieurs fois.
+ *
+ * Un en-tête envoyé deux fois arrive de trois manières :
+ *  - deux lignes distinctes, que mise_en_ligne_analyser_reponse() joint par
+ *    « | » ;
+ *  - une seule ligne, les valeurs séparées par une virgule (certains
+ *    mandataires et Apache le font pour les en-têtes qui n'admettent pas la
+ *    virgule dans leurs valeurs : X-Frame-Options, nosniff, HSTS) ;
+ *  - avec un nom écrit dans une autre casse (« x-frame-options »).
+ *
+ * Les trois formes sont reconnues : c'est ce qui permet de dire « envoyé
+ * 2 fois » au lieu de lire « DENY, DENY » et de conclure « manquant ».
+ *
+ * @param array<string, string> $entetes en-têtes décodés (noms en minuscules)
+ * @return array<int, string> les valeurs, dans l'ordre reçu
+ */
+function mise_en_ligne_entete_valeurs(array $entetes, string $nom, bool $virgules = false): array
+{
+    $nom     = strtolower(trim($nom));
+    $valeurs = [];
+
+    foreach ($entetes as $cle => $valeur) {
+        if (strtolower(trim((string) $cle)) !== $nom) {
+            continue;
+        }
+        $morceaux = explode(' | ', (string) $valeur);
+        if ($virgules) {
+            $etendus = [];
+            foreach ($morceaux as $morceau) {
+                foreach (explode(',', $morceau) as $bout) {
+                    $etendus[] = $bout;
+                }
+            }
+            $morceaux = $etendus;
+        }
+        foreach ($morceaux as $morceau) {
+            $morceau = trim($morceau);
+            if ($morceau !== '') {
+                $valeurs[] = $morceau;
+            }
+        }
+    }
+
+    return $valeurs;
+}
+
+/**
  * Tous les contrôles.
  *
  * @return array<int, array{cle: string, titre: string, statut: string, detail: string, remede: string}>
@@ -466,31 +514,92 @@ function mise_en_ligne_controles(array $options = []): array
                 'Vérifiez qu’Apache tourne : sudo systemctl status apache2. La vérification des en-têtes ne peut se faire que depuis le Raspberry Pi.');
         } else {
             $entetes = $reponse['entetes'];
-            $csp = (string) ($entetes['content-security-policy'] ?? '');
+
+            // Ce qui doit arriver, et à quoi ressemble une valeur acceptable.
+            // La CSP attendue est la plus stricte du site : aucune ressource
+            // externe, aucun script ni style en ligne.
+            $attendus = [
+                'content-security-policy' => [
+                    'libelle'  => 'Content-Security-Policy',
+                    'verifier' => static fn (string $v): bool => str_contains($v, "default-src 'self'")
+                        && preg_match('/unsafe-(inline|eval)/i', $v) !== 1,
+                    'virgules' => false,
+                ],
+                'x-frame-options' => [
+                    'libelle'  => 'X-Frame-Options',
+                    'verifier' => static fn (string $v): bool => strtoupper(trim($v)) === 'DENY',
+                    'virgules' => true,
+                ],
+                'x-content-type-options' => [
+                    'libelle'  => 'X-Content-Type-Options',
+                    'verifier' => static fn (string $v): bool => strtolower(trim($v)) === 'nosniff',
+                    'virgules' => true,
+                ],
+                'referrer-policy' => [
+                    'libelle'  => 'Referrer-Policy',
+                    'verifier' => static fn (string $v): bool => $v !== '',
+                    'virgules' => false,
+                ],
+                'permissions-policy' => [
+                    'libelle'  => 'Permissions-Policy',
+                    'verifier' => static fn (string $v): bool => $v !== '',
+                    'virgules' => false,
+                ],
+            ];
+            if ($o['https_only']) {
+                $attendus['strict-transport-security'] = [
+                    'libelle'  => 'Strict-Transport-Security (HSTS)',
+                    'verifier' => static fn (string $v): bool => stripos($v, 'max-age=') !== false,
+                    'virgules' => true,
+                ];
+            }
+
+            // Trois défauts distincts, trois réponses distinctes :
+            //  - manquant  : l'en-tête n'arrive pas du tout → bloquant ;
+            //  - fautif    : il arrive, mais pas avec la valeur attendue → bloquant ;
+            //  - doublon   : il arrive plusieurs fois. Les valeurs différentes
+            //    font que le navigateur applique l'intersection — donc la plus
+            //    faible — et l'on ne sait plus laquelle fait foi : avertissement,
+            //    puisque le site, lui, fonctionne.
             $manquants = [];
-            if (!str_contains($csp, "default-src 'self'")) {
-                $manquants[] = 'Content-Security-Policy';
+            $fautifs   = [];
+            $doublons  = [];
+            foreach ($attendus as $cle => $attendu) {
+                $valeurs = mise_en_ligne_entete_valeurs($entetes, $cle, $attendu['virgules']);
+                if ($valeurs === []) {
+                    $manquants[] = $attendu['libelle'];
+                    continue;
+                }
+                if (array_filter($valeurs, $attendu['verifier']) === []) {
+                    $fautifs[] = $attendu['libelle'] . ' = « ' . implode(' / ', array_unique($valeurs)) . ' »';
+                }
+                if (count($valeurs) > 1) {
+                    $doublons[] = $attendu['libelle'] . ' envoyé ' . count($valeurs) . ' fois ('
+                        . implode(' / ', array_unique($valeurs)) . ')';
+                }
             }
-            if (strtoupper((string) ($entetes['x-frame-options'] ?? '')) !== 'DENY') {
-                $manquants[] = 'X-Frame-Options: DENY';
-            }
-            if (strtolower((string) ($entetes['x-content-type-options'] ?? '')) !== 'nosniff') {
-                $manquants[] = 'X-Content-Type-Options: nosniff';
-            }
-            if (!isset($entetes['referrer-policy'])) {
-                $manquants[] = 'Referrer-Policy';
-            }
-            if ($o['https_only'] && !isset($entetes['strict-transport-security'])) {
-                $manquants[] = 'Strict-Transport-Security (HSTS)';
-            }
-            if ($manquants === []) {
-                mise_en_ligne_ajouter($controles, 'entetes', 'En-têtes HTTP réels', 'ok',
-                    'CSP, X-Frame-Options, nosniff, Referrer-Policy'
-                    . ($o['https_only'] ? ' et HSTS' : '') . ' sont bien envoyés (HTTP ' . $reponse['statut'] . ').');
-            } else {
+
+            if ($manquants !== []) {
                 mise_en_ligne_ajouter($controles, 'entetes', 'En-têtes HTTP réels', 'corriger',
                     'En-tête(s) manquant(s) : ' . implode(', ', $manquants) . '.',
-                    'Vérifiez deploy/apache/histoiredefamille.conf (mod_headers activé) puis sudo systemctl reload apache2.');
+                    'Vérifiez que public/.htaccess est bien lu par Apache (AllowOverride All) '
+                        . 'et que mod_headers est activé : sudo a2enmod headers puis sudo systemctl reload apache2.');
+            } elseif ($fautifs !== []) {
+                mise_en_ligne_ajouter($controles, 'entetes', 'En-têtes HTTP réels', 'corriger',
+                    'En-tête(s) présents mais pas assez stricts : ' . implode(' ; ', $fautifs) . '.',
+                    'La CSP attendue est celle de public/.htaccess (aucune ressource externe, '
+                        . 'aucun unsafe-inline) ; X-Frame-Options doit valoir DENY. Corrigez, puis rechargez Apache.');
+            } elseif ($doublons !== []) {
+                mise_en_ligne_ajouter($controles, 'entetes', 'En-têtes HTTP réels', 'avertir',
+                    'En-tête(s) envoyé(s) plusieurs fois : ' . implode(' ; ', $doublons) . '.',
+                    'Un seul endroit doit poser chaque en-tête : public/.htaccess. Vérifiez qu\'aucun '
+                        . 'fichier de deploy/apache/ ne les redéclare et qu\'aucune extension PHP ne les ajoute, '
+                        . 'puis sudo systemctl reload apache2.');
+            } else {
+                mise_en_ligne_ajouter($controles, 'entetes', 'En-têtes HTTP réels', 'ok',
+                    'CSP, X-Frame-Options, nosniff, Referrer-Policy et Permissions-Policy'
+                    . ($o['https_only'] ? ' et HSTS' : '') . ' sont envoyés une seule fois (HTTP '
+                    . $reponse['statut'] . ').');
             }
 
             // Cookies de session.

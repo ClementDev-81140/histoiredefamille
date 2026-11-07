@@ -7,7 +7,7 @@ trouve dans le [README principal](../README.md) ; ce fichier sert d'index.
 |---|---|---|
 | [`montage-disques.md`](montage-disques.md) | monter le SSD (`/mnt/ssd`) et la clé USB (`/mnt/sauvegarde`) par UUID, avec `nofail` et les droits `www-data` | **avant** l'installation |
 | [`install.sh`](install.sh) | installe Apache + PHP, copie le site dans `/var/www`, prépare le stockage, applique les migrations, installe le minuteur de sauvegarde | une fois, puis à chaque mise à jour |
-| [`apache/histoiredefamille.conf`](apache/histoiredefamille.conf) | VirtualHost Apache : racine web limitée à `public/`, blocage des fichiers sensibles, en-têtes de sécurité | copié par `install.sh` |
+| [`apache/histoiredefamille.conf`](apache/histoiredefamille.conf) | VirtualHost Apache : racine web limitée à `public/`, blocage des fichiers sensibles, signature du serveur masquée — **les en-têtes de sécurité ne sont pas ici** : ils vivent une seule fois dans `public/.htaccess` | copié par `install.sh` |
 | [`php/99-histoiredefamille.ini`](php/99-histoiredefamille.ini) | réglages PHP pour 1 Go de RAM : mémoire 128 Mo, envois 64 Mo, opcache 48 Mo | copié par `install.sh` |
 | [`cloudflared/config.yml`](cloudflared/config.yml) | tunnel Cloudflare : `histoiredefamille.eu` → `http://localhost:80`, aucun port ouvert | à l'étape « mise en ligne » |
 | [`cloudflared/cloudflared.service`](cloudflared/cloudflared.service) | service systemd du tunnel (si `cloudflared service install` échoue) | facultatif |

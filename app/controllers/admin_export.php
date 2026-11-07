@@ -27,7 +27,8 @@ function admin_export_gedcom(): void
     header('Content-Type: text/plain; charset=UTF-8');
     header('Content-Disposition: attachment; filename="' . $fichier . '"');
     header('Cache-Control: private, no-store');
-    header('X-Content-Type-Options: nosniff');
+    // « nosniff » n'est pas posé ici : Apache s'en charge (public/.htaccess),
+    // seule source de cet en-tête.
 
     gedcom_export_stream();
 

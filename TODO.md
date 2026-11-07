@@ -3,6 +3,31 @@
 Ce fichier liste ce qui reste à faire, classé par priorité. Il n'y a pas de
 suivi automatique : cochez au fur et à mesure.
 
+## Fait (2026-11-07, 1.26.1 — les en-têtes de sécurité partaient deux fois)
+
+- [x] **Une seule source par en-tête** : `nosniff`, `X-Frame-Options`,
+  `Referrer-Policy`, `Permissions-Policy` et la CSP sont posés par **Apache**,
+  dans `public/.htaccess` ; le PHP ne les envoie plus. Chaque en-tête est
+  précédé de `Header unset` + `Header always unset` : la réponse n'en contient
+  qu'un, même si un ancien `.conf` ou un module en ajoutait un.
+- [x] **`deploy/apache/histoiredefamille.conf`** : plus aucun en-tête de
+  sécurité (seulement `Header unset Server` et `X-Powered-By`).
+- [x] **CSP la plus stricte** : `default-src 'self'`, aucune adresse externe,
+  aucun `unsafe-inline` ; un essai compare le texte de `.htaccess` à
+  `security_csp_valeur()` pour qu'ils ne divergent pas.
+- [x] **Contrôle de `verifier-mise-en-ligne.php`** : noms et valeurs sans tenir
+  compte de la casse, doublons reconnus sur deux lignes **ou** sur une ligne
+  (« `DENY, DENY` »), « envoyé 2 fois » rangé en **avertir** (non bloquant) et
+  distinct de « manquant » (**à corriger**) ; `Permissions-Policy` contrôlé ;
+  une CSP avec `unsafe-inline` → **à corriger**.
+- [x] **Essais** : 15 nouveaux essais dans `tests_entretien.php` (famille
+  « verification » : 54/54) ; suite complète **1 045 essais, 0 échec** ;
+  lint **187 fichiers, 0 erreur**.
+- [x] **Documentation** : CHANGELOG 1.26.1, README (§ 4.7 `curl -sI`, § 5
+  en-têtes, § 7 mise à jour, tableau des contrôles), `deploy/README.md`.
+- [ ] **À faire sur le Pi** : `git pull`, `sudo bash deploy/install.sh`, puis
+  `curl -sI http://localhost` — doit montrer **une seule** ligne par en-tête.
+
 ## Fait (2026-11-05, 1.26.0 — dernière passe avant la mise en ligne)
 
 - [x] **Aucune fonctionnalité nouvelle** : contrôle et correction de ce qui

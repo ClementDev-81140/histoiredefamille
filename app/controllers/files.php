@@ -63,7 +63,7 @@ function file_thumbnail(array $params): void
 
     header('Content-Type: image/jpeg');
     header('Cache-Control: private, max-age=86400');
-    header('X-Content-Type-Options: nosniff');
+    // « nosniff » vient d'Apache (public/.htaccess), pas de PHP.
     header('Content-Length: ' . filesize($path));
     readfile($path);
 }

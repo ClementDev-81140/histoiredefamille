@@ -708,11 +708,14 @@ désactiver un compte sans bloquer les autres).
 ### 4.7 Vérifier que le site répond
 
 ```bash
-curl -I http://localhost/
+curl -sI http://localhost/
 ```
 
-Réponse attendue : `HTTP/1.1 200 OK`. Ouvrez aussi la page d'état
-(après connexion) : **Administration → État du site**.
+Réponse attendue : `HTTP/1.1 200 OK`, puis **une seule ligne par en-tête de
+sécurité** (voir [7. Lancer la vérification](#7-lancer-la-vérification--2-min) :
+`curl -sI http://localhost` sert aussi à contrôler qu'aucun n'est envoyé deux
+fois). Ouvrez aussi la page d'état (après connexion) : **Administration →
+État du site**.
 
 En cas d'erreur 500, le journal donne la cause exacte :
 
@@ -1489,6 +1492,20 @@ Si une migration échoue, la base n'est pas modifiée à moitié : chaque
 migration est appliquée dans une transaction. La sauvegarde de la nuit
 précédente reste disponible sur la clé USB.
 
+Une mise à jour qui touche `public/.htaccess` (c'est le cas de la 1.26.1, où
+les en-têtes de sécurité y sont désormais déclarés une seule fois) prend effet
+dès la recopie du code : `git pull` suffit, puis
+
+```bash
+sudo systemctl reload apache2
+curl -sI http://localhost
+```
+
+Si `install.sh` n'a pas été relancé, l'ancien VirtualHost peut encore déclarer
+des en-têtes : `public/.htaccess` les efface avant de les reposer, donc la
+réponse reste propre. Relancer `install.sh` remet aussi le VirtualHost à jour —
+c'est la voie normale.
+
 Sans passer par `install.sh`, la seule commande à connaître pour une nouvelle
 version est celle des migrations (elles sont numérotées, appliquées une seule
 fois, et n'effacent jamais de données) :
@@ -2235,7 +2252,10 @@ le dossier `storage/` sont listés dans `.gitignore`.
   et en-tête `Cache-Control: private, no-store`.
 - **En-têtes** : `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`,
   `Content-Security-Policy` (aucune ressource externe, aucun script en ligne),
-  `Permissions-Policy`.
+  `Permissions-Policy`. Ils sont posés **une seule fois**, par Apache, dans
+  `public/.htaccess` — le PHP ne les envoie plus, sinon ils partaient deux fois
+  avec deux valeurs (corrigé en 1.26.1). `Strict-Transport-Security` (HSTS) et
+  le cache privé restent en PHP : ils dépendent de la configuration.
 - **Couleurs choisies** : la feuille `/theme.css` ne contient que des valeurs
   validées par le serveur (codes `#RRGGBB` et couleurs calculées à partir
   d'elles). Aucun texte saisi n'y entre, donc aucune injection CSS n'est
@@ -2376,6 +2396,22 @@ puis vérifiez depuis un téléphone en 4G que l'adresse du site répond.
 sudo -u www-data php /var/www/histoiredefamille/app/cli/verifier-mise-en-ligne.php
 ```
 
+Et, pour voir de ses yeux ce qu'Apache envoie vraiment (une ligne par
+en-tête, une seule fois chacun) :
+
+```bash
+curl -sI http://localhost
+```
+
+Attendu : **un** `X-Content-Type-Options: nosniff`, **un**
+`X-Frame-Options: DENY`, **un** `Referrer-Policy`, **un**
+`Permissions-Policy`, **un** `Content-Security-Policy` commençant par
+`default-src 'self'` et sans `unsafe-inline`. Si un nom apparaît deux fois,
+c'est qu'une autre configuration le pose : cherchez `Header` dans
+`/etc/apache2/sites-enabled/` (et dans `deploy/apache/`) — la seule source est
+`public/.htaccess`. La commande de vérification le signale alors en
+**avertir** (« envoyé 2 fois »), sans bloquer l'ouverture.
+
 La commande passe tout en revue et rend un verdict :
 
 - **`PRÊT À OUVRIR`** : vous pouvez continuer ;
@@ -2411,7 +2447,7 @@ Ce qui est contrôlé, et pourquoi :
 | Courriel de contact et minuteur d'envoi (avertissement) | des messages qui restent dans la file sans que personne ne le voie |
 | Espace libre sur le SSD et sur la clé | un site qui tombe en panne parce que le disque est plein |
 | Purge planifiée | des tables de journal qui grossissent sans fin |
-| En-têtes HTTP réellement envoyés par Apache (CSP, X-Frame-Options, nosniff, HSTS) et signature masquée | une page piégée qui lit les données de la famille |
+| En-têtes HTTP réellement envoyés par Apache (CSP, X-Frame-Options, nosniff, Permissions-Policy, HSTS), **une seule fois chacun**, et signature masquée | une page piégée qui lit les données de la famille, ou deux politiques contradictoires dont le navigateur applique la plus faible |
 | Cookies `Secure`, `HttpOnly`, `SameSite` | un cookie volé par un script |
 | `CF-Connecting-IP` ignoré hors du tunnel | un visiteur qui falsifie son adresse IP pour contourner le blocage après 5 essais |
 

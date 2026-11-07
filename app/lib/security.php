@@ -11,25 +11,19 @@ declare(strict_types=1);
 // ---------------------------------------------------------------------------
 
 /**
- * Envoie les en-têtes de sécurité communs à toutes les pages.
- * (La configuration Apache en renvoie aussi, en doublon : ceinture et
- * bretelles, au cas où le site tournerait derrière un autre serveur.)
+ * Politique de sécurité du contenu du site — la plus stricte qu'il applique.
+ *
+ * Cette valeur n'est PAS envoyée par PHP : Apache la pose dans
+ * `public/.htaccess`, seule source de l'en-tête (voir send_security_headers).
+ * Elle est écrite ici pour être lisible à un seul endroit et pour qu'un essai
+ * puisse comparer les deux textes : si l'un dérive, l'essai le dit.
+ *
+ * Aucune ressource externe, aucun script ni style en ligne (tout le JS est
+ * dans /assets/app.js, tout le CSS dans les feuilles du site).
  */
-function send_security_headers(): void
+function security_csp_valeur(): string
 {
-    if (headers_sent()) {
-        return;
-    }
-
-    header('X-Content-Type-Options: nosniff');
-    header('X-Frame-Options: DENY');
-    header('Referrer-Policy: strict-origin-when-cross-origin');
-    header('Permissions-Policy: geolocation=(), microphone=(), camera=(), interest-cohort=()');
-
-    // Politique de sécurité du contenu : aucune ressource externe, aucun
-    // script en ligne (tout le JS est dans /assets/app.js).
-    header(
-        "Content-Security-Policy: default-src 'self'; "
+    return "default-src 'self'; "
         . "img-src 'self' data:; "
         . "media-src 'self'; "
         . "style-src 'self'; "
@@ -39,8 +33,30 @@ function send_security_headers(): void
         . "object-src 'none'; "
         . "base-uri 'self'; "
         . "form-action 'self'; "
-        . "frame-ancestors 'none'"
-    );
+        . "frame-ancestors 'none'";
+}
+
+/**
+ * Envoie les en-têtes que seul PHP peut connaître.
+ *
+ * Depuis la 1.26.1, les en-têtes de sécurité « statiques » — nosniff,
+ * X-Frame-Options, Referrer-Policy, Permissions-Policy et la CSP — ne sont
+ * plus envoyés ici : ils l'étaient en même temps par Apache, donc deux fois,
+ * avec deux valeurs pour la CSP et Permissions-Policy. Un navigateur applique
+ * alors l'intersection, et le contrôle de verifier-mise-en-ligne.php lisait
+ * « DENY, DENY ».
+ *
+ * Ils sont désormais déclarés une seule fois, dans `public/.htaccess`, qui
+ * couvre aussi les fichiers statiques (maintenance.html, /assets/...).
+ *
+ * Restent ici les deux en-têtes qui dépendent de la configuration :
+ * le cache (toujours privé) et HSTS (seulement si `https_only`).
+ */
+function send_security_headers(): void
+{
+    if (headers_sent()) {
+        return;
+    }
 
     // Les pages contiennent des données familiales : pas de cache partagé.
     header('Cache-Control: private, no-store, max-age=0');

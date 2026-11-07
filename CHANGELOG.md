@@ -3,6 +3,79 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.26.1] — 2026-11-07
+
+### Les en-têtes de sécurité partaient deux fois
+
+Constat sur le Pi, avec `curl -sI http://localhost` : `X-Content-Type-Options`,
+`X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy` et
+`Content-Security-Policy` étaient envoyés **deux fois** — une fois par Apache,
+une fois par PHP — et **avec deux valeurs différentes** pour la CSP et
+`Permissions-Policy`. Le contrôle de `verifier-mise-en-ligne.php` lisait
+« `DENY, DENY` » et annonçait donc « En-tête(s) manquant(s) », alors que les
+en-têtes étaient bien là.
+
+Deux valeurs, deux effets pervers : le navigateur applique **l'intersection**
+des politiques, donc la plus faible des deux pour `Permissions-Policy`, et plus
+personne ne peut dire laquelle fait foi en lisant la réponse.
+
+#### Une seule source par en-tête
+
+| En-tête | Source unique, depuis cette version |
+|---|---|
+| `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy` | **Apache** — `public/.htaccess` |
+| `Content-Security-Policy` | **Apache** — `public/.htaccess` (elle ne dépend pas de la page) |
+| `Strict-Transport-Security` | **PHP** (`app/lib/security.php`), seulement si `https_only` : c'est un réglage, pas une constante |
+| `Cache-Control` privé | **PHP**, pour la même raison |
+
+Le PHP n'envoie plus les cinq en-têtes statiques (`app/lib/security.php`,
+`app/controllers/files.php`, `app/controllers/admin_export.php`,
+`app/lib/stream.php`). Apache les pose dans `public/.htaccess`, qui couvre
+**aussi** les fichiers statiques (`maintenance.html`, `/assets/...`) — ce que
+le PHP ne fait pas.
+
+Chaque en-tête y est précédé de `Header unset` **et** `Header always unset`
+avant son `Header always set` : même si un module, un ancien `.conf` ou un
+mandataire en avait déjà ajouté un, la réponse n'en contient plus qu'un. Les
+lignes en doublon ont été retirées de `deploy/apache/histoiredefamille.conf`,
+qui garde seulement `Header unset Server` et `Header unset X-Powered-By` (ce
+qu'Apache seul peut faire).
+
+La CSP posée par Apache est **la plus stricte du site** : `default-src 'self'`,
+aucune ressource externe (aucune adresse absolue, aucun `*`), et surtout aucun
+`unsafe-inline`. Un essai compare le texte de `public/.htaccess` à
+`security_csp_valeur()` : les deux ne peuvent plus diverger sans que les tests
+le disent.
+
+#### Le contrôle lit ce qui arrive vraiment
+
+`verifier-mise-en-ligne.php` ne se laisse plus tromper :
+
+- il **ignore la casse** des noms (`x-frame-options` = `X-Frame-Options`) et
+  celle des valeurs (`deny` = `DENY`, `nosniff` = `NOSNIFF`) ;
+- il reconnaît les trois façons dont un doublon arrive : deux lignes, une seule
+  ligne avec des virgules (« `DENY, DENY` »), ou deux valeurs séparées par
+  `|` dans la réponse analysée ;
+- il distingue désormais **trois défauts** : « manquant » (**à corriger**),
+  « pas assez strict » (**à corriger**, par exemple une CSP avec
+  `unsafe-inline`), et **« envoyé 2 fois »** (**avertir**, non bloquant) ;
+- quand chaque en-tête n'arrive qu'une fois, il repasse **au vert**, avec
+  `Permissions-Policy` désormais contrôlé lui aussi.
+
+#### Ce qui a été vérifié, et ce qui ne l'a pas été
+
+- **Vérifié** : les 15 nouveaux essais (doublons sur deux lignes, doublons sur
+  une ligne, casse libre, CSP affaiblie, source unique dans les fichiers,
+  absence de doublon dans `deploy/apache/`) ; la suite complète (**1 045 essais,
+  0 échec**) ; les pages, l'envoi par morceaux et la vidéo, qui passent par les
+  mêmes essais qu'avant et restent vertes ; la CSP elle-même, contrôlée par
+  essai (`default-src 'self'`, sans `unsafe-inline`, sans adresse externe).
+- **Non vérifié** : Apache lui-même n'existe pas sur le banc d'essai (PHP en
+  WebAssembly). La configuration a donc été écrite et relue, pas exécutée. Après
+  la mise à jour sur le Pi, `curl -sI http://localhost` doit montrer **une seule
+  ligne par en-tête** : c'est le contrôle à faire en premier, il prend
+  dix secondes.
+
 ## [1.26.0] — 2026-11-05
 
 ### La dernière passe avant la mise en ligne

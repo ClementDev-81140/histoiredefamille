@@ -127,7 +127,7 @@ function prepare_file_response(array $doc, bool $forceDownload = false): array
 
     // Ces réponses sont privées : aucun cache intermédiaire.
     header('Cache-Control: private, no-store, max-age=0');
-    header('X-Content-Type-Options: nosniff');
+    // « nosniff » vient d'Apache (public/.htaccess), pas de PHP.
     header('Accept-Ranges: bytes');
 
     if (!$size) {

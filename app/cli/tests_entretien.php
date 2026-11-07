@@ -904,6 +904,7 @@ function tests_verification(): void
             . "X-Frame-Options: DENY\r\n"
             . "X-Content-Type-Options: nosniff\r\n"
             . "Referrer-Policy: strict-origin-when-cross-origin\r\n"
+            . "Permissions-Policy: geolocation=(), microphone=(), camera=(), interest-cohort=()\r\n"
             . "Strict-Transport-Security: max-age=31536000; includeSubDomains\r\n"
             . "Set-Cookie: HDF_SESSION=abc; path=/; secure; HttpOnly; SameSite=Lax\r\n"
             . "\r\n<html>ok</html>"
@@ -923,6 +924,182 @@ function tests_verification(): void
             && ($option($entetes, 'signature')['statut'] ?? '') === 'ok',
             (string) ($option($entetes, 'entetes')['detail'] ?? '')
             . ' / ' . (string) ($option($entetes, 'cookies')['detail'] ?? ''));
+
+        // 5 bis. En-têtes envoyés en double (1.26.1).
+        //
+        // Apache et le PHP posaient les mêmes cinq en-têtes : ils partaient
+        // deux fois, avec deux valeurs pour la CSP et Permissions-Policy, et
+        // le contrôle lisait « DENY, DENY » avant de conclure « manquant ».
+        // Il doit maintenant distinguer « manquant » (bloquant) de « envoyé
+        // 2 fois » (avertissement), sans se laisser tromper par la casse.
+        $lues = mise_en_ligne_entete_valeurs(['x-frame-options' => 'DENY | DENY'], 'X-Frame-Options');
+        verifier('vérification : un en-tête reçu sur deux lignes donne deux valeurs',
+            $lues === ['DENY', 'DENY'], implode(' / ', $lues));
+
+        $lues = mise_en_ligne_entete_valeurs(['x-frame-options' => 'DENY, DENY'], 'X-Frame-Options', true);
+        verifier('vérification : « DENY, DENY » sur une seule ligne donne deux valeurs',
+            $lues === ['DENY', 'DENY'], implode(' / ', $lues));
+
+        verifier('vérification : le nom d’un en-tête se lit sans tenir compte de la casse',
+            mise_en_ligne_entete_valeurs(['ReFeRrEr-PoLiCy' => 'origin'], 'referrer-policy') === ['origin']);
+
+        // Tout envoyé deux fois, valeurs identiques : avertissement, pas blocage.
+        $csp = security_csp_valeur();
+        $reponseDouble = mise_en_ligne_analyser_reponse(
+            "HTTP/1.1 200 OK\r\n"
+            . 'Content-Security-Policy: ' . $csp . "\r\n"
+            . 'Content-Security-Policy: ' . $csp . "\r\n"
+            . "X-Frame-Options: DENY\r\n"
+            . "X-Frame-Options: DENY\r\n"
+            . "X-Content-Type-Options: nosniff\r\n"
+            . "X-Content-Type-Options: nosniff\r\n"
+            . "Referrer-Policy: strict-origin-when-cross-origin\r\n"
+            . "Referrer-Policy: strict-origin-when-cross-origin\r\n"
+            . "Permissions-Policy: geolocation=()\r\n"
+            . "Permissions-Policy: geolocation=()\r\n"
+            . "Set-Cookie: HDF_SESSION=abc; path=/; secure; HttpOnly; SameSite=Lax\r\n"
+            . "\r\n<html>deux fois</html>"
+        );
+        $doubles = mise_en_ligne_controles([
+            'http' => true, 'systeme' => false, 'https_only' => false,
+            'reponse_http' => $reponseDouble,
+        ]);
+        $controleEntetes = $option($doubles, 'entetes');
+        verifier('vérification : en-têtes envoyés deux fois → « avertir », jamais « à corriger »',
+            ($controleEntetes['statut'] ?? '') === 'avertir',
+            (string) ($controleEntetes['statut'] ?? '') . ' : ' . (string) ($controleEntetes['detail'] ?? ''));
+        verifier('vérification : le détail dit « envoyé 2 fois » et non « manquant »',
+            str_contains((string) ($controleEntetes['detail'] ?? ''), 'envoyé 2 fois')
+            && !str_contains((string) ($controleEntetes['detail'] ?? ''), 'manquant'),
+            (string) ($controleEntetes['detail'] ?? ''));
+        verifier('vérification : le remède désigne public/.htaccess comme seule source',
+            str_contains((string) ($controleEntetes['remede'] ?? ''), 'public/.htaccess'));
+
+        // La réponse type de la 1.26.0 : Apache « DENY » et le PHP « DENY » sur
+        // deux lignes, deux valeurs de CSP différentes (l'ancienne et la nouvelle).
+        $reponseDoublesDifferentes = mise_en_ligne_analyser_reponse(
+            "HTTP/1.1 200 OK\r\n"
+            . "Content-Security-Policy: default-src 'self'; frame-ancestors 'none'\r\n"
+            . 'Content-Security-Policy: ' . $csp . "\r\n"
+            . "X-Frame-Options: DENY\r\n"
+            . "X-Frame-Options: DENY\r\n"
+            . "X-Content-Type-Options: nosniff\r\n"
+            . "Referrer-Policy: strict-origin-when-cross-origin\r\n"
+            . "Permissions-Policy: geolocation=(), microphone=(), camera=()\r\n"
+            . "\r\n<html>deux valeurs</html>"
+        );
+        $deuxValeurs = $option(mise_en_ligne_controles([
+            'http' => true, 'systeme' => false, 'https_only' => false,
+            'reponse_http' => $reponseDoublesDifferentes,
+        ]), 'entetes');
+        verifier('vérification : deux valeurs différentes pour un même en-tête → « avertir »',
+            ($deuxValeurs['statut'] ?? '') === 'avertir',
+            (string) ($deuxValeurs['detail'] ?? ''));
+
+        // Une seule valeur par en-tête, avec une casse fantaisiste : au vert.
+        $casse = $option(mise_en_ligne_controles([
+            'http' => true, 'systeme' => false, 'https_only' => false,
+            'reponse_http' => mise_en_ligne_analyser_reponse(
+                "HTTP/1.1 200 OK\r\n"
+                . 'content-security-policy: ' . $csp . "\r\n"
+                . "x-frame-options: deny\r\n"
+                . "X-Content-Type-Options: NOSNIFF\r\n"
+                . "referrer-policy: strict-origin-when-cross-origin\r\n"
+                . "PERMISSIONS-POLICY: geolocation=()\r\n"
+                . "Set-Cookie: HDF_SESSION=abc; path=/; HttpOnly; SameSite=Lax\r\n"
+                . "\r\n<html>casse</html>"
+            ),
+        ]), 'entetes');
+        verifier('vérification : noms et valeurs en casse libre, une seule fois → au vert',
+            ($casse['statut'] ?? '') === 'ok', (string) ($casse['detail'] ?? ''));
+
+        // CSP affaiblie : « unsafe-inline » ramènerait les scripts en ligne.
+        $cspFaible = $option(mise_en_ligne_controles([
+            'http' => true, 'systeme' => false, 'https_only' => false,
+            'reponse_http' => mise_en_ligne_analyser_reponse(
+                "HTTP/1.1 200 OK\r\n"
+                . "Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'\r\n"
+                . "X-Frame-Options: DENY\r\n"
+                . "X-Content-Type-Options: nosniff\r\n"
+                . "Referrer-Policy: strict-origin-when-cross-origin\r\n"
+                . "Permissions-Policy: geolocation=()\r\n"
+                . "\r\n<html>faible</html>"
+            ),
+        ]), 'entetes');
+        verifier('vérification : une CSP avec « unsafe-inline » → « à corriger »',
+            ($cspFaible['statut'] ?? '') === 'corriger'
+            && str_contains((string) ($cspFaible['detail'] ?? ''), 'Content-Security-Policy'),
+            (string) ($cspFaible['detail'] ?? ''));
+
+        // Une source unique, vraiment unique : les fichiers le disent aussi.
+        $cspAttendue = security_csp_valeur();
+        verifier('CSP : la valeur de référence est la plus stricte (self seul, rien en ligne)',
+            str_contains($cspAttendue, "default-src 'self'")
+            && str_contains($cspAttendue, "script-src 'self'")
+            && !str_contains($cspAttendue, 'unsafe-')
+            && !preg_match('#(https?:|//|\*)#', $cspAttendue));
+
+        $projet   = dirname(__DIR__, 2);
+        $htaccess = (string) @file_get_contents($projet . '/public/.htaccess');
+        $noms = [
+            'X-Content-Type-Options'   => 'nosniff',
+            'X-Frame-Options'          => 'DENY',
+            'Referrer-Policy'          => 'strict-origin-when-cross-origin',
+            'Permissions-Policy'       => 'geolocation=(), microphone=(), camera=(), interest-cohort=()',
+            'Content-Security-Policy'  => $cspAttendue,
+        ];
+        $poses = [];
+        $repetes = [];
+        foreach ($noms as $nom => $valeur) {
+            preg_match_all('/^\s*Header\s+always\s+set\s+' . preg_quote($nom, '/') . '\s+"([^"]*)"/mi', $htaccess, $m);
+            $poses[$nom]    = array_map('trim', $m[1] ?? []);
+            $repetes[$nom]  = count($poses[$nom]);
+        }
+        verifier('Apache : chaque en-tête de sécurité est posé une seule fois dans public/.htaccess',
+            array_sum($repetes) === 5 && count(array_filter($repetes, static fn (int $n): bool => $n === 1)) === 5,
+            json_encode($repetes, JSON_UNESCAPED_UNICODE));
+        verifier('Apache : les valeurs de public/.htaccess sont celles attendues',
+            $poses === array_map(static fn (string $v): array => [$v], $noms),
+            json_encode($poses, JSON_UNESCAPED_UNICODE));
+        verifier('Apache : un « unset » précède chaque « set » (aucun doublon possible)',
+            preg_match_all('/^\s*Header\s+(?:always\s+)?unset\s+/mi', $htaccess) >= 10);
+
+        $confs  = glob($projet . '/deploy/apache/*.conf') ?: [];
+        $redits = [];
+        foreach ($confs as $conf) {
+            $texte = (string) @file_get_contents($conf);
+            foreach (array_keys($noms) as $nom) {
+                if (preg_match('/^\s*Header\s+(?:always\s+)?set\s+' . preg_quote((string) $nom, '/') . '\s/mi', $texte) === 1) {
+                    $redits[] = basename($conf) . ' : ' . $nom;
+                }
+            }
+        }
+        verifier('Apache : aucun fichier de deploy/apache/ ne redéclare ces en-têtes',
+            $confs !== [] && $redits === [],
+            implode(', ', $redits));
+
+        $sourceSecurite = (string) @file_get_contents($projet . '/app/lib/security.php');
+        $enPhp = [];
+        foreach (array_keys($noms) as $nom) {
+            if (preg_match('/header\(\s*[\'"]' . preg_quote((string) $nom, '/') . '/i', $sourceSecurite) === 1) {
+                $enPhp[] = $nom;
+            }
+        }
+        verifier('PHP : security.php n’envoie plus les en-têtes confiés à Apache',
+            $enPhp === [], implode(', ', $enPhp));
+        verifier('PHP : security.php envoie toujours le cache privé et HSTS',
+            str_contains($sourceSecurite, "header('Cache-Control: private, no-store, max-age=0')")
+            && str_contains($sourceSecurite, 'Strict-Transport-Security'));
+
+        $nosniffAilleurs = [];
+        foreach (['/app/controllers/files.php', '/app/controllers/admin_export.php', '/app/lib/stream.php'] as $relatif) {
+            $texte = (string) @file_get_contents($projet . $relatif);
+            if (preg_match('/header\(\s*[\'"]X-Content-Type-Options/i', $texte) === 1) {
+                $nosniffAilleurs[] = $relatif;
+            }
+        }
+        verifier('PHP : aucun contrôleur ne double « nosniff » (Apache le pose)',
+            $nosniffAilleurs === [], implode(', ', $nosniffAilleurs));
 
         $reponseFaible = mise_en_ligne_analyser_reponse(
             "HTTP/1.1 200 OK\r\n"

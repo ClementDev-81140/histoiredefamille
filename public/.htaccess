@@ -34,15 +34,41 @@ RedirectMatch 404 /\.(git|svn|hg)(/|$)
 RedirectMatch 404 /(README\.md|CHANGELOG\.md|TODO\.md)$
 
 # ---------------------------------------------------------------------------
-#  En-têtes de sécurité (doublés par ceux envoyés en PHP, c'est volontaire :
-#  un fichier statique servi directement par Apache doit aussi les porter).
+#  En-têtes de sécurité — UNE SEULE SOURCE : ce fichier.
+#
+#  Avant la 1.26.1, le PHP les envoyait aussi (app/lib/security.php) : les
+#  mêmes noms partaient donc DEUX fois, avec deux valeurs différentes pour la
+#  CSP et Permissions-Policy. Un navigateur applique l'intersection — donc la
+#  plus faible des deux pour Permissions-Policy — et le contrôle de
+#  verifier-mise-en-ligne.php lisait « DENY, DENY ».
+#
+#  Le PHP ne les envoie plus. Apache les pose ici, pour les pages PHP comme
+#  pour les fichiers statiques (maintenance.html, /assets/...), et « unset »
+#  puis « set » garantit une valeur unique même si un module, un ancien .conf
+#  ou un mandataire en avait déjà ajouté une.
+#
+#  La CSP ci-dessous est la plus stricte du site : aucune ressource externe,
+#  aucun script ni style en ligne. Un essai compare cette ligne à
+#  security_csp_valeur() pour que les deux ne puissent pas diverger.
 # ---------------------------------------------------------------------------
 <IfModule mod_headers.c>
+    Header unset X-Content-Type-Options
+    Header always unset X-Content-Type-Options
+    Header unset X-Frame-Options
+    Header always unset X-Frame-Options
+    Header unset Referrer-Policy
+    Header always unset Referrer-Policy
+    Header unset Permissions-Policy
+    Header always unset Permissions-Policy
+    Header unset Content-Security-Policy
+    Header always unset Content-Security-Policy
+
     Header always set X-Content-Type-Options "nosniff"
     Header always set X-Frame-Options "DENY"
     Header always set Referrer-Policy "strict-origin-when-cross-origin"
-    Header always set Content-Security-Policy "default-src 'self'; img-src 'self' data:; media-src 'self'; style-src 'self'; script-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'"
-    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=(), interest-cohort=()"
+    Header always set Content-Security-Policy "default-src 'self'; img-src 'self' data:; media-src 'self'; style-src 'self'; script-src 'self'; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+
     Header unset X-Powered-By
 </IfModule>
 
