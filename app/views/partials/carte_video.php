@@ -12,11 +12,11 @@ $resume   = trim((string) ($video['description'] ?? ''));
 ?>
 <article class="carte<?= $miseEnAvant ? ' carte--mise-en-avant' : '' ?>">
     <a class="carte__lien" href="<?= e(video_page_url($video)) ?>">
-        <div class="carte__apercu carte__apercu--video">
+        <?php /* Sans image extraite, la carte montre une icône de lecture sur
+                 le papier : ni carré gris, ni vignette vide (1.32.0). */ ?>
+        <div class="carte__apercu carte__apercu--video<?= $thumb === null ? ' carte__apercu--sans-image' : '' ?>">
             <?php if ($thumb !== null): ?>
-                <img src="<?= e($thumb) ?>" alt="" loading="lazy" width="480" height="360">
-            <?php else: ?>
-                <span class="carte__type">Vidéo</span>
+                <img class="<?= e(aspect_photo_classe($video)) ?>" src="<?= e($thumb) ?>" alt="" loading="lazy" width="480" height="360">
             <?php endif; ?>
             <span class="carte__lecture" aria-hidden="true">▶</span>
             <?php if ($duree !== ''): ?>

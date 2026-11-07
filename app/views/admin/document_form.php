@@ -64,18 +64,40 @@ $visibility = (string) $v('visibility', 'prive');
                    placeholder="ex. 1912, vers 1930, 12/06/1954" value="<?= e((string) $v('doc_date')) ?>">
         </div>
 
-        <div class="champ">
-            <label for="category_id">Catégorie</label>
-            <select id="category_id" name="category_id">
-                <option value="0">Sans catégorie</option>
-                <?php foreach ($categories as $category): ?>
-                    <option value="<?= (int) $category['id'] ?>"
-                        <?= selected((int) $v('category_id', 0) === (int) $category['id']) ?>>
-                        <?= e($category['name']) ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-        </div>
+    </div>
+
+    <?php
+    // Catégories du type de contenu (1.32.0) : plusieurs choix possibles.
+    $kindCategorie = match ((string) ($doc['kind'] ?? '')) {
+        'photo' => 'photo',
+        'video' => 'video',
+        default => 'document',
+    };
+    $categoriesCases = categories_pour_kinds([$kindCategorie, 'document', 'photo', 'video']);
+    $categorieIds    = $categorieIds ?? [];
+    require __DIR__ . '/partials/categories_cases.php';
+    ?>
+
+    <?php
+    // Aspect « photo ancienne » (1.32.0) : filtre d'affichage seulement, le
+    // fichier n'est jamais modifié. Chaque photo peut s'écarter du réglage.
+    $aspectChoisi = (string) $v('vintage_aspect', 'suivre');
+    if (!array_key_exists($aspectChoisi, APPARENCE_ASPECT_CHOIX)) {
+        $aspectChoisi = 'suivre';
+    }
+    ?>
+    <div class="champ">
+        <label for="vintage_aspect">Aspect « photo ancienne »</label>
+        <select id="vintage_aspect" name="vintage_aspect">
+            <?php foreach (APPARENCE_ASPECT_CHOIX as $valeur => $libelle): ?>
+                <option value="<?= e($valeur) ?>"<?= selected($aspectChoisi === $valeur) ?>><?= e($libelle) ?></option>
+            <?php endforeach; ?>
+        </select>
+        <p class="aide">
+            Le réglage du site se trouve dans <a href="/admin/apparence#aspect-photo">Apparence du journal</a>.
+            Ce choix ne concerne que l'affichage : le fichier d'origine reste intact, et le
+            téléchargement comme l'impression donnent la photo en couleurs.
+        </p>
     </div>
 
     <div class="champ">
@@ -156,6 +178,21 @@ $visibility = (string) $v('visibility', 'prive');
             </p>
         <?php endif; ?>
     </div>
+
+    <?php if ($isEdit && (string) ($doc['kind'] ?? '') === 'video'): ?>
+        <div class="champ">
+            <label for="couverture">Image de couverture</label>
+            <input type="file" id="couverture" name="couverture" accept=".jpg,.jpeg,.png,.webp">
+            <p class="aide">
+                Facultatif. Une image extraite de la vidéo est créée automatiquement (à 1 seconde,
+                ou à 10 % de la durée pour un film très court). Envoyer une image ici la remplace :
+                c'est elle que verront les listes et le lecteur.
+                <?php if (trim((string) ($doc['thumb_path'] ?? '')) !== ''): ?>
+                    Une image d'aperçu existe déjà : la nouvelle la remplacera.
+                <?php endif; ?>
+            </p>
+        </div>
+    <?php endif; ?>
 
     <p class="actions">
         <?php // id : cible du lien « Aller au bouton d’enregistrement » (envoi par morceaux). ?>

@@ -22,6 +22,14 @@
         <?php endif; ?>
     </p>
 
+    <?php
+    $filtreCategories = $categories ?? [];
+    $filtreCategorie  = (int) ($categorie ?? 0);
+    $filtreAction     = '/recettes';
+    $filtreParam      = 'categorie';
+    require __DIR__ . '/../partials/filtre_categories.php';
+    ?>
+
     <?php if ($recettes === []): ?>
         <div class="panneau panneau--centre">
             <p>Aucune recette pour le moment.</p>
@@ -34,7 +42,7 @@
                     <a class="album-carte__lien" href="<?= e(recipe_url($recette)) ?>">
                         <div class="album-carte__apercu">
                             <?php if ($photo !== null && thumbnail_url($photo) !== null): ?>
-                                <img src="<?= e(thumbnail_url($photo)) ?>" alt="" loading="lazy"
+                                <img class="<?= e(aspect_photo_classe($photo)) ?>" src="<?= e(thumbnail_url($photo)) ?>" alt="" loading="lazy"
                                      width="480" height="360">
                             <?php else: ?>
                                 <span class="album-carte__vide">Recette</span>

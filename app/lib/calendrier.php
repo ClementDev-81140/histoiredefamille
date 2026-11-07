@@ -250,6 +250,24 @@ function calendrier_evenements(int $mois): array
         ];
     }
 
+    // Événements de famille saisis dans l'administration (1.32.0) : ils
+    // suivent exactement la visibilité choisie, et un événement annuel revient
+    // chaque année.
+    foreach (evenements_du_mois($mois, (int) date('Y')) as $jour => $liste) {
+        foreach ($liste as $evenement) {
+            $debut = date_parts((string) $evenement['start_date']);
+            $evenements[$jour][] = [
+                'genre'    => 'evenement',
+                'annee'    => $debut['annee'] ?? (int) date('Y'),
+                'id'       => (int) $evenement['id'],
+                'titre'    => (string) $evenement['title'],
+                'heure'    => (string) ($evenement['start_time'] ?? ''),
+                'lieu'     => (string) $evenement['place'],
+                'annuel'   => (int) $evenement['annual'] === 1,
+            ];
+        }
+    }
+
     foreach ($evenements as $jour => $liste) {
         usort($liste, static fn (array $a, array $b): int => $a['annee'] <=> $b['annee']);
         $evenements[$jour] = $liste;
@@ -293,6 +311,20 @@ function calendrier_prochains(int $jours = 30, int $limite = 40): array
             }
             foreach ($liste as $evenement) {
                 $ans = $annee - (int) $evenement['annee'];
+                if ($evenement['genre'] === 'evenement') {
+                    // Événement de famille : pas de personne à citer.
+                    $prochains[] = [
+                        'genre' => 'evenement',
+                        'jour'  => (int) $jour,
+                        'mois'  => $m,
+                        'annee' => $annee,
+                        'ans'   => 0,
+                        'nom'   => (string) ($evenement['titre'] ?? ''),
+                        'lien'  => '/calendrier?mois=' . sprintf('%04d-%02d', $annee, $m),
+                        'date'  => $date->format('Y-m-d'),
+                    ];
+                    continue;
+                }
                 if ($evenement['genre'] === 'mariage') {
                     $nom  = person_full_name($evenement['epoux']) . ' et ' . person_full_name($evenement['epouse']);
                     $lien = '/arbre/' . (int) $evenement['epoux']['id'];

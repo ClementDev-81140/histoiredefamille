@@ -201,12 +201,16 @@ function parse_duration(?string $valeur): ?int
  * @param int      $offset décalage pour la pagination
  * @param int|null $total  reçoit le nombre total de vidéos visibles
  */
-function videos_visible(int $limit = 0, int $offset = 0, ?int &$total = null): array
+function videos_visible(int $limit = 0, int $offset = 0, ?int &$total = null, int $categorieId = 0): array
 {
     $params = [];
     $clause = visibility_clause('document', 'd', $params);
 
     $where = "d.kind = 'video' AND d.is_attachment = 0 AND {$clause}";
+    $catClause = category_where('d', $categorieId > 0 ? $categorieId : null, $params, 'video');
+    if ($catClause !== '') {
+        $where .= ' AND ' . $catClause;
+    }
 
     $total = (int) db_value("SELECT COUNT(*) FROM documents d WHERE {$where}", $params, 0);
 
@@ -308,10 +312,205 @@ function find_branch(int $id): ?array
     return db_one('SELECT * FROM branches WHERE id = ?', [$id]);
 }
 
-/** Catégories ordonnées. */
-function categories_list(): array
+/** Les six types de contenu auxquels une catégorie peut s'appliquer (1.32.0). */
+const CATEGORY_KINDS = [
+    'article'  => 'Articles',
+    'document' => 'Documents',
+    'photo'    => 'Photos',
+    'album'    => 'Albums',
+    'video'    => 'Vidéos',
+    'recette'  => 'Recettes',
+];
+
+/** Un type de contenu est-il connu ? (garde-fou des formulaires et des URL) */
+function category_kind_valide(string $kind): bool
 {
-    return db_all('SELECT * FROM categories ORDER BY position, name COLLATE NOCASE');
+    return array_key_exists($kind, CATEGORY_KINDS);
+}
+
+/**
+ * Types d'une catégorie, à partir de la colonne `kinds`.
+ *
+ * Une valeur vide ou inconnue vaut « tous les types » : une catégorie ne doit
+ * jamais disparaître d'un formulaire à cause d'une donnée abîmée.
+ *
+ * @return list<string>
+ */
+function category_kinds(array $categorie): array
+{
+    $brut = trim((string) ($categorie['kinds'] ?? ''));
+    if ($brut === '') {
+        return array_keys(CATEGORY_KINDS);
+    }
+    $types = [];
+    foreach (explode(',', $brut) as $morceau) {
+        $morceau = trim($morceau);
+        if (category_kind_valide($morceau)) {
+            $types[] = $morceau;
+        }
+    }
+    return $types === [] ? array_keys(CATEGORY_KINDS) : array_values(array_unique($types));
+}
+
+/** Texte à enregistrer dans `categories.kinds` (ordre des six types). */
+function category_kinds_texte(array $types): string
+{
+    $gardes = [];
+    foreach (array_keys(CATEGORY_KINDS) as $type) {
+        if (in_array($type, $types, true)) {
+            $gardes[] = $type;
+        }
+    }
+    return $gardes === [] ? '' : implode(',', $gardes);
+}
+
+/** Cette catégorie s'applique-t-elle à ce type de contenu ? */
+function category_applicable(array $categorie, string $kind): bool
+{
+    return in_array($kind, category_kinds($categorie), true);
+}
+
+/**
+ * Catégories ordonnées (« Ordre » puis nom).
+ *
+ * @param string|null $kind ne garder que celles de ce type de contenu
+ */
+function categories_list(?string $kind = null): array
+{
+    $toutes = db_all('SELECT * FROM categories ORDER BY position, name COLLATE NOCASE');
+    if ($kind === null) {
+        return $toutes;
+    }
+    return array_values(array_filter(
+        $toutes,
+        static fn (array $categorie): bool => category_applicable($categorie, $kind)
+    ));
+}
+
+/** Catégories qui s'appliquent à au moins un des types demandés. */
+function categories_pour_kinds(array $kinds): array
+{
+    return array_values(array_filter(
+        categories_list(),
+        static function (array $categorie) use ($kinds): bool {
+            foreach ($kinds as $kind) {
+                if (category_applicable($categorie, (string) $kind)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+    ));
+}
+
+/** Identifiants des catégories d'un contenu, triés. */
+function category_ids_pour(string $kind, int $contenuId): array
+{
+    if (!category_kind_valide($kind) || $contenuId <= 0) {
+        return [];
+    }
+    $ids = db_all(
+        'SELECT category_id FROM category_links WHERE kind = ? AND content_id = ? ORDER BY category_id',
+        [$kind, $contenuId]
+    );
+    return array_map(static fn (array $l): int => (int) $l['category_id'], $ids);
+}
+
+/**
+ * Enregistre les catégories d'un contenu (remplace les précédentes).
+ *
+ * Seules les catégories qui s'appliquent vraiment au type sont gardées : une
+ * valeur fabriquée à la main ne peut pas créer de liaison incohérente.
+ */
+function category_enregistrer(string $kind, int $contenuId, array $ids): void
+{
+    if (!category_kind_valide($kind) || $contenuId <= 0) {
+        return;
+    }
+    $valides = [];
+    foreach (categories_list($kind) as $categorie) {
+        if (in_array((int) $categorie['id'], array_map('intval', $ids), true)) {
+            $valides[] = (int) $categorie['id'];
+        }
+    }
+
+    db_exec('DELETE FROM category_links WHERE kind = ? AND content_id = ?', [$kind, $contenuId]);
+    foreach ($valides as $id) {
+        db_exec(
+            'INSERT OR IGNORE INTO category_links (category_id, kind, content_id) VALUES (?, ?, ?)',
+            [$id, $kind, $contenuId]
+        );
+    }
+}
+
+/** Les catégories envoyées par un formulaire (`categories[]`), nettoyées. */
+function categories_saisies(): array
+{
+    $brut = $_POST['categories'] ?? [];
+    if (!is_array($brut)) {
+        return [];
+    }
+    return array_values(array_unique(array_filter(array_map('intval', $brut), static fn (int $id): bool => $id > 0)));
+}
+
+/** Nombre de contenus de ce type visibles par la personne, dans une catégorie. */
+function category_compteur(string $kind, int $categorieId): int
+{
+    $tables = [
+        'article'  => ['articles', 'a', 'article'],
+        'document' => ['documents', 'd', 'document'],
+        'photo'    => ['documents', 'd', 'document'],
+        'video'    => ['documents', 'd', 'document'],
+        'album'    => ['albums', 'al', 'album'],
+        'recette'  => ['recipes', 'r', 'recipe'],
+    ];
+    if (!isset($tables[$kind])) {
+        return 0;
+    }
+    [$table, $alias, $kindSql] = $tables[$kind];
+
+    $params = [':cat' => $categorieId];
+    $clause = visibility_clause($kindSql, $alias, $params);
+    $extra  = '';
+    if ($table === 'documents') {
+        $extra = " AND {$alias}.is_attachment = 0 AND {$alias}.kind = :kinddoc";
+        $params[':kinddoc'] = $kind === 'document' ? 'document' : $kind;
+        if ($kind === 'document') {
+            // Un « document » au sens des catégories, c'est tout ce qui n'est
+            // ni une photo ni une vidéo.
+            $extra = " AND {$alias}.is_attachment = 0 AND {$alias}.kind NOT IN ('photo', 'video')";
+            unset($params[':kinddoc']);
+        }
+    }
+    if ($table === 'articles') {
+        $extra = " AND {$alias}.status = 'publie' AND {$alias}.published_at <= :maintenant";
+        $params[':maintenant'] = time();
+    }
+
+    $sql = "SELECT COUNT(DISTINCT {$alias}.id)
+              FROM {$table} {$alias}
+              JOIN category_links cl ON cl.kind = :k AND cl.content_id = {$alias}.id
+             WHERE cl.category_id = :cat AND {$clause} {$extra}";
+    $params[':k'] = $kind;
+
+    return (int) db_value($sql, $params, 0);
+}
+
+/**
+ * Catégories d'un type, avec le nombre de contenus visibles par la personne.
+ * Une catégorie vide pour elle n'apparaît pas : ni le compteur ni la liste ne
+ * révèlent un contenu qu'elle n'a pas le droit de voir.
+ */
+function categories_avec_compteur(string $kind): array
+{
+    $lignes = [];
+    foreach (categories_list($kind) as $categorie) {
+        $nombre = category_compteur($kind, (int) $categorie['id']);
+        if ($nombre > 0) {
+            $lignes[] = $categorie + ['nb' => $nombre];
+        }
+    }
+    return $lignes;
 }
 
 /** Catégorie par identifiant. */
@@ -760,7 +959,7 @@ function article_image(array $article): ?array
     if (empty($article['image_id'])) {
         return null;
     }
-    $doc = db_one("SELECT id, thumb_path, visibility FROM documents WHERE id = ? AND kind = 'photo'", [(int) $article['image_id']]);
+    $doc = db_one("SELECT id, thumb_path, visibility, vintage_aspect FROM documents WHERE id = ? AND kind = 'photo'", [(int) $article['image_id']]);
     if (!$doc) {
         return null;
     }
@@ -771,8 +970,10 @@ function article_image(array $article): ?array
         return null;
     }
     return [
-        'thumb' => !empty($doc['thumb_path']) ? '/media/miniature/' . (int) $doc['id'] : '/f/' . (int) $doc['id'],
-        'full'  => '/f/' . (int) $doc['id'],
+        'thumb'  => !empty($doc['thumb_path']) ? '/media/miniature/' . (int) $doc['id'] : '/f/' . (int) $doc['id'],
+        'full'   => '/f/' . (int) $doc['id'],
+        // Aspect « photo ancienne » (filtre d'affichage seulement, 1.32.0).
+        'aspect' => aspect_photo_classe($doc),
     ];
 }
 
@@ -791,4 +992,64 @@ function recent_articles(int $limit = 4): array
 
     // Nom de la branche pour les articles réservés (surtitre de la carte).
     return articles_avec_branches($lignes);
+}
+
+/** Catégories d'un ou plusieurs types, avec le nombre de contenus visibles. */
+function categories_avec_compteur_kinds(array $kinds): array
+{
+    $lignes = [];
+    foreach (categories_pour_kinds($kinds) as $categorie) {
+        $nombre = 0;
+        foreach ($kinds as $kind) {
+            $nombre += category_compteur((string) $kind, (int) $categorie['id']);
+        }
+        if ($nombre > 0) {
+            $lignes[] = $categorie + ['nb' => $nombre];
+        }
+    }
+    return $lignes;
+}
+
+/**
+ * Catégorie demandée dans l'adresse, si elle s'applique bien à ce type.
+ *
+ * Une valeur inconnue est ignorée (aucun filtre) : on n'invente jamais un
+ * filtre à partir d'une adresse fabriquée.
+ */
+function category_filtre_demande(string|array $kind, string $param = 'categorie'): int
+{
+    $id = query_int($param);
+    if ($id <= 0) {
+        return 0;
+    }
+    $categorie = find_category($id);
+    if ($categorie === null) {
+        return 0;
+    }
+    foreach ((array) $kind as $type) {
+        if (category_applicable($categorie, (string) $type)) {
+            return $id;
+        }
+    }
+
+    return 0;
+}
+
+/**
+ * Condition SQL « ce contenu appartient à cette catégorie » (ou rien).
+ *
+ * @param array $params paramètres de la requête, complétés par référence
+ */
+function category_where(string $alias, ?int $categorieId, array &$params, string $kindSql): string
+{
+    if ($categorieId === null || $categorieId <= 0) {
+        return '';
+    }
+    $params[':catf'] = $categorieId;
+    $params[':catk'] = $kindSql;
+
+    return "EXISTS (SELECT 1 FROM category_links cl
+                     WHERE cl.category_id = :catf
+                       AND cl.kind = :catk
+                       AND cl.content_id = {$alias}.id)";
 }

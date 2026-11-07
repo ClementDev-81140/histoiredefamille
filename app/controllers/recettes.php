@@ -10,11 +10,14 @@ declare(strict_types=1);
 /** Liste des recettes visibles. */
 function public_recettes(): void
 {
+    $categorie  = category_filtre_demande('recette');
+    $categories = categories_avec_compteur('recette');
+
     $total = 0;
-    recipes_visible(0, 0, $total);
+    recipes_visible(0, 0, $total, $categorie);
     $pg = pagination($total, 18, max(1, query_int('page', 1)));
 
-    $recettes = recipes_visible($pg['perPage'], $pg['offset'], $total);
+    $recettes = recipes_visible($pg['perPage'], $pg['offset'], $total, $categorie);
 
     $photos = [];
     foreach ($recettes as $recette) {
@@ -22,6 +25,8 @@ function public_recettes(): void
     }
 
     render('public/recettes', [
+        'categorie'  => $categorie,
+        'categories' => $categories,
         'titre'      => 'Recettes de famille',
         'recettes'   => $recettes,
         'photos'     => $photos,

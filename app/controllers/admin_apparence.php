@@ -20,6 +20,15 @@ function admin_apparence(): void
     $valeurs['devise'] = site_setting('devise');
     $valeurs['fondee'] = site_setting('fondee');
 
+    // Photo d'exemple pour l'aperçu de l'aspect « photo ancienne » : la plus
+    // récente qui a une miniature (cette page est réservée aux administrateurs,
+    // la visibilité de la photo n'entre donc pas en jeu).
+    $photoApercu = db_one(
+        "SELECT id, thumb_path, vintage_aspect FROM documents
+         WHERE kind = 'photo' AND thumb_path IS NOT NULL AND thumb_path <> ''
+         ORDER BY created_at DESC LIMIT 1"
+    );
+
     render('admin/apparence', [
         'titre'          => 'Apparence du journal',
         'erreurs'        => form_errors(),
@@ -31,6 +40,7 @@ function admin_apparence(): void
         'numeroAuto'     => gazette_numero(),
         'policePresente' => gazette_police_titre(),
         'dateExemple'    => french_long_date(),
+        'photoApercu'    => $photoApercu,
     ], 'layout_admin');
 }
 

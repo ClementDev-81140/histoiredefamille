@@ -210,6 +210,28 @@ require __DIR__ . '/partials/envoi.php';
                 <?php endforeach; ?>
             </ul>
 
+            <?php
+            // Catégories appliquées à TOUT le lot (1.32.0). Une photo ne garde
+            // que les catégories prévues pour son type ; la visibilité des
+            // documents ne change pas.
+            $categoriesCases = categories_pour_kinds(['photo', 'document', 'video']);
+            $categorieIds    = array_map('intval', post_array('categories'));
+            ?>
+            <fieldset class="champ">
+                <legend>Catégories de ce lot</legend>
+                <p class="aide">
+                    Facultatif : ces catégories s'ajoutent à tous les documents cochés.
+                    Elles ne changent pas leur visibilité.
+                </p>
+                <?php foreach ($categoriesCases as $categorie): ?>
+                    <label class="case">
+                        <input type="checkbox" name="categories[]" value="<?= (int) $categorie['id'] ?>"
+                            <?= checked(in_array((int) $categorie['id'], $categorieIds, true)) ?>>
+                        <?= e((string) $categorie['name']) ?>
+                    </label>
+                <?php endforeach; ?>
+            </fieldset>
+
             <p class="actions">
                 <button type="submit" class="bouton">Ajouter la sélection à l’album</button>
                 <button type="submit" class="bouton bouton--secondaire" name="tout" value="1">

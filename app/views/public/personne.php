@@ -58,7 +58,7 @@ $listePersonnes = static function (array $personnes): void {
 <section class="section fiche-personne">
     <div class="fiche-personne__entete">
         <?php if ($photo !== null): ?>
-            <img class="fiche-personne__photo" src="<?= e(file_url($photo)) ?>"
+            <img class="fiche-personne__photo <?= e(aspect_photo_classe($photo)) ?>" src="<?= e(file_url($photo)) ?>"
                  alt="Portrait de <?= e(person_full_name($person)) ?>">
         <?php endif; ?>
 
@@ -69,7 +69,7 @@ $listePersonnes = static function (array $personnes): void {
             <?php endif; ?>
             <p class="actions">
                 <a class="bouton bouton--secondaire" href="/arbre?racine=<?= (int) $person['id'] ?>">Voir dans l’arbre</a>
-                <?php if ($lieuCarte !== null): ?>
+                <?php if ($lieuCarte !== null && carte_active()): ?>
                     <a class="bouton bouton--secondaire"
                        href="/lieu/<?= (int) $lieuCarte['id'] ?>">Voir sur la carte</a>
                 <?php endif; ?>
@@ -229,7 +229,7 @@ $listePersonnes = static function (array $personnes): void {
                 <li class="galerie-personne__item">
                     <a href="<?= e(document_url($photo)) ?>">
                         <?php if (thumbnail_url($photo) !== null): ?>
-                            <img src="<?= e(thumbnail_url($photo)) ?>" alt="<?= e($photo['title']) ?>"
+                            <img class="<?= e(aspect_photo_classe($photo)) ?>" src="<?= e(thumbnail_url($photo)) ?>" alt="<?= e($photo['title']) ?>"
                                  loading="lazy" width="240" height="180">
                         <?php else: ?>
                             <span class="galerie-personne__vide">Document</span>

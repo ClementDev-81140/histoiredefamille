@@ -98,10 +98,11 @@ et une installation qui tient en quelques commandes à copier-coller.
 
 - Un **menu de gauche rangé par métier**, pas par partie du site : *Contenus*
   (articles, pages, documents, albums, vidéos, recettes, catégories), *Envois*,
-  *Personnes* (arbre, comptes, branches, administrateurs, lieux),
-  *Journal* (gazette, apparence, composition, et « courriels » **seulement si
-  l'envoi est réactivé** — voir § 14) et *Système*, avec
-  « À valider » et son compteur en tête.
+  *Personnes* (arbre, comptes, branches, administrateurs, et « lieux »
+  **seulement si la carte est active**), *Journal* (gazette, apparence,
+  composition, **calendrier**, et « courriels » **seulement si l’envoi est
+  réactivé** — voir § 14) et *Système*, avec « À valider » et son compteur en
+  tête.
 - Un **tableau de bord en une carte « Contenus »** : documents, articles,
   pages, vidéos, personnes, comptes et propositions à valider, plus une ligne
   « dont publics : N » et des raccourcis vers les listes déjà filtrées sur
@@ -123,7 +124,10 @@ et une installation qui tient en quelques commandes à copier-coller.
   facultative, visibilité.
 - **Export GEDCOM** de tout l'arbre en un clic (Arbre généalogique →
   Exporter GEDCOM).
-- Catégories de documents (créées par les administrateurs).
+- **Catégories** (créées par les administrateurs) : depuis la 1.32.0, une
+  catégorie s’applique à un ou plusieurs **types** de contenu (article,
+  document, photo, album, vidéo, recette), avec un **ordre d’affichage** ; un
+  contenu peut en porter plusieurs, et chaque liste a son filtre par catégorie.
 - Branches familiales : création, modification, suppression, **réinitialisation
   du mot de passe en un clic** (mot de passe lisible affiché une seule fois),
   désactivation/réactivation du compte. Case à cocher
@@ -209,6 +213,13 @@ nouvelles de la famille, les souvenirs, les annonces.
   tout seul le jour venu, sans intervention.
 - Un article **privé** ou en brouillon renvoie une page « introuvable », comme
   un contenu interdit.
+- **Un article sans photo n'affiche aucun cadre** (1.32.0) : ni carré gris, ni
+  lettre de remplacement, ni emplacement vide — la mise en page se réorganise
+  autour du texte. C'est vrai partout : accueil, « À la une », listes,
+  recherche, gazette, page de l'article et impression. Les trois gabarits
+  (*Journal*, *Simple*, *Grande photo*) restent inchangés ; un article réglé en
+  « Grande photo » qui n'a pas d'image retombe simplement sur « Journal », sans
+  image.
 - Administration → **Articles** : liste de tous les articles (brouillons et
   programmés compris), création, modification, suppression. Un administrateur
   peut relire un brouillon en cliquant dessus.
@@ -237,7 +248,16 @@ droits, même stockage, aucun second système.
   familles et à ses branches ; un administrateur voit tout, et un compte
   « voit toutes les branches » voit toutes les branches. Une vidéo **privée**
   n'apparaît jamais dans l'espace famille.
-- Grille de cartes : miniature, titre, date, durée, court résumé.
+- Grille de cartes : **image d'aperçu**, titre, date, durée, court résumé.
+  Depuis la 1.32.0, l'image est **extraite de la vidéo** par ffmpeg (à une
+  seconde du début, ou à 10 % de la durée si le film est plus court), puis
+  réduite comme les autres miniatures ; elle est fabriquée **à la fin de
+  l'envoi**, ou de la conversion pour une vidéo reconvertie. Sans ffmpeg, ou si
+  l'extraction échoue, la carte affiche une **icône de lecture** sobre — jamais
+  un carré gris — et la page **Conversions** dit pourquoi. La miniature suit
+  **exactement** la visibilité de la vidéo : une miniature privée répond la même
+  page « introuvable » que la vidéo. Un administrateur peut aussi **envoyer une
+  image de couverture** depuis la fiche de la vidéo.
 - Tri : les vidéos **mises en avant** d'abord, puis l'ordre d'affichage choisi
   par l'administrateur, puis les plus récentes. Pagination automatique.
 - Fiche d'une vidéo : lecteur `<video controls preload="metadata" playsinline>`,
@@ -361,9 +381,18 @@ Deux façons de traverser les dates de la famille, ouvertes à tout le monde.
   « 12/06/1928 », « 1928-06-12 », « 1er février 1975 », « juin 1928 » ou
   simplement « vers 1930 ». Une date sans jour ni mois ne peut pas entrer dans
   le calendrier : elle reste dans la frise, à son année.
+- Depuis la 1.32.0, le calendrier affiche aussi de **vrais événements de
+  famille** saisis dans *Administration → Calendrier* : une fête, une réunion,
+  un voyage, une messe du souvenir. Chacun a un titre, une date de début, une
+  heure facultative, une fin facultative, un lieu en texte libre, une
+  description, une **visibilité** et, s'il le faut, une **répétition annuelle**
+  (il revient alors chaque année à la même date). Le point du jour et le détail
+  sous la grille le signalent comme « événement de famille ».
 - Comme partout, un visiteur ne voit que les événements des personnes et des
   documents auxquels il a droit ; un mariage n'apparaît que si les deux époux
-  sont visibles.
+  sont visibles. Un événement créé dans l'administration est **privé par
+  défaut** : personne ne le voit tant que l'administrateur n'a pas choisi
+  « Famille », « Branches précises » ou « Public ».
 - Les deux pages s'impriment proprement (bouton « Imprimer »).
 
 ### Témoignages sonores et recettes de famille
@@ -488,14 +517,16 @@ histoiredefamille/
 │   │                        conversion des vidéos (conversion), données de
 │   │                        démonstration et purge de ces données (demo),
 │   │                        adresses affichées et réglage des courriels
-│   │                        (contacts)…
+│   │                        (contacts), événements du calendrier
+│   │                        (evenements), miniatures des vidéos (images)…
 │   ├── views/               gabarits PHP (public, famille, admin)
 │   ├── migrations/          fichiers SQL numérotés
-│   │                        (001_init … 017_versions_propositions)
+│   │                        (001_init … 021_categories_types)
 │   └── cli/                 commandes : migrate, create-admin, demo, purger-demo,
 │                            maintenance, sauvegarde, restauration,
 │                            verifier-mise-en-ligne, convertir (vidéos),
-│                            envoyer-courriels, tests
+│                            miniatures-videos (images d'aperçu), envoyer-courriels,
+│                            tests
 ├── deploy/
 │   ├── install.sh           installation complète sur le Pi
 │   ├── systemd/             minuteurs : sauvegarde (3 h 30), courriels
@@ -927,7 +958,7 @@ Onglet **Speed** : laisser la compression **désactivée pour les vidéos**
 
 1. **Administration → Documents → Nouveau document**.
 2. Choisir le fichier (jusqu'à 50 Mo), saisir un titre, éventuellement une
-   description, une date, une catégorie et des étiquettes.
+   description, une date, **une ou plusieurs catégories** et des étiquettes.
 3. Choisir la **visibilité** — c'est le point à ne pas oublier.
 4. Enregistrer.
 
@@ -937,6 +968,25 @@ par un script PHP qui vérifie les droits.
 
 Une **miniature** est créée automatiquement pour les photos (480 px de côté
 maximum) : les listes restent rapides même sur un petit écran et sur le Pi.
+
+**Les catégories, depuis la 1.32.0.** Une catégorie ne sert plus seulement aux
+documents : *Administration → Catégories* indique, pour chacune, les **types de
+contenu** auxquels elle s'applique — **article, document, photo, album, vidéo,
+recette** — et son **ordre d'affichage**. Une catégorie neuve vaut pour les six
+(ses cases sont cochées au départ) ; décocher un type la retire des formulaires
+de ce type. Un contenu peut porter **plusieurs catégories** : les cases
+« Catégories » des formulaires ne proposent que celles prévues pour son type.
+Sur *Envoyer des fichiers* et *Ajouter des photos à un album*, les catégories
+cochées s'appliquent à **tout le lot**. Chaque liste — publique ou
+d'administration — a un filtre « Catégorie » en formulaire `GET`
+(`/documents?categorie=3`, `/videos?categorie=3`, `/recettes?categorie=3`,
+`/albums?categorie=3`, `/articles?categorie_id=3`), et le **compteur** affiché
+ne compte que les contenus que **vous** pouvez voir : un visiteur ne peut donc
+pas déduire l'existence d'un contenu privé par le nombre affiché, et une
+catégorie dont rien ne lui est visible n'apparaît pas du tout. La migration
+`021_categories_types.sql` recopie les catégories déjà posées sur les
+documents : **aucune n'est perdue**, et l'ancienne colonne
+`documents.category_id` reste tenue à jour pour les écrans qui la lisent.
 
 Formats acceptés : `pdf`, `txt`, `jpg`, `jpeg`, `png`, `webp`, `gif`, `mp4`,
 `m4v`, `mov`, `avi`, `mkv`, `webm`, `3gp`, `docx`, `xlsx`, `odt`, `ods`, `mp3`,
@@ -1083,6 +1133,21 @@ en haut qui suit la saisie.
 - **Le titre en gothique** : une case. Décochée, le titre s'écrit en Old
   Standard TT gras, en petites capitales. Si le fichier de la police
   gothique n'est pas sur le serveur, le site le dit et utilise le repli.
+
+**L'aspect « photo ancienne » (1.32.0).** Un réglage de plus sur cette page :
+**Aucun** (le défaut), **Doux** ou **Marqué**. Il donne aux photos un rendu
+sépia, de plus en plus appuyé, et s'applique aux vignettes comme aux grandes
+images — listes, albums, article à la une, accueil. **C'est un filtre
+d'affichage** : le fichier d'origine n'est **jamais** modifié, les
+téléchargements et l'impression restent **en couleurs**, et le lien
+« **Télécharger l'original** » de la fiche donne bien l'image d'origine. Le
+rendu ne passe que par des **classes CSS** (`aspect-photo--doux`,
+`aspect-photo--marque`), jamais par un attribut `style` : il ne coûte donc rien
+au navigateur et reste compatible avec la règle de sécurité du site. Sur la
+fiche d'un document image, trois choix : **Suivre le réglage du site** (le
+défaut), **Forcer l'aspect photo ancienne**, **Désactiver** (garder les
+couleurs). Un **aperçu en direct** montre le résultat sous les trois boutons ;
+sans JavaScript, il montre le réglage déjà enregistré.
 
 **Les couleurs.** Trois possibilités :
 
@@ -1314,6 +1379,23 @@ Réglages utiles (Administration → Réglages, bloc « Tchat de la famille ») 
   (Administration → Arbre généalogique) : le calendrier et la frise suivent
   automatiquement.
 
+Les **événements de famille** (une fête, une réunion, un voyage) se créent
+dans **Administration → Calendrier** :
+
+1. « **Nouvel événement** » : titre, date de début, **heure facultative**,
+   date et heure de fin facultatives, **lieu** en texte libre, description ;
+2. une case « **revient chaque année à la même date** » si l'événement se
+   répète ;
+3. la **visibilité**, **privée par défaut** — choisissez « Famille »,
+   « Branches précises » ou « Public » pour qu'il soit vu ;
+4. « Créer l'événement ».
+
+La liste montre chaque événement avec sa date, son lieu, sa visibilité et sa
+répétition, et permet de le **modifier** ou de le **supprimer**. La suppression
+demande **confirmation** dans le navigateur : elle est définitive. Les
+événements visibles apparaissent aussi dans le bloc « **Dans la famille** » de
+l'accueil des comptes connectés, quand leur date approche.
+
 ### 6.13 Envoyer un témoignage sonore ou écrire une recette
 
 - **Témoignage** : Administration → Documents → **Ajouter un document**, choisir
@@ -1368,6 +1450,9 @@ Rien à cocher : le site s'en occupe.
   *Familles*, *Branches*, *Privé*. Le choix reste dans l'adresse
   (`?visibilite=public`), donc il se met en favori et le tableau de bord peut
   y renvoyer directement.
+- Les listes d'administration ont aussi, depuis la 1.32.0, un filtre
+  **« Catégorie »**, limité aux catégories du type de la liste : le choix reste
+  dans l'adresse (`?categorie=3`), les autres filtres sont conservés.
 
 ### 6.16 Vérifier qui s'est connecté
 
@@ -1387,6 +1472,13 @@ Réglages utiles, dans la même page : « Échecs refusés » / « Adresses
 nouvelles » pour filtrer, et la durée de conservation du journal.
 
 ### 6.17 Placer les lieux sur la carte
+
+**La carte est désactivée par défaut depuis la 1.32.0.** Pour l'utiliser,
+cochez « **Carte des lieux** » dans *Administration → Réglages* : la page
+`/carte`, le lien « Carte » des menus et « **Lieux à placer** » réapparaissent
+aussitôt, avec les lieux déjà enregistrés (rien n'a été supprimé). Décochée,
+`/carte` et `/lieu/{id}` répondent « introuvable » à tout le monde, et
+`/admin/lieux` renvoie vers **Réglages**.
 
 La carte ne devine aucun lieu. Un texte écrit dans une fiche (« Toulouse »,
 « Saint-Étienne », « le hameau de la Croix ») reste **exactement** comme il est :
@@ -2012,7 +2104,7 @@ sudo mkdir -p /mnt/ssd
 # … voir deploy/montage-disques.md pour l'entrée /etc/fstab définitive
 
 # 2. recréer les dossiers de données
-sudo mkdir -p /mnt/ssd/histoiredefamille/{medias,miniatures,arrivee,tmp,verrous}
+sudo mkdir -p /mnt/ssd/histoiredefamille/{medias,miniatures,arrivee,tmp,verrous,envois}
 sudo chown -R www-data:www-data /mnt/ssd/histoiredefamille
 
 # 3. restaurer la base ET les fichiers depuis la clé (taper OUI)
@@ -2191,6 +2283,35 @@ Tant qu'une vidéo n'est pas convertie, elle **n'apparaît pas** : ni dans
 l'onglet Vidéos, ni dans les albums, ni dans la recherche. Aucun lecteur ne
 s'affiche donc sur un fichier illisible. Les administrateurs, eux, voient la
 fiche et son état (« en attente », « en cours — 42 % », « échec »).
+
+### Les images d'aperçu des vidéos (1.32.0)
+
+L'image d'une vidéo est **extraite du film** par ffmpeg (à une seconde, ou à
+10 % de la durée pour un film très court), puis réduite en JPEG comme les
+autres miniatures et rangée avec elles. Elle est fabriquée **automatiquement** :
+à la fin de l'envoi pour un MP4, à la fin de la conversion pour un film
+reconverti. Rien à faire à la main.
+
+Pour les vidéos **déjà sur le site** avant la 1.32.0, une commande les rattrape
+**une par une**, en tâche de fond, sans bloquer le site :
+
+```bash
+# 1. lister ce qui manque (aucune modification)
+sudo -u www-data php /var/www/histoiredefamille/app/cli/miniatures-videos.php
+
+# 2. traiter UNE vidéo (relancer la commande pour la suivante)
+sudo -u www-data php /var/www/histoiredefamille/app/cli/miniatures-videos.php --executer
+
+# ou traiter jusqu'à trois vidéos d'un coup
+sudo -u www-data php /var/www/histoiredefamille/app/cli/miniatures-videos.php --executer --lot=3
+```
+
+La commande est **relançable** sans risque : elle saute les vidéos qui ont déjà
+une image et n'en fabrique jamais deux fois. Sans ffmpeg, elle le dit et ne
+fait rien ; les cartes affichent alors l'icône de lecture de remplacement, et
+la page **Conversions** porte un message qui explique comment installer ffmpeg.
+Un administrateur peut toujours **envoyer une image de couverture** sur la
+fiche d'une vidéo : elle remplace l'image extraite.
 
 ### Suivre et décider : Administration → Conversions
 
@@ -3005,9 +3126,19 @@ gazette (« Gazette du mois : 2 numéro(s) préparé(s) pour … ») au début d
 
 ## 16. La carte des lieux
 
-La page `/carte` dessine les lieux de la famille. Depuis la 1.31.0, elle
-demande la connexion : un visiteur est renvoyé vers `/connexion`, comme pour
-l'arbre. Pour la placer au quotidien
+La page `/carte` dessine les lieux de la famille. Depuis la 1.32.0, la carte est
+**désactivée par défaut** : le réglage « **Carte des lieux** » de
+*Administration → Réglages* est décoché. Tant qu'il l'est, `/carte` et
+`/lieu/{id}` répondent la page « **introuvable** » (code 404) **à tout le
+monde, administrateur compris** ; le lien « Carte » disparaît des menus, de
+l'accueil et des fiches (« Voir sur la carte ») ; « **Lieux à placer** » quitte
+le menu d'administration et `/admin/lieux` renvoie vers **Réglages** avec le
+message « La carte est désactivée ». **Rien n'est supprimé** : le code, les
+données et la table `places` restent en place, et une seule case suffit à tout
+rallumer — il suffit de réactiver le réglage, sans migration ni commande.
+
+Depuis la 1.31.0, quand elle est active, la carte demande la connexion : un
+visiteur est renvoyé vers `/connexion`, comme pour l'arbre. Pour la placer au quotidien
 (chercher une commune, saisir une position à la main, retirer un lieu), voir
 [6.17](#617-placer-les-lieux-sur-la-carte). Ce chapitre explique ce qui se
 passe derrière, pour pouvoir la réparer ou l'expliquer un jour.

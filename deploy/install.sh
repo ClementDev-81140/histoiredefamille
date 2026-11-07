@@ -140,10 +140,10 @@ fi
 # --- 5. Dossiers de stockage ----------------------------------------------
 # Ils sont sur le SSD (/mnt/ssd), donc HORS de la racine web.
 bleu "Dossiers de stockage sur le SSD"
-mkdir -p /mnt/ssd/histoiredefamille/{medias,miniatures,arrivee,tmp,verrous}
+mkdir -p /mnt/ssd/histoiredefamille/{medias,miniatures,arrivee,tmp,verrous,envois}
 chown -R www-data:www-data /mnt/ssd/histoiredefamille
 chmod 750 /mnt/ssd/histoiredefamille
-chmod 770 /mnt/ssd/histoiredefamille/{medias,miniatures,arrivee,tmp,verrous}
+chmod 770 /mnt/ssd/histoiredefamille/{medias,miniatures,arrivee,tmp,verrous,envois}
 vert "Créés dans /mnt/ssd/histoiredefamille (propriétaire : www-data)."
 
 mkdir -p /mnt/sauvegarde

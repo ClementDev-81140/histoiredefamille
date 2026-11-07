@@ -556,6 +556,17 @@ function conversion_reussir(int $id, string $cheminFichier, array $infos = []): 
         ]);
     });
 
+    // Une vidéo convertie reçoit son image d'aperçu une fois le fichier en
+    // place (1.32.0). Un son n'en a pas besoin ; un échec de ffmpeg ne remet
+    // pas la conversion en cause (la miniature est un confort, et la commande
+    // « miniatures-videos.php » sait la rattraper).
+    if (!$audio) {
+        $miniature = video_miniature_document((int) $doc['id']);
+        if (!$miniature['ok'] && $miniature['error'] !== '') {
+            error_log('Miniature de vidéo impossible après conversion (document ' . (int) $doc['id'] . ') : ' . $miniature['error']);
+        }
+    }
+
     // L'original n'est effacé que si on l'a demandé, et jamais s'il est encore
     // le fichier d'une autre fiche (copie, remplacement partiel…).
     if (conversion_reglages()['supprimer_original'] && $ancienRel !== '' && $ancienRel !== $rel) {

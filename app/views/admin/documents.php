@@ -35,6 +35,20 @@
             <?php endforeach; ?>
         </select>
     </div>
+    <?php if ($filtreCategories !== []): ?>
+        <div class="champ">
+            <label for="categorie">Catégorie</label>
+            <select id="categorie" name="categorie">
+                <option value="0">Toutes</option>
+                <?php foreach ($filtreCategories as $categorieFiltre): ?>
+                    <option value="<?= (int) $categorieFiltre['id'] ?>"
+                        <?= selected($filtreCategorie === (int) $categorieFiltre['id']) ?>>
+                        <?= e((string) $categorieFiltre['name']) ?> (<?= (int) $categorieFiltre['nb'] ?>)
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+    <?php endif; ?>
     <div class="champ champ--bouton">
         <button type="submit" class="bouton">Filtrer</button>
         <a class="lien" href="/admin/documents">Réinitialiser</a>

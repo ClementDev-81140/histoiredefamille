@@ -136,6 +136,13 @@ $couverture = (int) $v('couverture', (int) ($album['cover_document_id'] ?? 0));
         <?php endif; ?>
     </fieldset>
 
+    <?php
+    // Catégories du type « album » (1.32.0).
+    $categoriesCases = categories_list('album');
+    $kindCategorie   = 'Albums';
+    require __DIR__ . '/partials/categories_cases.php';
+    ?>
+
     <p class="actions">
         <button type="submit" class="bouton"><?= $isEdit ? 'Enregistrer' : 'Créer l’album' ?></button>
         <a class="bouton bouton--secondaire" href="/admin/albums">Annuler</a>

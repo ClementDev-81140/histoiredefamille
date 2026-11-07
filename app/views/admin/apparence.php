@@ -233,6 +233,49 @@ $libelles = [
         </p>
     </section>
 
+    <section class="apparence-groupe" id="aspect-photo">
+        <h2>Aspect « photo ancienne »
+            <small>Un filtre d’affichage : le fichier d’origine n’est jamais modifié, les
+            téléchargements et l’impression restent en couleurs.</small>
+        </h2>
+
+        <?php
+        $aspectCourant = (string) old_value($old, 'aspect_photo', $valeurs['aspect_photo'] ?? 'aucun');
+        if (!array_key_exists($aspectCourant, APPARENCE_ASPECTS)) {
+            $aspectCourant = 'aucun';
+        }
+        ?>
+        <?php foreach (APPARENCE_ASPECTS as $cle => $libelle): ?>
+            <label class="radio">
+                <input type="radio" name="aspect_photo" value="<?= e($cle) ?>"
+                       data-apercu-aspect-choix="<?= e($cle) ?>" <?= checked($aspectCourant === $cle) ?>>
+                <?= e($libelle) ?>
+            </label>
+        <?php endforeach; ?>
+        <p class="aide">
+            « Aucun » laisse les photos en couleurs (réglage d’origine). « Doux » et « Marqué »
+            donnent un rendu sépia, de plus en plus appuyé. Sur la fiche d’une photo, vous pouvez
+            forcer ou désactiver ce rendu.
+        </p>
+
+        <?php /* Aperçu vivant : la même image que le site, filtrée par la classe CSS. */ ?>
+        <div class="apercu-aspect" id="apercu-aspect" aria-label="Aperçu de l’aspect des photos">
+            <?php if ($photoApercu !== null): ?>
+                <img data-apercu-aspect-image
+                     src="<?= e(thumbnail_url($photoApercu)) ?>"
+                     class="apercu-aspect__image <?= e(aspect_photo_classe($photoApercu)) ?>"
+                     alt="Aperçu de l’aspect des photos" width="480" height="360">
+            <?php else: ?>
+                <div data-apercu-aspect-image
+                     class="apercu-aspect__image apercu-aspect__echantillon <?= e(aspect_photo_classe(null)) ?>"
+                     aria-hidden="true"></div>
+            <?php endif; ?>
+            <p class="apercu-aspect__legende">
+                Aperçu — <span data-apercu-aspect-libelle><?= e(APPARENCE_ASPECTS[$aspectCourant]) ?></span>
+            </p>
+        </div>
+    </section>
+
     <section class="apparence-groupe" id="couleurs">
         <h2>Couleurs
             <small>Trois possibilités. Le site vérifie les contrastes : un texte gris sur un papier clair est refusé.</small>

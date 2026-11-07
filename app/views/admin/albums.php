@@ -19,6 +19,8 @@
 <?php
 $action = '/admin/albums';
 require __DIR__ . '/partials/filtre_visibilite.php';
+$filtreAutres = ['visibilite' => $visibility];
+require __DIR__ . '/partials/filtre_categories_liste.php';
 ?>
 
 <?php if ($albums === []): ?>

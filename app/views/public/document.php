@@ -30,7 +30,7 @@ $canAdmin  = is_admin();
     <div class="document__corps">
         <div class="document__apercu">
             <?php if ($isPhoto): ?>
-                <img class="document__image" src="<?= e(file_url($doc)) ?>"
+                <img class="document__image <?= e(aspect_photo_classe($doc)) ?>" src="<?= e(file_url($doc)) ?>"
                      alt="<?= e($doc['title']) ?>">
             <?php elseif ($isVideo): ?>
                 <video class="document__video" controls preload="metadata"

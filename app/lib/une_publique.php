@@ -69,6 +69,7 @@ function une_publique_sql(array &$params): string
         SELECT 'articles' AS type, a.id AS id, a.title AS titre,
                a.summary AS resume, COALESCE(a.image_id, 0) AS image_id,
                a.slug AS slug, '' AS ext, 1 AS vignette,
+               '' AS vintage_aspect,
                a.published_at AS tri, '' AS date_texte
           FROM articles a
          WHERE {$articles}
@@ -84,6 +85,7 @@ function une_publique_sql(array &$params): string
                -- Une vignette n'existe que si le document en a une :
                -- `thumbnail_url()` dit la même chose ailleurs (1.31.0).
                CASE WHEN d.thumb_path IS NULL OR d.thumb_path = '' THEN 0 ELSE 1 END AS vignette,
+               d.vintage_aspect AS vintage_aspect,
                d.created_at AS tri,
                COALESCE(NULLIF(TRIM(d.doc_date), ''), '') AS date_texte
           FROM documents d
@@ -94,6 +96,7 @@ function une_publique_sql(array &$params): string
                COALESCE(r.origin, '') AS resume,
                COALESCE(r.photo_document_id, 0) AS image_id,
                r.slug AS slug, '' AS ext, 1 AS vignette,
+               '' AS vintage_aspect,
                r.created_at AS tri, '' AS date_texte
           FROM recipes r
          WHERE {$recettes}
@@ -101,6 +104,7 @@ function une_publique_sql(array &$params): string
         UNION ALL
         SELECT 'pages' AS type, p.id AS id, p.title AS titre, p.body AS resume,
                0 AS image_id, p.slug AS slug, '' AS ext, 1 AS vignette,
+               '' AS vintage_aspect,
                p.updated_at AS tri, '' AS date_texte
           FROM pages p
          WHERE p.is_published = 1 AND {$pages}
@@ -335,10 +339,10 @@ function une_publique_items(array $lignes): array
             $params[$nom]   = (int) $imageId;
             $i++;
         }
-        $sql = 'SELECT d.id FROM documents d WHERE d.id IN (' . implode(', ', $places) . ')'
+        $sql = 'SELECT d.id, d.vintage_aspect FROM documents d WHERE d.id IN (' . implode(', ', $places) . ')'
             . " AND d.thumb_path IS NOT NULL AND d.thumb_path <> '' AND {$clause}";
         foreach (db_all($sql, $params) as $trouve) {
-            $visibles[(int) $trouve['id']] = true;
+            $visibles[(int) $trouve['id']] = (string) ($trouve['vintage_aspect'] ?? 'suivre');
         }
     }
 
@@ -351,15 +355,22 @@ function une_publique_items(array $lignes): array
         $imageId = (int) ($ligne['image_id'] ?? 0);
         $tri     = (int) $ligne['tri'];
 
-        $image = null;
+        $image  = null;
+        $aspect = '';
         // Les documents, photos et vidéos portent leur propre vignette : la
         // clause de visibilité les a déjà filtrés. Sans vignette (une vidéo
         // sans image d'aperçu, par exemple), on n'en propose pas : la carte
         // affiche alors son repère de rubrique, jamais une image cassée.
         if (in_array($type, ['photos', 'videos', 'documents'], true)) {
             $image = (int) ($ligne['vignette'] ?? 0) === 1 ? '/media/miniature/' . $id : null;
+            if ($image !== null) {
+                // L'aspect « photo ancienne » suit le réglage du site, sauf
+                // réglage propre au document (1.32.0).
+                $aspect = aspect_photo_classe(['vintage_aspect' => (string) ($ligne['vintage_aspect'] ?? 'suivre')]);
+            }
         } elseif ($imageId > 0 && isset($visibles[$imageId])) {
             $image = '/media/miniature/' . $imageId;
+            $aspect = aspect_photo_classe(['vintage_aspect' => (string) $visibles[$imageId]]);
         }
 
         $adresse = match ($type) {
@@ -385,6 +396,7 @@ function une_publique_items(array $lignes): array
             'date_texte' => $dateTexte,
             'url'        => $adresse,
             'image'      => $image,
+            'image_aspect' => $aspect,
             'genre'      => in_array($type, ['photos', 'videos', 'documents'], true)
                 ? document_kind_label(
                     match ($type) {

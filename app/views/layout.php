@@ -111,8 +111,9 @@ $navClass = static function (string $href) use ($currentPath): string {
             'recettes'    => recipes_exist(),
             'temoignages' => audio_exist(),
             'tchat'       => tchat_actif(),
-            // La carte n'apparaît que si elle a quelque chose à montrer.
-            'carte'       => carte_exist(),
+            // La carte n'apparaît que si elle est ouverte (réglage) et si elle
+            // a quelque chose à montrer. Désactivée par défaut.
+            'carte'       => carte_active() && carte_exist(),
         ]);
         // Le tchat reste en dernier, après les pages d'information, comme avant.
         $menuTchat   = array_values(array_filter($menu, static fn (array $e): bool => $e['cle'] === 'tchat'));

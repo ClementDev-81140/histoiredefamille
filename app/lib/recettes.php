@@ -52,10 +52,14 @@ function find_viewable_recipe(string $slug): ?array
 }
 
 /** Recettes visibles, de la plus récente à la plus ancienne. */
-function recipes_visible(int $limit = 0, int $offset = 0, ?int &$total = null): array
+function recipes_visible(int $limit = 0, int $offset = 0, ?int &$total = null, int $categorieId = 0): array
 {
     $params = [];
     $clause = recipe_visible_clause('r', $params);
+    $catClause = category_where('r', $categorieId > 0 ? $categorieId : null, $params, 'recette');
+    if ($catClause !== '') {
+        $clause .= ' AND ' . $catClause;
+    }
     $total  = (int) db_value("SELECT COUNT(*) FROM recipes r WHERE {$clause}", $params, 0);
 
     $sql = "SELECT r.* FROM recipes r WHERE {$clause}

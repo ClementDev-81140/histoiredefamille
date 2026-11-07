@@ -11,17 +11,22 @@ declare(strict_types=1);
 /** Liste des albums visibles. */
 function public_albums(): void
 {
+    $categorie  = category_filtre_demande('album');
+    $categories = categories_avec_compteur('album');
+
     $total = 0;
-    albums_visible(0, 0, $total);
+    albums_visible(0, 0, $total, $categorie);
     $pg = pagination($total, 12, max(1, query_int('page', 1)));
 
-    $albums = albums_visible($pg['perPage'], $pg['offset'], $total);
+    $albums = albums_visible($pg['perPage'], $pg['offset'], $total, $categorie);
     foreach ($albums as $index => $album) {
         $albums[$index]['nb_photos']  = album_photo_count((int) $album['id']);
         $albums[$index]['couverture'] = album_cover($album);
     }
 
     render('public/albums', [
+        'categorie'  => $categorie,
+        'categories' => $categories,
         'titre'      => 'Albums photos',
         'albums'     => $albums,
         'pagination' => $pg,

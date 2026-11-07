@@ -150,7 +150,12 @@ function public_documents(): void
 
     $categoryId = query_int('categorie');
     if ($categoryId > 0) {
-        $where[] = 'd.category_id = :categorie';
+        // Catégories du document (1.32.0) : la liaison porte le type de la
+        // fiche (document, photo ou vidéo).
+        $where[] = 'EXISTS (SELECT 1 FROM category_links cl
+                             WHERE cl.category_id = :categorie
+                               AND cl.content_id = d.id
+                               AND cl.kind = d.kind)';
         $params[':categorie'] = $categoryId;
     }
 
@@ -169,18 +174,9 @@ function public_documents(): void
             LIMIT {$pg['perPage']} OFFSET {$pg['offset']}";
     $documents = db_all($sql, $params);
 
-    // Catégories ayant au moins un document visible (évite les listes vides).
-    $catParams = [];
-    $catClause = visibility_clause('document', 'd', $catParams);
-    $categories = db_all(
-        "SELECT c.id, c.name, COUNT(d.id) AS nb
-         FROM categories c
-         JOIN documents d ON d.category_id = c.id AND d.is_attachment = 0
-         WHERE {$catClause}
-         GROUP BY c.id, c.name
-         ORDER BY c.position, c.name",
-        $catParams
-    );
+    // Catégories ayant au moins un contenu visible par la personne (le
+    // compteur ne compte que ce qu'elle peut voir : aucune fuite).
+    $categories = categories_avec_compteur_kinds(['document', 'photo', 'video']);
 
     render('public/documents', [
         'titre'      => 'Documents',

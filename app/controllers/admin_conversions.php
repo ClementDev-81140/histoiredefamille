@@ -62,6 +62,10 @@ function admin_conversions(): void
         'resume'     => conversion_resume(),
         'reglages'   => conversion_reglages(),
         'aPlanifier' => $aPlanifier,
+        // Miniatures (1.32.0) : les outils, et combien de vidéos prêtes n'ont
+        // pas encore d'image d'aperçu.
+        'outils'     => conversion_outils(),
+        'sansImage'  => count(video_miniature_a_faire(500)),
         'derniere'   => db_one("SELECT MAX(finished_at) AS t FROM conversions WHERE state = 'terminee'"),
     ], 'layout_admin');
 }

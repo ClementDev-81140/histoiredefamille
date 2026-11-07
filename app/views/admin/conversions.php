@@ -41,6 +41,27 @@ $derniereDate = isset($derniere['t']) && (int) $derniere['t'] > 0
     </div>
 <?php endif; ?>
 
+<?php if ($outils['ffmpeg'] === null): ?>
+    <div class="message message--attention">
+        <strong>Les vidéos n’ont pas d’image d’aperçu.</strong>
+        Le programme <code>ffmpeg</code> n’est pas installé sur ce serveur : le site ne peut pas
+        extraire une image des vidéos. En attendant, chaque vidéo affiche une icône de lecture
+        sur le papier (jamais un carré gris). Sur le Raspberry Pi :
+        <code>sudo apt-get install -y ffmpeg</code>, puis
+        <code>php app/cli/miniatures-videos.php --executer</code> pour rattraper les vidéos
+        existantes, une par une et sans ralentir le site.
+        <?php if ((int) $sansImage > 0): ?>
+            <br>Vidéos sans image pour l’instant : <strong><?= (int) $sansImage ?></strong>.
+        <?php endif; ?>
+    </div>
+<?php elseif ((int) $sansImage > 0): ?>
+    <p class="note">
+        <strong><?= (int) $sansImage ?></strong> vidéo(s) prête(s) n’ont pas encore d’image
+        d’aperçu. La commande <code>php app/cli/miniatures-videos.php --executer</code> les crée
+        une par une (elle est relançable sans risque).
+    </p>
+<?php endif; ?>
+
 <div class="ligne-champs envoi-etat">
     <p><strong><?= (int) $resume['a_faire'] ?></strong> fichier(s) à convertir
         (<?= (int) $resume['attente'] ?> en attente, <?= (int) $resume['en_cours'] ?> en cours).</p>

@@ -109,6 +109,13 @@ $photoId    = (int) $v('photo_id', (int) ($recette['photo_document_id'] ?? 0));
         </div>
     </fieldset>
 
+    <?php
+    // Catégories du type « recette » (1.32.0).
+    $categoriesCases = categories_list('recette');
+    $kindCategorie   = 'Recettes';
+    require __DIR__ . '/partials/categories_cases.php';
+    ?>
+
     <p class="actions">
         <button type="submit" class="bouton"><?= $isEdit ? 'Enregistrer' : 'Créer la recette' ?></button>
         <a class="bouton bouton--secondaire" href="/admin/recettes">Annuler</a>

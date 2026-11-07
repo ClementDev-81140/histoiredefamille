@@ -12,6 +12,10 @@ $image   = article_image($article);
 if ($grand && !composition_une_photo()) {
     $image = null;
 }
+// Un article sans photo (ou dont la photo n'est pas visible) n'affiche
+// AUCUN cadre : ni carré, ni lettre, ni plaque de repli. La mise en page se
+// réorganise d'elle-même (classe « sans-image » sur la carte).
+//
 // Le résumé est nettoyé de sa mise en forme légère : un aperçu ne doit pas
 // afficher « **gras** » ni « ## Titre » (même règle que les documents).
 // Sa longueur suit le réglage « Réglages de la une » (court, moyen, long).
@@ -30,27 +34,12 @@ if ($brancheNom !== '') {
     $surtitre[] = $brancheNom;
 }
 $surtitre[] = decennie_libelle(article_decennie($article));
-
-// Lettre de la plaque d'image de repli (pas de photo) : la rubrique, sinon
-// le titre, sinon « G » comme gazette.
-$lettre = mb_substr((string) $article['category'], 0, 1, 'UTF-8');
-if ($lettre === '') {
-    $lettre = mb_substr(trim((string) $article['title']), 0, 1, 'UTF-8');
-}
-if ($lettre === '') {
-    $lettre = 'G';
-}
 ?>
-<article class="article-carte<?= $grand ? ' article-carte--une' : '' ?>">
+<?php $classes = 'article-carte' . ($grand ? ' article-carte--une' : '') . ($image === null ? ' article-carte--sans-image' : ''); ?>
+<article class="<?= e($classes) ?>">
     <?php if ($image !== null): ?>
         <a class="article-carte__image" href="/articles/<?= e($article['slug']) ?>" tabindex="-1" aria-hidden="true">
-            <img src="<?= e($image['thumb']) ?>" alt="" loading="lazy">
-        </a>
-    <?php elseif (!$grand || composition_une_photo()): ?>
-        <?php /* Plaque de repli : papier sépia et initiale en gothique, comme
-                 une vignette de journal quand la photo manque. */ ?>
-        <a class="article-carte__image article-carte__plaque" href="/articles/<?= e($article['slug']) ?>" tabindex="-1" aria-hidden="true">
-            <span class="plaque__lettre"><?= e($lettre) ?></span>
+            <img class="<?= e((string) ($image['aspect'] ?? '')) ?>" src="<?= e($image['thumb']) ?>" alt="" loading="lazy">
         </a>
     <?php endif; ?>
     <div class="article-carte__corps">

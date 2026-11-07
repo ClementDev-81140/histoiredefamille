@@ -14,7 +14,7 @@
  * Outil de développement seulement : hors de `public/`, jamais appelé par le
  * site.
  */
-require '/home/user/histoiredefamille/app/bootstrap.php';
+require dirname(__DIR__, 2) . '/app/bootstrap.php';
 
 $source = $argv[1] ?? '';
 $cible  = $argv[2] ?? '';

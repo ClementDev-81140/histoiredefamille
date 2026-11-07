@@ -12,6 +12,18 @@ declare(strict_types=1);
 /** Page « Carte des lieux ». */
 function public_carte(): void
 {
+    // Carte désactivée (réglage « Carte des lieux », décoché par défaut) :
+    // même réponse pour tout le monde, administrateur compris. Aucune fuite :
+    // la page ne dit pas que la carte existe ailleurs.
+    if (!carte_active()) {
+        http_response_code(404);
+        render('erreur', [
+            'titre'   => 'Page introuvable',
+            'message' => 'La page demandée n’existe pas ou n’est plus disponible.',
+        ]);
+        return;
+    }
+
     // La carte n'est plus publique (1.31.0) : elle s'ouvre une fois connecté,
     // comme l'arbre. Un visiteur est renvoyé vers la connexion.
     require_login();
@@ -52,6 +64,16 @@ function public_carte(): void
 /** Fiche d'un lieu : qui y est né, qui y est mort, qui s'y est marié. */
 function public_lieu(array $params): void
 {
+    // Carte désactivée : la fiche d'un lieu est introuvable, comme la carte.
+    if (!carte_active()) {
+        http_response_code(404);
+        render('erreur', [
+            'titre'   => 'Page introuvable',
+            'message' => 'La page demandée n’existe pas ou n’est plus disponible.',
+        ]);
+        return;
+    }
+
     // Même règle que la carte : la fiche d'un lieu n'est plus publique.
     require_login();
 

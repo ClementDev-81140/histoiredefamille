@@ -53,6 +53,7 @@ $moisNom = calendrier_mois_nom($mois);
                                             <?= e(match ($evenement['genre']) {
                                                 'naissance' => 'naissance',
                                                 'deces'     => 'décès',
+                                                'evenement' => 'événement de famille',
                                                 default     => 'mariage',
                                             }) ?>
                                         </span>
@@ -87,7 +88,16 @@ $moisNom = calendrier_mois_nom($mois);
                         <?php foreach ($liste as $evenement): ?>
                             <li class="calendrier__evenement calendrier__evenement--<?= e($evenement['genre']) ?>">
                                 <span class="calendrier__annee"><?= e((string) $evenement['annee']) ?></span>
-                                <?php if ($evenement['genre'] === 'mariage'): ?>
+                                <?php if ($evenement['genre'] === 'evenement'): ?>
+                                    <?= $evenement['annuel'] ? 'Chaque année : ' : 'Événement : ' ?>
+                                    <strong><?= e((string) $evenement['titre']) ?></strong>
+                                    <?php if ((string) $evenement['heure'] !== ''): ?>
+                                        <span class="discret">à <?= e((string) $evenement['heure']) ?></span>
+                                    <?php endif; ?>
+                                    <?php if ((string) $evenement['lieu'] !== ''): ?>
+                                        <span class="discret">— <?= e((string) $evenement['lieu']) ?></span>
+                                    <?php endif; ?>
+                                <?php elseif ($evenement['genre'] === 'mariage'): ?>
                                     Mariage de
                                     <a href="/arbre/<?= (int) $evenement['epoux']['id'] ?>"><?= e(person_full_name($evenement['epoux'])) ?></a>
                                     et

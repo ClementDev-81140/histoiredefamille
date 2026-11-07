@@ -19,6 +19,19 @@ versions. Elles sont **engendrées** : aucune n'est retouchée à la main.
 | `ordinateur-article-nouveau.png` | formulaire « Nouvel article », visibilité « Privé » cochée | 1280 |
 | `ordinateur-documents.png` | `/documents` | 1280 |
 
+### 1.32.0 — ni carré gris, ni cadre vide
+
+| Fichier | Page | Largeur |
+|---|---|---|
+| `ordinateur-videos-sans-image.png` / `mobile-videos-sans-image.png` | `/videos` : deux vidéos **sans image extraite** (ffmpeg absent du banc) — l'aperçu reste sur le papier et porte l'icône de lecture | 1280 / 390 |
+| `ordinateur-videos-sans-image-bleu.png` / `mobile-videos-sans-image-bleu.png` | la même page en palette **bleu** | 1280 / 390 |
+| `ordinateur-articles-sans-photo.png` / `mobile-articles-sans-photo.png` | `/articles` : deux articles **sans photo** — aucun cadre, aucune lettre, la carte se réorganise | 1280 / 390 |
+| `ordinateur-articles-sans-photo-bleu.png` / `mobile-articles-sans-photo-bleu.png` | la même page en palette **bleu** | 1280 / 390 |
+
+Ces huit captures sont produites par `tools/navigateur/actions-132.mjs` (le
+même passage vérifie que les images réellement présentes sont chargées, qu'il
+n'y a ni style ni script en ligne, et aucun débordement horizontal).
+
 ### Administration (1.25.2) — refaites en 1265 px, palette bleu d'origine
 
 Le menu de gauche ayant changé pour **toutes** les pages d'administration, les

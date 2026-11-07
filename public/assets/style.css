@@ -3118,10 +3118,8 @@ body {
     background: var(--surface);
     box-shadow: inset 0 0 18px var(--ombre-panneau);
 }
-
-/* Image de repli : plaque sépia */
-.article-carte__image:not(:has(img)) { background: linear-gradient(135deg, var(--plaque-1), var(--plaque-2)); }
-.article-carte__image img { filter: sepia(.35) contrast(.97); }
+/* Plus aucune image de repli : un article sans photo n'affiche ni carré,
+   ni lettre, ni cadre (1.32.0). */
 
 /* Page d'accueil de l'espace famille = « une » de journal */
 .une {
@@ -3955,52 +3953,15 @@ body:not(.page-admin) .nav .lien-bouton {
     margin: 0.4rem 0 0;
 }
 
-/* Plaque d'image de repli : dégradé sépia et initiale en gothique. */
-.article-carte__plaque {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background:
-        radial-gradient(circle at 50% 42%, var(--plaque-1) 0%, var(--plaque-3) 55%, var(--plaque-2) 100%);
-    filter: sepia(0.35);
-    /* Le même grain de papier que la page, en plus petit. */
-    box-shadow: inset 0 0 60px var(--ombre-panneau);
+/* Aspect « photo ancienne » (1.32.0) : deux classes seulement, posées sur
+   l'image (ou sur le bloc d'aperçu). Aucun filtre par défaut : les photos
+   restent en couleurs tant que l'administrateur ne choisit rien. */
+.aspect-photo--doux {
+    filter: sepia(0.35) saturate(0.92) contrast(0.97);
 }
 
-.article-carte:not(.article-carte--une) .article-carte__plaque {
-    aspect-ratio: 16 / 9;
-}
-
-.plaque__lettre {
-    font-family: var(--police-gothique);
-    font-size: clamp(3rem, 9vw, 6rem);
-    line-height: 1;
-    color: var(--plaque-lettre);
-    letter-spacing: 0;
-    user-select: none;
-}
-
-html:not(.police-titre) .plaque__lettre {
-    font-family: var(--serif);
-    font-weight: 700;
-}
-
-/* Les vraies photos : sépia doux, rendu normal au survol et à l'ouverture. */
-.article-carte__image img,
-.article__image img,
-.album-carte__apercu img,
-.vignette__image img {
-    filter: sepia(0.35) contrast(1.05);
-}
-
-.article-carte__image:hover img,
-.article-carte__image:focus img,
-.article__image:hover img,
-.article__image:focus img,
-.album-carte__apercu:hover img,
-.vignette__image:hover img {
-    filter: none;
+.aspect-photo--marque {
+    filter: sepia(0.68) saturate(0.72) contrast(0.88) brightness(1.03);
 }
 
 /* --------------------------------------------------------------------------
@@ -4714,7 +4675,9 @@ legend {
     }
 
     .article-carte__image img,
-    .article__image img {
+    .article__image img,
+    .aspect-photo--doux,
+    .aspect-photo--marque {
         filter: none !important;
     }
 
@@ -4765,9 +4728,6 @@ legend {
 /* Sur téléphone : une seule colonne, photo moins haute. */
 @media (max-width: 47.99rem) {
     .article-carte--une .article-carte__image { max-height: 14rem; }
-}
-.article-carte--une .article-carte__plaque {
-    background: radial-gradient(ellipse at center, var(--plaque-4), var(--plaque-5));
 }
 
 
@@ -6254,4 +6214,140 @@ legend {
 .une-vide__contact {
     margin: 1rem 0 0;
     color: var(--texte-doux);
+}
+
+
+/* ==========================================================================
+   1.32.0 — articles sans photo, aspect « photo ancienne »
+   --------------------------------------------------------------------------
+   Aucune classe existante n'est renommée : seules des classes nouvelles sont
+   ajoutées ici (article sans image, aperçu du filtre, lien de téléchargement).
+   ========================================================================== */
+
+/* Un article à la une sans photo : une seule colonne, aucun trou à gauche. */
+@media (min-width: 48rem) {
+    .article-carte--une.article-carte--sans-image {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas:
+            "surtitre"
+            "titre"
+            "signature"
+            "resume"
+            "suite";
+        grid-template-rows: auto auto auto auto 1fr;
+    }
+}
+
+/* « Télécharger l'original » : le fichier n'est jamais retouché. */
+.article__telecharger {
+    margin: -0.6rem 0 1.6rem;
+    font-size: 0.9rem;
+}
+
+/* Aperçu de l'aspect des photos (Administration → Apparence du journal). */
+.apercu-aspect {
+    margin: 1rem 0 0;
+    max-width: 22rem;
+}
+
+.apercu-aspect__image {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    border: 1px solid var(--bordure);
+    background: var(--papier-moyen);
+}
+
+/* Sans photo sur le site, l'aperçu montre un dégradé : le filtre s'y voit. */
+.apercu-aspect__echantillon {
+    background: linear-gradient(135deg, #8f3126 0%, #d7af88 45%, #4f6b48 100%);
+}
+
+.apercu-aspect__legende {
+    margin: 0.35rem 0 0;
+    font-size: 0.85rem;
+    font-style: italic;
+    color: var(--texte-doux);
+}
+
+
+/* ==========================================================================
+   1.32.0 — vidéo sans image : une icône de lecture, pas un carré gris
+   ========================================================================== */
+
+/* Le fond sombre du lecteur ne sert que lorsqu'une image existe. Sans image
+   extraite (ffmpeg absent, conversion en cours), la carte reste sur le papier
+   et n'affiche que l'icône de lecture, en rouge brique. */
+.carte__apercu--video.carte__apercu--sans-image {
+    background: var(--surface);
+    border-bottom: var(--filet);
+}
+
+.carte__apercu--video.carte__apercu--sans-image .carte__lecture {
+    position: static;
+    inset: auto;
+    background: none;
+    color: var(--accent);
+    font-size: 2.4rem;
+    line-height: 1;
+}
+
+@media print {
+    .carte__apercu--video.carte__apercu--sans-image .carte__lecture {
+        color: var(--impression-texte);
+    }
+}
+
+
+/* ==========================================================================
+   1.32.0 — catégories par type de contenu
+   ========================================================================== */
+
+/* Cases « Catégories » devant « Créer le document » : un fichier reçu peut
+   recevoir son classement au moment où il devient une fiche. */
+.cases-categories {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.2rem 0.8rem;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    font-size: 0.9rem;
+}
+
+.cases-categories legend {
+    float: left;
+    margin-right: 0.4rem;
+    font-weight: 600;
+}
+
+.cases-categories .case {
+    margin: 0;
+}
+
+/* Filtre « Catégorie » des listes publiques et d'administration. */
+.filtre-categories {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem 0.8rem;
+    margin: 0 0 1.2rem;
+    font-size: 0.95rem;
+}
+
+.filtre-categories label {
+    font-weight: 600;
+}
+
+.filtre-categories select {
+    max-width: 100%;
+}
+
+@media print {
+    .filtre-categories {
+        display: none;
+    }
 }

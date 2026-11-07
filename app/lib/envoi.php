@@ -643,6 +643,17 @@ function envoi_conclure(array $envoi, array $donnees): array
         // Une vidéo (ou un son) dans un format que les navigateurs ne lisent
         // pas entre dans la file de conversion, une fois la fiche créée.
         conversion_planifier_document($documentId);
+
+        // Une vidéo déjà lisible (MP4) reçoit tout de suite son image : fini
+        // le carré gris dans les listes (1.32.0). Si ffmpeg manque, la fiche
+        // reste sans miniature et l'affichage montre une icône de lecture ;
+        // la commande « miniatures-videos.php » rattrapera plus tard.
+        if ((string) $donnees['kind'] === 'video') {
+            $miniature = video_miniature_document($documentId);
+            if (!$miniature['ok'] && $miniature['error'] !== '') {
+                error_log('Miniature de vidéo impossible pour le document ' . $documentId . ' : ' . $miniature['error']);
+            }
+        }
         $resultat['etat'] = 'termine';
     } else {
         // Le fichier est prêt : il attend que l'administrateur valide le

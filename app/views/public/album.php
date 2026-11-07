@@ -54,7 +54,7 @@
                 <figure class="vignette">
                     <a class="vignette__lien" href="<?= e(document_url($photo)) ?>">
                         <?php if ($thumb !== null): ?>
-                            <img src="<?= e($thumb) ?>" alt="<?= e($photo['title']) ?>"
+                            <img class="<?= e(aspect_photo_classe($photo)) ?>" src="<?= e($thumb) ?>" alt="<?= e($photo['title']) ?>"
                                  loading="lazy" width="480" height="360">
                         <?php else: ?>
                             <span class="vignette__vide">Photo</span>

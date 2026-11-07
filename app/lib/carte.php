@@ -230,6 +230,27 @@ function carte_place_enregistrer(string $nom, string $pays, mixed $lat, mixed $l
     return $id;
 }
 
+/**
+ * La carte des lieux est-elle ouverte ? (1.32.0)
+ *
+ * Réglage « Carte des lieux » dans Administration → Réglages. Désactivée par
+ * défaut : ni lien dans les menus, ni page `/carte`, ni fiche `/lieu/{id}` —
+ * pour personne, administrateur compris. Le code, les données et la table
+ * `places` restent en place : une seule case à cocher suffit à tout rallumer.
+ */
+function carte_active(bool $relire = false): bool
+{
+    static $active = null;
+    if ($relire) {
+        $active = null;
+    }
+    if ($active === null) {
+        $active = site_setting('carte_active') === '1';
+    }
+
+    return $active;
+}
+
 /** Y a-t-il au moins un lieu placé ? (pour le menu) */
 function carte_exist(bool $relire = false): bool
 {

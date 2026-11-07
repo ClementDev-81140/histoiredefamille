@@ -146,6 +146,7 @@ function apparence_defauts(): array
         'couleur_texte'   => '',
         'couleur_accent'  => '',
         'couleur_bordure' => '',
+        'aspect_photo'    => 'aucun',
         'version'         => '1',
     ];
 
@@ -1049,6 +1050,14 @@ function apparence_lire_saisie(array $saisie, string $nom, string $devise, strin
         $valeurs[$cle] = ($saisie[$cle] ?? '') === '1' ? '1' : '0';
     }
 
+    // Aspect « photo ancienne » : aucun / doux / marqué (1.32.0).
+    $aspect = (string) ($saisie['aspect_photo'] ?? 'aucun');
+    if (!array_key_exists($aspect, APPARENCE_ASPECTS)) {
+        $erreurs[] = 'Aspect photo ancienne : choisissez « Aucun », « Doux » ou « Marqué ».';
+        $aspect    = 'aucun';
+    }
+    $valeurs['aspect_photo'] = $aspect;
+
     $modeCouleurs = (string) ($saisie['couleurs_mode'] ?? 'papier');
     if (!array_key_exists($modeCouleurs, APPARENCE_COULEURS_MODES)) {
         $modeCouleurs = 'papier';
@@ -1125,4 +1134,80 @@ function apparence_retablir(): void
     site_settings_oublier();
     save_site_setting('apparence_version', (string) (apparence_version() + 1));
     apparence_brut(true);
+}
+
+// ---------------------------------------------------------------------------
+// Aspect « photo ancienne » (1.32.0)
+// ---------------------------------------------------------------------------
+//
+// Un filtre d'AFFICHAGE seulement : le fichier d'origine n'est jamais
+// retouché, les téléchargements et l'impression restent en couleurs.
+//
+//   - réglage global (Administration → Apparence du journal) : aucun, doux,
+//     marqué. « Aucun » est la valeur par défaut ;
+//   - réglage par photo/document image : suivre le site, forcer, désactiver
+//     (pour garder une photo en couleurs malgré un réglage global) ;
+//   - le tout passe par des classes CSS, jamais par un attribut style.
+
+/** Les trois aspects proposés (clé en base => libellé affiché). */
+const APPARENCE_ASPECTS = [
+    'aucun'  => 'Aucun',
+    'doux'   => 'Doux',
+    'marque' => 'Marqué',
+];
+
+/** Les trois choix d'une photo, pour le formulaire d'un document. */
+const APPARENCE_ASPECT_CHOIX = [
+    'suivre'      => 'Suivre le réglage du site',
+    'forcer'      => 'Forcer l’aspect photo ancienne',
+    'desactiver'  => 'Désactiver (garder les couleurs)',
+];
+
+/** Aspect choisi pour tout le site : « aucun » si le réglage est absent. */
+function apparence_aspect_photo(): string
+{
+    $mode = (string) (apparence_brut()['aspect_photo'] ?? 'aucun');
+    return array_key_exists($mode, APPARENCE_ASPECTS) ? $mode : 'aucun';
+}
+
+/**
+ * Choix enregistré sur un document (« suivre » par défaut).
+ *
+ * Une valeur inconnue en base ne casse rien : on retombe sur « suivre ».
+ */
+function aspect_photo_choix(array $doc): string
+{
+    $choix = (string) ($doc['vintage_aspect'] ?? 'suivre');
+    return array_key_exists($choix, APPARENCE_ASPECT_CHOIX) ? $choix : 'suivre';
+}
+
+/**
+ * Aspect réellement appliqué à un document image.
+ *
+ * @param array|null $doc ligne de `documents` (clé `vintage_aspect`), ou null
+ *                        quand on ne connaît pas le document (réglage du site)
+ */
+function aspect_photo_mode(?array $doc = null): string
+{
+    $choix = $doc === null ? 'suivre' : aspect_photo_choix($doc);
+    if ($choix === 'desactiver') {
+        return 'aucun';
+    }
+    if ($choix === 'forcer') {
+        // « Forcer » sans réglage global : on applique le plus doux des deux.
+        $global = apparence_aspect_photo();
+        return $global === 'aucun' ? 'doux' : $global;
+    }
+    return apparence_aspect_photo();
+}
+
+/**
+ * Classes CSS à poser sur une balise `img` (chaîne vide si aucun filtre).
+ *
+ * @param array|null $doc ligne de `documents`, ou null pour le réglage du site
+ */
+function aspect_photo_classe(?array $doc = null): string
+{
+    $mode = aspect_photo_mode($doc);
+    return $mode === 'aucun' ? '' : 'aspect-photo aspect-photo--' . $mode;
 }

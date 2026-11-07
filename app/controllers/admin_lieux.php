@@ -15,6 +15,14 @@ function admin_lieux(): void
 {
     require_admin();
 
+    // Carte fermée : cette page n'a plus lieu d'être. On renvoie vers le
+    // réglage qui la rouvre, avec la phrase exacte (1.32.0).
+    if (!carte_active()) {
+        flash('info', 'La carte est désactivée. Cochez « Carte des lieux » pour la rouvrir.');
+        redirect('/admin/reglages');
+        return;
+    }
+
     $aPlacer = carte_lieux_a_placer();
     $places  = db_all('SELECT * FROM places ORDER BY nom COLLATE NOCASE');
 

@@ -142,6 +142,24 @@ $val = static fn (string $key, string $default = ''): string => (string) old_val
     </fieldset>
 
     <fieldset class="champ">
+        <legend>Carte des lieux</legend>
+
+        <label class="case">
+            <input type="checkbox" id="carte_active" name="carte_active" value="1"
+                   <?= checked($val('carte_active') === '1') ?>>
+            Afficher la carte des lieux sur le site
+        </label>
+        <p class="aide">
+            <strong>Décochée (par défaut)</strong>, la carte disparaît complètement : plus de lien
+            « Carte » dans les menus, plus de bouton « Voir sur la carte » sur les fiches, plus de
+            page <code>/carte</code> ni de fiche <code>/lieu/…</code> (réponse « page introuvable »
+            pour tout le monde), et « Lieux à placer » quitte le menu d’administration.
+            Les lieux déjà enregistrés et la table <code>places</code> sont conservés : cocher la
+            case les fait réapparaître tels quels.
+        </p>
+    </fieldset>
+
+    <fieldset class="champ">
         <legend>Envoi de gros fichiers</legend>
 
         <div class="ligne-champs">

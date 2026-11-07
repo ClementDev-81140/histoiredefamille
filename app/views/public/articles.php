@@ -20,6 +20,15 @@ $aLaUne = $articles !== [] && $page === 1 && $categorie === '';
         <?php endif; ?>
     </div>
 
+    <?php
+    // Étiquettes de catégorie (1.32.0), à côté des rubriques libres.
+    $filtreCategories = $categoriesEtiquettes ?? [];
+    $filtreCategorie  = (int) ($categorieId ?? 0);
+    $filtreAction     = '/articles';
+    $filtreParam      = 'categorie_id';
+    require __DIR__ . '/../partials/filtre_categories.php';
+    ?>
+
     <?php if ($categories !== []): ?>
         <p class="rubriques" aria-label="Rubriques">
             <a href="/articles"<?= $categorie === '' ? ' class="actif" aria-current="page"' : '' ?>>Tout</a>

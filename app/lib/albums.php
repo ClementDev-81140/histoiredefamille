@@ -130,10 +130,14 @@ function album_cover(array $album): ?array
 }
 
 /** Albums visibles par la personne connectée. */
-function albums_visible(int $limit = 0, int $offset = 0, ?int &$total = null): array
+function albums_visible(int $limit = 0, int $offset = 0, ?int &$total = null, int $categorieId = 0): array
 {
     $params = [];
     $clause = album_visible_clause('a', $params);
+    $catClause = category_where('a', $categorieId > 0 ? $categorieId : null, $params, 'album');
+    if ($catClause !== '') {
+        $clause .= ' AND ' . $catClause;
+    }
     $total  = (int) db_value("SELECT COUNT(*) FROM albums a WHERE {$clause}", $params, 0);
 
     $sql = "SELECT a.* FROM albums a WHERE {$clause}

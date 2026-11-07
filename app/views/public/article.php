@@ -34,7 +34,14 @@ if ((int) $decennie > 0) {
     </p>
 <?php endif; ?>
 
-<?php $modeleArticle = article_modele($article); ?>
+<?php
+// « Grande photo » sans photo visible retombe sur « Journal » : pas de cadre
+// vide, pas de trou dans la page (1.32.0).
+$modeleArticle = article_modele($article);
+if ($modeleArticle === 'photo' && $image === null) {
+    $modeleArticle = 'journal';
+}
+?>
 <article class="section article article--presse<?= e(article_modele_classe($modeleArticle)) ?>">
     <header class="article__entete">
         <p class="article__meta article__surtitre">
@@ -63,8 +70,13 @@ if ((int) $decennie > 0) {
 
     <?php if ($image !== null): ?>
         <figure class="article__image">
-            <img src="<?= e($image['full']) ?>" alt="<?= e($article['title']) ?>">
+            <img class="<?= e((string) ($image['aspect'] ?? '')) ?>" src="<?= e($image['full']) ?>" alt="<?= e($article['title']) ?>">
         </figure>
+        <?php /* L'original n'est jamais retouché : le filtre d'affichage ne
+                 change ni le fichier ni le téléchargement. */ ?>
+        <p class="article__telecharger">
+            <a href="/f/<?= (int) $article['image_id'] ?>/telecharger">Télécharger l’original</a>
+        </p>
     <?php endif; ?>
 
     <?php /* Corps du journal : justifié, avec césure et lettrine (style.css).

@@ -630,3 +630,126 @@ function tests_carte(): void
         $_SESSION = $sessionAvant;
     }
 }
+
+// ---------------------------------------------------------------------------
+// Carte désactivée (1.32.0) : plus rien ne la montre, à personne
+// ---------------------------------------------------------------------------
+if ($filtre === '' || $filtre === 'carte_desactivee') {
+    echo "Carte des lieux — désactivée par défaut\n";
+
+    $pdo         = db();
+    $transaction = !$pdo->inTransaction();
+    if ($transaction) {
+        $pdo->beginTransaction();
+    }
+    $sessionAvant = $_SESSION;
+    $getAvant     = $_GET;
+
+    try {
+        // Aucun réglage enregistré : c'est l'état d'un site neuf.
+        db_exec("DELETE FROM settings WHERE key = 'carte_active'");
+        site_settings_oublier();
+        carte_active(true);
+        verifier(
+            'carte désactivée : fermée par défaut (aucun réglage enregistré)',
+            carte_active() === false
+        );
+
+        $lieu    = tests_carte_lieu('Lieu fermé 1.32');
+        $adminId = (int) db_value("SELECT id FROM accounts WHERE role = 'admin' ORDER BY id LIMIT 1", [], 0);
+        $famille = tests_carte_compte_famille();
+        $placesAvant = (int) db_value('SELECT COUNT(*) FROM places', [], 0);
+
+        $carteVisiteur = matrice_requete('GET', '/carte', null);
+        $carteFamille  = matrice_requete('GET', '/carte', $famille);
+        $carteAdmin    = matrice_requete('GET', '/carte', $adminId);
+        $inconnue         = matrice_requete('GET', '/page-qui-n-existe-vraiment-pas', $adminId);
+        $inconnueVisiteur = matrice_requete('GET', '/page-qui-n-existe-vraiment-pas', null);
+
+        verifier(
+            'carte désactivée : /carte répond 404 à tout le monde, administrateur compris',
+            $carteVisiteur['code'] === 404 && $carteFamille['code'] === 404 && $carteAdmin['code'] === 404,
+            'codes ' . $carteVisiteur['code'] . ' / ' . $carteFamille['code'] . ' / ' . $carteAdmin['code']
+        );
+        // Le jeton CSRF du menu change à chaque requête : on compare le corps
+        // de la page d'erreur, pas les deux pages entières.
+        $erreurDe = static function (string $corps): string {
+            $debut = strpos($corps, '<main');
+            $fin   = strpos($corps, '</main>');
+            return $debut !== false && $fin !== false ? substr($corps, $debut, $fin - $debut) : $corps;
+        };
+        verifier(
+            'carte désactivée : la réponse est celle d’une page introuvable, sans indice',
+            $erreurDe($carteAdmin['corps']) === $erreurDe($inconnue['corps'])
+                && !str_contains($carteAdmin['corps'], 'Carte des lieux')
+        );
+
+        $lieuVisiteur = matrice_requete('GET', '/lieu/' . $lieu, null);
+        $lieuFamille  = matrice_requete('GET', '/lieu/' . $lieu, $famille);
+        $lieuAdmin    = matrice_requete('GET', '/lieu/' . $lieu, $adminId);
+        verifier(
+            'carte désactivée : /lieu/{id} répond 404 à tout le monde, comme une page inconnue',
+            $lieuVisiteur['code'] === 404 && $lieuFamille['code'] === 404
+                && $lieuAdmin['code'] === 404
+                && $erreurDe($lieuAdmin['corps']) === $erreurDe($inconnue['corps'])
+                && $erreurDe($lieuVisiteur['corps']) === $erreurDe($inconnueVisiteur['corps']),
+            'codes ' . $lieuVisiteur['code'] . ' / ' . $lieuFamille['code'] . ' / ' . $lieuAdmin['code']
+                . ' — admin ' . $erreurDe($lieuAdmin['corps']) . ' — inconnue ' . $erreurDe($inconnue['corps'])
+        );
+
+        $accueil = matrice_requete('GET', '/', $famille);
+        verifier(
+            'carte désactivée : aucun lien « Carte » dans les menus d’un compte connecté',
+            $accueil['code'] === 200 && !str_contains($accueil['corps'], 'href="/carte"')
+        );
+
+        $tableauAdmin = matrice_requete('GET', '/admin', $adminId);
+        verifier(
+            'carte désactivée : « Lieux à placer » quitte le menu d’administration',
+            $tableauAdmin['code'] === 200 && !str_contains($tableauAdmin['corps'], '/admin/lieux')
+        );
+
+        $adminLieux = matrice_requete('GET', '/admin/lieux', $adminId);
+        verifier(
+            'carte désactivée : /admin/lieux renvoie vers les réglages',
+            $adminLieux['code'] === 303
+                && str_contains((string) ($adminLieux['location'] ?? ''), '/admin/reglages'),
+            'code ' . $adminLieux['code'] . ' → ' . (string) ($adminLieux['location'] ?? '')
+        );
+
+        $reglages = matrice_requete('GET', '/admin/reglages', $adminId);
+        verifier(
+            'carte désactivée : le réglage « Carte des lieux » est bien proposé',
+            $reglages['code'] === 200 && str_contains($reglages['corps'], 'Carte des lieux')
+                && str_contains($reglages['corps'], 'name="carte_active"')
+        );
+        verifier(
+            'carte désactivée : le réglage dit qu’il est décoché par défaut et que tout est conservé',
+            str_contains($reglages['corps'], 'Décochée (par défaut)')
+                && str_contains($reglages['corps'], 'sont conservés')
+        );
+
+        verifier(
+            'carte désactivée : les données et la table « places » sont conservées',
+            (int) db_value('SELECT COUNT(*) FROM places', [], 0) >= $placesAvant
+                && carte_place($lieu) !== null
+        );
+
+        // Réactiver par la case suffit : rien d'autre à faire.
+        tests_carte_activer();
+        $carteRouverte = matrice_requete('GET', '/carte', $adminId);
+        verifier(
+            'carte : cocher la case la rouvre telle quelle, sans migration',
+            carte_active() === true && $carteRouverte['code'] === 200
+        );
+    } finally {
+        if ($transaction && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        carte_vider_cache();
+        carte_places(true);
+        $_GET     = $getAvant;
+        $_SESSION = $sessionAvant;
+        tests_carte_activer();
+    }
+}

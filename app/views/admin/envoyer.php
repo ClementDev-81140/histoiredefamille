@@ -86,9 +86,21 @@ require __DIR__ . '/partials/envoi.php';
                             <td><?= e(format_size((int) $pret['size'])) ?></td>
                             <td><?= e(format_date((int) $pret['updated_at'], true)) ?></td>
                             <td class="colonne-actions">
+                                <?php $categoriesPret = categories_pour_kinds([(string) $pret['kind']]); ?>
                                 <form method="post" action="/admin/envoyer/creer-document" class="formulaire-en-ligne">
                                     <?= csrf_field() ?>
                                     <input type="hidden" name="token" value="<?= e((string) $pret['token']) ?>">
+                                    <?php if ($categoriesPret !== []): ?>
+                                        <fieldset class="cases-categories">
+                                            <legend>Catégories</legend>
+                                            <?php foreach ($categoriesPret as $categoriePret): ?>
+                                                <label class="case">
+                                                    <input type="checkbox" name="categories[]" value="<?= (int) $categoriePret['id'] ?>">
+                                                    <?= e((string) $categoriePret['name']) ?>
+                                                </label>
+                                            <?php endforeach; ?>
+                                        </fieldset>
+                                    <?php endif; ?>
                                     <button type="submit" class="lien-bouton">Créer le document</button>
                                 </form>
                                 <span aria-hidden="true"> · </span>

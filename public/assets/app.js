@@ -944,6 +944,26 @@
             apercu.classList.toggle('apercu-journal--romain', !caseCochee('gothique'));
         };
 
+        // --- Aspect « photo ancienne » (1.32.0) ---
+        // L'aperçu change de classe comme la vraie image : le filtre CSS est
+        // le même que celui des photos du site.
+
+        var majAspect = function () {
+            var choix = formulaire.querySelector('input[name="aspect_photo"]:checked');
+            var mode = choix ? choix.value : 'aucun';
+            var image = document.querySelector('#apercu-aspect [data-apercu-aspect-image]');
+            if (image) {
+                image.classList.remove('aspect-photo', 'aspect-photo--doux', 'aspect-photo--marque');
+                if (mode === 'doux' || mode === 'marque') {
+                    image.classList.add('aspect-photo', 'aspect-photo--' + mode);
+                }
+            }
+            var libelle = document.querySelector('[data-apercu-aspect-libelle]');
+            if (libelle) {
+                libelle.textContent = mode === 'doux' ? 'Doux' : (mode === 'marque' ? 'Marqué' : 'Aucun');
+            }
+        };
+
         // --- Branchements ---
 
         formulaire.addEventListener('input', function (evenement) {
@@ -958,6 +978,7 @@
             }
             majTextes();
             appliquerCouleurs();
+            majAspect();
         });
 
         formulaire.addEventListener('change', function (evenement) {
@@ -972,10 +993,12 @@
             }
             majTextes();
             appliquerCouleurs();
+            majAspect();
         });
 
         majTextes();
         appliquerCouleurs();
+        majAspect();
     })();
 
     // ---------------------------------------------------------------------

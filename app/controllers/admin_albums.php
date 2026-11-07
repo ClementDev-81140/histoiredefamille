@@ -21,6 +21,11 @@ function admin_albums(): void
         $where[] = 'a.visibility = :vis';
         $params[':vis'] = $visibility;
     }
+    // Filtre « Catégorie » (1.32.0), en plus de la visibilité.
+    $categorie = category_filtre_demande('album');
+    if ($categorie > 0) {
+        $where[] = category_where('a', $categorie, $params, "'album'");
+    }
     $whereSql = implode(' AND ', $where);
 
     $albums = db_all(
@@ -37,7 +42,9 @@ function admin_albums(): void
     render('admin/albums', [
         'titre'      => 'Albums photos',
         'albums'     => $albums,
-        'visibility' => $visibility,
+        'visibility'       => $visibility,
+        'filtreCategories' => categories_avec_compteur_kinds(['album']),
+        'filtreCategorie'  => $categorie,
     ], 'layout_admin');
 }
 
@@ -81,6 +88,7 @@ function admin_album_form(array $params = []): void
         'q'        => $q,
         'branches' => branches_list(true),
         'albumBranches' => $album ? content_branch_ids('album', $id) : [],
+        'categorieIds' => $album ? category_ids_pour('album', $id) : [],
         'erreurs'  => form_errors(),
         'old'      => form_old(),
     ], 'layout_admin');
@@ -178,6 +186,8 @@ function admin_album_save(array $params = []): void
 
     set_album_photos($albumId, $photosValides);
     set_content_branches('album', $albumId, $visibility === 'branches' ? $branches : []);
+    // Catégories de l'album (1.32.0).
+    category_enregistrer('album', $albumId, categories_saisies());
 
     log_activity(
         (int) current_account()['id'],
@@ -326,6 +336,20 @@ function admin_album_photos_ajouter(array $params = []): void
     }
 
     $resultat = album_ajouter_documents($albumId, $demandes);
+
+    // Catégories du lot (1.32.0) : ajoutées aux documents réellement ajoutés,
+    // sans toucher à leur visibilité.
+    $categoriesLot = categories_saisies();
+    if ($categoriesLot !== [] && $resultat['ajoutes'] !== []) {
+        foreach ($resultat['ajoutes'] as $idAjoute) {
+            $kindAjoute = (string) db_value('SELECT kind FROM documents WHERE id = ?', [(int) $idAjoute], 'document');
+            category_enregistrer(
+                in_array($kindAjoute, ['photo', 'video'], true) ? $kindAjoute : 'document',
+                (int) $idAjoute,
+                $categoriesLot
+            );
+        }
+    }
 
     if ($resultat['ajoutes'] === []) {
         flash('erreur', 'Aucun document n’a été ajouté : ' . count($resultat['ignores'])

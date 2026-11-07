@@ -29,6 +29,13 @@ function public_articles(): void
         $params[':categorie'] = $category;
     }
 
+    // Catégories « étiquettes » (1.32.0), distinctes de la rubrique libre.
+    $categorieId = category_filtre_demande('article', 'categorie_id');
+    $catWhere    = category_where('a', $categorieId > 0 ? $categorieId : null, $params, 'article');
+    if ($catWhere !== '') {
+        $where[] = $catWhere;
+    }
+
     $branche = query_int('branche');
     if ($branche > 0) {
         $where[] = "EXISTS (
@@ -75,9 +82,13 @@ function public_articles(): void
          GROUP BY a.category ORDER BY a.category COLLATE NOCASE",
         $catParams
     );
+    // Étiquettes de catégorie (1.32.0), avec le compteur de ce qui est visible.
+    $categoriesEtiquettes = categories_avec_compteur('article');
 
     render('public/articles', [
         'titre'        => 'Articles',
+        'categorieId'  => $categorieId,
+        'categoriesEtiquettes' => $categoriesEtiquettes,
         'articles'     => $articles,
         'categories'   => $categories,
         'categorie'    => $category,
@@ -196,6 +207,12 @@ function admin_articles(): void
         $where[] = 'a.visibility = :vis';
         $params[':vis'] = $visibility;
     }
+    // Filtre « Catégorie » (1.32.0) : la table `categories`, distincte de la
+    // rubrique (texte `a.category`).
+    $categorie = category_filtre_demande('article');
+    if ($categorie > 0) {
+        $where[] = category_where('a', $categorie, $params, "'article'");
+    }
     $whereSql = implode(' AND ', $where);
 
     $articles = db_all(
@@ -209,7 +226,9 @@ function admin_articles(): void
     render('admin/articles', [
         'titre'      => 'Articles',
         'articles'   => $articles,
-        'visibility' => $visibility,
+        'visibility'       => $visibility,
+        'filtreCategories' => categories_avec_compteur_kinds(['article']),
+        'filtreCategorie'  => $categorie,
     ], 'layout_admin');
 }
 
@@ -233,6 +252,7 @@ function admin_article_form(array $params = []): void
         'articleBranches' => $article ? content_branch_ids('article', $id) : [],
         'photos'          => db_all("SELECT id, title FROM documents WHERE kind = 'photo' AND is_attachment = 0 ORDER BY created_at DESC LIMIT 200"),
         'categories'      => db_all("SELECT DISTINCT category FROM articles WHERE category <> '' ORDER BY category COLLATE NOCASE"),
+        'categorieIds'    => $article ? category_ids_pour('article', $id) : [],
         'erreurs'         => form_errors(),
         'old'             => form_old(),
     ], 'layout_admin');
@@ -356,6 +376,8 @@ function admin_article_save(array $params = []): void
     }
 
     set_content_branches('article', $articleId, $visibility === 'branches' ? $branches : []);
+    // Catégories de l'article (1.32.0) : plusieurs possibles.
+    category_enregistrer('article', $articleId, categories_saisies());
 
     log_activity(
         (int) current_account()['id'],

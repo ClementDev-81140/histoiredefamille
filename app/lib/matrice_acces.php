@@ -160,6 +160,11 @@ function matrice_attendu(string $methode, string $motif, string $profil): int
             if (!$connecte) {
                 return 303; // renvoi vers la page de connexion
             }
+            // « Lieux à placer » n'existe plus quand la carte est fermée :
+            // un administrateur est renvoyé vers « Réglages ».
+            if ($motif === '/admin/lieux' && $methode === 'GET' && !carte_active()) {
+                return $profil === 'admin' ? 303 : 403;
+            }
             // POST sans jeton CSRF : refusé pour tout le monde ; une page
             // d'administration n'est ouverte qu'à un administrateur.
             return $profil === 'admin' && $methode === 'GET' ? 200 : 403;
@@ -193,8 +198,13 @@ function matrice_attendu(string $methode, string $motif, string $profil): int
             return $connecte ? 200 : 303;
 
         case 'carte':
-            // 1.31.0 : la carte et les fiches de lieu ne sont plus ouvertes à
-            // un visiteur ; les quatre profils connectés y entrent comme avant.
+            // 1.32.0 : carte désactivée (réglage décoché par défaut) → la page
+            // et les fiches de lieu répondent « introuvable » à TOUT LE MONDE,
+            // administrateur compris. Réactivée, la règle de la 1.31.0 revient :
+            // un visiteur est renvoyé vers la connexion, les autres entrent.
+            if (!carte_active()) {
+                return 404;
+            }
             return $connecte ? 200 : 303;
 
         case 'gazette':
@@ -271,6 +281,7 @@ function matrice_url(string $motif, array $f): string
             str_starts_with($url, '/admin/admins/')             => $f['account_admin'],
             str_starts_with($url, '/admin/pages/')              => $f['page'],
             str_starts_with($url, '/admin/categories/')         => $f['category'],
+            str_starts_with($url, '/admin/calendrier/')         => $f['evenement'],
             str_starts_with($url, '/admin/gazette/')            => $f['gazette'],
             str_starts_with($url, '/lieu/')                     => $f['place'],
             str_starts_with($url, '/tchat/')                    => $f['chat_message'],
@@ -367,6 +378,14 @@ function matrice_fixtures(): array
     $categorie = db_insert('categories', [
         'name' => 'Catégorie (matrice)', 'slug' => 'matrice-' . $suffixe,
         'position' => 0, 'created_at' => $maintenant,
+    ]);
+
+    // Un événement de calendrier (1.32.0) : la route « modifier » doit tomber
+    // sur une fiche qui existe.
+    $evenement = db_insert('events', [
+        'title' => 'Événement (matrice)', 'start_date' => date('Y-m-d'),
+        'place' => '', 'description' => '', 'visibility' => 'prive', 'annual' => 0,
+        'created_at' => $maintenant, 'updated_at' => $maintenant,
     ]);
 
     $creerDocument = static function (
@@ -524,6 +543,7 @@ function matrice_fixtures(): array
         'place' => $place,
         'family' => $family,
         'category' => $categorie,
+        'evenement' => $evenement,
         'chat_message' => $chat,
         'gazette' => $gazette,
         'secret_article' => 'SECRET-PRIVE-' . $suffixe,
@@ -571,7 +591,14 @@ function matrice_requete(string $methode, string $url, ?int $compte, array $ente
     }
 
     $parties = parse_url($url);
+    // Le jeton CSRF de la session d'essai est conservé, comme dans les tests
+    // d'envoi : un POST peut ainsi être envoyé AVEC son jeton, et la matrice
+    // continue d'envoyer ses POST sans jeton (donc refusés).
+    $jetonCsrf = $_SESSION['_csrf'] ?? null;
     $_SESSION = $compte === null ? [] : ['account_id' => $compte];
+    if (is_string($jetonCsrf) && $compte !== null) {
+        $_SESSION['_csrf'] = $jetonCsrf;
+    }
     $_GET     = [];
     if (isset($parties['query'])) {
         parse_str((string) $parties['query'], $_GET);
@@ -979,9 +1006,11 @@ function matrice_rapport(array $lignes, array $anomalies, array $controles): str
         . "| `GET /famille`, `/tchat`, `/admin` pour un visiteur | **303** : renvoi vers `/connexion` (avec le chemin de retour), jamais la page elle-même. |\n"
         . "| Contenu non autorisé | **404** identique à une page qui n'existe pas : l'existence d'un document privé n'est pas révélée. |\n"
         . "| `POST` sans jeton CSRF | **403**, y compris pour un administrateur. |\n"
-        . "| `GET /carte` et `GET /lieu/{id}` pour un visiteur | **303** depuis la 1.31.0 : renvoi vers `/connexion`, exactement comme `/arbre`. Les quatre profils connectés ouvrent la carte et les fiches de lieu (**200**) : rien n'a changé pour eux. |\n"
+        . "| `GET /carte` et `GET /lieu/{id}` | **404** pour les quatre profils quand la carte est fermée (réglage « Carte des lieux » décoché, le défaut depuis la 1.32.0) : la même page « introuvable » qu'une adresse qui n'existe pas, administrateur compris. Carte ouverte, un visiteur est renvoyé vers `/connexion` (**303**, comme `/arbre`) et les trois profils connectés ouvrent la page (**200**). |\n"
         . "| `GET /articles`, `/documents`, `/albums`, `/videos`, `/recherche`, `/calendrier`, `/recettes`, `/frise`, `/temoignages` | **inchangés** : **200** pour un visiteur, comme avant la 1.31.0. Seul le *menu* d'un visiteur est réduit à « Accueil » et « Se connecter » ; aucune autre règle d'accès ne bouge. |\n"
-        . "| Filtre `?visibilite=` des listes d'administration | **Aucun droit modifié** : c'est un filtre d'affichage réservé aux administrateurs (les pages concernées répondent déjà **303** à un visiteur, **200** à un administrateur). Une valeur inventée est ignorée et redonne la liste complète. |\n";
+        . "| Filtre `?visibilite=` des listes d'administration | **Aucun droit modifié** : c'est un filtre d'affichage réservé aux administrateurs (les pages concernées répondent déjà **303** à un visiteur, **200** à un administrateur). Une valeur inventée est ignorée et redonne la liste complète. |\n"
+        . "| Filtres `?categorie=` / `?categorie_id=` | **Aucun droit modifié** : c'est un filtre d'affichage. Une catégorie inconnue, ou prévue pour un autre type, est ignorée ; le compteur affiché ne compte que les contenus visibles par la personne. |\n"
+        . "| `/admin/calendrier` et ses actions | **303** pour un visiteur, **403** pour un lecteur ou un journaliste, **200** (GET) ou **303** (POST avec jeton) pour un administrateur : même règle que le reste de l'administration. Un POST sans jeton CSRF répond **403**. |\n";
 
     return "# Matrice d'accès\n\n"
         . "> **Document engendré automatiquement.** Ne pas modifier à la main : il est\n"

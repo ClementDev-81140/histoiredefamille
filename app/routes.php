@@ -25,6 +25,7 @@ require_once __DIR__ . '/controllers/admin_comptes.php';
 require_once __DIR__ . '/controllers/admin_courriels.php';
 require_once __DIR__ . '/controllers/admin_gazette.php';
 require_once __DIR__ . '/controllers/admin_lieux.php';
+require_once __DIR__ . '/controllers/admin_evenements.php';
 require_once __DIR__ . '/controllers/admin_envoi.php';
 require_once __DIR__ . '/controllers/admin_a_valider.php';
 require_once __DIR__ . '/controllers/propositions.php';
@@ -170,6 +171,12 @@ route('POST', '/admin/conversions/{id}/relancer', 'admin_conversion_relancer');
 route('POST', '/admin/conversions/{id}/annuler', 'admin_conversion_annuler');
 
 // Lieux de la carte : donner des coordonnées aux textes des fiches.
+route('GET', '/admin/calendrier', 'admin_evenements');
+route('GET', '/admin/calendrier/nouveau', 'admin_evenement_form');
+route('POST', '/admin/calendrier/nouveau', 'admin_evenement_save');
+route('GET', '/admin/calendrier/{id}/modifier', 'admin_evenement_form');
+route('POST', '/admin/calendrier/{id}/modifier', 'admin_evenement_save');
+route('POST', '/admin/calendrier/{id}/supprimer', 'admin_evenement_supprimer');
 route('GET', '/admin/lieux', 'admin_lieux');
 route('POST', '/admin/lieux/placer', 'admin_lieux_placer');
 route('POST', '/admin/lieux/supprimer', 'admin_lieux_supprimer');

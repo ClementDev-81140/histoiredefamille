@@ -14,18 +14,25 @@ declare(strict_types=1);
 /** Liste des vidéos visibles (publiques pour un visiteur, plus selon les droits). */
 function public_videos(): void
 {
+    // Filtre par catégorie (1.32.0) : seules les catégories visibles comptent,
+    // et le total affiché suit le filtre.
+    $categorie  = category_filtre_demande('video');
+    $categories = categories_avec_compteur('video');
+
     $params = [];
     $clause = visibility_clause('document', 'd', $params);
+    $catWhere = category_where('d', $categorie > 0 ? $categorie : null, $params, 'video');
+    $filtre = $catWhere !== '' ? ' AND ' . $catWhere : '';
 
     $total = (int) db_value(
         "SELECT COUNT(*) FROM documents d
-         WHERE d.kind = 'video' AND d.is_attachment = 0 AND {$clause}",
+         WHERE d.kind = 'video' AND d.is_attachment = 0 {$filtre} AND {$clause}",
         $params,
         0
     );
 
     $pg     = pagination($total, (int) config('per_page', 24), max(1, query_int('page', 1)));
-    $videos = videos_visible($pg['perPage'], $pg['offset']);
+    $videos = videos_visible($pg['perPage'], $pg['offset'], $totalVideos, $categorie);
 
     $nbFeatured = (int) db_value(
         "SELECT COUNT(*) FROM documents d
@@ -35,6 +42,8 @@ function public_videos(): void
     );
 
     render('public/videos', [
+        'categorie'  => $categorie,
+        'categories' => $categories,
         'titre'      => 'Vidéos',
         'videos'     => $videos,
         'pagination' => $pg,

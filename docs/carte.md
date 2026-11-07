@@ -4,6 +4,14 @@ La page `/carte` montre sur une carte les lieux de naissance, de décès et de
 mariage de la famille. Chaque point mène à une fiche qui liste les personnes
 rattachées à ce lieu.
 
+**La carte est désactivée par défaut depuis la 1.32.0.** Le réglage
+« **Carte des lieux** » d'*Administration → Réglages* est décoché au départ.
+Tant qu'il l'est, `/carte` et `/lieu/{id}` répondent la page « introuvable »
+(404) à tout le monde, le lien « Carte » disparaît des menus et des fiches, et
+`/admin/lieux` renvoie vers Réglages. Le code, les données et la table `places`
+restent en place : cocher la case rallume tout, sans migration. Ce chapitre
+décrit le fonctionnement de la carte **lorsqu'elle est active**.
+
 **Rien n'est demandé à Internet.** La carte ne fait aucun appel à un service
 extérieur : ni fond de carte téléchargé, ni bibliothèque JavaScript, ni tuile
 Google/OpenStreetMap, ni police. Le dessin est fabriqué **par le serveur**

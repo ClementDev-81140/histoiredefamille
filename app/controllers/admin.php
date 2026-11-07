@@ -195,6 +195,8 @@ function admin_settings(): void
             'devise'      => site_setting('devise'),
             'fondee'      => site_setting('fondee'),
             'tchat_actif' => tchat_actif() ? '1' : '0',
+            // Carte des lieux : fermée par défaut (1.32.0).
+            'carte_active' => carte_active() ? '1' : '0',
             'tchat_conservation_mois' => (string) tchat_conservation_mois(),
             // Envoi de gros fichiers par morceaux.
             'envoi_morceau_mo' => (string) envoi_reglages()['morceau_mo'],
@@ -227,6 +229,8 @@ function admin_settings_save(): void
         'fondee'      => post('fondee'),
         // Case à cocher : absente de l'envoi quand elle est décochée.
         'tchat_actif' => post('tchat_actif') === '1' ? '1' : '0',
+        // Carte des lieux : la case absente vaut « non » (désactivée).
+        'carte_active' => post('carte_active') === '1' ? '1' : '0',
         'tchat_conservation_mois' => (string) post('tchat_conservation_mois', '12'),
         'envoi_morceau_mo' => (string) post('envoi_morceau_mo', '5'),
         'envoi_max_mo'     => (string) post('envoi_max_mo', '4096'),

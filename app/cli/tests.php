@@ -109,6 +109,49 @@ function tests_courriels_rendre_etat(): void
     unset($GLOBALS['hdf_tests_courriels_avant']);
 }
 
+/**
+ * Ouvre la carte des lieux le temps de la suite (1.32.0).
+ *
+ * Le site la livre FERMÉE (réglage « Carte des lieux » décoché) : les familles
+ * qui éprouvent la carte, son menu et ses fiches doivent donc l'ouvrir
+ * explicitement. L'état d'origine est rétabli à la fin de la suite par
+ * tests_carte_rendre_etat(), dans tous les cas.
+ */
+function tests_carte_activer(): void
+{
+    if (!array_key_exists('hdf_tests_carte_avant', $GLOBALS)) {
+        $GLOBALS['hdf_tests_carte_avant'] = (string) site_setting('carte_active');
+    }
+    save_site_setting('carte_active', '1');
+    site_settings_oublier();
+    carte_active(true);
+}
+
+/** Ferme la carte le temps d'un essai (état par défaut du site). */
+function tests_carte_desactiver(): void
+{
+    save_site_setting('carte_active', '0');
+    site_settings_oublier();
+    carte_active(true);
+}
+
+/** Remet le réglage « carte_active » tel qu'il était avant la suite. */
+function tests_carte_rendre_etat(): void
+{
+    if (!array_key_exists('hdf_tests_carte_avant', $GLOBALS)) {
+        return;
+    }
+    $avant = (string) $GLOBALS['hdf_tests_carte_avant'];
+    save_site_setting('carte_active', $avant);
+    unset($GLOBALS['hdf_tests_carte_avant']);
+    site_settings_oublier();
+    carte_active(true);
+}
+
+// La carte est fermée par défaut sur le site : la suite l'ouvre pour éprouver
+// ses règles (et la famille « carte_desactivee » la referme exprès).
+tests_carte_activer();
+
 // ---------------------------------------------------------------------------
 // Tchat : mise en forme du texte des messages
 // ---------------------------------------------------------------------------
@@ -2492,7 +2535,36 @@ if ($filtre === '' || $filtre === 'composition') {
     $derniere = basename((string) end($migrations));
     $sql009   = (string) @file_get_contents(dirname(__DIR__) . '/migrations/009_articles_modele.sql');
     // Chaque lot ajoute SA migration ; les précédentes ne bougent jamais.
-    verifier('migration : 018 est la dernière migration', $derniere === '018_album_envois.sql', $derniere);
+    verifier('migration : 021 est la dernière migration', $derniere === '021_categories_types.sql', $derniere);
+    $migration019 = (string) @file_get_contents(dirname(__DIR__) . '/migrations/019_aspect_photo.sql');
+    verifier(
+        'migration : 019 ajoute « documents.vintage_aspect » EN AJOUT SEUL',
+        str_contains($migration019, "ALTER TABLE documents ADD COLUMN vintage_aspect TEXT NOT NULL DEFAULT 'suivre'")
+            && preg_match('/^\s*(UPDATE|DELETE|DROP)\s/im', $migration019) !== 1,
+        $migration019 === '' ? 'fichier absent' : 'ok'
+    );
+    $migration020 = (string) @file_get_contents(dirname(__DIR__) . '/migrations/020_evenements.sql');
+    verifier(
+        'migration : 020 crée la table des événements, PRIVÉE par défaut',
+        str_contains($migration020, 'CREATE TABLE events')
+            && str_contains($migration020, "visibility  TEXT    NOT NULL DEFAULT 'prive'")
+            && str_contains($migration020, 'annual      INTEGER NOT NULL DEFAULT 0')
+            && preg_match('/^\s*(UPDATE|DELETE|DROP|ALTER)\s/im', $migration020) !== 1,
+        $migration020 === '' ? 'fichier absent' : 'ok'
+    );
+    $migration021 = (string) @file_get_contents(dirname(__DIR__) . '/migrations/021_categories_types.sql');
+    verifier(
+        'migration : 021 ouvre les catégories aux six types, sans rien perdre',
+        str_contains($migration021, 'ALTER TABLE categories ADD COLUMN kinds')
+            && str_contains($migration021, 'CREATE TABLE category_links')
+            // Les catégories déjà posées sont RECOPIÉES (INSERT), jamais effacées.
+            && str_contains($migration021, 'INSERT OR IGNORE INTO category_links')
+            && str_contains($migration021, 'FROM documents')
+            && preg_match('/^\s*(UPDATE|DELETE|DROP)\s/im', $migration021) !== 1
+            // L'ancienne colonne des documents reste en place.
+            && !str_contains($migration021, 'DROP COLUMN'),
+        $migration021 === '' ? 'fichier absent' : 'ok'
+    );
     $migration018 = (string) @file_get_contents(dirname(__DIR__) . '/migrations/018_album_envois.sql');
     verifier(
         'migration : 018 ajoute « uploads.album_id » EN AJOUT SEUL (aucune ligne modifiée, aucune supprimée)',
@@ -2644,6 +2716,18 @@ if ($filtre === '' || $filtre === 'defauts') {
     tests_defauts();
 }
 
+if ($filtre === '' || $filtre === 'aspect' || $filtre === 'sans_photo') {
+    require_once __DIR__ . '/tests_aspect.php';
+}
+
+if ($filtre === '' || $filtre === 'miniatures_videos') {
+    require_once __DIR__ . '/tests_miniatures_videos.php';
+}
+
+if ($filtre === '' || $filtre === 'categories_types' || $filtre === 'evenements') {
+    require_once __DIR__ . '/tests_categories_evenements.php';
+}
+
 if ($filtre === '' || $filtre === 'une') {
     require_once __DIR__ . '/tests_une.php';
     tests_une();
@@ -2714,6 +2798,7 @@ if ($filtre === '' || $filtre === 'assets') {
 // Le réglage « courriels_actifs » est remis dans l'état où il était avant la
 // suite (les familles d'essai de l'envoi l'allument le temps de leurs tests).
 tests_courriels_rendre_etat();
+tests_carte_rendre_etat();
 
 $total = $reussis + count($echecs);
 echo "\n", $total, " test(s) — ", $reussis, " ok, ", count($echecs), " échec(s).\n";

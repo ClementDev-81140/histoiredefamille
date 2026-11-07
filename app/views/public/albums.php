@@ -22,6 +22,14 @@
         <?php endif; ?>
     </p>
 
+    <?php
+    $filtreCategories = $categories ?? [];
+    $filtreCategorie  = (int) ($categorie ?? 0);
+    $filtreAction     = '/albums';
+    $filtreParam      = 'categorie';
+    require __DIR__ . '/../partials/filtre_categories.php';
+    ?>
+
     <?php if ($albums === []): ?>
         <div class="panneau panneau--centre">
             <p>Aucun album pour le moment.</p>
@@ -34,7 +42,7 @@
                     <a class="album-carte__lien" href="<?= e(album_url($album)) ?>">
                         <div class="album-carte__apercu">
                             <?php if ($couverture !== null && thumbnail_url($couverture) !== null): ?>
-                                <img src="<?= e(thumbnail_url($couverture)) ?>" alt=""
+                                <img class="<?= e(aspect_photo_classe($couverture)) ?>" src="<?= e(thumbnail_url($couverture)) ?>" alt=""
                                      loading="lazy" width="480" height="360">
                             <?php else: ?>
                                 <span class="album-carte__vide">Album</span>

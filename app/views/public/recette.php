@@ -40,7 +40,7 @@
 
     <?php if ($photo !== null): ?>
         <figure class="recette__photo">
-            <img src="<?= e(file_url($photo)) ?>" alt="<?= e($photo['title']) ?>">
+            <img class="<?= e(aspect_photo_classe($photo)) ?>" src="<?= e(file_url($photo)) ?>" alt="<?= e($photo['title']) ?>">
             <figcaption class="discret"><?= e($photo['title']) ?></figcaption>
         </figure>
     <?php endif; ?>

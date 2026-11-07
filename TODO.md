@@ -3,6 +3,33 @@
 Ce fichier liste ce qui reste à faire, classé par priorité. Il n'y a pas de
 suivi automatique : cochez au fur et à mesure.
 
+## Fait (2026-11-07, 1.32.0 — cinq améliorations demandées par le propriétaire)
+
+- [x] **Filtre « photo ancienne »** : réglage global *Aucun / Doux / Marqué*
+  (Administration → Apparence du journal), appliqué par **classes CSS**,
+  vignettes comme grandes images ; choix par photo (suivre / forcer /
+  désactiver) ; **l'original n'est jamais modifié** (téléchargements et
+  impression en couleurs, lien « Télécharger l'original ») ; aperçu en direct.
+- [x] **Image des vidéos** : extraite par ffmpeg (1 s, ou 10 % de la durée),
+  réduite comme les autres miniatures, fabriquée en fin d'envoi ou de
+  conversion ; commande `app/cli/miniatures-videos.php` (liste, puis une vidéo
+  à la fois, relançable) ; ffmpeg absent → icône de lecture + message clair
+  dans Conversions ; miniature **soumise à la visibilité de la vidéo** (404
+  identique) ; image de couverture possible par l'administrateur.
+- [x] **Articles sans photo** : aucun carré, aucune lettre, aucun cadre vide,
+  partout (accueil, À la une, listes, recherche, gazette, article,
+  impression) ; « Grande photo » sans photo retombe sur « Journal ».
+- [x] **Carte désactivée par défaut** : lien retiré des menus, `/carte` et
+  `/lieu/{id}` en 404 « introuvable » pour tout le monde, `/admin/lieux`
+  redirige vers Réglages ; code, données et table `places` conservés.
+- [x] **Catégories par type** : une catégorie sert à un ou plusieurs types
+  (article, document, photo, album, vidéo, recette), ordre d'affichage, cases
+  dans tous les formulaires (dont « Créer le document » et les envois par
+  lot), filtre GET partout, compteur sans fuite ; migration 021 en ajout seul.
+- [x] **Calendrier** : vrais événements de famille (Administration →
+  Calendrier), **privés par défaut**, répétition annuelle, suppression
+  confirmée, visibilité respectée dans le calendrier et « Dans la famille ».
+
 ## Fait (2026-11-07, 1.31.0 — une seule Une de journal, menu visiteur réduit)
 
 - [x] **Menu d'un visiteur = « Accueil » et « Se connecter »** seulement ;

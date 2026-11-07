@@ -271,6 +271,37 @@ function mise_en_ligne_entete_valeurs(array $entetes, string $nom, bool $virgule
  *
  * @return array<int, array{cle: string, titre: string, statut: string, detail: string, remede: string}>
  */
+/**
+ * Migrations livrées avec le code mais pas encore appliquées à la base.
+ *
+ * @return list<string> noms de fichiers, dans l'ordre alphabétique
+ */
+function mise_en_ligne_migrations_en_attente(): array
+{
+    try {
+        if (!db_is_installed()) {
+            return [];
+        }
+        $appliquees = [];
+        foreach (db_all('SELECT name FROM schema_migrations') as $ligne) {
+            $appliquees[] = (string) $ligne['name'];
+        }
+        $fichiers = glob(HDF_APP . '/migrations/*.sql') ?: [];
+        sort($fichiers, SORT_STRING);
+
+        $en_attente = [];
+        foreach ($fichiers as $fichier) {
+            $nom = basename($fichier);
+            if (!in_array($nom, $appliquees, true)) {
+                $en_attente[] = $nom;
+            }
+        }
+        return $en_attente;
+    } catch (Throwable) {
+        return [];
+    }
+}
+
 function mise_en_ligne_controles(array $options = []): array
 {
     $o        = mise_en_ligne_options($options);
@@ -311,6 +342,19 @@ function mise_en_ligne_controles(array $options = []): array
             'Lancez la commande de purge : sudo -u www-data php /var/www/histoiredefamille/app/cli/purger-demo.php '
                 . '(elle montre ce qu’elle supprimerait, demande de taper OUI, et fait une sauvegarde avant). '
                 . 'Les comptes ne sont jamais supprimés par cette commande : désactivez-les depuis Administration → Comptes.');
+    }
+
+    // 3 bis. Schéma de la base à jour -----------------------------------------
+    // Une mise à jour du code sans migration laisserait, par exemple, le
+    // calendrier sans sa table d'événements : la page tomberait en erreur.
+    $en_attente = mise_en_ligne_migrations_en_attente();
+    if ($en_attente === []) {
+        mise_en_ligne_ajouter($controles, 'migrations', 'Schéma de la base à jour', 'ok',
+            'Toutes les migrations livrées avec le code sont appliquées.');
+    } else {
+        mise_en_ligne_ajouter($controles, 'migrations', 'Schéma de la base à jour', 'corriger',
+            'Migration(s) non appliquée(s) : ' . implode(', ', $en_attente) . '.',
+            'Lancez « sudo bash deploy/install.sh » (ou « sudo -u www-data php app/cli/migrate.php »), puis rechargez Apache.');
     }
 
     // 4. Au moins deux administrateurs actifs --------------------------------

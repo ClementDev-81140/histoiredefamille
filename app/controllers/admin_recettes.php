@@ -18,6 +18,11 @@ function admin_recettes(): void
         $where[] = 'r.visibility = :vis';
         $params[':vis'] = $visibility;
     }
+    // Filtre « Catégorie » (1.32.0), en plus de la visibilité.
+    $categorie = category_filtre_demande('recette');
+    if ($categorie > 0) {
+        $where[] = category_where('r', $categorie, $params, "'recette'");
+    }
     $whereSql = implode(' AND ', $where);
 
     $recettes = db_all(
@@ -28,7 +33,9 @@ function admin_recettes(): void
     render('admin/recettes', [
         'titre'      => 'Recettes',
         'recettes'   => $recettes,
-        'visibility' => $visibility,
+        'visibility'       => $visibility,
+        'filtreCategories' => categories_avec_compteur_kinds(['recette']),
+        'filtreCategorie'  => $categorie,
     ], 'layout_admin');
 }
 
@@ -58,6 +65,7 @@ function admin_recette_form(array $params = []): void
         'photos'   => $photos,
         'branches' => branches_list(true),
         'recetteBranches' => $recette ? content_branch_ids('recipe', $id) : [],
+        'categorieIds'    => $recette ? category_ids_pour('recette', $id) : [],
         'erreurs'  => form_errors(),
         'old'      => form_old(),
     ], 'layout_admin');
@@ -153,6 +161,8 @@ function admin_recette_save(array $params = []): void
     }
 
     set_content_branches('recipe', $recipeId, $visibility === 'branches' ? $branches : []);
+    // Catégories de la recette (1.32.0).
+    category_enregistrer('recette', $recipeId, categories_saisies());
 
     log_activity(
         (int) current_account()['id'],

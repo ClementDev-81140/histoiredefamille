@@ -32,6 +32,14 @@
         <?php endif; ?>
     </p>
 
+    <?php
+    $filtreCategories = $categories ?? [];
+    $filtreCategorie  = (int) ($categorie ?? 0);
+    $filtreAction     = '/videos';
+    $filtreParam      = 'categorie';
+    require __DIR__ . '/../partials/filtre_categories.php';
+    ?>
+
     <?php if ($videos === []): ?>
         <div class="panneau panneau--centre">
             <p class="discret">

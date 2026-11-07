@@ -47,18 +47,26 @@ $val = static function (string $cle, mixed $defaut = '') use ($old): mixed {
                 </select>
             </div>
 
-            <div class="champ">
-                <label for="category_id">Catégorie</label>
-                <select id="category_id" name="category_id">
-                    <option value="0">Aucune</option>
-                    <?php foreach ($categories as $categorie): ?>
-                        <option value="<?= (int) $categorie['id'] ?>"
-                            <?= selected((string) $val('category_id') === (string) $categorie['id']) ?>>
-                            <?= e((string) $categorie['name']) ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
+            <?php
+            // Catégories appliquées à TOUT le lot (1.32.0) : plusieurs choix,
+            // et chaque fichier ne reçoit que celles de son type.
+            $categoriesCases = categories_pour_kinds(['document', 'photo', 'video']);
+            $categorieIds    = array_map('intval', post_array('categories'));
+            ?>
+            <fieldset class="champ">
+                <legend>Catégories du lot</legend>
+                <p class="aide">
+                    Elles s'appliquent à tous les fichiers cochés ci-dessous. Chaque fichier ne
+                    garde que les catégories prévues pour son type.
+                </p>
+                <?php foreach ($categoriesCases as $categorie): ?>
+                    <label class="case">
+                        <input type="checkbox" name="categories[]" value="<?= (int) $categorie['id'] ?>"
+                            <?= checked(in_array((int) $categorie['id'], $categorieIds, true)) ?>>
+                        <?= e((string) $categorie['name']) ?>
+                    </label>
+                <?php endforeach; ?>
+            </fieldset>
 
             <div class="champ">
                 <label for="album_id">Ajouter à un album</label>

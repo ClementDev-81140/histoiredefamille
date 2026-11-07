@@ -3,6 +3,224 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.32.0] — 2026-11-07
+
+### Cinq améliorations : photo ancienne, image des vidéos, articles sans photo, carte fermée, catégories et calendrier
+
+Cinq demandes du propriétaire, d'un seul tenant. Aucune règle d'accès n'a été
+assouplie, **tout contenu nouveau est privé par défaut**, aucune classe CSS
+n'a été renommée, les migrations sont **en ajout seul**, et rien ne s'affiche
+par un attribut `style` ni par un script en ligne.
+
+#### 1. L'aspect « photo ancienne »
+
+*Administration → Apparence du journal* reçoit un réglage de plus : **Aspect
+« photo ancienne »** — **Aucun** (le défaut), **Doux** ou **Marqué**. Il donne
+aux photos un rendu sépia, de plus en plus appuyé.
+
+- **Un filtre d'affichage, jamais une retouche** : le fichier d'origine n'est
+  pas modifié. Les téléchargements et l'impression restent **en couleurs**, et
+  le lien « **Télécharger l'original** » de la fiche donne bien l'image
+  d'origine.
+- Appliqué **partout où une image du site apparaît** : vignettes des listes,
+  grandes images, albums, article à la une, accueil.
+- **Par des classes CSS seulement** (`aspect-photo--doux`,
+  `aspect-photo--marque`) : aucun `style=`, la règle de sécurité du site
+  (`style-src 'self'`, pas d'inline) reste intacte, et l'imprimante ne reçoit
+  pas de filtre.
+- **Chaque photo peut s'écarter du réglage** : sur sa fiche, trois choix —
+  *Suivre le réglage du site* (le défaut), *Forcer l'aspect*, *Désactiver*.
+  Une valeur inconnue en base retombe sur « suivre ».
+- **Un aperçu en direct** montre le résultat sous les trois boutons ; sans
+  JavaScript, il montre le réglage déjà enregistré.
+
+Migration `019_aspect_photo.sql` : une colonne
+(`documents.vintage_aspect`, défaut `suivre`), rien d'autre.
+
+#### 2. Une image pour les vidéos, à la place du carré gris
+
+Une vidéo dont on n'avait pas d'image s'affichait comme un carré gris. Elle
+reçoit maintenant une **vraie image extraite du film** :
+
+- **extraction par ffmpeg** à **une seconde** du début, ou à **10 % de la
+  durée** si le film est plus court qu'une seconde de marge ;
+- **réduite comme les autres miniatures** (JPEG 480 px), rangée **avec elles**
+  dans le dossier des miniatures ;
+- fabriquée **à la fin de l'envoi** (MP4 déjà lisible) ou **à la fin de la
+  conversion** (film reconverti), sans intervention ;
+- **commande pour l'existant** : `php app/cli/miniatures-videos.php` liste ce
+  qui manque, `--executer` traite **une vidéo à la fois** (relançable,
+  `--lot=N` pour un plus grand lot), ffmpeg en **priorité basse** ;
+- **ffmpeg absent, ou extraction en échec** : rien n'est cassé — la carte
+  affiche une **icône de lecture** sobre (pas de carré gris, pas d'image
+  cassée) et la page **Conversions** porte un message clair avec la commande
+  d'installation ;
+- la **miniature suit exactement la visibilité de la vidéo** : demandée par
+  une personne qui n'a pas le droit de voir la vidéo, elle répond la **même
+  page « introuvable »**, au même code ; on ne peut pas déduire l'existence
+  d'un film par son image ;
+- l'**administrateur peut envoyer une image de couverture** depuis la fiche de
+  la vidéo : elle remplace l'image extraite, et le fichier envoyé pour la
+  fabriquer n'est jamais servi tel quel.
+
+#### 3. Un article sans photo n'a plus de cadre vide
+
+Partout — accueil, « À la une », listes, recherche, gazette, page de l'article,
+impression — un article sans photo n'affiche **aucun carré, aucune lettre,
+aucun cadre vide** : la mise en page se réorganise autour du texte, sans trou.
+Les trois gabarits (*Journal*, *Simple*, *Grande photo*) sont conservés ; un
+article réglé en « Grande photo » **sans photo retombe sur « Journal »**, sans
+image. Aucune balise d'image, aucun élément de remplacement n'est écrit dans le
+HTML (vérifié par les essais et par le navigateur).
+
+#### 4. La carte est fermée par défaut
+
+Nouveau réglage **« Carte des lieux »** dans *Administration → Réglages*,
+**décoché au départ**. Tant qu'il l'est :
+
+- le lien « **Carte** » disparaît de **tous** les menus, de l'accueil et des
+  fiches (« Voir sur la carte ») ;
+- « **Lieux à placer** » quitte le menu d'administration ;
+- `/carte` et `/lieu/{id}` répondent la page « **introuvable** » (404) **pour
+  tout le monde, administrateur compris** ;
+- `/admin/lieux` **redirige vers Réglages** avec « La carte est désactivée ».
+
+**Rien n'est supprimé** : le code, les données et la table `places` restent en
+place, et une seule case suffit à tout rallumer (aucune migration, aucune
+commande). `app/cli/verifier-mise-en-ligne.php` ne signale plus aucun
+avertissement lié à la carte quand elle est fermée.
+
+#### 5. Les catégories servent aux six types de contenu
+
+**Ce que disait le modèle, avant d'y toucher** (c'était la première demande) :
+une catégorie ne servait **qu'aux documents**, et un document n'en avait
+**qu'une** (`documents.category_id`) ; les articles avaient un simple **texte**
+de rubrique (`articles.category`), et les albums, photos, vidéos et recettes
+n'avaient **rien**. Deux notions différentes, donc, à ne pas confondre : la
+**rubrique** d'un article (texte libre, listée par la page Articles) et la
+**catégorie** (table `categories`).
+
+Désormais :
+
+- une catégorie s'applique à **un ou plusieurs types** — article, document,
+  photo, album, vidéo, recette — et porte un **ordre d'affichage**. Dans
+  *Administration → Catégories*, les six cases sont **cochées par défaut**
+  pour une catégorie neuve ;
+- **tous les formulaires** proposent les cases « **Catégories** » : article,
+  document, photo, album, vidéo, recette, **envois par morceaux** (y compris
+  le bouton « **Créer le document** » des fichiers reçus) et « **Ajouter des
+  photos à un album** ». Seules les catégories du type sont proposées, et
+  **plusieurs choix** sont possibles ;
+- sur « **Envoyer des fichiers** » et « **Ajouter des photos à un album** »,
+  les catégories cochées s'appliquent à **tout le lot** ;
+- **filtre par catégorie** (formulaire `GET`, sans JavaScript) sur les listes
+  publiques — `/documents?categorie=`, `/videos?categorie=`,
+  `/recettes?categorie=`, `/albums?categorie=`, `/articles?categorie_id=` — et
+  sur les listes d'administration ;
+- le **compteur ne compte que les contenus visibles par la personne** : un
+  visiteur ne peut déduire ni l'existence d'un contenu privé par un nombre, ni
+  celle d'une catégorie vide (une catégorie dont rien ne lui est visible
+  n'apparaît pas du tout) ;
+- une valeur d'adresse inventée (`?categorie=999999`, ou la catégorie d'un
+  autre type) est **ignorée** : aucun filtre n'est inventé à partir de l'URL.
+
+Migration `021_categories_types.sql`, **en ajout seul** : une colonne
+(`categories.kinds`, défaut « les six types »), une table de liaison
+(`category_links`), et la **recopie** des catégories déjà posées sur les
+documents — **aucune catégorie perdue**, l'ancienne colonne
+`documents.category_id` restant tenue à jour pour les écrans qui la lisent.
+
+#### 6. Le calendrier reçoit de vrais événements
+
+**Ce que disait l'existant** : le calendrier était **entièrement dérivé de
+l'arbre** (naissances, mariages, décès de `persons` et `families`), filtré par
+la visibilité, et « Dans la famille » s'en nourrissait ; il n'existait **aucune
+table d'événements**.
+
+*Administration → Calendrier* ouvre maintenant la liste des événements de
+famille, avec « **Nouvel événement** » : titre, date de début, **heure
+facultative**, **fin facultative**, lieu en texte libre, description,
+**visibilité** et **répétition annuelle facultative**. Modification, et
+**suppression avec confirmation** dans le navigateur (définitive).
+
+- **Un nouvel événement est PRIVÉ** : personne ne le voit tant que
+  l'administrateur n'a pas choisi « Famille », « Branches précises » (avec les
+  branches, kind `event` dans `content_branches`) ou « Public ».
+- Un événement **annuel revient chaque année** à la même date ; un événement
+  sans répétition n'existe que dans son année.
+- Il apparaît dans le **calendrier** du mois (point du jour, détail sous la
+  grille, mention « événement de famille ») et dans « **Dans la famille** »
+  quand sa date approche — toujours selon la visibilité de la personne qui
+  regarde.
+- Les dates de l'arbre continuent de s'afficher comme avant : les deux sources
+  se complètent.
+
+**Limite assumée** : les événements se créent dans l'administration, pas depuis
+un compte de journaliste. Le mécanisme de proposition (articles, documents,
+recettes) n'a **pas** été étendu aux événements : ses colonnes de modération
+sont posées table par table, et l'étendre demanderait une migration et un écran
+de plus. C'est dit ici pour que personne ne le cherche.
+
+Migration `020_evenements.sql` : une table `events`, **visibilité privée par
+défaut**, aucune donnée existante touchée.
+
+#### 7. Deux défauts trouvés et corrigés au passage
+
+- Les essais « Une » ont trouvé, en cours de route, une **erreur SQL** dans la
+  requête `UNION ALL` de la une publique (les colonnes de deux branches ne
+  correspondaient plus depuis l'ajout de l'aspect photo) : l'accueil public
+  d'un visiteur tombait sur une page d'erreur. Requête alignée, essais verts.
+- Un formulaire bricolé pouvait envoyer à une fiche la **catégorie d'un autre
+  type** : depuis, les catégories retenues sont filtrées sur le type réel de la
+  fiche, et l'ancienne colonne `documents.category_id` n'enregistre jamais
+  celle d'un autre type.
+
+#### Vérifications
+
+- Suite complète : **1 393 essais, 0 échec**. Depuis la 1.31.0, **83 essais
+  nouveaux** : 15 pour les « catégories par type », 20 pour les « événements du
+  calendrier », 3 sur les migrations 019 à 021, et 45 pour les lots 1 à 4
+  (aspect 13, articles sans photo 8, carte fermée 11, miniatures de vidéos 13),
+  le tout dans des familles qui se lancent seules (`php app/cli/tests.php`).
+  Couverture : types par défaut,
+  restriction à certains types, plusieurs catégories par contenu, catégorie
+  d'un autre type ignorée, compteur d'un visiteur contre celui d'un
+  administrateur, catégorie vide invisible, filtres publics, cases des quatre
+  formulaires, migration sans perte, colonne et liaison synchronisées ;
+  événement privé par défaut, quatre profils (visiteur, famille,
+  journaliste, administrateur) contre quatre visibilités, calendrier du mois,
+  « Dans la famille », répétition annuelle, événement non annuel limité à son
+  année, création et suppression par les vraies pages (avec et sans jeton
+  CSRF), refus d'un compte non administrateur.
+- Matrice d'accès régénérée : **198 routes**, **792 vérifications** (route ×
+  profil), **0 anomalie**, **258 contrôles ciblés** sans un échec — les six
+  routes `/admin/calendrier…` y entrent, avec la même règle que le reste de
+  l'administration, et les notes du rapport disent désormais ce que répondent
+  `/carte` et `/lieu/{id}` carte fermée (404 pour tous) comme carte ouverte.
+- Navigateur réel (Chromium), **142 contrôles** : `actions-une-publique.mjs`
+  (18 à 19 contrôles par passage) et le nouveau `actions-132.mjs`
+  (**17 contrôles**), à **1280 px** et à **390 px**, palette **papier** et
+  palette **bleu**. Ce que le navigateur a vu : deux vidéos **sans image**
+  n'affichent **ni carré gris ni balise d'image**, seulement l'icône de lecture
+  (fond de l'aperçu = papier, pas de gris) ; deux articles **sans photo**
+  n'ont aucun cadre, aucune lettre, aucun élément de remplacement, et gardent
+  une hauteur lisible ; toutes les images présentes sont réellement chargées ;
+  aucun attribut `style=`, aucun script en ligne, aucune ressource extérieure,
+  aucun débordement horizontal, aucune erreur JavaScript ; la une publique,
+  l'accueil vide et la page « introuvable » d'un contenu privé se comportent
+  comme en 1.31.0.
+- Captures dans `docs/captures/` : `ordinateur-` / `mobile-`
+  `articles-sans-photo.png`, `videos-sans-image.png`, et les mêmes en `-bleu`
+  (8 fichiers), plus les captures de la 1.31.0.
+- `app/cli/verifier-mise-en-ligne.php` gagne un contrôle « **Schéma de la base
+  à jour** » : une mise à jour du code sans migration est signalée « À
+  CORRIGER » avec la commande à lancer — sans quoi le calendrier tomberait en
+  erreur sur une base non migrée.
+- **Non vérifié ici** : un vrai `ffmpeg` (absent du banc : extraction et
+  conversion essayées avec un ffmpeg simulé), un vrai Raspberry Pi, un vrai
+  lecteur d'écran, l'impression papier, et le rendu sur un vrai téléphone —
+  seuls Chromium et deux largeurs de fenêtre ont été mesurés.
+
 ## [1.31.0] — 2026-11-07
 
 ### Une seule Une de journal, et un menu de visiteur réduit

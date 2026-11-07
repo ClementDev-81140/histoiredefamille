@@ -11,10 +11,10 @@ $dates   = trim((string) ($doc['doc_date'] ?? ''));
 ?>
 <article class="carte">
     <a class="carte__lien" href="<?= e(document_url($doc)) ?>">
-        <div class="carte__apercu carte__apercu--<?= e($kind) ?>">
+        <div class="carte__apercu carte__apercu--<?= e($kind) ?><?= $thumb === null && $isVideo ? ' carte__apercu--sans-image' : '' ?>">
             <?php if ($thumb !== null): ?>
-                <img src="<?= e($thumb) ?>" alt="" loading="lazy" width="480" height="360">
-            <?php else: ?>
+                <img class="<?= e(aspect_photo_classe($doc)) ?>" src="<?= e($thumb) ?>" alt="" loading="lazy" width="480" height="360">
+            <?php elseif (!$isVideo): ?>
                 <span class="carte__type"><?= e(document_kind_label($kind, (string) $doc['ext'])) ?></span>
             <?php endif; ?>
             <?php if ($isVideo): ?>

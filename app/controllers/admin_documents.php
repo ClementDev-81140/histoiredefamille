@@ -31,6 +31,12 @@ function admin_documents(): void
     if (query('attachments') !== '1') {
         $where[] = 'd.is_attachment = 0';
     }
+    // Filtre « Catégorie » (1.32.0) : une catégorie ne s'applique qu'aux types
+    // qu'elle autorise ; une valeur inconnue ne filtre rien.
+    $categorie = category_filtre_demande(['document', 'photo', 'video']);
+    if ($categorie > 0) {
+        $where[] = category_where('d', $categorie, $params, 'd.kind');
+    }
 
     $whereSql = implode(' AND ', $where);
     $total    = (int) db_value("SELECT COUNT(*) FROM documents d WHERE {$whereSql}", $params, 0);
@@ -54,6 +60,8 @@ function admin_documents(): void
         'type'       => $type,
         'visibility' => $visibility,
         'categories' => categories_list(),
+        'filtreCategories' => categories_avec_compteur_kinds(['document', 'photo', 'video']),
+        'filtreCategorie'  => $categorie,
     ], 'layout_admin');
 }
 
@@ -82,6 +90,7 @@ function admin_document_form(array $params = []): void
         'titre'       => $doc ? 'Modifier « ' . $doc['title'] . ' »' : 'Ajouter un document',
         'doc'         => $doc,
         'categories'  => categories_list(),
+        'categorieIds' => $id > 0 ? category_ids_pour((string) ($doc['kind'] ?? 'document'), $id) : [],
         'branches'    => branches_list(true),
         'docBranches' => $docBranches,
         'tags'        => $tags,
@@ -112,6 +121,8 @@ function admin_document_save(array $params = []): void
         'description' => post('description'),
         'doc_date'    => post('doc_date'),
         'category_id' => (int) post('category_id'),
+        // Aspect « photo ancienne » : suivre le site, forcer, désactiver.
+        'vintage_aspect' => (string) post('vintage_aspect', 'suivre'),
         'visibility'  => sanitize_visibility(post('visibility')),
         'branches'    => array_map('intval', post_array('branches')),
         'tags'        => post('tags'),
@@ -137,10 +148,20 @@ function admin_document_save(array $params = []): void
         $errors[] = 'Visibilité « Branches précises » : cochez au moins une branche.';
     }
 
-    $categoryId = $old['category_id'] > 0 ? $old['category_id'] : null;
-    if ($categoryId !== null && !find_category($categoryId)) {
-        $errors[] = 'La catégorie sélectionnée n’existe pas.';
+    $aspect = $old['vintage_aspect'];
+    if (!array_key_exists($aspect, APPARENCE_ASPECT_CHOIX)) {
+        $errors[] = 'Aspect « photo ancienne » : choisissez une des trois propositions.';
+        $aspect   = 'suivre';
     }
+
+    // Catégories (1.32.0) : plusieurs par contenu. La première cochée reste
+    // aussi dans `documents.category_id`, que d'anciens écrans lisent encore.
+    $categoriesChoisies = categories_saisies();
+    if ($categoriesChoisies !== [] && !find_category($categoriesChoisies[0])) {
+        $errors[] = 'Une des catégories cochées n’existe pas.';
+        $categoriesChoisies = [];
+    }
+    $categoryId = $categoriesChoisies[0] ?? null;
 
     // --- Fichier envoyé ----------------------------------------------------
     // Deux possibilités : l'envoi simple (≤ 50 Mo) ou un fichier déjà assemblé
@@ -173,6 +194,33 @@ function admin_document_save(array $params = []): void
         }
     }
 
+    // Image de couverture d'une vidéo (1.32.0) : elle remplace l'image extraite
+    // par ffmpeg. Seule la miniature est conservée ; le fichier envoyé sert
+    // uniquement à la fabriquer, et il n'est jamais servi tel quel.
+    $cover = $_FILES['couverture'] ?? null;
+    $hasCover = is_array($cover) && (int) ($cover['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
+    $coverThumb = null;
+    if ($hasCover && is_array($doc) && (string) ($doc['kind'] ?? '') === 'video') {
+        $tmp = (string) ($cover['tmp_name'] ?? '');
+        $ext = strtolower(pathinfo((string) ($cover['name'] ?? ''), PATHINFO_EXTENSION));
+        $taille = (int) ($cover['size'] ?? 0);
+        if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp'], true)) {
+            $errors[] = 'Image de couverture : choisissez un fichier JPEG, PNG ou WebP.';
+        } elseif ($taille <= 0 || $taille > 8 * 1024 * 1024) {
+            $errors[] = 'Image de couverture : 8 Mo au plus.';
+        } elseif (!is_file($tmp)) {
+            $errors[] = 'Image de couverture : le fichier n’a pas pu être lu.';
+        } else {
+            $rel = storage_target_thumb_path();
+            $fait = make_thumbnail($tmp, storage_absolute($rel));
+            if (!$fait['ok']) {
+                $errors[] = 'Image de couverture : ' . $fait['error'];
+            } else {
+                $coverThumb = $rel;
+            }
+        }
+    }
+
     if ($errors !== []) {
         // Un fichier déjà enregistré ne doit pas rester orphelin.
         if (is_array($stored) && !empty($stored['ok'])) {
@@ -196,9 +244,14 @@ function admin_document_save(array $params = []): void
         'doc_date'     => $docDate,
         'doc_date_sort' => extract_year($docDate),
         'category_id'  => $categoryId,
+        'vintage_aspect' => $aspect,
         'visibility'   => $visibility,
         'updated_at'   => time(),
     ];
+
+    if ($coverThumb !== null) {
+        $data['thumb_path'] = $coverThumb;
+    }
 
     if (is_array($stored) && !empty($stored['ok'])) {
         $data += [
@@ -231,6 +284,28 @@ function admin_document_save(array $params = []): void
 
     if ($envoiPrepare !== null) {
         envoi_marquer_utilise($envoiPrepare, $documentId);
+    }
+
+    // Les catégories se rattachent au contenu après sa création : le type est
+    // celui de la fiche enregistrée (photo, vidéo ou document). Une catégorie
+    // prévue pour un autre type est ignorée, même si le formulaire l'a envoyée.
+    $kindEnregistre = (string) db_value('SELECT kind FROM documents WHERE id = ?', [$documentId], 'document');
+    if (!in_array($kindEnregistre, ['photo', 'video', 'document'], true)) {
+        $kindEnregistre = 'document';
+    }
+    $categoriesRetenues = [];
+    foreach ($categoriesChoisies as $candidat) {
+        $categorieCandidat = find_category((int) $candidat);
+        if ($categorieCandidat !== null && category_applicable($categorieCandidat, $kindEnregistre)) {
+            $categoriesRetenues[] = (int) $candidat;
+        }
+    }
+    category_enregistrer($kindEnregistre, $documentId, $categoriesRetenues);
+
+    // L'ancienne colonne `documents.category_id` suit la première catégorie
+    // retenue : jamais celle d'un autre type.
+    if ($categoryId !== null && !in_array((int) $categoryId, $categoriesRetenues, true)) {
+        db_update('documents', $documentId, ['category_id' => $categoriesRetenues[0] ?? null]);
     }
 
     set_content_branches('document', $documentId, $visibility === 'branches' ? $branches : []);
@@ -294,10 +369,16 @@ function admin_categories(): void
 {
     require_admin();
 
-    $categories = db_all(
-        'SELECT c.*, (SELECT COUNT(*) FROM documents d WHERE d.category_id = c.id) AS nb
-         FROM categories c ORDER BY c.position, c.name'
-    );
+    // Nombre de contenus par catégorie, tous types confondus (un
+    // administrateur voit tout : le compteur ne cache rien ici).
+    $categories = categories_list();
+    foreach ($categories as $index => $categorie) {
+        $total = 0;
+        foreach (category_kinds($categorie) as $kind) {
+            $total += category_compteur($kind, (int) $categorie['id']);
+        }
+        $categories[$index]['nb'] = $total;
+    }
 
     render('admin/categories', [
         'titre'      => 'Catégories',
@@ -315,6 +396,7 @@ function admin_category_create(): void
 
     $name = post('name');
     $position = (int) post('position');
+    $kinds = category_kinds_texte(is_array($_POST['kinds'] ?? null) ? $_POST['kinds'] : []);
 
     if ($name === '' || mb_strlen($name) > 80) {
         form_fail(['Le nom de la catégorie est obligatoire (80 caractères maximum).'], ['name' => $name], '/admin/categories');
@@ -330,6 +412,8 @@ function admin_category_create(): void
         'name'       => $name,
         'slug'       => $slug,
         'position'   => $position,
+        // Aucun type coché = « tous » : on n'enferme jamais une catégorie.
+        'kinds'      => $kinds,
         'created_at' => time(),
     ]);
 
@@ -359,6 +443,7 @@ function admin_category_update(array $params): void
         'name'     => $name,
         'slug'     => slugify($name),
         'position' => (int) post('position'),
+        'kinds'    => category_kinds_texte(is_array($_POST['kinds'] ?? null) ? $_POST['kinds'] : []),
     ]);
 
     log_activity((int) current_account()['id'], 'categorie_modifiee', $name . ' (#' . $id . ')');

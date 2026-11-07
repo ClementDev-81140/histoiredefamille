@@ -540,6 +540,11 @@ function admin_envoi_creer_document(): void
     envoi_marquer_utilise($envoi, $documentId);
     set_content_branches('document', $documentId, []);
 
+    // Catégories cochées devant « Créer le document » (1.32.0). Elles ne
+    // concernent que les catégories prévues pour le type réel du fichier :
+    // la fiche reste privée, seul le classement est posé.
+    category_enregistrer((string) $envoi['kind'], (int) $documentId, categories_saisies());
+
     // Une vidéo dans un format que les navigateurs ne lisent pas partout entre
     // dans la file de conversion, comme depuis le formulaire.
     conversion_planifier_document($documentId);
@@ -657,7 +662,7 @@ function admin_envoi_lot_save(): void
 
     $old = [
         'kind'       => post('kind'),
-        'category_id' => post('category_id'),
+        'categories' => post_array('categories'),
         'visibility' => sanitize_visibility(post('visibility')),
         'branches'   => array_map('intval', post_array('branches')),
         'album_id'   => post('album_id'),
@@ -673,10 +678,14 @@ function admin_envoi_lot_save(): void
         form_fail(['Visibilité « Branches précises » : cochez au moins une branche.'], $old, '/admin/envoyer/lot');
     }
 
-    $categoryId = (int) $old['category_id'] > 0 ? (int) $old['category_id'] : null;
-    if ($categoryId !== null && !find_category($categoryId)) {
-        form_fail(['La catégorie choisie n’existe pas.'], $old, '/admin/envoyer/lot');
+    // Catégories du lot (1.32.0) : plusieurs, appliquées à chaque fichier.
+    $categoriesLot = categories_saisies();
+    foreach ($categoriesLot as $categorieLot) {
+        if (find_category($categorieLot) === null) {
+            form_fail(['Une des catégories choisies n’existe pas.'], $old, '/admin/envoyer/lot');
+        }
     }
+    $categoryId = $categoriesLot[0] ?? null;
 
     $kind = in_array($old['kind'], ['photo', 'video', 'document'], true)
         ? $old['kind']
@@ -721,6 +730,14 @@ function admin_envoi_lot_save(): void
         ]);
 
         set_content_branches('document', $id, $visFin === 'branches' ? $branches : []);
+
+        // Catégories du lot, filtrées par le type réel de chaque fiche.
+        $kindFiche = $kind !== '' ? $kind : (string) $autorises[$id]['kind'];
+        category_enregistrer(
+            in_array($kindFiche, ['photo', 'video'], true) ? $kindFiche : 'document',
+            (int) $id,
+            $categoriesLot
+        );
         $modifies++;
 
         if ($albumId > 0) {

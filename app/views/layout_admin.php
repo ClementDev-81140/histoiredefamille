@@ -107,9 +107,12 @@ $navLink = static function (string $href, string $label, bool $exact = false) us
         <?= $navLink('/admin/comptes', 'Comptes') ?>
         <?= $navLink('/admin/branches', 'Branches & comptes') ?>
         <?= $navLink('/admin/admins', 'Administrateurs') ?>
-        <?= $navLink('/admin/lieux', 'Lieux à placer') ?>
+        <?php if (carte_active()): ?>
+            <?= $navLink('/admin/lieux', 'Lieux à placer') ?>
+        <?php endif; ?>
 
         <p class="admin-menu__titre">Journal</p>
+        <?= $navLink('/admin/calendrier', 'Calendrier') ?>
         <?php if (site_courriels_actifs()): ?>
             <?= $navLink('/admin/courriels', 'Courriels') ?>
         <?php endif; ?>
