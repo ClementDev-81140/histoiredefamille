@@ -23,7 +23,10 @@
  * l'on ne peut pas vérifier les couleurs. `PAGES_ALBUM` ajoute des pages
  * rendues par rendre.php, à l'adresse exacte qu'elles ont sur le site.
  *
- * Écoute sur 127.0.0.1:8199 (port modifiable par PORT).
+ * Écoute sur 127.0.0.1:8199 (port modifiable par PORT, adresse par HOST).
+ * HOST=0.0.0.0 rend le banc joignable depuis l'extérieur du bac à sable —
+ * c'est ce qu'il faut pour la fenêtre d'aperçu, jamais pour un essai
+ * automatique.
  */
 import { createServer } from 'node:http';
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -34,6 +37,9 @@ const racine = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const dossierPublic = racine + '/public';
 const sortie = process.env.CAPTURES || '/tmp';
 const port   = Number(process.env.PORT || 8199);
+// Adresse d'écoute : 127.0.0.1 par défaut (le banc reste local) ;
+// HOST=0.0.0.0 pour l'aperçu dans le navigateur de l'utilisateur.
+const hote   = process.env.HOST || '127.0.0.1';
 
 const pages = {};
 
@@ -222,4 +228,4 @@ createServer((requete, reponse) => {
         reponse.writeHead(404, { 'content-type': 'text/plain' });
         reponse.end('introuvable');
     });
-}).listen(port, '127.0.0.1', () => console.log('serveur d’essai sur ' + port));
+}).listen(port, hote, () => console.log('serveur d’essai sur ' + hote + ':' + port));
