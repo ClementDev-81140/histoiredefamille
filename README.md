@@ -335,6 +335,9 @@ ni déplacé, un album n'est qu'un rangement.
   personne privée n'apparaît pas dans une légende publique.
 - « **Imprimer** » sur un album ou une fiche donne une page sobre, sans menu ni
   boutons (mise en page spéciale pour l'imprimante).
+- Un administrateur connecté trouve sur la page d'un album, et sur sa page
+  d'administration, le bouton **Ajouter des photos** : il envoie les fichiers
+  par morceaux et les range directement dans cet album (voir § 6.19).
 
 ### Calendrier familial et frise chronologique
 
@@ -1515,6 +1518,52 @@ C'est prévu, et c'est le point important de cette page :
 - si l'envoi par le navigateur ne convient pas (fichier de plus de 4 Go,
   réseau local très rapide), le **dossier arrivée** reste la solution de
   secours : voir § 6.6 et [`deploy/dossier-arrivee.md`](deploy/dossier-arrivee.md).
+
+### 6.19 Ajouter des photos directement dans un album
+
+Plus besoin d'envoyer les photos d'un côté puis de les cocher dans l'album :
+le bouton **Ajouter des photos** ouvre l'envoi par morceaux (voir § 6.18) là
+où vous êtes.
+
+1. Ouvrir un album (**Administration → Albums photos → Modifier**) ou, une
+   fois connecté comme administrateur, la page publique de l'album
+   (`/albums/…`).
+2. Cliquer sur **Ajouter des photos** : la zone de dépôt apparaît, on peut
+   glisser plusieurs fichiers ou les choisir d'un coup.
+3. Chaque fichier reçu devient tout de suite une **photo de l'album**, ajoutée
+   **en fin de liste**. Rien d'autre à valider.
+
+Ce que fait le site pour chaque photo, sans rien demander :
+
+- **photos seulement** : jpg, jpeg, png, webp et gif. Un film ou un PDF
+  déposé ici est refusé, avec le message qui dit quoi faire ;
+- **visibilité = celle de l'album** : une photo ajoutée à un album privé naît
+  privée, une photo ajoutée à un album public naît publique. Vous pouvez
+  ensuite la passer en privé depuis sa fiche ;
+- **titre = nom du fichier**, sans l'extension (`noces-1962.jpg` donne
+  « noces-1962 »), et la **date** est celle du fichier quand elle est lisible ;
+- **vignettes** générées comme pour tout envoi ;
+- **doublons signalés, jamais supprimés** : si l'empreinte SHA-256 est déjà
+  connue, le site demande « Garder quand même » ou « Ignorer ce fichier ».
+
+L'envoi terminé, la page affiche le lien **Voir l'album** et la liste des
+photos ajoutées, avec pour chacune :
+
+- un champ **Titre** et un champ **Date**, modifiables sur place, puis
+  **Enregistrer** ;
+- le bouton **Retirer de l'album** (après confirmation) : la photo quitte
+  l'album, mais **le document n'est pas supprimé** — il reste dans
+  *Documents*, et vous pouvez le remettre dans un album quand vous voulez.
+
+Ces deux formulaires sont des formulaires ordinaires : ils fonctionnent même
+si le JavaScript est coupé. Une photo ne peut pas être rangée deux fois dans le
+même album, et un envoi n'est rattaché qu'à **un seul album** : le reprendre
+depuis un autre album ne le détourne pas.
+
+Seul un **administrateur** voit et utilise ce bouton ; un visiteur, un lecteur
+ou un journaliste ne l'a jamais. Côté serveur, tout envoi vers un album est
+réservé au compte connecté, protégé par le jeton CSRF, et la création de la
+fiche est atomique : un double clic ne peut pas créer deux photos.
 
 ## 7. Mettre à jour le site
 

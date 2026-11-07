@@ -23,6 +23,13 @@ $couverture = (int) $v('couverture', (int) ($album['cover_document_id'] ?? 0));
 
 <h1><?= e($titre) ?></h1>
 
+<?php if ($isEdit): ?>
+    <p class="actions">
+        <a class="bouton" href="/admin/albums/<?= (int) $album['id'] ?>/photos">Ajouter des photos</a>
+        <a class="bouton bouton--secondaire" href="/albums/<?= e($album['slug']) ?>">Voir l’album</a>
+    </p>
+<?php endif; ?>
+
 <?php if ($erreurs !== []): ?>
     <div class="message message--erreur">
         <ul><?php foreach ($erreurs as $erreur): ?><li><?= e($erreur) ?></li><?php endforeach; ?></ul>

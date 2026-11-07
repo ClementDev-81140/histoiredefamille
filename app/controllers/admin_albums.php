@@ -213,6 +213,141 @@ function admin_album_delete(array $params): void
 }
 
 // ---------------------------------------------------------------------------
+// Ajouter des photos directement dans un album
+// ---------------------------------------------------------------------------
+
+/**
+ * Page « Ajouter des photos » d'un album.
+ *
+ * Le bloc d'envoi par morceaux est celui de tout le site : glisser-déposer,
+ * plusieurs fichiers, barre de progression par fichier, reprise après coupure.
+ * La seule différence est la destination : chaque photo arrive déjà dans cet
+ * album, à la fin, avec la visibilité de l'album.
+ */
+function admin_album_photos(array $params = []): void
+{
+    require_admin();
+
+    $album = find_album((int) ($params['id'] ?? 0));
+    if ($album === null) {
+        http_response_code(404);
+        render('erreur', ['titre' => 'Album introuvable', 'message' => 'Cet album n’existe pas.']);
+        return;
+    }
+
+    // Ce que CE compte a ajouté à CET album : c'est la liste que l'on corrige
+    // juste après l'envoi (titre, date) et d'où l'on retire une photo.
+    $ajoutees = envoi_photos_album((int) $album['id'], (int) current_account()['id']);
+
+    render('admin/album_photos', [
+        'titre'    => 'Ajouter des photos à « ' . $album['title'] . ' »',
+        'album'    => $album,
+        'ajoutees' => $ajoutees,
+        'erreurs'  => form_errors(),
+    ], 'layout_admin');
+}
+
+/**
+ * Corrige le titre et la date d'une photo de l'album, sans quitter la page.
+ *
+ * Formulaire ordinaire (aucun JavaScript nécessaire) ; la photo doit être dans
+ * cet album, sinon la demande est refusée.
+ */
+function admin_album_photo_save(array $params = []): void
+{
+    require_admin();
+    csrf_check();
+
+    $album = find_album((int) ($params['id'] ?? 0));
+    $docId = (int) post('document_id');
+
+    if ($album === null) {
+        flash('erreur', 'Album introuvable.');
+        redirect('/admin/albums');
+    }
+
+    if ($docId <= 0 || !in_array($docId, album_photo_ids((int) $album['id']), true)) {
+        flash('erreur', 'Cette photo ne fait pas partie de cet album.');
+        redirect('/admin/albums/' . (int) $album['id'] . '/photos');
+    }
+
+    $photo = db_one('SELECT id, title, doc_date FROM documents WHERE id = ?', [$docId]);
+    if ($photo === null) {
+        flash('erreur', 'Cette photo n’existe plus.');
+        redirect('/admin/albums/' . (int) $album['id'] . '/photos');
+    }
+
+    $titre = trim(post('title'));
+    if ($titre === '') {
+        $titre = (string) $photo['title'];
+    }
+    if (mb_strlen($titre) > 200) {
+        $titre = mb_substr($titre, 0, 200, 'UTF-8');
+    }
+
+    $date = trim(post('doc_date'));
+
+    db_update('documents', $docId, [
+        'title'         => $titre,
+        'doc_date'      => $date !== '' ? mb_substr($date, 0, 100, 'UTF-8') : null,
+        'doc_date_sort' => extract_year($date),
+        'updated_at'    => time(),
+    ]);
+
+    log_activity((int) current_account()['id'], 'document_modifie', $titre);
+
+    flash('succes', 'La photo a été mise à jour.');
+    redirect('/admin/albums/' . (int) $album['id'] . '/photos');
+}
+
+/**
+ * Retire une photo de l'album — sans supprimer le document.
+ *
+ * La photo reste dans « Documents & photos », avec sa visibilité, ses étiquettes
+ * et les personnes identifiées dessus.
+ */
+function admin_album_photo_remove(array $params = []): void
+{
+    require_admin();
+    csrf_check();
+
+    $album = find_album((int) ($params['id'] ?? 0));
+    $docId = (int) post('document_id');
+
+    if ($album === null) {
+        flash('erreur', 'Album introuvable.');
+        redirect('/admin/albums');
+    }
+
+    if ($docId <= 0 || !in_array($docId, album_photo_ids((int) $album['id']), true)) {
+        flash('erreur', 'Cette photo ne fait pas partie de cet album.');
+        redirect('/admin/albums/' . (int) $album['id'] . '/photos');
+    }
+
+    db_exec(
+        'DELETE FROM album_documents WHERE album_id = ? AND document_id = ?',
+        [(int) $album['id'], $docId]
+    );
+
+    // La couverture ne peut plus désigner une photo qui n'est plus dans l'album.
+    if ((int) ($album['cover_document_id'] ?? 0) === $docId) {
+        db_update('albums', (int) $album['id'], [
+            'cover_document_id' => null,
+            'updated_at'        => time(),
+        ]);
+    }
+
+    log_activity(
+        (int) current_account()['id'],
+        'album_modifie',
+        $album['title'] . ' (photo retirée de l’album)'
+    );
+
+    flash('succes', 'La photo a été retirée de l’album. Elle reste dans « Documents & photos ».');
+    redirect('/admin/albums/' . (int) $album['id'] . '/photos');
+}
+
+// ---------------------------------------------------------------------------
 // Personnes identifiées sur un document
 // ---------------------------------------------------------------------------
 

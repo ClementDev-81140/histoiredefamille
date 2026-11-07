@@ -149,6 +149,18 @@ function envoi_extension(string $nom): string
 }
 
 /**
+ * Formats acceptés quand la destination est un album : des photos, rien
+ * d'autre. C'est la même liste que celle du type « photo » (kind_for), pour
+ * qu'une extension acceptée ici donne toujours une photo à l'arrivée.
+ *
+ * @return string[]
+ */
+function envoi_extensions_photo(): array
+{
+    return ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+}
+
+/**
  * Y a-t-il assez de place pour ce fichier (taille + marge de 2 Go) ?
  *
  * @param int|null $libre espace libre à considérer (null = disque réel) ;
@@ -190,11 +202,32 @@ function envoi_creer(
     int $taille,
     string $mime = '',
     bool $creerFiche = true,
-    ?int $libre = null
+    ?int $libre = null,
+    ?int $albumId = null
 ): array {
     $reglages = envoi_reglages();
     $nom      = envoi_nom_propre($nom);
     $ext      = envoi_extension($nom);
+
+    // Destination « album » : la photo est créée et rangée tout de suite, il
+    // n'y a donc pas de fiche à laisser au formulaire, et seules les photos
+    // sont acceptées.
+    $album = null;
+    if ($albumId !== null && $albumId > 0) {
+        $album = find_album($albumId);
+        if ($album === null) {
+            return ['ok' => false, 'error' => 'Cet album n’existe plus.', 'envoi' => null];
+        }
+        if (!in_array($ext, envoi_extensions_photo(), true)) {
+            return [
+                'ok'    => false,
+                'error' => 'Un album n’accepte que des photos ('
+                    . implode(', ', envoi_extensions_photo()) . ').',
+                'envoi' => null,
+            ];
+        }
+        $creerFiche = true;
+    }
 
     if ($compteId <= 0) {
         return ['ok' => false, 'error' => 'Compte inconnu.', 'envoi' => null];
@@ -249,6 +282,7 @@ function envoi_creer(
         'chunks_total'  => (int) ceil($taille / $reglages['morceau_octets']),
         'state'         => 'en_cours',
         'creer_fiche'   => $creerFiche ? 1 : 0,
+        'album_id'      => $album !== null ? (int) $album['id'] : null,
         'created_at'    => $maintenant,
         'updated_at'    => $maintenant,
     ]);
@@ -500,6 +534,14 @@ function envoi_terminer(array $envoi, bool $forcer = false): array
         'date_meta' => envoi_date_metadonnees($absolu, $ext),
     ];
 
+    // Album : la photo doit en être une, même si l'extension annonçait « jpg ».
+    // Le type réel (finfo) a déjà parlé ; on refuse ici plutôt que de créer un
+    // document qui ne serait pas une photo.
+    if ((int) ($envoi['album_id'] ?? 0) > 0 && (string) $donnees['kind'] !== 'photo') {
+        storage_delete($rel);
+        return envoi_echec($envoi, 'Un album n’accepte que des photos : ce fichier n’en est pas une.', $resultat);
+    }
+
     $doublon = envoi_doublon($sha, (int) ($envoi['document_id'] ?? 0));
 
     if ($doublon !== null && !$forcer) {
@@ -548,6 +590,25 @@ function envoi_echec(array $envoi, string $message, array $resultat): array
 function envoi_conclure(array $envoi, array $donnees): array
 {
     $resultat = ['ok' => true, 'error' => '', 'etat' => 'pret', 'doublon' => null, 'envoi' => null];
+
+    // Réservation conditionnelle AVANT la création de la fiche : un double
+    // clic, deux onglets ou deux appareils ne peuvent pas tirer deux documents
+    // du même fichier. Le second passage reçoit un refus clair. Les deux états
+    // d'où l'on peut conclure sont « en_cours » (assemblage) et « doublon »
+    // (l'administrateur a répondu « Garder quand même »).
+    $pris = db_exec(
+        "UPDATE uploads SET state = 'termine', updated_at = ? WHERE id = ? AND state IN ('en_cours', 'doublon')",
+        [time(), (int) $envoi['id']]
+    );
+    if ($pris < 1) {
+        return [
+            'ok'      => false,
+            'error'   => 'Ce fichier a déjà été ajouté : un fichier reçu ne devient un document qu’une seule fois.',
+            'etat'    => (string) ($envoi['state'] ?? ''),
+            'doublon' => null,
+            'envoi'   => envoi_par_id((int) $envoi['id']),
+        ];
+    }
 
     // Une miniature déjà calculée (décision après doublon) n'est pas refaite.
     $dejaMiniature = isset($donnees['thumb_path']) && $donnees['thumb_path'] !== null;
@@ -617,16 +678,23 @@ function envoi_creer_document(array $envoi, array $donnees): int
 
     $date = (string) $donnees['date_meta'];
 
-    return db_insert('documents', [
+    // Envoi direct dans un album : la photo prend la visibilité de l'album et
+    // y est rangée à la fin. Une photo privée dans un album public reste donc
+    // invisible d'un visiteur, comme avant.
+    $albumId = (int) ($envoi['album_id'] ?? 0);
+    $album   = $albumId > 0 ? find_album($albumId) : null;
+    $visibilite = $album !== null ? (string) $album['visibility'] : 'prive';
+
+    $documentId = db_insert('documents', [
         'title'         => mb_substr($titre, 0, 200, 'UTF-8'),
         'description'   => null,
         'doc_date'      => $date !== '' ? mb_substr($date, 0, 100, 'UTF-8') : null,
         'doc_date_sort' => extract_year($date),
         'category_id'   => null,
-        // Visibilité privée : rien n'est publié tant que l'administrateur ne
-        // l'a pas validé explicitement.
-        'visibility'    => 'prive',
-        'kind'          => (string) $donnees['kind'],
+        // Sans album, la visibilité reste privée : rien n'est publié tant que
+        // l'administrateur ne l'a pas validé explicitement.
+        'visibility'    => $visibilite,
+        'kind'          => $album !== null ? 'photo' : (string) $donnees['kind'],
         'rel_path'      => (string) $donnees['rel_path'],
         'thumb_path'    => $donnees['thumb_path'] ?? null,
         'original_name' => $nom,
@@ -641,6 +709,18 @@ function envoi_creer_document(array $envoi, array $donnees): int
         'created_at'    => time(),
         'updated_at'    => time(),
     ]);
+
+    if ($album !== null && $documentId > 0) {
+        album_ajouter_photo((int) $album['id'], $documentId);
+
+        // Album réservé à certaines branches : la photo suit les mêmes
+        // branches, sinon elle serait invisible même pour elles.
+        if ($visibilite === 'branches') {
+            set_content_branches('document', $documentId, content_branch_ids('album', (int) $album['id']));
+        }
+    }
+
+    return $documentId;
 }
 
 /**
@@ -679,6 +759,34 @@ function envoi_decider(array $envoi, string $choix): array
     ];
 
     return envoi_conclure($envoi, $donnees);
+}
+
+/**
+ * Photos qu'un compte a ajoutées à un album par l'envoi direct.
+ *
+ * Sert à la page « Ajouter des photos » : après l'envoi, la liste des photos
+ * arrive avec, pour chacune, le titre et la date à corriger, et le bouton
+ * « Retirer de l'album ». Aucun chemin de fichier n'est rendu ici.
+ *
+ * @return array<int, array<string, mixed>>
+ */
+function envoi_photos_album(int $albumId, int $compteId, int $limite = 60): array
+{
+    if ($albumId <= 0 || $compteId <= 0) {
+        return [];
+    }
+
+    return db_all(
+        "SELECT u.id AS upload_id, u.updated_at AS envoye_at, d.*
+         FROM uploads u
+         JOIN documents d ON d.id = u.document_id
+         JOIN album_documents ad ON ad.album_id = u.album_id AND ad.document_id = u.document_id
+         WHERE u.album_id = ? AND u.account_id = ? AND u.state = 'termine'
+           AND u.document_id IS NOT NULL
+         ORDER BY u.updated_at DESC, u.id DESC
+         LIMIT " . max(1, min(200, $limite)),
+        [$albumId, $compteId]
+    );
 }
 
 /**
@@ -953,18 +1061,23 @@ function envoi_reprisable(array $envoi): bool
  * On ne reprend que si le NOM et la TAILLE sont identiques : deux fichiers
  * différents ne s'additionnent jamais.
  */
-function envoi_a_reprendre(int $compteId, string $nom, int $taille): ?array
+function envoi_a_reprendre(int $compteId, string $nom, int $taille, ?int $albumId = null): ?array
 {
     $nom = envoi_nom_propre($nom);
     if ($nom === '' || $taille <= 0) {
         return null;
     }
 
+    // La destination fait partie de l'envoi : reprendre un fichier déposé pour
+    // un album ne doit pas le transformer en fiche privée, et l'inverse non plus.
+    // (CAST : le résultat de COALESCE n'a pas d'affinité, et SQLite comparerait
+    // alors l'entier de la colonne au texte du paramètre — jamais égaux.)
     $ligne = db_one(
         "SELECT * FROM uploads
          WHERE account_id = ? AND original_name = ? AND size = ? AND state = 'en_cours'
+           AND CAST(COALESCE(album_id, 0) AS INTEGER) = CAST(? AS INTEGER)
          ORDER BY updated_at DESC LIMIT 1",
-        [$compteId, $nom, $taille]
+        [$compteId, $nom, $taille, max(0, (int) $albumId)]
     );
 
     return $ligne ?: null;

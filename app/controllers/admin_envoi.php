@@ -188,6 +188,28 @@ function admin_envoi_init(): void
     $mime   = post('type');
     $creer  = post('creer', '1') !== '0';
 
+    // Destination « album » : le fichier devient une photo de cet album, tout
+    // de suite. L'album est vérifié ici, une fois pour toutes ; l'envoi garde
+    // son identifiant, jamais un chemin venu du navigateur.
+    $albumId = (int) post('album');
+    if ($albumId > 0 && find_album($albumId) === null) {
+        json_response(['ok' => false, 'erreur' => 'Cet album n’existe plus.', 'code' => 'album'], 400);
+    }
+    if ($albumId > 0 && $journaliste) {
+        // Un journaliste ne range rien dans un album : cette destination est
+        // réservée aux administrateurs, comme le reste de la page.
+        json_response([
+            'ok'     => false,
+            'erreur' => 'Un album est réservé aux administrateurs.',
+            'code'   => 'refus',
+        ], 403);
+    }
+    if ($albumId > 0) {
+        // Photo créée et rangée tout de suite : il n'y a pas de formulaire à
+        // laisser remplir après coup.
+        $creer = true;
+    }
+
     // Un journaliste ne crée jamais de fiche par l'envoi : son fichier reste
     // « prêt » et ne devient un document que dans sa proposition.
     if ($journaliste) {
@@ -200,7 +222,7 @@ function admin_envoi_init(): void
     // cours, on le reprend au lieu d'en créer un deuxième (rechargement de la
     // page, coupure, retour le lendemain).
     if (post('reprise') === '1') {
-        $existant = envoi_a_reprendre($compte, $nom, $taille);
+        $existant = envoi_a_reprendre($compte, $nom, $taille, $albumId > 0 ? $albumId : null);
         if ($existant !== null) {
             envoi_toucher((int) $existant['id']);
             json_response([
@@ -212,7 +234,7 @@ function admin_envoi_init(): void
         }
     }
 
-    $resultat = envoi_creer($compte, $nom, $taille, $mime, $creer);
+    $resultat = envoi_creer($compte, $nom, $taille, $mime, $creer, null, $albumId > 0 ? $albumId : null);
     if (!$resultat['ok']) {
         json_response(['ok' => false, 'erreur' => $resultat['error'], 'code' => 'refus'], 400);
     }

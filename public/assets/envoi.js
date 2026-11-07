@@ -82,6 +82,16 @@
         this.creer = racine.getAttribute('data-envoi-creer') !== '0';
         this.tailleMorceau = Number(racine.getAttribute('data-envoi-morceau-octets')) || 5242880;
         this.tailleMax = Number(racine.getAttribute('data-envoi-max-octets')) || 4294967296;
+        // Album de destination (page « Ajouter des photos ») : les fichiers y
+        // entrent tout de suite, et seules les photos sont acceptées.
+        this.album = racine.getAttribute('data-envoi-album') || '';
+        this.versAlbum = racine.getAttribute('data-envoi-vers-album') || '';
+        this.types = (racine.getAttribute('data-envoi-accept') || '')
+            .split(',')
+            .map(function (type) { return type.trim().replace(/^\./, '').toLowerCase(); })
+            .filter(function (type) { return type !== ''; });
+        this.reussies = 0;
+        this.rechargeFaite = false;
         this.reprendre = racine.getAttribute('data-envoi-reprendre') || '';
         this.reprendreNom = racine.getAttribute('data-envoi-reprendre-nom') || '';
         this.reprendreTaille = Number(racine.getAttribute('data-envoi-reprendre-taille')) || 0;
@@ -93,6 +103,7 @@
         this.annonce = racine.querySelector('[data-envoi-annonce]');
         this.boutonPause = racine.querySelector('[data-envoi-tout-pause]');
         this.lienLot = racine.querySelector('[data-envoi-vers-lot]');
+        this.lienAlbum = racine.querySelector('[data-envoi-vers-album-lien]');
 
         this.file = [];      // les fichiers déposés, dans l'ordre
         this.encours = null; // le fichier en train de partir
@@ -176,6 +187,15 @@
             if (fichier.size <= 0) {
                 this.signalerErreur(tache, 'Ce fichier est vide.');
                 continue;
+            }
+            if (this.album && this.types.length) {
+                var morceaux = String(fichier.name).toLowerCase().split('.');
+                var extension = morceaux.length > 1 ? morceaux.pop() : '';
+                if (this.types.indexOf(extension) === -1) {
+                    this.signalerErreur(tache, 'Cet album n’accepte que des photos ('
+                        + this.types.join(', ') + ').');
+                    continue;
+                }
             }
             if (fichier.size > this.tailleMax) {
                 this.signalerErreur(tache, 'Fichier trop gros : ' + octets(fichier.size)
@@ -330,6 +350,9 @@
         donnees.append('type', tache.fichier.type || '');
         donnees.append('creer', this.creer ? '1' : '0');
         donnees.append('reprise', this.reprendre ? '1' : '0');
+        if (this.album) {
+            donnees.append('album', this.album);
+        }
 
         return this.poster(this.urls.init, donnees).then(function (reponse) {
             var envoi = reponse.envoi;
@@ -638,14 +661,25 @@
         var libelle = this.libelleEnregistrer(formulaire);
 
         var texte = 'Envoyé. ';
-        if (this.creer) {
+        if (this.album) {
+            texte += 'La photo est dans l’album.';
+        } else if (this.creer) {
             texte += 'La fiche est créée en privé : complétez-la pour la publier.';
         } else {
             texte += 'Le fichier est prêt : cliquez sur « ' + libelle + ' » en bas du formulaire.';
         }
         tache.statut.textContent = texte;
 
-        if (this.creer && reponse.lien) {
+        this.reussies++;
+
+        if (this.album && this.versAlbum) {
+            var versAlbum = element('a', 'lien', 'Voir l’album');
+            versAlbum.href = this.versAlbum;
+            tache.boutons.appendChild(document.createTextNode(' '));
+            tache.boutons.appendChild(versAlbum);
+        }
+
+        if (this.creer && reponse.lien && !this.album) {
             var lien = element('a', 'lien', 'Ouvrir la fiche');
             lien.href = reponse.lien;
             tache.boutons.appendChild(document.createTextNode(' '));
@@ -819,6 +853,9 @@
         if (this.lienLot) {
             this.lienLot.hidden = false;
         }
+        if (this.lienAlbum) {
+            this.lienAlbum.hidden = false;
+        }
         this.demarrerSuivant();
         this.verifierFin();
     };
@@ -830,6 +867,25 @@
         if (restants.length === 0 && this.actions) {
             this.boutonPause.hidden = true;
         }
+
+        // Album : une fois toutes les photos arrivées, la page se recharge UNE
+        // fois. C'est le serveur qui affiche alors la liste des photos ajoutées
+        // (titre et date à corriger, « Retirer de l'album ») — aucune de ces
+        // commandes n'a besoin de JavaScript. Si une photo a échoué, on ne
+        // recharge rien : le message d'erreur reste à l'écran.
+        if (!this.album || this.rechargeFaite || this.reussies === 0 || restants.length > 0) {
+            return;
+        }
+        var enErreur = this.file.some(function (tache) {
+            return tache.ligne.getAttribute('data-etat') === 'erreur';
+        });
+        if (enErreur) {
+            return;
+        }
+        this.rechargeFaite = true;
+        window.setTimeout(function () {
+            window.location.reload();
+        }, 900);
     };
 
     Televerseur.prototype.basculerPause = function () {

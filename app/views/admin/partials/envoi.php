@@ -13,7 +13,10 @@
  *     aide:   string phrase d'explication ;
  *     reprendre: array|null envoi à reprendre (nom, taille, token) ;
  *     base:   string préfixe des adresses du protocole (/admin/envoyer par
- *             défaut ; /propositions/fichier pour un journaliste).
+ *             défaut ; /propositions/fichier pour un journaliste) ;
+ *     album:  int   album de destination (les photos y entrent tout de suite) ;
+ *     versAlbum: string adresse publique de l'album (« Voir l'album ») ;
+ *     types:  string[] extensions acceptées (par défaut, toutes celles du site).
  * }
  */
 $envoiOptions = $envoiOptions ?? [];
@@ -23,6 +26,13 @@ $aideBloc     = (string) ($envoiOptions['aide'] ?? '');
 $aReprendre   = $envoiOptions['reprendre'] ?? null;
 $baseEnvoi    = rtrim((string) ($envoiOptions['base'] ?? '/admin/envoyer'), '/');
 $afficherLot  = (bool) ($envoiOptions['lot'] ?? true);
+$albumBloc    = (int) ($envoiOptions['album'] ?? 0);
+$versAlbum    = (string) ($envoiOptions['versAlbum'] ?? '');
+$typesBloc    = array_values(array_filter(array_map('strval', (array) ($envoiOptions['types'] ?? []))));
+if ($typesBloc === []) {
+    $typesBloc = allowed_extensions();
+}
+$acceptBloc   = '.' . implode(',.', $typesBloc);
 $reglages     = envoi_reglages();
 ?>
 <section class="envoi" data-envoi
@@ -37,7 +47,11 @@ $reglages     = envoi_reglages();
          data-envoi-creer="<?= $creerFiche ? '1' : '0' ?>"
          data-envoi-morceau-octets="<?= (int) $reglages['morceau_octets'] ?>"
          data-envoi-max-octets="<?= (int) $reglages['max_octets'] ?>"
-         data-envoi-accept=".<?= e(implode(',.', allowed_extensions())) ?>"
+         data-envoi-accept="<?= e($acceptBloc) ?>"
+         <?php if ($albumBloc > 0): ?>
+         data-envoi-album="<?= (int) $albumBloc ?>"
+         data-envoi-vers-album="<?= e($versAlbum) ?>"
+         <?php endif; ?>
          <?php if (is_array($aReprendre)): ?>
          data-envoi-reprendre="<?= e((string) $aReprendre['token']) ?>"
          data-envoi-reprendre-nom="<?= e((string) $aReprendre['original_name']) ?>"
@@ -70,12 +84,17 @@ $reglages     = envoi_reglages();
                 Choisir des fichiers
                 <input type="file" id="envoi-fichiers" class="sr-only"
                        data-envoi-champ multiple
-                       accept=".<?= e(implode(',.', allowed_extensions())) ?>">
+                       accept="<?= e($acceptBloc) ?>">
             </label>
         </p>
         <p class="discret">
-            Photos, PDF, vidéos, sons. Plusieurs fichiers à la fois : chacun a sa
-            propre barre de progression.
+            <?php if ($albumBloc > 0): ?>
+                Des photos : <?= e(implode(', ', $typesBloc)) ?>. Plusieurs à la fois,
+                chacune avec sa propre barre de progression.
+            <?php else: ?>
+                Photos, PDF, vidéos, sons. Plusieurs fichiers à la fois : chacun a sa
+                propre barre de progression.
+            <?php endif; ?>
             <?php if (!$creerFiche): ?>
                 Une fois l’envoi terminé, un lien vous amène au bouton
                 d’enregistrement, tout en bas du formulaire.
@@ -109,6 +128,11 @@ $reglages     = envoi_reglages();
         <?php if ($afficherLot): ?>
         <a class="bouton bouton--secondaire" href="/admin/envoyer/lot" data-envoi-vers-lot hidden>
             Compléter ce lot d’un coup
+        </a>
+        <?php endif; ?>
+        <?php if ($albumBloc > 0 && $versAlbum !== ''): ?>
+        <a class="bouton bouton--secondaire" href="<?= e($versAlbum) ?>" data-envoi-vers-album-lien hidden>
+            Voir l’album
         </a>
         <?php endif; ?>
     </p>

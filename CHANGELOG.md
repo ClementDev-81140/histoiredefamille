@@ -3,6 +3,169 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.27.0] — 2026-11-07
+
+### Ranger des photos dans un album demandait deux détours
+
+Un album ne contenait rien par lui-même : il fallait d'abord envoyer les photos
+depuis **Administration → Envoyer des fichiers**, attendre la création des
+fiches, ouvrir l'album, puis cocher les photos une par une — et recommencer tout
+ce chemin pour la suivante. La page d'un album, elle, n'offrait rien : ni sur sa
+page publique, ni même dans son formulaire d'administration.
+
+Désormais, un administrateur connecté trouve le bouton **Ajouter des photos**
+aux deux endroits où il pense à son album :
+
+- sur le formulaire de l'album (**Administration → Albums photos → Modifier**),
+  en haut, à côté de « Voir l'album » ;
+- sur la page publique de l'album (`/albums/…`), à côté de « Imprimer » et
+  « Modifier ».
+
+Le bouton ouvre la page **Ajouter des photos**. Un visiteur, un lecteur ou un
+journaliste ne le voit **jamais** : le bouton n'est écrit que pour un
+administrateur, et les trois routes concernées commencent par `require_admin()`.
+
+#### Le même envoi par morceaux, pour des photos seulement
+
+Rien de nouveau côté transport : la page réutilise le bloc d'envoi de la 1.26
+(glisser-déposer, plusieurs fichiers, une barre par fichier, reprise après
+coupure, trois envois simultanés). Trois différences, toutes dans le bloc :
+
+- le champ de fichier n'accepte que **jpg, jpeg, png, webp et gif** ; un film
+  déposé là est refusé **tout de suite**, avec le message « Cet album n'accepte
+  que des photos (…) » — rien ne part ;
+- chaque envoi porte l'**album de destination** (`data-envoi-album`), transmis
+  à l'initialisation de l'envoi ;
+- le bouton « Compléter ce lot d'un coup » n'est pas affiché : ici, chaque
+  photo est déjà rangée.
+
+Les validations habituelles (extension autorisée, type réel du fichier, taille,
+nom nettoyé) sont **rejouées sur le fichier assemblé**, comme pour tout envoi.
+
+#### Ce que devient une photo reçue
+
+Dès qu'un fichier est complet, le serveur crée la fiche et la range :
+
+| Champ | Valeur |
+|---|---|
+| type | **photo** |
+| visibilité | **celle de l'album** (une photo ajoutée à un album privé naît privée) |
+| titre | **nom du fichier sans extension** (`noces-1962.jpg` → « noces-1962 ») |
+| date | celle lue dans le fichier, quand elle existe |
+| place | **en fin de liste** de l'album |
+| vignettes | générées comme pour tout envoi |
+
+Un doublon (même empreinte SHA-256 qu'une photo déjà connue) est **signalé**,
+jamais supprimé : « Garder quand même » ou « Ignorer ce fichier », comme
+aujourd'hui.
+
+#### La page reste la même, sans JavaScript indispensable
+
+Sous le bloc d'envoi, la page liste **les photos que vous venez d'ajouter** à cet
+album, avec pour chacune :
+
+- un champ **Titre** et un champ **Date**, puis **Enregistrer le titre et la
+  date** ;
+- **Retirer de l'album**, après confirmation : la photo quitte l'album, **le
+  document n'est pas supprimé** (il reste dans « Documents & photos », et peut
+  revenir dans un album plus tard).
+
+Ce sont des **formulaires ordinaires** (jeton CSRF, `document_id` caché) : ils
+fonctionnent sans JavaScript, et le lien **Voir l'album** est écrit en haut et
+en bas de la page. Côté navigateur, une fois toutes les photos arrivées, la page
+se recharge **une seule fois** pour afficher la liste tenue par le serveur :
+titre, date et retrait ne dépendent d'aucun script.
+
+#### Un envoi, un seul album, une seule photo
+
+- la destination est enregistrée dans l'envoi (`uploads.album_id`, migration
+  **018**, en ajout seul : une colonne, un index, aucune ligne touchée) ;
+- la conclusion de l'envoi réserve la ligne en **une seule** mise à jour
+  conditionnelle (`en_cours` ou `doublon` → `termine`) : un double clic, deux
+  onglets ou deux administrateurs ne peuvent pas créer deux photos ;
+- la reprise tient compte de l'album : redéposer le même fichier sur la page
+  d'un album reprend **cet** envoi-là, et un envoi destiné à un album ne se
+  transforme pas en fiche privée (ni l'inverse) ;
+- aucune photo d'un autre compte n'est touchée : les envois d'un administrateur
+  ne sont ni repris ni modifiés par un autre.
+
+#### Deux défauts de mise en page trouvés en regardant les captures
+
+- **à 1280 px**, la colonne « Actions » du tableau des photos ajoutées sortait
+  du cadre : le tableau impose une largeur minimale pensée pour de grands
+  tableaux. Il se répartit maintenant sur la place disponible
+  (`.tableau-defilant--photos`), et les deux commandes s'empilent ;
+- **à 390 px**, ce tableau à trois colonnes était purement et simplement coupé.
+  Sur téléphone, chaque photo devient une **fiche empilée** (vignette, titre,
+  date, actions) : plus rien à faire glisser latéralement.
+
+En cherchant pourquoi ces règles ne s'appliquaient pas sur écran étroit, un
+**défaut plus ancien** est apparu dans `public/assets/style.css` : un bloc
+`@media (min-width: 64rem)` ouvert après la 1.10.1 n'était **jamais refermé** (et
+l'en-tête de commentaire qui le suivait avait perdu son `/*`). Tout le CSS situé
+après — les « finitions comptes », la carte des lieux, les propositions, une
+partie des écrans étroits, soit près de six cents lignes — n'était donc appliqué
+qu'au-dessus de 1024 px. Le bloc est refermé, le commentaire rétabli, et un
+essai vérifie désormais que les accolades de la feuille de style sont
+**équilibrées**.
+
+Aucune classe CSS renommée, aucun style ni script en ligne, aucune ressource
+externe : une migration en ajout seul, trois routes (`GET
+/admin/albums/{id}/photos`, `POST …/photos/titre`, `POST …/photos/retirer`),
+une vue, et deux modifications de la feuille de style.
+
+#### Comment cela a été vérifié
+
+- **essais serveur** — nouvelle famille `album` : **54 vérifications, 54 ok**.
+  Bouton présent pour l'administrateur sur les deux pages, absent pour le
+  visiteur, le lecteur et le journaliste ; page d'envoi réservée (403 pour un
+  journaliste, 400 pour un album inconnu, 303 pour un visiteur) ; photo créée
+  avec la visibilité de l'album, le titre du fichier, en fin de liste, avec ses
+  branches recopiées ; envoi rattaché à **un** album ; doublon signalé et **non
+  supprimé** ; double clic qui ne crée qu'une photo ; reprise qui retrouve
+  l'envoi de cet album et lui seul ; titre et date corrigés ; « Retirer de
+  l'album » qui enlève la photo de l'album **sans** supprimer le document ;
+  visibilité respectée pour un visiteur (photo privée invisible) et pour
+  l'administrateur ; script d'envoi qui transmet l'album et refuse les
+  non-photos ; rechargement unique de la page.
+- **famille `envoi`** (régressions) : **122/122** ; `album` : **54/54**.
+- **suite complète** : **1 157 essais, 0 échec** ; lint **190 fichiers, 0
+  erreur** ; matrice d'accès **190 routes, 760 vérifications, 0 anomalie**
+  (248 contrôles ciblés, 0 en échec).
+- **vrai navigateur** (Chromium, pages rendues par le routeur, vrais `assets`,
+  feuille `/theme.css` rendue par le site) — **21 vérifications sur 21**, quatre
+  fois : **papier** et **bleu**, **390 px** et **1280 px**. Bouton visible et
+  assez grand, qui mène à la page d'envoi ; zone de dépôt présente, album
+  transmis, champ limité aux photos et `multiple` ; deux formulaires ordinaires
+  avec jeton et `document_id` et **aucun autre champ** (corps relevé) ; la
+  confirmation du retrait dit que le document n'est pas supprimé, et la refuser
+  ne poste rien ; dépôt d'une **vraie photo** : l'album part avec l'envoi
+  (`album=5` relevé dans le corps), la page se recharge **une fois** ; dépôt
+  d'un **film** : refusé sur place, aucun envoi ; album public avec le bouton
+  pour l'administrateur et **sans** bouton pour un visiteur ; palette du thème
+  demandée réellement appliquée (couleur de fond mesurée) ; impression sans
+  débordement ; aucune erreur JavaScript. L'outil est fourni :
+  [`tools/navigateur/actions-album.mjs`](tools/navigateur/README.md) (et le
+  compte des échecs de `actions.mjs`, qui comptait des objets et annonçait donc
+  toujours « tout va bien », est corrigé) ;
+- l'ancien contrôle navigateur de la 1.26.3 (`actions.mjs`) a été rejoué après
+  la correction de la feuille de style : **12/12** à 390 px et à 1280 px.
+
+#### Ce qui n'a pas pu être vérifié ici
+
+- le **serveur réel** (Apache, Cloudflare, Pi) : le contrat est vérifié par les
+  essais serveur ; les pages et les clics par un navigateur réel servi par un
+  serveur d'essai local ;
+- un **double clic réellement simultané** (deux requêtes en parallèle) : le banc
+  d'essai est mono-thread. La garantie est la mise à jour conditionnelle, et le
+  second passage est vérifié en séquence ;
+- des **photos réelles** de la famille (les essais déposent un PNG de quelques
+  kilo-octets) : les vignettes et la date lue dans le fichier sont celles du
+  code d'envoi existant, vérifiées par la famille `envoi` ;
+- le **rendu d'impression sur papier** : la feuille d'impression est appliquée
+  par le navigateur (`emulateMediaType('print')`), mais aucune imprimante n'est
+  disponible.
+
 ## [1.26.3] — 2026-11-07
 
 ### Les fichiers reçus n'avaient aucune action

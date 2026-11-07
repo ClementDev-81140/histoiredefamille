@@ -1046,12 +1046,32 @@ legend {
 
 .colonne-actions form { margin-left: 0.5rem; }
 
+/* Page « Ajouter des photos » : la colonne d'actions porte deux commandes
+   (retirer la photo, ouvrir la fiche). Empilées, elles n'élargissent plus le
+   tableau, qui reste lisible sans glisser sur le côté. */
+.colonne-actions--pile {
+    white-space: normal;
+}
+
+.colonne-actions--pile form { margin-left: 0; }
+
+.colonne-actions--pile .lien {
+    display: inline-block;
+    margin-top: 0.35rem;
+}
+
 .tableau-defilant {
     overflow-x: auto;
     border: var(--filet);
 }
 
 .tableau-defilant .tableau { min-width: 52rem; }
+
+/* Liste des photos ajoutées à un album : trois colonnes seulement, dont un
+   formulaire de deux champs. Elle se répartit sur la place disponible au lieu
+   d'imposer la largeur minimale des grands tableaux — sinon la colonne
+   d'actions sortait du cadre sur un écran de 1280 px. */
+.tableau-defilant--photos .tableau { min-width: 0; }
 
 /* Un chemin de fichier ou une adresse très longue dans un titre ne doit
    jamais faire glisser la page latéralement (page « État du site »). */
@@ -5250,6 +5270,9 @@ legend {
     .article--modele-photo .article__texte.texte--presse {
         columns: 1;
     }
+}
+
+/* ==========================================================================
    FINITIONS comptes 1.10.1 : lisibilité des écrans « Comptes »
    ========================================================================== */
 /* Le message à copier doit se lire : encre pleine sur papier clair. */
@@ -5772,5 +5795,44 @@ legend {
 
     .tableau--lot input[type="text"] {
         min-width: 0;
+    }
+}
+
+/* Liste des photos ajoutées à un album, sur un téléphone : le tableau à trois
+   colonnes ne tient pas dans 390 px. Chaque photo devient une fiche empilée
+   (vignette, titre, date, actions), sans glisser latéralement. */
+@media (max-width: 40rem) {
+    .tableau-defilant--photos {
+        border: 0;
+        overflow-x: visible;
+    }
+
+    .tableau-defilant--photos .tableau,
+    .tableau-defilant--photos tbody,
+    .tableau-defilant--photos tr,
+    .tableau-defilant--photos td {
+        display: block;
+        width: auto;
+        min-width: 0;
+    }
+
+    .tableau-defilant--photos thead {
+        display: none;
+    }
+
+    .tableau-defilant--photos tr {
+        border: var(--filet);
+        background: var(--surface);
+        margin: 0 0 0.9rem;
+        padding: 0.5rem 0.7rem;
+    }
+
+    .tableau-defilant--photos td {
+        border-top: 0;
+        padding: 0.35rem 0;
+    }
+
+    .tableau-defilant--photos .colonne-actions {
+        text-align: left;
     }
 }

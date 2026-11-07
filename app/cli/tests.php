@@ -1951,6 +1951,19 @@ if ($filtre === '' || $filtre === 'apparence') {
     verifier('contraste : la palette papier respecte les quatre minima', ($k['papier'] ?? []) === [true, true, true, true], json_encode($k['papier'] ?? []));
     verifier('contraste : la palette bleue respecte les quatre minima', ($k['bleu'] ?? []) === [true, true, true, true], json_encode($k['bleu'] ?? []));
 
+    // Feuille de style : une accolade oubliée avale silencieusement toutes les
+    // règles suivantes (c'est arrivé : un bloc resté ouvert après la 1.10.1, et
+    // tout le CSS des écrans étroits ignoré). On compte, hors commentaires et
+    // hors chaînes, pour que cela ne puisse plus passer inaperçu.
+    $css = (string) file_get_contents(dirname(__DIR__, 2) . '/public/assets/style.css');
+    $cssNu = (string) preg_replace('~/\*.*?\*/~s', '', $css);
+    $cssNu = (string) preg_replace('~"[^"\n]*"|\'[^\'\n]*\'~', '""', $cssNu);
+    verifier(
+        'feuille de style : les accolades sont équilibrées (aucune règle avalée par un bloc)',
+        $css !== '' && substr_count($cssNu, '{') === substr_count($cssNu, '}'),
+        substr_count($cssNu, '{') . ' ouvrante(s) / ' . substr_count($cssNu, '}') . ' fermante(s)'
+    );
+
     // Refus et correction.
     verifier('couleurs : un texte gris sur du blanc est refusé', $ok('refus') && $essais['refus'] !== [], $ok('refus') ? json_encode($essais['refus'], JSON_UNESCAPED_UNICODE) : '');
     verifier('couleurs : le refus dit quel contraste ne va pas', $ok('refus') && str_contains(implode(' ', $essais['refus']), 'contraste'));
@@ -2424,7 +2437,17 @@ if ($filtre === '' || $filtre === 'composition') {
     $derniere = basename((string) end($migrations));
     $sql009   = (string) @file_get_contents(dirname(__DIR__) . '/migrations/009_articles_modele.sql');
     // Chaque lot ajoute SA migration ; les précédentes ne bougent jamais.
-    verifier('migration : 017 est la dernière migration', $derniere === '017_versions_propositions.sql', $derniere);
+    verifier('migration : 018 est la dernière migration', $derniere === '018_album_envois.sql', $derniere);
+    $migration018 = (string) @file_get_contents(dirname(__DIR__) . '/migrations/018_album_envois.sql');
+    verifier(
+        'migration : 018 ajoute « uploads.album_id » EN AJOUT SEUL (aucune ligne modifiée, aucune supprimée)',
+        str_contains($migration018, 'ALTER TABLE uploads ADD COLUMN album_id INTEGER')
+            && str_contains($migration018, 'CREATE INDEX')
+            // Aucune instruction qui touche aux lignes existantes (le
+            // « ON DELETE SET NULL » de la clé étrangère n'en est pas une).
+            && preg_match('/^\s*(UPDATE|DELETE|DROP|INSERT|REPLACE)\s/im', $migration018) !== 1,
+        $migration018 === '' ? 'fichier absent' : 'ok'
+    );
     $migration017 = (string) @file_get_contents(dirname(__DIR__) . '/migrations/017_versions_propositions.sql');
     verifier(
         'migration : 017 ajoute « replaces_id » EN AJOUT SEUL (aucune ligne modifiée, aucune supprimée)',
@@ -2540,6 +2563,7 @@ require_once __DIR__ . '/tests_carte.php';
 require_once __DIR__ . '/tests_envoi.php';
 require_once __DIR__ . '/tests_conversion.php';
 require_once __DIR__ . '/tests_profils.php';
+require_once __DIR__ . '/tests_album.php';
 
 // Les propositions des journalistes ont besoin des mêmes outils d'essai que
 // les profils (tests_envoi_requete) : ce bloc vient donc après eux.
@@ -2592,6 +2616,10 @@ if ($filtre === '' || $filtre === 'conversion') {
 
 if ($filtre === '' || $filtre === 'profils') {
     tests_profils();
+}
+
+if ($filtre === '' || $filtre === 'album') {
+    tests_album();
 }
 
 // ---------------------------------------------------------------------------

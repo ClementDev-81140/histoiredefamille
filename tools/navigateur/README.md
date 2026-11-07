@@ -1,11 +1,12 @@
 # Contrôle « vrai navigateur »
 
-Ces quatre fichiers servent à vérifier **dans un vrai navigateur** ce qu'aucun
-essai PHP ne peut voir : le comportement du formulaire pendant et après un
-envoi par morceaux (champ « Fichier », champ caché `envoi`, lien-ancre, clic
-sur le bouton d'enregistrement) et les deux boutons de la liste des fichiers
-reçus (**Créer le document**, **Supprimer** et sa confirmation), à 390 px et à
-1280 px.
+Ces fichiers servent à vérifier **dans un vrai navigateur** ce qu'aucun essai
+PHP ne peut voir : le comportement du formulaire pendant et après un envoi par
+morceaux (champ « Fichier », champ caché `envoi`, lien-ancre, clic sur le
+bouton d'enregistrement), les deux boutons de la liste des fichiers reçus
+(**Créer le document**, **Supprimer** et sa confirmation), et l'ajout de photos
+dans un album (**Ajouter des photos**, dépôt, formulaires de la liste), à
+390 px et à 1280 px, en thème **papier** et **bleu**.
 
 Ils ne font **pas** partie du site : `tools/` est hors de la racine web et rien
 n'y est chargé en production.
@@ -69,6 +70,42 @@ node tools/navigateur/actions.mjs 390
 node tools/navigateur/actions.mjs 1280
 ```
 
+### Ajouter des photos dans un album
+
+Il faut deux albums **publics** dans la base d'essai (l'un rendu pour un
+administrateur, l'autre pour un visiteur) dont l'un contient déjà une photo
+liée par `album_documents`, et la feuille `/theme.css` **rendue par le site**
+(la palette est un réglage : `public/` ne contient pas ce fichier).
+
+```bash
+# 1. Les pages, par le routeur réel.
+HDF_CONFIG=/chemin/config.local.php php tools/navigateur/rendre.php \
+    /admin/albums/7/modifier /tmp/album-modifier.html 1
+HDF_CONFIG=/chemin/config.local.php php tools/navigateur/rendre.php \
+    /admin/albums/7/photos /tmp/album-photos.html 1
+HDF_CONFIG=/chemin/config.local.php php tools/navigateur/rendre.php \
+    /albums/album-admin-banc /tmp/album-public-admin.html 1
+HDF_CONFIG=/chemin/config.local.php php tools/navigateur/rendre.php \
+    /albums/album-visiteur-banc /tmp/album-public-visiteur.html 0
+HDF_CONFIG=/chemin/config.local.php php tools/navigateur/rendre.php \
+    /theme.css /tmp/theme-papier.css 1
+
+# 2. Le serveur d'essai (serveur.mjs), dans un autre terminal.
+PAGES_ALBUM='{"/admin/albums/7/modifier":"/tmp/album-modifier.html",
+  "/admin/albums/7/photos":"/tmp/album-photos.html",
+  "/albums/album-admin-banc":"/tmp/album-public-admin.html",
+  "/albums/album-visiteur-banc":"/tmp/album-public-visiteur.html"}' \
+THEME_CSS=/tmp/theme-papier.css CAPTURES=/tmp node tools/navigateur/serveur.mjs
+
+# 3. Le contrôle, aux deux largeurs et dans les deux thèmes.
+ALBUM_ID=7 SKU_ADMIN=album-admin-banc SKU_VISITEUR=album-visiteur-banc \
+    THEME=papier THEME_FOND='rgb(243, 231, 206)' \
+    node tools/navigateur/actions-album.mjs 390
+# puis 1280, puis THEME=bleu THEME_FOND='rgb(246, 245, 242)' avec
+# THEME_CSS=/tmp/theme-bleu.css (rendu après avoir choisi le thème « bleu »
+# dans Administration → Apparence).
+```
+
 Les captures d'écran et le corps du formulaire posté (fichiers `capture-*.txt`)
 sont écrits dans `/tmp` (ou dans `CAPTURES=`).
 
@@ -99,3 +136,20 @@ Pour la liste des fichiers reçus (`actions.mjs`) :
 - « Créer le document » poste bien le formulaire (corps relevé dans
   `capture-action-creer.txt`) ;
 - la ligne du tableau reste compacte (pas de boutons empilés sur trois lignes).
+
+Pour l'ajout de photos dans un album (`actions-album.mjs`) :
+
+- sur le formulaire de l'album, le bouton **Ajouter des photos** est présent,
+  assez grand pour être vu, et mène à la page d'envoi de l'album ;
+- sur cette page : zone de dépôt visible, album transmis par le bloc d'envoi,
+  lien « Voir l'album », champ de fichier limité aux **photos** et multiple ;
+- la liste des photos ajoutées offre deux **formulaires ordinaires** (titre et
+  date ; « Retirer de l'album »), chacun avec son jeton CSRF et l'identifiant du
+  document, et **aucun champ de plus** ; la confirmation du retrait dit que le
+  document n'est pas supprimé, et la refuser ne poste rien ;
+- le dépôt d'une **vraie photo** part bien avec `album=<id>` (corps relevé dans
+  `capture-envoi-init.txt`) et la page ne se recharge **qu'une fois** ;
+- le dépôt d'un **film** est refusé localement, sans aucun envoi ;
+- l'album public montre le bouton à un administrateur, **jamais** à un visiteur ;
+- la palette du thème demandée est bien appliquée (couleur de fond du `body`) ;
+- à l'impression (`emulateMediaType('print')`), la page tient dans la largeur.

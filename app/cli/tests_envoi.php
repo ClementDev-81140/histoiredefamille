@@ -67,10 +67,11 @@ function tests_envoi_jouer(
     string $chemin,
     array $morceaux = [],
     bool $creerFiche = true,
-    bool $terminer = true
+    bool $terminer = true,
+    ?int $albumId = null
 ): array {
     $taille = (int) filesize($chemin);
-    $init   = envoi_creer($compte, $nom, $taille, 'text/plain', $creerFiche);
+    $init   = envoi_creer($compte, $nom, $taille, 'text/plain', $creerFiche, null, $albumId);
     $resultat = ['init' => $init, 'envoi' => null, 'terminer' => null, 'etats' => []];
 
     if (!$init['ok']) {

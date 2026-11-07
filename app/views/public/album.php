@@ -18,6 +18,7 @@
         <div class="actions">
             <button type="button" class="bouton bouton--secondaire" data-imprimer>Imprimer</button>
             <?php if (is_admin()): ?>
+                <a class="bouton" href="/admin/albums/<?= (int) $album['id'] ?>/photos">Ajouter des photos</a>
                 <a class="bouton bouton--secondaire"
                    href="/admin/albums/<?= (int) $album['id'] ?>/modifier">Modifier</a>
             <?php endif; ?>

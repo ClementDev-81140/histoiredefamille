@@ -122,6 +122,6 @@ try {
     await navigateur.close();
 }
 
-const echecs = resultats.filter((r) => !r).length;
+const echecs = resultats.filter((r) => r.ok !== true).length;
 console.log('\n' + largeur + ' px — ' + (resultats.length - echecs) + '/' + resultats.length + ' vérifications');
 process.exit(echecs === 0 ? 0 : 1);

@@ -3,6 +3,44 @@
 Ce fichier liste ce qui reste à faire, classé par priorité. Il n'y a pas de
 suivi automatique : cochez au fur et à mesure.
 
+## Fait (2026-11-07, 1.27.0 — ajouter des photos dans un album)
+
+- [x] **Bouton « Ajouter des photos »** sur le formulaire d'un album
+  (`/admin/albums/{id}/modifier`) et sur la page publique de l'album
+  (`/albums/{slug}`), **pour un administrateur connecté seulement** : jamais
+  pour un visiteur, un lecteur ou un journaliste.
+- [x] **Envoi par morceaux existant** (glisser-déposer, plusieurs fichiers,
+  barre par fichier, reprise), **photos seulement** (jpg, jpeg, png, webp,
+  gif), mêmes limites et validations qu'aujourd'hui, rejouées sur le fichier
+  assemblé par le serveur.
+- [x] **Une photo complète = une photo de l'album** : document type `photo`,
+  visibilité **celle de l'album**, titre tiré du **nom du fichier** sans
+  extension, ajout **en fin de liste**, vignettes générées. Doublons SHA-256
+  signalés comme ailleurs (« Garder quand même » / « Ignorer »), jamais
+  supprimés.
+- [x] **Après l'envoi** : lien **« Voir l'album »** et liste des photos ajoutées
+  avec, pour chacune, **titre** et **date** modifiables et **« Retirer de
+  l'album »** (le document reste) — formulaires ordinaires, sans JavaScript.
+- [x] **Droits** : administrateur seulement, jeton CSRF, aucune photo d'un autre
+  compte touchée, **un envoi = un seul album** (`uploads.album_id`), réservation
+  conditionnelle à la conclusion (double clic ⇒ une seule fiche).
+- [x] **Essais** : famille « album » **54/54** (dont droits visiteur / lecteur /
+  journaliste / administrateur), `envoi` **122/122**, suite complète **1 157
+  essais, 0 échec**, lint **190 fichiers, 0 erreur**, matrice **190 routes,
+  760 vérifications, 0 anomalie** (248 contrôles ciblés).
+- [x] **Défaut ancien corrigé** : un `@media (min-width: 64rem)` jamais refermé
+  dans `public/assets/style.css` (et un commentaire sans son `/*`) avalait près
+  de six cents lignes de CSS, appliquées seulement au-dessus de 1024 px ; un
+  essai vérifie maintenant l'équilibre des accolades.
+- [x] **Vrai navigateur** (Chromium) : **21/21** quatre fois — **papier** et
+  **bleu**, **390 px** et **1280 px** : bouton visible et cliquable, absence
+  pour un visiteur, dépôt d'une vraie photo qui part avec l'album et recharge la
+  page une seule fois, refus d'un film, POST des formulaires, confirmation,
+  palette mesurée, impression. L'ancien contrôle `actions.mjs` (1.26.3) rejoué :
+  **12/12** aux deux largeurs.
+- [x] **Documentation** : CHANGELOG 1.27.0, README § 6.19 (+ une ligne dans
+  « Albums photos »), `tools/navigateur/README.md`.
+
 ## Fait (2026-11-07, 1.26.3 — deux actions sur les fichiers reçus)
 
 - [x] **« Créer le document »** : le fichier reçu devient une fiche **privée**

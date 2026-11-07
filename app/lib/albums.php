@@ -175,6 +175,31 @@ function set_album_photos(int $albumId, array $documentIds): void
     }
 }
 
+/**
+ * Ajoute une photo à la fin d'un album.
+ *
+ * Utilisé par l'envoi direct dans un album : la photo arrive après celles
+ * déjà en place, comme si on l'avait cochée en bas de la liste. Si elle y est
+ * déjà, rien ne change (clé primaire album_id + document_id).
+ */
+function album_ajouter_photo(int $albumId, int $documentId): void
+{
+    if ($albumId <= 0 || $documentId <= 0) {
+        return;
+    }
+
+    $position = (int) db_value(
+        'SELECT COALESCE(MAX(position), -1) + 1 FROM album_documents WHERE album_id = ?',
+        [$albumId],
+        0
+    );
+
+    db_exec(
+        'INSERT OR IGNORE INTO album_documents (album_id, document_id, position) VALUES (?, ?, ?)',
+        [$albumId, $documentId, $position]
+    );
+}
+
 /** Albums (visibles) auxquels appartient un document. */
 function albums_of_document(int $documentId): array
 {
