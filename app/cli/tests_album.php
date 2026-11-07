@@ -96,6 +96,7 @@ function tests_album(): void
             tests_album_droits($admin, $autreAdmin, $lecteur, $journaliste);
             tests_album_correction($admin);
             tests_album_visibilite($admin);
+            tests_album_documents_existants($admin, $autreAdmin, $lecteur, $journaliste);
 
             // Tout est annulé : la base du site est rendue intacte.
             throw new RuntimeException('fin du test, annulation');
@@ -528,11 +529,301 @@ function tests_album_correction(int $admin): void
         (string) ($apres['cover_document_id'] ?? '—')
     );
 
+    // Depuis la 1.30.0, la page propose aussi les documents qui NE SONT PAS
+    // dans l'album : la photo retirée y reparaît donc, comme candidate. On
+    // regarde la liste des photos ajoutées, celle que le retrait doit vider.
     $liste = tests_envoi_requete('GET', '/admin/albums/' . $id . '/photos', $admin);
+    $debutListe = strpos((string) $liste['corps'], 'id="photos-ajoutees"');
+    $sectionListe = $debutListe === false ? '' : substr((string) $liste['corps'], $debutListe);
     verifier(
         'retrait album : la photo retirée quitte la liste de la page',
-        !str_contains($liste['corps'], 'La plage de 1965'),
+        $sectionListe !== '' && !str_contains($sectionListe, 'La plage de 1965'),
         (string) $liste['code']
+    );
+}
+
+/**
+ * 7. Verser dans l'album des documents déjà présents (1.30.0).
+ *
+ * Ce qui est vérifié : la section et ses filtres, l'ajout multiple dans l'ordre
+ * de la sélection, en fin de liste ; les doublons et les identifiants inconnus
+ * ignorés sans erreur ; la visibilité des documents conservée (un document
+ * privé reste invisible pour un lecteur, même dans un album famille) ;
+ * l'avertissement après l'ajout et l'action séparée qui donne la visibilité de
+ * l'album ; les droits et le jeton CSRF.
+ */
+function tests_album_document(string $titre, string $visibilite = 'public', string $kind = 'photo'): int
+{
+    return db_insert('documents', [
+        'title'         => $titre,
+        'description'   => null,
+        'doc_date'      => null,
+        'doc_date_sort' => null,
+        'category_id'   => null,
+        'kind'          => $kind,
+        'visibility'    => $visibilite,
+        'rel_path'      => 'medias/2026/11/essai-' . bin2hex(random_bytes(4)) . '.jpg',
+        'thumb_path'    => null,
+        'original_name' => 'essai.jpg',
+        'mime'          => 'image/jpeg',
+        'ext'           => 'jpg',
+        'size'          => 100,
+        'width'         => null,
+        'height'        => null,
+        'sha256'        => str_repeat('e', 64),
+        'is_attachment' => 0,
+        'created_by'    => null,
+        'created_at'    => time(),
+        'updated_at'    => time(),
+    ]);
+}
+
+/** 7. Documents déjà présents : la page, l'ajout, la visibilité, les droits. */
+function tests_album_documents_existants(int $admin, int $autre, int $lecteur, int $journaliste): void
+{
+    $album = tests_album_creer('Album documents existants', 'famille');
+    $id    = (int) ($album['id'] ?? 0);
+    $slug  = (string) ($album['slug'] ?? '');
+
+    // Trois documents d'essai : deux publics, un privé.
+    $public1 = tests_album_document('Déjà là 1 ' . bin2hex(random_bytes(2)), 'public');
+    $public2 = tests_album_document('Déjà là 2 ' . bin2hex(random_bytes(2)), 'public');
+    $prive   = tests_album_document('Restée privée ' . bin2hex(random_bytes(2)), 'prive');
+
+    // Un document déjà dans l'album, pour l'ordre et les doublons.
+    $dedans = tests_album_document('Déjà dans l’album ' . bin2hex(random_bytes(2)), 'public');
+    album_ajouter_documents($id, [$dedans]);
+
+    // --- 1. La page : section, filtres, grille, badges -----------------------
+    $page = tests_envoi_requete('GET', '/admin/albums/' . $id . '/photos', $admin);
+    verifier(
+        'documents existants : la section « Ajouter depuis les documents du site » est là',
+        $page['code'] === 200
+            && str_contains($page['corps'], 'Ajouter depuis les documents du site')
+            && str_contains($page['corps'], 'id="ajouter-documents"'),
+        (string) $page['code']
+    );
+    verifier(
+        'documents existants : une grille de vignettes à cocher',
+        str_contains($page['corps'], 'class="grille-selection"')
+            && str_contains($page['corps'], 'name="documents[]"')
+            && str_contains($page['corps'], 'class="choix-document__case"')
+    );
+    verifier(
+        'documents existants : chaque élément porte un badge de visibilité',
+        str_contains($page['corps'], 'badge badge-public')
+            && str_contains($page['corps'], 'badge badge-prive')
+    );
+    verifier(
+        'documents existants : les filtres sont un formulaire GET, sans JavaScript',
+        str_contains($page['corps'], '<form method="get" action="/admin/albums/' . $id . '/photos"')
+            && str_contains($page['corps'], 'name="filtres"') === false
+            && str_contains($page['corps'], 'id="f-pas-album"')
+            && str_contains($page['corps'], 'name="visibilite"')
+            && str_contains($page['corps'], 'name="categorie"')
+    );
+    verifier(
+        'documents existants : « pas encore dans cet album » est coché par défaut',
+        preg_match('/id="f-pas-album" name="pas_album" value="1"\s+checked/', $page['corps']) === 1,
+        'case non cochée par défaut'
+    );
+    verifier(
+        'documents existants : aucun style ni script en ligne',
+        !str_contains($page['corps'], ' style=') && !str_contains($page['corps'], '<script>')
+    );
+
+    // Décochée, la case montre aussi ceux qui sont déjà dans l'album.
+    $tous = tests_envoi_requete('GET', '/admin/albums/' . $id . '/photos?type=&pas_album=0', $admin);
+    verifier(
+        'documents existants : la case décochée montre aussi les documents déjà dans l’album',
+        str_contains($tous['corps'], 'Déjà dans l’album')
+            && str_contains($tous['corps'], 'class="choix-document choix-document--dedans"'),
+        'aucun élément marqué « déjà dans l’album »'
+    );
+    verifier(
+        'documents existants : un document déjà dans l’album n’est pas cochable',
+        preg_match('/<input type="checkbox" disabled>/', $tous['corps']) === 1,
+        'la case reste active'
+    );
+
+    // Recherche et filtre de visibilité.
+    $recherche = tests_envoi_requete('GET', '/admin/albums/' . $id . '/photos?q=Rest%C3%A9e', $admin);
+    verifier(
+        'documents existants : la recherche par titre filtre la grille',
+        str_contains($recherche['corps'], 'Restée privée')
+            && !str_contains($recherche['corps'], 'Déjà là 1'),
+        'la recherche ne filtre pas'
+    );
+
+    // --- 2. Un seul clic = un seul ajout, dans l'ordre de la sélection ------
+    $_SESSION = ['account_id' => $admin];
+    $jeton = csrf_token();
+    $ajout = tests_envoi_requete('POST', '/admin/albums/' . $id . '/photos/ajouter', $admin, [
+        '_csrf'      => $jeton,
+        'documents'  => [(string) $public1, (string) $public2, (string) $prive],
+    ]);
+    $ordre = array_map(
+        static fn (array $ligne): int => (int) $ligne['document_id'],
+        db_all('SELECT document_id FROM album_documents WHERE album_id = ? ORDER BY position', [$id])
+    );
+    verifier(
+        'documents existants : trois documents ajoutés en fin de liste, dans l’ordre de la sélection',
+        $ordre === [$dedans, $public1, $public2, $prive],
+        implode(',', $ordre)
+    );
+    verifier(
+        'documents existants : l’ajout renvoie vers la page, avec les identifiants ajoutés',
+        $ajout['code'] === 303
+            && str_contains((string) $ajout['location'], '/admin/albums/' . $id . '/photos?ajoutes=')
+            && str_contains((string) $ajout['location'], '#ajouter-documents'),
+        (string) $ajout['location']
+    );
+    verifier(
+        'documents existants : les documents ajoutés gardent leur visibilité',
+        (string) db_value('SELECT visibility FROM documents WHERE id = ?', [$prive], '') === 'prive'
+            && (string) db_value('SELECT visibility FROM documents WHERE id = ?', [$public1], '') === 'public'
+    );
+
+    // --- 3. Doublons et identifiants inconnus : ignorés, sans erreur --------
+    $avant = count(album_photo_ids($id));
+    $_SESSION = ['account_id' => $admin];
+    $jeton = csrf_token();
+    $doublon = tests_envoi_requete('POST', '/admin/albums/' . $id . '/photos/ajouter', $admin, [
+        '_csrf'     => $jeton,
+        'documents' => [(string) $public1, (string) $prive, '999999'],
+    ]);
+    verifier(
+        'documents existants : les doublons et un identifiant inconnu sont ignorés sans erreur',
+        $doublon['code'] === 303 && count(album_photo_ids($id)) === $avant,
+        $doublon['code'] . ' — ' . count(album_photo_ids($id)) . ' photo(s)'
+    );
+    $contenu = implode(' ', array_column($_SESSION['_flash'] ?? [], 'message'));
+    verifier(
+        'documents existants : le message dit que rien n’a été ajouté',
+        str_contains($contenu, 'Aucun document n’a été ajouté') || str_contains($contenu, 'déjà dans l’album'),
+        $contenu
+    );
+    unset($_SESSION['_flash']);
+
+    // --- 4. La visibilité conservée se voit dans l'album -------------------
+    $pageLecteur = tests_envoi_requete('GET', '/albums/' . $slug, $lecteur);
+    verifier(
+        'documents existants : un lecteur voit les documents publics ajoutés à l’album',
+        $pageLecteur['code'] === 200 && str_contains($pageLecteur['corps'], 'Déjà là 1'),
+        (string) $pageLecteur['code']
+    );
+    verifier(
+        'documents existants : un document privé ajouté à un album famille reste invisible au lecteur',
+        !str_contains($pageLecteur['corps'], 'Restée privée'),
+        'le document privé apparaît dans l’album pour un lecteur'
+    );
+
+    // --- 5. L'avertissement après l'ajout, et l'action séparée -------------
+    $apres = tests_envoi_requete(
+        'GET',
+        '/admin/albums/' . $id . '/photos?ajoutes=' . $prive . '&type=',
+        $admin
+    );
+    verifier(
+        'documents existants : après l’ajout, la page dit clairement que la photo reste privée',
+        str_contains($apres['corps'], '1 photo reste privée : la famille ne la verra pas dans l’album'),
+        'avertissement absent'
+    );
+    verifier(
+        'documents existants : l’avertissement propose « Leur donner la visibilité de l’album »',
+        str_contains($apres['corps'], 'Leur donner la visibilité de l’album')
+            && str_contains($apres['corps'], '/admin/albums/' . $id . '/photos/visibilite')
+            && str_contains($apres['corps'], 'data-confirmation=')
+    );
+    verifier(
+        'documents existants : rien n’est changé automatiquement par l’ajout',
+        (string) db_value('SELECT visibility FROM documents WHERE id = ?', [$prive], '') === 'prive'
+    );
+
+    // Action séparée : sans jeton, refusée.
+    $sansJeton = tests_envoi_requete('POST', '/admin/albums/' . $id . '/photos/visibilite', $admin, [
+        'documents' => [(string) $prive],
+    ]);
+    verifier(
+        'documents existants : sans jeton CSRF, la visibilité ne change pas (403)',
+        $sansJeton['code'] === 403
+            && (string) db_value('SELECT visibility FROM documents WHERE id = ?', [$prive], '') === 'prive',
+        (string) $sansJeton['code']
+    );
+
+    $_SESSION = ['account_id' => $admin];
+    $jeton = csrf_token();
+    $donne = tests_envoi_requete('POST', '/admin/albums/' . $id . '/photos/visibilite', $admin, [
+        '_csrf'     => $jeton,
+        'documents' => [(string) $prive],
+    ]);
+    verifier(
+        'documents existants : l’action donne la visibilité de l’album au document choisi',
+        $donne['code'] === 303
+            && (string) db_value('SELECT visibility FROM documents WHERE id = ?', [$prive], '') === 'famille',
+        (string) db_value('SELECT visibility FROM documents WHERE id = ?', [$prive], '?')
+    );
+    unset($_SESSION['_flash']);
+
+    $pageLecteur2 = tests_envoi_requete('GET', '/albums/' . $slug, $lecteur);
+    verifier(
+        'documents existants : le lecteur voit le document une fois la visibilité donnée',
+        str_contains($pageLecteur2['corps'], 'Restée privée'),
+        'le document reste invisible pour le lecteur'
+    );
+
+    // --- 6. « Tout ajouter sur cette page » (sans JavaScript) --------------
+    $album2 = tests_album_creer('Album tout ajouter', 'public');
+    $id2    = (int) ($album2['id'] ?? 0);
+    $_SESSION = ['account_id' => $admin];
+    $jeton = csrf_token();
+    $tout = tests_envoi_requete('POST', '/admin/albums/' . $id2 . '/photos/ajouter?type=', $admin, [
+        '_csrf' => $jeton,
+        'tout'  => '1',
+    ]);
+    $nbAlbum2 = count(album_photo_ids($id2));
+    verifier(
+        'documents existants : « Tout ajouter sur cette page » range tous les documents affichés',
+        $tout['code'] === 303 && $nbAlbum2 > 0,
+        $tout['code'] . ' — ' . $nbAlbum2 . ' document(s)'
+    );
+    unset($_SESSION['_flash']);
+
+    // --- 7. Droits --------------------------------------------------------
+    $_SESSION = ['account_id' => $lecteur];
+    $jetonLecteur = csrf_token();
+    $refusLecteur = tests_envoi_requete('POST', '/admin/albums/' . $id . '/photos/ajouter', $lecteur, [
+        '_csrf' => $jetonLecteur, 'documents' => [(string) $public1],
+    ]);
+    verifier(
+        'documents existants : un lecteur ne peut pas ajouter (403)',
+        $refusLecteur['code'] === 403,
+        (string) $refusLecteur['code']
+    );
+
+    $_SESSION = ['account_id' => $journaliste];
+    $jetonJournaliste = csrf_token();
+    $refusJournaliste = tests_envoi_requete('POST', '/admin/albums/' . $id . '/photos/ajouter', $journaliste, [
+        '_csrf' => $jetonJournaliste, 'documents' => [(string) $public1],
+    ]);
+    verifier(
+        'documents existants : un journaliste ne peut pas ajouter (403)',
+        $refusJournaliste['code'] === 403,
+        (string) $refusJournaliste['code']
+    );
+
+    $refusVisiteur = tests_envoi_requete('POST', '/admin/albums/' . $id . '/photos/ajouter', null, [
+        'documents' => [(string) $public1],
+    ]);
+    verifier(
+        'documents existants : un visiteur est renvoyé vers la connexion',
+        $refusVisiteur['code'] === 303 && str_contains((string) $refusVisiteur['location'], '/connexion'),
+        $refusVisiteur['code'] . ' ' . (string) $refusVisiteur['location']
+    );
+
+    verifier(
+        'documents existants : un autre administrateur a les mêmes droits',
+        tests_envoi_requete('GET', '/admin/albums/' . $id . '/photos', $autre)['code'] === 200
     );
 }
 

@@ -5968,3 +5968,92 @@ legend {
         text-align: left;
     }
 }
+
+/* ==========================================================================
+   1.30.0 — verser dans un album des documents déjà présents
+   Grille de vignettes à cocher, sous le bloc d'envoi de la page
+   « Ajouter des photos ». Les cases déjà dans l'album restent visibles, mais
+   grisées et non cochables.
+   ========================================================================== */
+.grille-selection {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+    gap: 0.8rem;
+    padding: 0;
+    margin: 0.6rem 0 1rem;
+    list-style: none;
+}
+
+.choix-document__case {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    height: 100%;
+    padding: 0.5rem;
+    border: var(--filet);
+    background: var(--surface);
+    font-size: 0.8rem;
+    line-height: 1.3;
+    cursor: pointer;
+}
+
+.choix-document__case input[type="checkbox"] {
+    margin: 0 0 0.1rem;
+}
+
+.choix-document__vignette {
+    display: block;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    background: var(--papier-moyen);
+}
+
+.choix-document__vignette img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.choix-document__vide {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--texte-doux);
+}
+
+.choix-document__titre {
+    font-weight: 700;
+}
+
+.choix-document__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.2rem 0.6rem;
+    align-items: baseline;
+}
+
+.choix-document--dedans {
+    opacity: 0.62;
+}
+
+.choix-document--dedans .choix-document__case {
+    cursor: default;
+    background: transparent;
+}
+
+/* Case à cocher d'un formulaire de filtres (« Pas encore dans cet album »). */
+.champ--case label {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin-bottom: 0;
+}
+
+.champ--case input[type="checkbox"] {
+    margin: 0;
+}

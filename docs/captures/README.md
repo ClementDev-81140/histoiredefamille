@@ -115,3 +115,25 @@ serveur. Aucune donnée réelle : tout le contenu est marqué « (démo) ».
 Les trois outils sont dans `tools/navigateur/`, qui explique la marche à suivre :
 `rendre.php` (la page par le routeur), `inline-medias.php` (les images en
 `data:`), `serveur.mjs` (le petit serveur) et `capture.mjs` (la photo).
+
+### 1.30.0 — verser dans un album des documents déjà présents
+
+La page **Ajouter des photos** d'un album gagne, sous le bloc d'envoi, une
+grille de vignettes à cocher et l'avertissement qui suit l'ajout d'un document
+resté plus fermé que l'album. Les captures montrent la page d'administration
+(1280) puis la même en 390, dans les deux palettes.
+
+| Fichier | Ce que l'on y voit |
+|---|---|
+| `ordinateur-album-ajouter-documents.png` / `mobile-album-ajouter-documents.png` | la grille « Ajouter depuis les documents du site » : filtres GET, quatre vignettes avec titre, date, type et badge de visibilité, deux boutons d'ajout |
+| `ordinateur-album-visibilite-a-corriger.png` / `mobile-album-visibilite-a-corriger.png` | après l'ajout : « 1 photo reste privée : la famille ne la verra pas dans l'album. » et le bouton séparé « Leur donner la visibilité de l'album » |
+| `ordinateur-album-apres-ajout.png` / `mobile-album-apres-ajout.png` | l'album public vu par l'administrateur : les documents ajoutés sont là, y compris la photo restée privée |
+| les mêmes en `-bleu` | palette **bleu d'origine** |
+
+Elles sont engendrées par `tools/navigateur/actions-album-documents.mjs`, qui
+coche deux documents, les ajoute, rouvre l'album, vérifie qu'un lecteur ne voit
+pas la photo privée, puis déclenche l'action de visibilité — **22 vérifications**
+par largeur et par palette. La base de démonstration doit contenir un album
+« Album banc 1.30 » (visibilité famille) avec une photo privée et une photo
+publique, plus un lecteur ; ces lignes d'essai ne servent qu'aux captures, le
+site lui-même n'en dépend pas.

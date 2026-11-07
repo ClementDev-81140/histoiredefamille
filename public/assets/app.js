@@ -11,6 +11,8 @@
  * 8. Apparence du journal : aperçu vivant et contrastes calculés pendant la
  *    saisie (les couleurs de l'aperçu passent par l'API CSSOM, jamais par un
  *    attribut style ni un <style> en ligne : la CSP reste « style-src 'self' »).
+ * 9. « Tout cocher » dans une liste à cases (1.30.0). Confort seulement : la
+ *    même page propose un bouton qui fait le travail sans JavaScript.
  */
 (function () {
     'use strict';
@@ -975,4 +977,27 @@
         majTextes();
         appliquerCouleurs();
     })();
+
+    // ---------------------------------------------------------------------
+    // 9. « Tout cocher » une liste à cases
+    // ---------------------------------------------------------------------
+    document.querySelectorAll('[data-tout-cocher]').forEach(function (bouton) {
+        var cible = document.getElementById(bouton.getAttribute('data-tout-cocher'));
+        if (!cible) {
+            return;
+        }
+        bouton.addEventListener('click', function () {
+            var cases = cible.querySelectorAll('input[type="checkbox"][name="documents[]"]');
+            var toutCoche = true;
+            cases.forEach(function (caseACocher) {
+                if (!caseACocher.checked) {
+                    toutCoche = false;
+                }
+            });
+            cases.forEach(function (caseACocher) {
+                caseACocher.checked = !toutCoche;
+            });
+            bouton.textContent = toutCoche ? 'Tout cocher sur cette page' : 'Tout décocher';
+        });
+    });
 })();

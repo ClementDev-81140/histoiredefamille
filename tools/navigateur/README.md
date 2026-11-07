@@ -108,6 +108,54 @@ ALBUM_ID=7 SKU_ADMIN=album-admin-banc SKU_VISITEUR=album-visiteur-banc \
 # dans Administration → Apparence).
 ```
 
+### Verser dans un album des documents déjà présents (1.30.0)
+
+Cinq rendus suffisent. Il faut un album d'essai (visibilité **famille**, ici
+l'album 2, slug `album-banc-130`) qui contient déjà une photo, plus **une photo
+privée et une photo publique** présentes dans « Documents & photos » mais pas
+encore dans l'album. Le rendu de la page `?ajoutes=` doit être fait **avant**
+de donner la visibilité de l'album, et celui du lecteur après — c'est ce que
+montrent les deux captures.
+
+```bash
+# 1. Les pages, par le routeur réel (compte 7 = administrateur, 4 = lecteur).
+HDF_CONFIG=/chemin/config.local.php php tools/navigateur/rendre.php \
+    /admin/albums/2/photos /tmp/photos.html 7
+HDF_CONFIG=/chemin/config.local.php php tools/navigateur/rendre.php \
+    '/admin/albums/2/photos?ajoutes=11,12' /tmp/photos-apres.html 7
+HDF_CONFIG=/chemin/config.local.php php tools/navigateur/rendre.php \
+    /albums/album-banc-130 /tmp/album-admin.html 7
+HDF_CONFIG=/chemin/config.local.php php tools/navigateur/rendre.php \
+    /albums/album-banc-130 /tmp/album-lecteur.html 4
+# les images de chaque page en `data:` (inline-medias.php), puis, la photo
+# privée passée en visibilité « famille » dans la base d'essai :
+HDF_CONFIG=/chemin/config.local.php php tools/navigateur/rendre.php \
+    /albums/album-banc-130 /tmp/album-lecteur-apres.html 4
+
+# 2. Le serveur d'essai : les deux vues du lecteur sont servies sous des
+#    adresses à nous (`/lecteur`, `/lecteur-apres`).
+PAGES_ALBUM='{"/admin/albums/2/photos":"/tmp/photos-inline.html",
+  "/admin/albums/2/photos/apres":"/tmp/photos-apres-inline.html",
+  "/albums/album-banc-130":"/tmp/album-admin-inline.html",
+  "/albums/album-banc-130/lecteur":"/tmp/album-lecteur-inline.html",
+  "/albums/album-banc-130/lecteur-apres":"/tmp/album-lecteur-apres-inline.html"}' \
+THEME_CSS=/tmp/theme-papier.css CAPTURES=/tmp \
+    node tools/navigateur/serveur.mjs
+
+# 3. Le contrôle : 22 vérifications par largeur et par palette.
+ALBUM_ID=2 SKU_ALBUM=album-banc-130 CAPTURES=/tmp \
+CAPTURE_PHOTOS=/tmp/photos.png CAPTURE_ALBUM=/tmp/album.png \
+CAPTURE_AVERTISSEMENT=/tmp/avert.png \
+    node tools/navigateur/actions-album-documents.mjs 1280
+# puis 390, puis la palette bleu (THEME_CSS=/tmp/theme-bleu.css, avec les pages
+# rendues après avoir choisi « bleu » dans Administration → Apparence : sans ce
+# réglage, la page ne demande pas /theme.css du tout).
+```
+
+Les deux formulaires sont notés par le banc dans `capture-album-ajouter.txt` et
+`capture-album-visibilite.txt` : le script vérifie le **navigateur** (cases
+cochées, boutons, corps posté, dialogue de confirmation), pas la base.
+
 ### Les adresses affichées, et les écrans de courriel masqués (1.28.0)
 
 Quatre pages suffisent : l'accueil public, la connexion, « Mon compte » (compte

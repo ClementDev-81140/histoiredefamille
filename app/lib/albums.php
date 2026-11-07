@@ -216,6 +216,313 @@ function albums_of_document(int $documentId): array
 }
 
 // ---------------------------------------------------------------------------
+// Verser dans un album des documents déjà présents sur le site (1.30.0)
+// ---------------------------------------------------------------------------
+
+/**
+ * Filtres de la liste « Ajouter depuis les documents du site ».
+ *
+ * Rien n'est deviné : un type ou une visibilité inconnus retombent sur la
+ * valeur sûre, et une catégorie qui n'existe pas est ignorée. La case « pas
+ * encore dans cet album » est cochée par défaut — l'absence du paramètre veut
+ * dire « coché », et le formulaire envoie `pas_album=0` quand on la décoche.
+ *
+ * @return array{q:string, type:string, visibilite:string, categorie:int, pas_album:bool, page:int}
+ */
+function album_documents_filtres(): array
+{
+    // Par défaut, les photos ; « Tous les documents » est un choix explicite.
+    $type = isset($_GET['type']) ? query('type') : 'photo';
+    if ($type !== '' && $type !== 'photo') {
+        $type = 'photo';
+    }
+
+    $visibilite = query('visibilite');
+    if (!array_key_exists($visibilite, visibility_levels())) {
+        $visibilite = '';
+    }
+
+    $categorie = query_int('categorie', 0);
+    if ($categorie > 0 && find_category($categorie) === null) {
+        $categorie = 0;
+    }
+
+    $pasAlbum = !isset($_GET['pas_album']) || query('pas_album') !== '0';
+
+    return [
+        'q'          => mb_substr(query('q'), 0, 100, 'UTF-8'),
+        'type'       => $type,
+        'visibilite' => $visibilite,
+        'categorie'  => $categorie,
+        'pas_album'  => $pasAlbum,
+        'page'       => max(1, query_int('page', 1)),
+    ];
+}
+
+/**
+ * Documents que l'on peut verser dans un album : les photos d'abord, puis les
+ * autres documents, du plus récent au plus ancien.
+ *
+ * Aucune règle de droits ici : la page est celle de l'administration, qui voit
+ * tout. Ce sont les documents eux-mêmes qui gardent leur visibilité — verser
+ * dans un album ne la change pas.
+ *
+ * @return array{documents:list<array>, total:int, pagination:array, dansAlbum:list<int>}
+ */
+function album_documents_candidats(int $albumId, array $filtres): array
+{
+    $params = [];
+    $where  = ['d.is_attachment = 0'];
+
+    if (($filtres['type'] ?? '') === 'photo') {
+        $where[] = "d.kind = 'photo'";
+    }
+
+    if (($filtres['visibilite'] ?? '') !== '') {
+        $where[] = 'd.visibility = :vis';
+        $params[':vis'] = (string) $filtres['visibilite'];
+    }
+
+    if ((int) ($filtres['categorie'] ?? 0) > 0) {
+        $where[] = 'd.category_id = :categorie';
+        $params[':categorie'] = (int) $filtres['categorie'];
+    }
+
+    if (($filtres['q'] ?? '') !== '') {
+        $where[] = "(d.title LIKE :q OR d.description LIKE :q OR d.original_name LIKE :q
+                     OR EXISTS (SELECT 1 FROM document_tags dt
+                                JOIN tags t ON t.id = dt.tag_id
+                                WHERE dt.document_id = d.id AND t.name LIKE :q))";
+        $params[':q'] = '%' . (string) $filtres['q'] . '%';
+    }
+
+    if (!empty($filtres['pas_album'])) {
+        $where[] = 'NOT EXISTS (SELECT 1 FROM album_documents ad
+                                 WHERE ad.album_id = :album AND ad.document_id = d.id)';
+        $params[':album'] = $albumId;
+    }
+
+    $whereSql = implode(' AND ', $where);
+
+    $total = (int) db_value("SELECT COUNT(*) FROM documents d WHERE {$whereSql}", $params, 0);
+    $pg    = pagination($total, 24, (int) ($filtres['page'] ?? 1));
+
+    $documents = db_all(
+        "SELECT d.id, d.title, d.kind, d.ext, d.visibility, d.doc_date, d.created_at,
+                d.thumb_path, c.name AS category_name
+         FROM documents d
+         LEFT JOIN categories c ON c.id = d.category_id
+         WHERE {$whereSql}
+         ORDER BY (d.kind = 'photo') DESC, d.created_at DESC, d.id DESC
+         LIMIT {$pg['perPage']} OFFSET {$pg['offset']}",
+        $params
+    );
+
+    return [
+        'documents'  => $documents,
+        'total'      => $total,
+        'pagination' => $pg,
+        'dansAlbum'  => album_photo_ids($albumId),
+    ];
+}
+
+/**
+ * Ajoute des documents à la fin d'un album, dans l'ordre reçu.
+ *
+ * Chaque identifiant est vérifié côté serveur : il doit désigner un document
+ * qui existe et qui n'est pas une pièce jointe de fiche. Un document déjà dans
+ * l'album est ignoré sans erreur (et compte dans `ignores`), de même qu'un
+ * identifiant inconnu. Rien d'autre ne vient du navigateur.
+ *
+ * @return array{ajoutes:list<int>, ignores:list<int>}
+ */
+function album_ajouter_documents(int $albumId, array $documentIds): array
+{
+    $ajoutes = [];
+    $ignores = [];
+
+    if ($albumId <= 0) {
+        return ['ajoutes' => [], 'ignores' => array_map('intval', (array) $documentIds)];
+    }
+
+    $deja = album_photo_ids($albumId);
+
+    foreach ((array) $documentIds as $valeur) {
+        $documentId = (int) $valeur;
+        if ($documentId <= 0) {
+            continue;
+        }
+        if (in_array($documentId, $deja, true)) {
+            $ignores[] = $documentId;
+            continue;
+        }
+        if (db_one('SELECT id FROM documents WHERE id = ? AND is_attachment = 0', [$documentId]) === null) {
+            $ignores[] = $documentId;
+            continue;
+        }
+
+        // MAX(position) + 1 : la sélection arrive après ce qui est déjà là,
+        // dans l'ordre où elle a été cochée.
+        album_ajouter_photo($albumId, $documentId);
+        $deja[]    = $documentId;
+        $ajoutes[] = $documentId;
+    }
+
+    if ($ajoutes !== []) {
+        db_update('albums', $albumId, ['updated_at' => time()]);
+    }
+
+    return ['ajoutes' => $ajoutes, 'ignores' => $ignores];
+}
+
+/** Rang de visibilité : 0 = le plus ouvert (public), 3 = le plus fermé. */
+function album_visibilite_rang(?string $niveau): int
+{
+    return ['public' => 0, 'famille' => 1, 'branches' => 2, 'prive' => 3][$niveau ?? ''] ?? 3;
+}
+
+/**
+ * Ce document est-il moins visible que cet album ?
+ *
+ * Vrai quand le document est plus fermé que l'album : la personne qui voit
+ * l'album ne verra pas ce document dedans. Deux fois « branches » demandent
+ * une comparaison des branches : si l'album couvre une branche que le document
+ * ne couvre pas, une partie de la famille ne verra pas la photo.
+ */
+function document_moins_visible_que_album(array $document, array $album): bool
+{
+    $rangDocument = album_visibilite_rang((string) ($document['visibility'] ?? 'prive'));
+    $rangAlbum    = album_visibilite_rang((string) ($album['visibility'] ?? 'prive'));
+
+    if ($rangDocument !== $rangAlbum) {
+        return $rangDocument > $rangAlbum;
+    }
+
+    if ($rangDocument === 2) {
+        $branchesAlbum    = content_branch_ids('album', (int) ($album['id'] ?? 0));
+        $branchesDocument = content_branch_ids('document', (int) ($document['id'] ?? 0));
+        return array_diff($branchesAlbum, $branchesDocument) !== [];
+    }
+
+    return false;
+}
+
+/**
+ * Documents d'un album qui restent moins visibles que lui.
+ *
+ * @return list<array>
+ */
+function album_documents_moins_visibles(int $albumId): array
+{
+    $album = find_album($albumId);
+    if ($album === null) {
+        return [];
+    }
+
+    $documents = db_all(
+        "SELECT d.id, d.title, d.kind, d.visibility, d.thumb_path, d.doc_date
+         FROM album_documents ad
+         JOIN documents d ON d.id = ad.document_id
+         WHERE ad.album_id = ?
+         ORDER BY ad.position, d.id",
+        [$albumId]
+    );
+
+    return array_values(array_filter(
+        $documents,
+        static fn (array $document): bool => document_moins_visible_que_album($document, $album)
+    ));
+}
+
+/**
+ * Donne à des documents de cet album la visibilité de l'album.
+ *
+ * Action séparée, jamais automatique : c'est l'administrateur qui décide.
+ * Les identifiants sont vérifiés (le document doit être dans CET album).
+ *
+ * @return int nombre de documents effectivement modifiés
+ */
+function album_documents_donner_visibilite(int $albumId, array $documentIds): int
+{
+    $album = find_album($albumId);
+    if ($album === null) {
+        return 0;
+    }
+
+    $dansAlbum = album_photo_ids($albumId);
+    $visibilite = (string) $album['visibility'];
+    $branches   = $visibilite === 'branches' ? content_branch_ids('album', $albumId) : [];
+    $modifies   = 0;
+
+    foreach ((array) $documentIds as $valeur) {
+        $documentId = (int) $valeur;
+        if ($documentId <= 0 || !in_array($documentId, $dansAlbum, true)) {
+            continue;
+        }
+        if (db_one('SELECT id FROM documents WHERE id = ?', [$documentId]) === null) {
+            continue;
+        }
+
+        db_update('documents', $documentId, [
+            'visibility' => $visibilite,
+            'updated_at' => time(),
+        ]);
+        if ($branches !== []) {
+            set_content_branches('document', $documentId, $branches);
+        }
+        $modifies++;
+    }
+
+    return $modifies;
+}
+
+/**
+ * Phrase d'avertissement après un ajout : « 2 photos restent privées : la
+ * famille ne les verra pas dans l'album. »
+ *
+ * @param list<array> $documents documents restés moins visibles que l'album
+ */
+function album_message_moins_visibles(array $documents, array $album): string
+{
+    $n = count($documents);
+    if ($n === 0) {
+        return '';
+    }
+
+    $photos = true;
+    foreach ($documents as $document) {
+        if ((string) ($document['kind'] ?? '') !== 'photo') {
+            $photos = false;
+        }
+    }
+
+    $sujet = $photos
+        ? $n . ' photo' . ($n > 1 ? 's' : '')
+        : $n . ' document' . ($n > 1 ? 's' : '');
+    $verbe = $n > 1 ? 'restent' : 'reste';
+
+    $tousPrives = true;
+    foreach ($documents as $document) {
+        if ((string) ($document['visibility'] ?? '') !== 'prive') {
+            $tousPrives = false;
+        }
+    }
+
+    if ($tousPrives) {
+        $adjectif = $photos ? ($n > 1 ? 'privées' : 'privée') : ($n > 1 ? 'privés' : 'privé');
+        $pronom   = $n > 1 ? 'les' : ($photos ? 'la' : 'le');
+        return $sujet . ' ' . $verbe . ' ' . $adjectif
+            . ' : la famille ne ' . $pronom . ' verra pas dans l’album.';
+    }
+
+    $niveau = visibility_label((string) ($album['visibility'] ?? 'prive'));
+    $pronom = $n > 1 ? 'les' : 'le';
+    return $sujet . ' ' . $verbe . ' moins visible' . ($n > 1 ? 's' : '')
+        . ' que l’album (' . $niveau . ') : une partie de la famille ne ' . $pronom
+        . ' verra pas dans l’album.';
+}
+
+// ---------------------------------------------------------------------------
 // Personnes identifiées sur un document
 // ---------------------------------------------------------------------------
 

@@ -109,6 +109,12 @@ $couverture = (int) $v('couverture', (int) ($album['cover_document_id'] ?? 0));
             <p class="aide">
                 Cochez les photos à ranger dans cet album (les 200 plus récentes
                 sont proposées). L’ordre suit l’ordre d’affichage de cette liste.
+                <?php if ($isEdit): ?>
+                    Pour chercher parmi <strong>tous</strong> les documents du site (photos et
+                    autres), avec des filtres et une pagination :
+                    <a href="/admin/albums/<?= (int) $album['id'] ?>/photos#ajouter-documents">choisir
+                    dans les documents du site</a>.
+                <?php endif; ?>
             </p>
             <ul class="choix-photos">
                 <?php foreach ($photos as $photo): ?>

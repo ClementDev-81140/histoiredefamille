@@ -3,6 +3,33 @@
 Ce fichier liste ce qui reste à faire, classé par priorité. Il n'y a pas de
 suivi automatique : cochez au fur et à mesure.
 
+## Fait (2026-11-07, 1.30.0 — verser dans un album ce qui est déjà sur le site)
+
+- [x] **Section « Ajouter depuis les documents du site »** sous le bloc d'envoi :
+  grille de vignettes à cocher (photos d'abord), titre, date, type, badge de
+  visibilité, 24 par page.
+- [x] **Filtres en GET** (recherche titre ou étiquette, type, visibilité,
+  catégorie) et case « pas encore dans cet album » cochée par défaut ; les
+  documents déjà dans l'album sont marqués et **non cochables**.
+- [x] **Ajout en fin de liste** (`MAX(position) + 1`), dans l'ordre de la
+  sélection ; doublon ou identifiant inconnu **ignorés sans erreur** (jamais
+  deux fois le même document dans `album_documents`).
+- [x] **« Tout cocher » (JavaScript) et « Tout ajouter sur cette page » (sans
+  JavaScript)** pour ne pas perdre la sélection d'une page à l'autre.
+- [x] **La visibilité ne change jamais** : message après l'ajout (« 1 photo
+  reste privée : la famille ne la verra pas dans l'album. ») et action
+  **séparée et confirmée** « Leur donner la visibilité de l'album ».
+- [x] **Administrateur seulement** (lecteur et journaliste 403, visiteur →
+  connexion), **CSRF**, aucun chemin ni valeur du navigateur hormis les
+  identifiants, vérifiés côté serveur.
+- [x] **Aucun droit nouveau**, aucune classe renommée, aucun style ni script en
+  ligne, aucune migration ; « Retirer de l'album » est conservé.
+- [x] **Essais** : suite complète **1 268 essais, 0 échec** (dont 27 pour cette
+  version, famille « Albums ») ; navigateur **22/22** à 1280 et 390 px, palette
+  papier et bleu ; captures `docs/captures/*album-ajouter-documents*`,
+  `*album-visibilite-a-corriger*`, `*album-apres-ajout*` ; matrice régénérée
+  (192 routes, 768 vérifications, 0 anomalie).
+
 ## Fait (2026-11-07, 1.29.0 — la une d'abord)
 
 - [x] **La une dans le premier écran** pour tout compte connecté : titre à
@@ -75,7 +102,7 @@ suivi automatique : cochez au fur et à mesure.
   **OK** — « courriels désactivés volontairement ».
 - [x] **Essais** : famille « contacts » **43/43** ; suite complète **1 200
   essais, 0 échec** ; lint **193 fichiers, 0 erreur** ; matrice regénérée.
-- [x] **Documentation** : CHANGELOG 1.28.0, README § 6.20 et § 14 (bandeau
+- [x] **Documentation** : CHANGELOG 1.28.0, README § 6.21 et § 14 (bandeau
   « désactivés, comment réactiver »), § 15 (gazette sans envoi), TODO,
   `config.example.php`.
 - [x] **Captures de référence refaites** (base de démonstration, images en

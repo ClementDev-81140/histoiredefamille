@@ -239,12 +239,157 @@ function admin_album_photos(array $params = []): void
     // juste après l'envoi (titre, date) et d'où l'on retire une photo.
     $ajoutees = envoi_photos_album((int) $album['id'], (int) current_account()['id']);
 
+    // Documents déjà sur le site, que l'on peut verser dans l'album sans les
+    // renvoyer (1.30.0). Les filtres viennent du formulaire GET ; la liste est
+    // celle de l'administration, mais chaque document garde sa visibilité.
+    $filtres   = album_documents_filtres();
+    $candidats = album_documents_candidats((int) $album['id'], $filtres);
+
+    // Juste après un ajout, la page reçoit les identifiants ajoutés
+    // (`?ajoutes=…`). Ils sont revérifiés : seuls ceux qui sont vraiment dans
+    // cet album comptent, et l'on ne retient que ceux qui restent moins
+    // visibles que lui — c'est le seul cas qui demande une décision.
+    $ajoutesRecents = [];
+    foreach (explode(',', query('ajoutes')) as $valeur) {
+        $id = (int) $valeur;
+        if ($id > 0 && in_array($id, $candidats['dansAlbum'], true)) {
+            $ajoutesRecents[] = $id;
+        }
+    }
+
+    $moinsVisibles = [];
+    if ($ajoutesRecents !== []) {
+        $documents = db_all(
+            "SELECT id, title, kind, visibility, thumb_path, doc_date
+             FROM documents WHERE id IN (" . implode(',', array_fill(0, count($ajoutesRecents), '?')) . ")
+             ORDER BY id",
+            $ajoutesRecents
+        );
+        $moinsVisibles = array_values(array_filter(
+            $documents,
+            static fn (array $document): bool => document_moins_visible_que_album($document, $album)
+        ));
+    }
+
     render('admin/album_photos', [
         'titre'    => 'Ajouter des photos à « ' . $album['title'] . ' »',
         'album'    => $album,
         'ajoutees' => $ajoutees,
         'erreurs'  => form_errors(),
+        'candidats'      => $candidats['documents'],
+        'totalCandidats' => $candidats['total'],
+        'pagination'     => $candidats['pagination'],
+        'dansAlbum'      => $candidats['dansAlbum'],
+        'filtres'        => $filtres,
+        'categories'     => categories_list(),
+        'ajoutesRecents' => $ajoutesRecents,
+        'moinsVisibles'  => $moinsVisibles,
+        'tousMoinsVisibles' => album_documents_moins_visibles((int) $album['id']),
     ], 'layout_admin');
+}
+
+/**
+ * Ajoute à l'album des documents cochés dans la liste (1.30.0).
+ *
+ * Aucun fichier n'est renvoyé : les identifiants désignent des documents qui
+ * existent déjà, et chacun est vérifié côté serveur. Ceux qui sont déjà dans
+ * l'album sont ignorés sans erreur. « Tout ajouter sur cette page » reprend la
+ * liste telle que le serveur l'a calculée, avec les mêmes filtres.
+ */
+function admin_album_photos_ajouter(array $params = []): void
+{
+    require_admin();
+    csrf_check();
+
+    $album = find_album((int) ($params['id'] ?? 0));
+    if ($album === null) {
+        flash('erreur', 'Album introuvable.');
+        redirect('/admin/albums');
+    }
+    $albumId = (int) $album['id'];
+
+    $demandes = array_map('intval', post_array('documents'));
+
+    if (post('tout') === '1') {
+        $filtres              = album_documents_filtres();
+        $filtres['pas_album'] = true;
+        $page                 = album_documents_candidats($albumId, $filtres);
+        foreach ($page['documents'] as $document) {
+            $demandes[] = (int) $document['id'];
+        }
+    }
+
+    $demandes = array_values(array_filter(array_unique($demandes)));
+    if ($demandes === []) {
+        flash('erreur', 'Aucun document n’a été coché.');
+        redirect('/admin/albums/' . $albumId . '/photos');
+    }
+
+    $resultat = album_ajouter_documents($albumId, $demandes);
+
+    if ($resultat['ajoutes'] === []) {
+        flash('erreur', 'Aucun document n’a été ajouté : ' . count($resultat['ignores'])
+            . ' élément(s) étaient déjà dans l’album ou n’existent plus.');
+        redirect('/admin/albums/' . $albumId . '/photos');
+    }
+
+    $n = count($resultat['ajoutes']);
+    $message = $n . ' élément' . ($n > 1 ? 's' : '') . ' ajouté' . ($n > 1 ? 's' : '') . ' à l’album.';
+    if ($resultat['ignores'] !== []) {
+        $message .= ' ' . count($resultat['ignores']) . ' élément(s) déjà dans l’album ont été ignorés.';
+    }
+    $message .= ' Leur visibilité n’a pas changé.';
+
+    log_activity(
+        (int) current_account()['id'],
+        'album_modifie',
+        $album['title'] . ' (' . $n . ' document(s) déjà présents ajoutés)'
+    );
+
+    flash('succes', $message);
+    redirect(
+        '/admin/albums/' . $albumId . '/photos?ajoutes=' . implode(',', $resultat['ajoutes'])
+        . '#ajouter-documents'
+    );
+}
+
+/**
+ * Donne à des documents de l'album la visibilité de l'album (1.30.0).
+ *
+ * Action séparée, confirmée dans le navigateur : elle n'est jamais faite
+ * automatiquement au moment de l'ajout. Les identifiants sont vérifiés (le
+ * document doit être dans cet album).
+ */
+function admin_album_photos_visibilite(array $params = []): void
+{
+    require_admin();
+    csrf_check();
+
+    $album = find_album((int) ($params['id'] ?? 0));
+    if ($album === null) {
+        flash('erreur', 'Album introuvable.');
+        redirect('/admin/albums');
+    }
+    $albumId = (int) $album['id'];
+
+    $documents = array_values(array_filter(array_map('intval', post_array('documents'))));
+    $modifies  = album_documents_donner_visibilite($albumId, $documents);
+
+    if ($modifies === 0) {
+        flash('erreur', 'Aucun document n’a été modifié.');
+        redirect('/admin/albums/' . $albumId . '/photos');
+    }
+
+    log_activity(
+        (int) current_account()['id'],
+        'document_modifie',
+        $modifies . ' document(s) de l’album « ' . $album['title'] . ' » : visibilité de l’album'
+    );
+
+    flash('succes', $modifies . ' document' . ($modifies > 1 ? 's' : '')
+        . ' de cet album ' . ($modifies > 1 ? 'ont' : 'a') . ' maintenant la visibilité de l’album ('
+        . visibility_label((string) $album['visibility']) . ').');
+    redirect('/admin/albums/' . $albumId . '/photos');
 }
 
 /**

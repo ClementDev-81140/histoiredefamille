@@ -3,6 +3,133 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.30.0] — 2026-11-07
+
+### Verser dans un album les photos déjà sur le site
+
+Pour ranger dans un album une photo **déjà envoyée**, il fallait la renvoyer. Le
+site en gardait alors deux fichiers pour la même image, et deux visibilités à
+tenir à jour — celle de l'ancienne fiche et celle de la nouvelle. La page
+**Ajouter des photos** d'un album propose maintenant, sous le bloc d'envoi, une
+grille de vignettes à cocher : le document entre dans l'album **sans être
+renvoyé**, sans copie, et **sans que sa visibilité change**.
+
+#### 1. Une grille sous le bloc d'envoi
+
+La section « **Ajouter depuis les documents du site** » liste les photos déjà
+présentes dans *Documents & photos*, puis les autres documents. Chaque vignette
+porte le **titre**, la **date**, le **type** et le **badge de visibilité** de la
+famille (Privé, Branches, Famille, Public) — ceux des listes de
+l'administration, sans nouvelle couleur ni nouvelle classe de badge.
+
+Les filtres sont un **formulaire GET** ordinaire, donc utilisable sans
+JavaScript :
+
+- **recherche** par titre *ou* par étiquette ;
+- **type** : Photos, ou Tous les documents ;
+- **visibilité** et **catégorie** ;
+- « **Pas encore dans cet album** », **coché au départ**.
+
+Une case décochée montre aussi ce qui est **déjà dans l'album** : ces documents
+sont marqués « Déjà dans l'album » et leur case est **désactivée** — impossible
+de les cocher deux fois. La grille affiche **24 documents par page** (photos
+d'abord, puis les plus récents), avec la pagination habituelle.
+
+#### 2. L'ajout, en fin de liste et une seule fois
+
+Le bouton « **Ajouter la sélection à l'album** » range les documents cochés
+**à la fin de l'album**, **dans l'ordre de la sélection** (`MAX(position) + 1`).
+Un document déjà présent est **ignoré sans erreur** : un clic ne crée jamais de
+doublon dans `album_documents`, et un double clic non plus. Le message de
+confirmation dit combien d'éléments sont entrés, combien ont été ignorés, et
+rappelle que **leur visibilité n'a pas changé**. L'ajout est noté au journal des
+connexions.
+
+Comme la sélection ne survit pas au changement de page, deux boutons la
+remplacent :
+
+- « **Tout ajouter sur cette page** » : un simple bouton `submit`, **sans
+  JavaScript** — le serveur relit la page courante avec les mêmes filtres ;
+- « **Tout cocher sur cette page** » : coche les cases affichées, avec
+  JavaScript, pour ceux qui l'ont.
+
+#### 3. La visibilité ne change jamais toute seule
+
+L'ajout à un album **ne touche pas** à `documents.visibility`. Une photo privée
+versée dans un album « Toutes les familles » **reste privée** : la famille ne la
+voit pas dans l'album, l'administrateur si.
+
+Quand un document ajouté est **moins visible que l'album**, la page le dit
+franchement, juste après l'ajout : « **1 photo reste privée : la famille ne la
+verra pas dans l'album.** » (la phrase s'accorde en nombre, en genre et en type :
+photos ou documents). Un bouton séparé, « **Leur donner la visibilité de
+l'album** », permet de corriger — **action distincte, confirmée par la boîte de
+dialogue du navigateur, jamais automatique**. Elle est réservée à
+l'administrateur, protégée par le jeton CSRF, et ne traite que des documents
+**de cet album** (identifiants revérifiés côté serveur). L'aide sous le bouton
+prévient que ce changement se voit **partout sur le site**, pas seulement dans
+cet album ; pour un album en visibilité « Branches », les branches de l'album
+sont recopiées sur le document.
+
+#### 4. Qui peut, qui ne peut pas
+
+- **Administrateur** : la grille, l'ajout et le changement de visibilité.
+- **Lecteur, journaliste** : refusés — **403**, comme le reste de la page.
+- **Visiteur** : renvoyé vers **`/connexion`**.
+- **Sans jeton CSRF** : refusé (403).
+
+Rien ne vient du navigateur hormis des **identifiants** : le serveur vérifie que
+chaque document existe, qu'il n'est pas déjà dans l'album, et — pour l'action de
+visibilité — qu'il appartient bien à cet album. Aucun titre, aucune date, aucune
+visibilité n'est lue dans le formulaire.
+
+Depuis la page **publique** d'un album (administrateur connecté) et depuis le
+formulaire d'album, le bouton « **Ajouter des photos** » mène à cette page ; un
+lien direct ouvre la grille (`#ajouter-documents`).
+
+#### 5. Ce qui ne change pas
+
+- **Aucun droit nouveau** : la grille montre exactement les documents que
+  l'administration voit déjà, avec les mêmes règles de visibilité qu'ailleurs ;
+  verser un document dans un album ne l'ouvre à personne.
+- « **Retirer de l'album** » est toujours là, avec sa confirmation, et ne
+  supprime pas le document.
+- **Aucune classe renommée** : `.album-…`, `.grille-selection` et
+  `.choix-document…` (nouvelles) sont ajoutées à côté ; `.filtres`, `.champ`,
+  `.message--attention` sont réutilisées telles quelles.
+- **Aucun style ni script en ligne** : le CSS est dans `public/assets/style.css`,
+  le peu de JavaScript dans `public/assets/app.js` (bloc 9). La page est
+  utilisable filtrer et ajouter sans JavaScript.
+- **Aucune migration** : les tables `albums` et `album_documents` existaient.
+
+#### Vérifications
+
+- Suite complète : **1 268 essais, 0 échec**, dont **27 nouveaux** (famille
+  « Albums ») : droits, ajout multiple dans l'ordre, doublon ignoré
+  sans erreur, identifiant inconnu ignoré, visibilité conservée, document privé
+  invisible au lecteur après l'ajout, avertissement et action de visibilité
+  séparée, CSRF, `tout=1`.
+- Navigateur réel (`tools/navigateur/actions-album-documents.mjs`, Chromium) :
+  **22 / 22** vérifications à **1280 px** et à **390 px**, palette **papier** et
+  palette **bleu** — soit 88 contrôles : grille présente, cases cochables, POST
+  partant avec le jeton et exactement les documents cochés, « tout cocher » et
+  « tout ajouter », album montrant les documents ajoutés, photo privée invisible
+  au lecteur puis visible après l'action de visibilité, confirmation demandée,
+  aucun débordement horizontal, aucun style ni script en ligne, aucune erreur
+  JavaScript.
+- Captures dans `docs/captures/` : `ordinateur-album-ajouter-documents[-bleu].png`,
+  `mobile-album-ajouter-documents[-bleu].png`,
+  `ordinateur-album-visibilite-a-corriger[-bleu].png`,
+  `mobile-album-visibilite-a-corriger[-bleu].png`,
+  `ordinateur-album-apres-ajout[-bleu].png`, `mobile-album-apres-ajout[-bleu].png`.
+- Matrice d'accès régénérée après l'ajout des deux routes : **192 routes**,
+  **768 vérifications** (route × profil), **0 anomalie** ; les deux nouvelles
+  routes répondent **303** au visiteur, **403** au lecteur, au journaliste et à
+  un POST sans jeton, **303** à l'administrateur.
+- **Non vérifié ici** : le glisser-déposer d'un vrai téléphone, un lecteur
+  d'écran sur la grille de cases, et l'impression de cette page d'administration
+  — seuls Chromium 153, en 1280 et 390 px, ont été mesurés.
+
 ## [1.29.0] — 2026-11-07
 
 ### La une d'abord, pour tout compte connecté

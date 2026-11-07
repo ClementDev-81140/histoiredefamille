@@ -340,7 +340,8 @@ ni déplacé, un album n'est qu'un rangement.
   boutons (mise en page spéciale pour l'imprimante).
 - Un administrateur connecté trouve sur la page d'un album, et sur sa page
   d'administration, le bouton **Ajouter des photos** : il envoie les fichiers
-  par morceaux et les range directement dans cet album (voir § 6.19).
+  par morceaux et les range directement dans cet album (voir § 6.19), ou y
+  verse des photos **déjà présentes** sur le site (voir § 6.20).
 
 ### Calendrier familial et frise chronologique
 
@@ -1587,7 +1588,46 @@ ou un journaliste ne l'a jamais. Côté serveur, tout envoi vers un album est
 réservé au compte connecté, protégé par le jeton CSRF, et la création de la
 fiche est atomique : un double clic ne peut pas créer deux photos.
 
-### 6.20 Écrire au site : les deux adresses affichées
+### 6.20 Verser dans un album une photo déjà sur le site
+
+Une photo envoyée la semaine dernière n'est pas perdue : elle est dans
+*Documents & photos*. Pour la ranger dans un album, inutile de la renvoyer.
+
+1. Ouvrir **Administration → Albums photos**, puis **Ajouter des photos** sur
+   l'album voulu (le même bouton existe sur la page publique de l'album, et un
+   lien « choisir dans les documents du site » depuis le formulaire d'album).
+2. Sous la zone de dépôt, la section « **Ajouter depuis les documents du site** »
+   montre les photos déjà présentes — puis les autres documents — en vignettes
+   avec leur titre, leur date et leur **badge de visibilité**.
+3. Filtrer au besoin : **recherche** (titre ou étiquette), **type** (Photos /
+   Tous les documents), **visibilité**, **catégorie**. La case « **Pas encore
+   dans cet album** » est cochée au départ ; décochée, elle montre aussi ce qui
+   y est déjà, marqué « Déjà dans l'album » et impossible à cocher.
+4. Cocher les documents, puis **Ajouter la sélection à l'album** : ils entrent
+   **à la fin** de l'album, **dans l'ordre de la sélection**. Un document déjà
+   présent est **ignoré sans erreur**.
+
+Vingt-quatre documents par page, avec la pagination habituelle. Deux boutons
+remplacent la sélection perdue d'une page à l'autre : « **Tout cocher sur cette
+page** » (JavaScript) et « **Tout ajouter sur cette page** » (sans JavaScript :
+c'est le serveur qui reprend la page affichée).
+
+**La visibilité ne change jamais.** Verser une photo privée dans un album
+« Toutes les familles » ne la rend pas publique : elle reste invisible à la
+famille dans l'album. Le site vous le dit après l'ajout — « 1 photo reste
+privée : la famille ne la verra pas dans l'album. » — et propose un bouton
+séparé, « **Leur donner la visibilité de l'album** », qui demande confirmation
+et prévient que le changement se voit **partout sur le site**. Rien n'est fait
+automatiquement.
+
+Seul un **administrateur** voit cette grille ; un lecteur ou un journaliste
+reçoit un refus (403), un visiteur est renvoyé vers la connexion. Seuls des
+**identifiants** de documents circulent dans le formulaire : le serveur vérifie
+que le document existe, qu'il n'est pas déjà dans l'album, et — pour l'action de
+visibilité — qu'il appartient bien à cet album. « **Retirer de l'album** »
+existe toujours et ne supprime pas le document.
+
+### 6.21 Écrire au site : les deux adresses affichées
 
 Le site **n'envoie aucun courriel**. La seule conversation entre les personnes,
 c'est le **tchat** (§ 6.10) et les notifications affichées dans le site
@@ -2662,7 +2702,7 @@ C'est fait. Envoyez l'adresse et les identifiants à la famille.
 > s'arrête en le disant, et la vérification avant ouverture ne réclame plus de
 > configuration SMTP. Tout le reste marche : **tchat**, et notifications
 > affichées dans le site. Pour joindre la famille depuis l'extérieur, ce sont
-> les deux adresses affichées (§ 6.20).
+> les deux adresses affichées (§ 6.21).
 >
 > **Pour réactiver l'envoi**, si le besoin revient : (1) dans
 > **Administration → Réglages**, cocher **« Le site envoie des courriels »** ;

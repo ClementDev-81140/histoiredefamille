@@ -175,6 +175,18 @@ createServer((requete, reponse) => {
             return reponse.end('');
         }
 
+        // --- Verser dans l'album des documents déjà présents (1.30.0) -----
+        // « Ajouter la sélection » et « Leur donner la visibilité de
+        // l'album » : on note le corps posté (identifiants + jeton CSRF) puis
+        // on revient sur la page, comme le site.
+        if (requete.method === 'POST'
+            && /^\/admin\/albums\/\d+\/photos\/(ajouter|visibilite)$/.test(chemin)) {
+            const fin = chemin.endsWith('visibilite') ? 'album-visibilite' : 'album-ajouter';
+            writeFileSync(sortie + '/capture-' + fin + '.txt', corps);
+            reponse.writeHead(303, { location: chemin.replace(/\/(ajouter|visibilite)$/, '') });
+            return reponse.end('');
+        }
+
         // --- Enregistrement du formulaire : on note ce qui est posté -------
         if (requete.method === 'POST' && (chemin in pages)) {
             const nom = chemin.includes('documents') ? 'document' : 'video';
