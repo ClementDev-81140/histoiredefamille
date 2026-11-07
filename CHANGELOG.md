@@ -3,6 +3,105 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.33.0] — 2026-11-07
+
+### L'arbre généalogique devient un chêne gravé
+
+La page `/arbre` change de visage : l'arbre n'est plus une suite de listes, mais
+un **chêne gravé**. Les **ancêtres** sont dans les branches, la **personne
+choisie et son conjoint** sur le tronc, les **descendants** dans les racines —
+le tout sur une gravure de chêne servie par le site, dans le papier ancien du
+journal.
+
+Rien ne change dans les droits : `/arbre` reste **réservé aux personnes
+connectées** (décision 1.31.0), et **aucune visibilité n'est assouplie**. Une
+personne privée reste invisible **en nom, en lien et en nombre**, y compris
+dans le sélecteur et dans le « voir plus » ; une fiche privée demandée dans
+l'adresse ne remplace pas la personne par défaut, et la page ne dit pas qu'elle
+existe.
+
+#### 1. Trois générations d'ancêtres, deux de descendants
+
+- **Branches** : parents, grands-parents, arrière-grands-parents (3 niveaux).
+- **Tronc** : la personne centrale, `ET` son ou ses conjoints.
+- **Racines** : enfants et petits-enfants (2 niveaux).
+
+Chaque génération porte son **étiquette** (« Parents », « Grands-parents »,
+« Arrière-grands-parents », « Enfants », « Petits-enfants ») et son **compte**
+de personnes visibles.
+
+#### 2. Un sélecteur de personne centrale
+
+Un formulaire en haut de page (`GET /arbre`) met au centre la personne de votre
+choix : une liste déroulante **filtrable**, remplie avec les seules personnes
+que votre compte peut voir, et un bouton « **Voir cet arbre** ». Sans choix, la
+page prend la personne visible la plus récemment modifiée qui a de la famille
+autour d'elle : un premier écran n'est jamais vide. Le lien « Retour à l'arbre
+par défaut » ramène à cette vue.
+
+#### 3. « Voir plus » plutôt que du chevauchement
+
+Huit personnes tiennent dans une génération. Au-delà, la page affiche
+« **Voir les N autres personnes de la famille** » : un lien `?plus=1` qui
+affiche la totalité, en autant de rangées qu'il faut — et propose alors
+« **Voir moins** ». Les cartes ne se superposent jamais : leur largeur vient de
+la rangée (`--1` à `--8`, moitiés, tiers, quarts, cinquièmes… huitièmes), pas
+d'une position calculée.
+
+#### 4. Téléphone : la gravure en bandeau, les cartes en colonne
+
+À moins de **64 rem**, la gravure sort du dessin et devient un **bandeau
+décoratif au-dessus** de l'arbre ; les cartes s'empilent en **une colonne**,
+dans l'ordre ancêtres → tronc → descendants. Mesuré à **390 px** : une seule
+colonne (les 18 cartes partagent la même abscisse, 14 px), aucune carte hors du
+dessin, aucune superposition. Sur grand écran, la gravure est le **fond du
+dessin**, dans un cadre aux proportions de l'image (2 / 3) : à **1 280 px**, les
+cartes se répartissent en **six rangées** à l'intérieur du cadre.
+
+#### 5. PHP, HTML et CSS seuls — et la même règle de sécurité
+
+La page est écrite **entièrement par le serveur** : aucune position en style en
+ligne, aucun script en ligne, aucune ressource extérieure (gravure servie depuis
+`/assets/`, polices du site). Le déplacement dans l'arbre ne dépend donc plus
+d'aucun script : tout se fait au clavier, avec un **contour de focus visible**
+sur chaque carte. L'ancien explorateur (panneau à boutons) n'est plus affiché ;
+**aucune route n'est retirée** : `/api/arbre` et son code restent en place.
+
+La gravure est livrée en **WebP** (`public/assets/arbre-chene.webp`, 860 × 1 290,
+**261 Ko**) avec un **repli JPEG** (`public/assets/arbre-chene.jpg`, 274 Ko),
+publiée par `<picture>` — jamais une image extérieure. Le fichier de départ
+n'est pas dans le dépôt ; la façon de le remplacer est décrite dans
+`docs/arbre-chene.md`.
+
+#### Ce qui a été vérifié
+
+- **Essais PHP** (famille `arbre`, 47 essais, 47 réussis) : rendu dédié avec
+  trois générations d'ancêtres et deux de descendants ; visiteur renvoyé vers la
+  connexion ; personne privée invisible (nom, lien, nombre, sélecteur) pour un
+  lecteur, et visible pour un administrateur ; racine privée ignorée sans le
+  dire ; huit cartes puis « Voir les 2 autres personnes de la famille », dix
+  cartes en deux rangées avec « Voir moins » ; aucun `style=`, aucun `<script>`
+  en ligne, aucune ressource extérieure dans le HTML ; un seul `h1` ; la base
+  est rendue intacte.
+- **Vrai navigateur** (Chromium, `tools/navigateur/actions-arbre-chene.mjs`,
+  **38 contrôles** par largeur et par palette) : **38/38 à 1 280 px** et
+  **38/38 à 390 px**, en **papier** et en **bleu** ; pas de superposition
+  (rectangles comparés), une colonne sur téléphone et des rangées sur grand
+  écran, gravure chargée uniquement au-dessus de 1 024 px et bandeau au-dessus
+  sur téléphone, contraste ≥ 4,5 sur les noms (15,6) et les légendes (7,0) —
+  légendes désormais posées sur un **papier opaque** pour ne pas dépendre des
+  hachures —, focus clavier visible, aucune sortie du dessin, aucune erreur
+  JavaScript. Captures dans `docs/captures/` (ordinateur et mobile, un enfant et
+  huit enfants).
+
+#### Ce qui n'a pas pu être vérifié ici
+
+L'installation sur le Raspberry Pi (`deploy/install.sh` en root, `systemctl`),
+Apache et Cloudflare, la sauvegarde `/mnt/sauvegarde`, l'impression réelle et
+les lecteurs d'écran. La **rapidité** n'a été mesurée que sur le banc d'essai
+(PHP en WebAssembly : environ 100 ms pour 17 cartes) ; sur le Pi, PHP natif et
+SQLite devraient être bien plus rapides, mais je ne l'ai pas mesuré.
+
 ## [1.32.1] — 2026-11-07
 
 ### Un accueil public sans tuiles vides

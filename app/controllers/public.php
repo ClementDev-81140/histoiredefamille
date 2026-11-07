@@ -281,9 +281,21 @@ function public_arbre(): void
         $params
     );
 
-    // Personne sélectionnée pour l'explorateur d'arbre.
-    $rootId  = query_int('racine');
-    $root    = $rootId > 0 ? find_viewable_person($rootId) : null;
+    // --- Le chêne gravé (1.33.0) -------------------------------------------
+    // La personne centrale vient de l'adresse (`?racine=`) ; si elle n'existe
+    // pas, ou si le compte n'a pas le droit de la voir, on retombe **sans rien
+    // dire** sur la personne par défaut : la page ne laisse jamais deviner
+    // qu'une fiche existe.
+    $rootId = query_int('racine');
+    $root   = $rootId > 0 ? find_viewable_person($rootId) : null;
+    if ($root === null) {
+        $root = arbre_chene_racine_defaut();
+    }
+
+    $tout   = query('plus') === '1';
+    $arbre  = $root !== null ? arbre_chene_donnees((int) $root['id'], $tout) : null;
+    $choix  = arbre_chene_choix($root !== null ? (int) $root['id'] : 0);
+    $defaut = arbre_chene_racine_defaut();
 
     // Lettres disponibles.
     $letterParams = [];
@@ -303,6 +315,10 @@ function public_arbre(): void
         'lettre'     => $letter,
         'letters'    => array_map(static fn ($r) => $r['l'], $letters),
         'root'       => $root,
+        'arbre'      => $arbre,
+        'choix'      => $choix,
+        'tout'       => $tout,
+        'defautId'   => $defaut !== null ? (int) $defaut['id'] : 0,
         'total'      => $total,
     ]);
 }

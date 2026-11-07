@@ -3,6 +3,39 @@
 Ce fichier liste ce qui reste à faire, classé par priorité. Il n'y a pas de
 suivi automatique : cochez au fur et à mesure.
 
+## Fait (2026-11-07, 1.33.0 — arbre généalogique « chêne gravé »)
+
+- [x] **Nouvelle page `/arbre`** : gravure de chêne en fond (bandeau sur
+  téléphone), **ancêtres dans les branches** (3 générations), **personne et
+  conjoint sur le tronc**, **descendants dans les racines** (2 générations).
+- [x] **Sélecteur de personne centrale** (`GET /arbre?racine={id}`, liste
+  filtrable) ; sans choix, la personne visible la plus récemment modifiée qui a
+  de la famille autour d'elle.
+- [x] **« Voir plus »** au-delà de huit personnes par génération (`?plus=1`),
+  puis « Voir moins » ; aucune carte superposée.
+- [x] **Droits inchangés** : `/arbre` reste réservé aux connectés ; une personne
+  privée n'apparaît ni en nom, ni en lien, ni en nombre (sélecteur et « voir
+  plus » compris) ; racine privée ignorée sans le dire.
+- [x] **PHP/HTML/CSS seuls** : aucun style en ligne, aucun script en ligne,
+  aucune ressource extérieure ; navigation et focus au clavier.
+- [x] **Gravure** : `public/assets/arbre-chene.webp` (261 Ko) + repli `.jpg`
+  (274 Ko), publiée par `<picture>` ; aucune donnée personnelle dans le dépôt.
+- [x] **Essais** : `app/cli/tests_arbre.php`, 47 essais, 47 réussis.
+- [x] **Navigateur réel** : `tools/navigateur/actions-arbre-chene.mjs`,
+  38 contrôles × 4 (1 280 et 390 px, papier et bleu), 0 échec ; 8 captures.
+- [x] **Documentation** : `docs/arbre-chene.md` (dessin, classes, essais,
+  remplacement de la gravure).
+
+## À corriger (repéré en 1.33.0, hors périmètre)
+
+- [ ] **Gravure d'origine** : le dépôt de référence
+  (`ClementDev-81140/gazette-of-family-branches`) répond 404 ; la gravure livrée
+  est une création pour ce site. À remplacer par l'image d'origine si elle
+  réapparaît (deux commandes, voir `docs/arbre-chene.md`).
+- [ ] **Ancien explorateur** : le panneau à boutons de la 1.30 n'est plus
+  affiché ; son script et `/api/arbre` restent en place (aucune route retirée).
+  À supprimer lors d'un nettoyage, si le propriétaire le souhaite.
+
 ## Fait (2026-11-07, 1.32.1 — accueil public sans tuiles vides)
 
 - [x] **Grille « Dans le journal »** : un contenu sans image donne une **carte

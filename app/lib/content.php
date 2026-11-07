@@ -736,13 +736,22 @@ function person_siblings(int $personId): array
 function filter_visible_persons(array $persons): array
 {
     static $cache = [];
+
+    // La mémoire est celle du compte courant : dans une même requête on ne
+    // change pas de compte, mais les essais, eux, se suivent dans un seul
+    // processus. Une mémoire par personne et par compte évite qu'un
+    // administrateur ouvre la porte au lecteur qui passe après lui.
+    $compte = current_account();
+    $prefixe = $compte !== null ? 'compte:' . (int) $compte['id'] . ':' : 'visiteur:';
+
     $visible = [];
     foreach ($persons as $person) {
         $id = (int) $person['id'];
-        if (!array_key_exists($id, $cache)) {
-            $cache[$id] = can_view((string) $person['visibility'], content_branch_ids('person', $id));
+        $cle = $prefixe . $id;
+        if (!array_key_exists($cle, $cache)) {
+            $cache[$cle] = can_view((string) $person['visibility'], content_branch_ids('person', $id));
         }
-        if ($cache[$id]) {
+        if ($cache[$cle]) {
             $visible[] = $person;
         }
     }

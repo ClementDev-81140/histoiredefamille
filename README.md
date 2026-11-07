@@ -551,6 +551,7 @@ histoiredefamille/
 ├── storage/                 stockage local de développement (jamais dans Git)
 ├── docs/captures/           captures d'écran du site (ordinateur et mobile)
 ├── docs/matrice-acces.md    qui peut ouvrir quoi (engendré par les tests)
+├── docs/arbre-chene.md      l'arbre gravé de /arbre (1.33.0)
 ├── docs/chiffrement-cle-usb.md  chiffrer la clé de sauvegarde (facultatif)
 ├── CHANGELOG.md             historique des versions
 └── TODO.md                  ce qui reste à faire
@@ -1308,8 +1309,28 @@ Deux façons, selon la taille du fichier :
 3. Pour chaque personne, indiquer les parents (liste déroulante).
 
 L'arbre se consulte sur `/arbre` (vue par défaut) ou depuis la fiche d'une
-personne. Le déplacement dans l'arbre est fait par un petit script maison,
-sans bibliothèque externe.
+personne. **Depuis la 1.33.0**, la page est un « **chêne gravé** » :
+
+- la **gravure du chêne** sert de fond au dessin sur grand écran, et de bandeau
+  au-dessus sur téléphone ; c'est une image du site (`/assets/arbre-chene.webp`,
+  avec un repli `.jpg`), jamais une ressource extérieure ;
+- les **ancêtres** sont dans les branches (trois générations : parents,
+  grands-parents, arrière-grands-parents), la **personne choisie et son
+  conjoint** sur le tronc, les **descendants** dans les racines (deux
+  générations : enfants, petits-enfants) ;
+- un **sélecteur** en haut de page met au centre la personne de votre choix
+  (liste filtrable, ou lien « Arbre » depuis la liste des personnes) ;
+- au-delà de **huit personnes** dans une génération, la page n'entasse rien :
+  elle affiche « Voir les N autres personnes de la famille », et tout reste
+  lisible, sur téléphone comme sur ordinateur ;
+- tout est écrit par le serveur, **sans JavaScript** : aucune position en style
+  en ligne, seulement des classes de la feuille de style. Le déplacement dans
+  l'arbre ne dépend donc d'aucun script, et se fait au clavier comme à la
+  souris ;
+- **seules les personnes que votre compte a le droit de voir** apparaissent :
+  ni nom, ni lien, ni compteur ne trahissent une fiche privée, et une personne
+  privée demandée dans l'adresse (`?racine=…`) ne remplace pas la personne par
+  défaut.
 
 ### 6.8 Écrire un article
 

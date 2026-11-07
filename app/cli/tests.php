@@ -2697,6 +2697,7 @@ require_once __DIR__ . '/tests_contacts.php';
 require_once __DIR__ . '/tests_conversion.php';
 require_once __DIR__ . '/tests_profils.php';
 require_once __DIR__ . '/tests_album.php';
+require_once __DIR__ . '/tests_arbre.php';
 
 // Les propositions des journalistes ont besoin des mêmes outils d'essai que
 // les profils (tests_envoi_requete) : ce bloc vient donc après eux.
@@ -2736,6 +2737,11 @@ if ($filtre === '' || $filtre === 'une') {
 if ($filtre === '' || $filtre === 'accueil') {
     require_once __DIR__ . '/tests_accueil.php';
     tests_accueil();
+}
+
+// L'arbre « chêne gravé » (1.33.0) : rendu, droits, rangées, accessibilité.
+if ($filtre === '' || $filtre === 'arbre') {
+    tests_arbre();
 }
 
 if ($filtre === '' || $filtre === 'admin') {

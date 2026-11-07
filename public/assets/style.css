@@ -6388,3 +6388,320 @@ legend {
         display: none;
     }
 }
+
+/* ==========================================================================
+   1.33.0 — l'arbre « chêne gravé » de la page /arbre
+   Les ancêtres dans les branches, la personne (et son conjoint) sur le tronc,
+   les descendants dans les racines. Tout est écrit par le serveur : aucune
+   position en style en ligne, elles viennent du nombre de cartes de la rangée
+   (`arbre-chene__rangee--1` à `--8`). Aucune classe existante n'est renommée.
+   ========================================================================== */
+.arbre-chene {
+    --chene-gap: 0.6rem;
+}
+
+.arbre-chene__selecteur {
+    align-items: flex-end;
+}
+
+.arbre-chene__filtre {
+    max-width: 24rem;
+    margin-bottom: 0.3rem;
+}
+
+/* La gravure : un bandeau sur téléphone (voir plus bas pour le grand écran). */
+.arbre-chene__gravure {
+    margin: 1.2rem 0 1.4rem;
+    padding: 0;
+}
+
+.arbre-chene__gravure img {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 22rem;
+    object-fit: cover;
+    object-position: center 38%;
+    background: var(--surface);
+    border: var(--filet);
+}
+
+.arbre-chene__gravure figcaption {
+    margin-top: 0.4rem;
+    font-size: 0.78rem;
+    font-style: italic;
+    color: var(--texte-doux);
+    text-align: center;
+}
+
+/* Le dessin lui-même : un sillon vertical au centre (le tronc), les cartes
+   par-dessus, jamais l'inverse. */
+.arbre-chene__dessin {
+    position: relative;
+    padding: 0.4rem 0 0.8rem;
+}
+
+.arbre-chene__dessin::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 2.6rem;
+    bottom: 3rem;
+    width: 1px;
+    background: var(--bordure);
+    opacity: 0.45;
+}
+
+.arbre-chene__partie {
+    position: relative;
+}
+
+/* Titres et légendes sont posés sur la gravure : chacun reçoit un morceau de
+   papier, sinon il se perdrait dans les hachures (contraste). */
+.arbre-chene__partie h2 {
+    align-self: center;
+    width: max-content;
+    max-width: 100%;
+    margin: 0.9rem auto 0.4rem;
+    padding: 0.1rem 0.5rem;
+    font-size: 0.72rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--texte-doux);
+    text-align: center;
+    background: var(--surface);
+    border: var(--filet);
+}
+
+.arbre-chene__partie--branches {
+    padding-bottom: 1rem;
+}
+
+.arbre-chene__partie--tronc {
+    padding: 0.6rem 0;
+    border-top: var(--filet);
+    border-bottom: var(--filet);
+}
+
+.arbre-chene__partie--racines {
+    padding-top: 1rem;
+}
+
+.arbre-chene__legende {
+    width: max-content;
+    max-width: 100%;
+    margin: 0.7rem auto 0.35rem;
+    padding: 0.1rem 0.5rem;
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--texte-doux);
+    text-align: center;
+    background: var(--surface);
+    border: var(--filet);
+}
+
+.arbre-chene__compte {
+    display: inline-block;
+    margin-left: 0.35rem;
+    padding: 0 0.3rem;
+    border: var(--filet);
+    font-size: 0.66rem;
+    letter-spacing: 0.04em;
+    color: var(--texte-doux);
+    background: var(--surface);
+}
+
+.arbre-chene__vide {
+    width: max-content;
+    max-width: 100%;
+    margin: 0.2rem auto 0.8rem;
+    padding: 0.1rem 0.5rem;
+    font-style: italic;
+    color: var(--texte-doux);
+    text-align: center;
+    background: var(--surface);
+    border: var(--filet);
+}
+
+/* Une rangée : souple, centrée, jamais de cartes l'une sur l'autre — le
+   passage à la ligne est la soupape, et « voir plus » le reste. */
+.arbre-chene__rangee {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--chene-gap);
+    margin: 0 0 0.5rem;
+    padding: 0;
+    list-style: none;
+}
+
+.arbre-chene__rangee--1 .arbre-chene__noeud { width: min(100%, 24rem); }
+.arbre-chene__rangee--2 .arbre-chene__noeud { width: calc((100% - var(--chene-gap)) / 2); }
+.arbre-chene__rangee--3 .arbre-chene__noeud { width: calc((100% - (2 * var(--chene-gap))) / 3); }
+.arbre-chene__rangee--4 .arbre-chene__noeud { width: calc((100% - (3 * var(--chene-gap))) / 4); }
+.arbre-chene__rangee--5 .arbre-chene__noeud { width: calc((100% - (4 * var(--chene-gap))) / 5); }
+.arbre-chene__rangee--6 .arbre-chene__noeud { width: calc((100% - (5 * var(--chene-gap))) / 6); }
+.arbre-chene__rangee--7 .arbre-chene__noeud { width: calc((100% - (6 * var(--chene-gap))) / 7); }
+.arbre-chene__rangee--8 .arbre-chene__noeud { width: calc((100% - (7 * var(--chene-gap))) / 8); }
+
+/* Une carte : du papier posé sur la gravure, lisible sur les deux palettes. */
+.arbre-chene__noeud {
+    position: relative;
+    z-index: 1;
+    min-width: 0;
+    margin: 0;
+    padding: 0.45rem 0.55rem;
+    background: var(--surface);
+    border: var(--filet);
+    border-top: 3px solid var(--accent);
+    text-align: center;
+    font-size: 0.85rem;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+}
+
+.arbre-chene__rangee--6 .arbre-chene__noeud,
+.arbre-chene__rangee--7 .arbre-chene__noeud,
+.arbre-chene__rangee--8 .arbre-chene__noeud {
+    padding: 0.4rem 0.35rem;
+    font-size: 0.76rem;
+}
+
+.arbre-chene__lien {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+}
+
+.arbre-chene__lien:hover .arbre-chene__nom,
+.arbre-chene__lien:focus-visible .arbre-chene__nom {
+    color: var(--accent);
+    text-decoration: underline;
+}
+
+.arbre-chene__lien:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.arbre-chene__nom {
+    display: block;
+    font-weight: 700;
+}
+
+.arbre-chene__dates {
+    display: block;
+    font-size: 0.76rem;
+    font-style: italic;
+    color: var(--texte-doux);
+}
+
+/* Le tronc : la personne choisie, et son conjoint s'il y en a un. */
+.arbre-chene__noeud--tronc {
+    padding: 0.7rem 0.9rem;
+    border-top-width: 4px;
+    font-size: 1rem;
+}
+
+.arbre-chene__et {
+    display: block;
+    margin: 0.35rem 0 0.2rem;
+    font-size: 0.7rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--texte-doux);
+}
+
+.arbre-chene__lien--conjoint .arbre-chene__nom {
+    font-weight: 400;
+}
+
+.arbre-chene__plus {
+    margin: 1rem 0 0.4rem;
+    text-align: center;
+}
+
+.arbre-chene__note {
+    margin-top: 0.2rem;
+}
+
+.arbre-chene__defaut {
+    margin: -0.6rem 0 1rem;
+    font-size: 0.9rem;
+}
+
+/* Téléphone : une colonne, la gravure en bandeau au-dessus (image affichée par
+   défaut). Les cartes prennent toute la largeur : aucune superposition, et le
+   sillon central reste derrière elles. */
+@media (max-width: 47.99rem) {
+    .arbre-chene__rangee {
+        flex-direction: column;
+    }
+
+    .arbre-chene__rangee .arbre-chene__noeud {
+        width: 100%;
+        text-align: left;
+    }
+
+    .arbre-chene__rangee .arbre-chene__noeud--tronc {
+        text-align: center;
+    }
+}
+
+/* Grand écran : la gravure passe en fond du dessin, et le bandeau disparaît.
+   Le cadre garde les proportions de la gravure (2 pour 3) : elle le remplit
+   exactement, sans être coupée ni étirée, et les trois parties se partagent la
+   hauteur comme sur le dessin — les branches en haut, le tronc au milieu, les
+   racines en bas. */
+@media (min-width: 64rem) {
+    .arbre-chene__gravure {
+        display: none;
+    }
+
+    .arbre-chene__dessin {
+        display: grid;
+        grid-template-rows: 40% 22% 38%;
+        aspect-ratio: 2 / 3;
+        max-width: 46rem;
+        margin: 0 auto;
+        padding: 0 1.2rem;
+        background-image: image-set(
+            url("/assets/arbre-chene.webp") type("image/webp"),
+            url("/assets/arbre-chene.jpg") type("image/jpeg")
+        );
+        background-repeat: no-repeat;
+        background-position: center top;
+        background-size: 100% 100%;
+        border: var(--filet);
+    }
+
+    .arbre-chene__partie {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    /* Le sillon central traverse les trois parties, comme le tronc. */
+    .arbre-chene__dessin::before {
+        top: 1.2rem;
+        bottom: 1.2rem;
+        opacity: 0.5;
+    }
+
+    .arbre-chene__rangee {
+        margin-bottom: 0.45rem;
+    }
+}
+
+/* Impression : la gravure en fond coûterait de l'encre, on la retire. */
+@media print {
+    .arbre-chene__gravure,
+    .arbre-chene__dessin {
+        background-image: none;
+    }
+
+    .arbre-chene__gravure {
+        display: none;
+    }
+}

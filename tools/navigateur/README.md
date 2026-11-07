@@ -50,6 +50,41 @@ node tools/navigateur/essai.mjs 390 document
 node tools/navigateur/essai.mjs 1280 document
 ```
 
+### Le chêne gravé de `/arbre` (1.33.0)
+
+```bash
+# 1. Les deux pages par le routeur réel : huit enfants (racine 15) et un seul
+#    enfant (racine 30), compte 7 = administrateur. Les fixtures viennent de
+#    tests_envoi.php (familles BERNARD et GILBERT, données inventées).
+HDF_CONFIG=/chemin/config.local.php HDF_FORCE_CLI=1 \
+    HDF_ARGV='["/arbre?racine=15","/tmp/arbre-huit.html","7"]' \
+    php tools/navigateur/rendre.php
+HDF_CONFIG=/chemin/config.local.php HDF_FORCE_CLI=1 \
+    HDF_ARGV='["/arbre?racine=30","/tmp/arbre-un.html","7"]' \
+    php tools/navigateur/rendre.php
+
+# 2. Le serveur d'essai, ces deux pages sous des adresses à nous.
+PAGES_ALBUM='{"/arbre-huit":"/tmp/arbre-huit.html","/arbre-un":"/tmp/arbre-un.html"}' \
+    node tools/navigateur/serveur.mjs
+
+# 3. Le contrôle : 38 vérifications par largeur et par palette.
+cd /chemin/outils   # le dossier où puppeteer-core est installé
+CAPTURES=/tmp node actions-arbre-chene.mjs 1280
+CAPTURES=/tmp node actions-arbre-chene.mjs 390
+# puis la palette bleu : pages rendues après avoir choisi « bleu » dans
+# Administration → Apparence, /theme.css récupéré par rendre.php, serveur
+# relancé avec THEME_CSS=/tmp/theme-bleu.css, et
+# THEME=bleu THEME_FOND='rgb(246, 245, 242)' pour la commande ci-dessus.
+```
+
+Le contrôle compare les **rectangles** des cartes (aucune superposition, aucune
+sortie du dessin), vérifie la **disposition** (une colonne à 390 px, des rangées
+à 1 280 px), la **gravure** (chargée seulement au-dessus de 1 024 px, bandeau
+au-dessus sur téléphone), le **contraste** (noms, légendes — qui doivent avoir
+un papier opaque), le **focus clavier**, et l'absence de `style=`, de `<script>`
+en ligne, de ressource extérieure et d'erreur JavaScript. Les captures portent
+le nom `ordinateur-arbre-*` / `mobile-arbre-*` (`-bleu` pour la palette bleue).
+
 ### Les deux boutons de la liste des fichiers reçus
 
 Il faut un envoi **en attente de formulaire** (état `pret`) pour que le tableau
