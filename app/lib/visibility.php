@@ -75,12 +75,14 @@ function visibility_clause(string $kind, string $alias, array &$params): string
 
     if ($account === null) {
         // Visiteur non connecté : uniquement le public (et, pour un document,
-        // seulement s'il est prêt — voir plus bas).
+        // seulement s'il est prêt — voir plus bas). Une proposition en attente
+        // de validation n'est montrée à personne, pas même au visiteur : la
+        // condition est la même que pour un compte connecté (1.31.0).
         $visiteur = $a . ".visibility = 'public'";
         if ($kind === 'document') {
-            return '(' . $visiteur . ' AND ' . conversion_pretes_sql($a) . ')';
+            $visiteur = '(' . $visiteur . ' AND ' . conversion_pretes_sql($a) . ')';
         }
-        return $visiteur;
+        return '(' . $visiteur . ' AND ' . proposition_clause($kind, $a, $params) . ')';
     }
 
     // Compte de famille : public + toutes les familles + ses branches.

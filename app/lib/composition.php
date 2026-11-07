@@ -3,9 +3,13 @@
  * Composition des pages et modèles d'article.
  *
  * Ce fichier répond à une seule question : « dans quel ordre, et lesquels ? »
- * pour les blocs de la page d'accueil publique (`/`) et de l'espace famille
- * (`/famille`). Les administrateurs peuvent masquer un bloc ou le faire monter
- * et descendre ; chacun reste dans sa colonne.
+ * pour les blocs de l'accueil des comptes connectés (`/`) et de l'espace
+ * famille (`/famille`). Les administrateurs peuvent masquer un bloc ou le faire
+ * monter et descendre ; chacun reste dans sa colonne.
+ *
+ * L'accueil d'un visiteur n'est pas composé : depuis la 1.31.0, c'est une Une de
+ * journal fixe, qui présente tout le contenu public du plus récent au plus
+ * ancien (voir `app/lib/une_publique.php`).
  *
  * Rien ici ne touche aux droits : un bloc masqué n'est pas calculé du tout
  * (l'économie est réelle), et un bloc affiché continue de filtrer avec
@@ -22,7 +26,7 @@ declare(strict_types=1);
 function composition_pages(): array
 {
     return [
-        'public'  => 'Page d’accueil publique (/)',
+        'public'  => 'Page d’accueil (/) — comptes connectés',
         'famille' => 'Espace famille (/famille)',
     ];
 }
@@ -32,35 +36,21 @@ function composition_pages(): array
  *
  * `colonne` vaut « principale », « laterale » ou « pleine » (sous la une, sur
  * toute la largeur). Un bloc reste toujours dans la même colonne : les boutons
- * Monter / Descendre ne le font que glisser parmi ses voisins.
+ * Monter / Descendre ne le font que glisser parmi ses voisins. La colonne
+ * « hero » (en-tête de l'accueil public) n'a plus aucun bloc depuis la 1.31.0.
  *
  * @return array<string, array{nom:string, colonne:string, aide:string, fixe?:bool}>
  */
 function composition_catalogue(string $page): array
 {
     if ($page === 'public') {
+        // L'accueil d'un visiteur ne figure pas ici : depuis la 1.31.0, c'est
+        // une Une de journal fixe (tout le contenu public, du plus récent au
+        // plus ancien). Les quatre blocs de l'ancien en-tête (« deux entrées »,
+        // « Également publié », « le site en chiffres », « le mot sur l'espace
+        // réservé ») ne s'affichaient plus pour personne : ils sont retirés.
+        // Les blocs qui restent composent l'accueil d'un compte connecté.
         return [
-            'entrees' => [
-                'nom'     => 'Les deux entrées (Consulter, Se connecter)',
-                'colonne' => 'hero',
-                'aide'    => 'Toujours affichées : ce sont les portes d’entrée du site.',
-                'fixe'    => true,
-            ],
-            'egalement' => [
-                'nom'     => '« Également publié »',
-                'colonne' => 'hero',
-                'aide'    => 'Les autres rubriques, seulement si elles ont du contenu public.',
-            ],
-            'chiffres' => [
-                'nom'     => 'Le site en chiffres',
-                'colonne' => 'hero',
-                'aide'    => 'Documents, pages et personnes visibles.',
-            ],
-            'reserve' => [
-                'nom'     => 'Le mot sur l’espace réservé',
-                'colonne' => 'hero',
-                'aide'    => 'La phrase qui invite les familles à se connecter.',
-            ],
             'famille' => [
                 'nom'     => 'Dans la famille (compte connecté)',
                 'colonne' => 'pleine',
@@ -158,7 +148,6 @@ function composition_nom(string $page, string $cle): string
 function composition_colonnes_libelles(): array
 {
     return [
-        'hero'       => 'Dans l’en-tête de l’accueil',
         'principale' => 'Colonne principale',
         'laterale'   => 'Colonne de droite',
         'pleine'     => 'Sous la une, sur toute la largeur',
@@ -516,6 +505,25 @@ function composition_lire_reglages(array $saisie): array
     }
     $valeurs['apparence_modele_defaut'] = $modele;
 
+    // La une du site public (1.31.0) : valeur vide = automatique (le contenu
+    // public le plus récent). Sinon « type:id », et ce contenu doit exister.
+    $une = trim((string) ($saisie['une_publique'] ?? ''));
+    if ($une !== '') {
+        $connu = false;
+        foreach (une_publique_candidats(200) as $candidat) {
+            if ($candidat['cle'] === $une) {
+                $connu = true;
+                break;
+            }
+        }
+        if (!$connu) {
+            $erreurs[] = 'À la une du site public : ce contenu n’est pas public (ou n’existe plus). '
+                . 'Laissez « automatique » ou choisissez un contenu de la liste.';
+            $une = '';
+        }
+    }
+    $valeurs['une_publique'] = $une;
+
     return [$valeurs, $erreurs];
 }
 
@@ -530,7 +538,7 @@ function composition_enregistrer_reglages(array $valeurs): void
 /** « Rétablir » remet aussi les réglages de la une à leurs valeurs d'origine. */
 function composition_retablir_reglages(): void
 {
-    foreach (['apparence_une_colonnes', 'apparence_une_resume', 'apparence_une_photo', 'apparence_modele_defaut'] as $cle) {
+    foreach (['apparence_une_colonnes', 'apparence_une_resume', 'apparence_une_photo', 'apparence_modele_defaut', 'une_publique'] as $cle) {
         db_exec('DELETE FROM settings WHERE key = ?', [$cle]);
     }
     site_settings_oublier();

@@ -52,6 +52,31 @@ function tests_carte_point(array $donnees, string $nom): ?array
     return null;
 }
 
+/**
+ * Compte de famille pour les essais de la carte (1.31.0).
+ *
+ * La carte et les fiches de lieux ne s'ouvrent plus à un visiteur : il faut un
+ * compte connecté pour vérifier qu'une fois connecté, tout fonctionne comme
+ * avant. Le compte est créé dans la transaction annulée du test.
+ */
+function tests_carte_compte_famille(): int
+{
+    return db_insert('accounts', [
+        'username'      => 'carte-essai-' . bin2hex(random_bytes(4)),
+        'display_name'  => 'Essai carte',
+        'password_hash' => password_make('MotDePasseEssai123!'),
+        'role'          => 'famille',
+        'account_type'  => 'branche',
+        'first_name'    => '',
+        'last_name'     => '',
+        'branch_id'     => null,
+        'see_all'       => 0,
+        'is_active'     => 1,
+        'created_at'    => time(),
+        'updated_at'    => time(),
+    ]);
+}
+
 function tests_carte(): void
 {
     echo "Carte des lieux — projection, communes, droits, filtres, cache, dessin\n";
@@ -511,43 +536,56 @@ function tests_carte(): void
                 && str_contains($ficheAdmin['corps'], 'Privée')
         );
         verifier(
-            'carte : un lieu sans personne visible répond exactement comme un lieu qui n’existe pas',
-            $ficheVisiteur['code'] === 404
-                && $ficheInconnue['code'] === 404
-                && $ficheVisiteur['corps'] === $ficheInconnue['corps']
-                && str_contains($ficheVisiteur['corps'], 'Lieu introuvable'),
-            'code ' . $ficheVisiteur['code']
+            'carte : un visiteur ne peut pas deviner l’existence d’un lieu (même réponse partout)',
+            $ficheVisiteur['code'] === 303
+                && $ficheInconnue['code'] === 303
+                && $ficheVisiteur['corps'] === $ficheInconnue['corps'],
+            'codes ' . $ficheVisiteur['code'] . ' / ' . $ficheInconnue['code']
         );
 
+        // 1.31.0 : la carte et les fiches de lieux ne sont plus publiques.
         $fichePublique = matrice_requete('GET', '/lieu/' . $lieuA, null);
         verifier(
-            'carte : un visiteur peut ouvrir la fiche d’un lieu public, et y retrouve les personnes',
-            $fichePublique['code'] === 200
-                && str_contains($fichePublique['corps'], 'Publique')
-                && !str_contains($fichePublique['corps'], 'Privée')
+            'carte : la fiche d’un lieu renvoie un visiteur vers la connexion (1.31.0)',
+            $fichePublique['code'] === 303
+                && str_contains((string) ($fichePublique['location'] ?? ''), '/connexion'),
+            'code ' . $fichePublique['code']
+        );
+
+        $famille = tests_carte_compte_famille();
+        $ficheFamille = matrice_requete('GET', '/lieu/' . $lieuA, $famille);
+        verifier(
+            'carte : un compte connecté ouvre la fiche d’un lieu public, et y retrouve les personnes',
+            $ficheFamille['code'] === 200
+                && str_contains($ficheFamille['corps'], 'Publique')
+                && !str_contains($ficheFamille['corps'], 'Privée')
         );
         verifier(
             'carte : la fiche d’un lieu ne montre jamais un secret d’une personne privée',
-            !str_contains($fichePublique['corps'], $nomD)
+            !str_contains($ficheFamille['corps'], $nomD)
         );
 
         $carteVisiteur = matrice_requete('GET', '/carte', null);
         $adminLieux    = matrice_requete('GET', '/admin/lieux', $adminId);
         $adminLieuxVisiteur = matrice_requete('GET', '/admin/lieux', null);
+        // 1.31.0 : la carte s'ouvre une fois connecté, comme l'arbre.
+        $carteFamille = matrice_requete('GET', '/carte', $famille);
         verifier(
-            'carte : la page publique s’ouvre à un visiteur, et l’écran d’administration reste fermé',
-            $carteVisiteur['code'] === 200
-                && str_contains($carteVisiteur['corps'], 'Carte des lieux')
-                && !str_contains($carteVisiteur['corps'], $nomD)
+            'carte : un visiteur est renvoyé vers la connexion, la carte reste ouverte une fois connecté',
+            $carteVisiteur['code'] === 303
+                && str_contains((string) ($carteVisiteur['location'] ?? ''), '/connexion')
+                && $carteFamille['code'] === 200
+                && str_contains($carteFamille['corps'], 'Carte des lieux')
+                && !str_contains($carteFamille['corps'], $nomD)
                 && $adminLieux['code'] === 200
                 && $adminLieuxVisiteur['code'] === 303
         );
         verifier(
-            'carte : la page publique ne charge aucune ressource extérieure',
-            !preg_match('#(src|href)="https?://#i', $carteVisiteur['corps'])
-                && !preg_match('#<[^>]+\sstyle=#i', $carteVisiteur['corps'])
-                && !str_contains($carteVisiteur['corps'], '<style')
-                && !str_contains($carteVisiteur['corps'], 'carte-lieux" style')
+            'carte : la page ne charge aucune ressource extérieure',
+            !preg_match('#(src|href)="https?://#i', $carteFamille['corps'])
+                && !preg_match('#<[^>]+\sstyle=#i', $carteFamille['corps'])
+                && !str_contains($carteFamille['corps'], '<style')
+                && !str_contains($carteFamille['corps'], 'carte-lieux" style')
         );
 
         // --- Un lieu retiré quitte la carte, sans toucher aux fiches --------
@@ -563,11 +601,15 @@ function tests_carte(): void
             in_array($nomInconnu, array_column(carte_lieux_a_placer(), 'nom'), true)
                 && !in_array($nomA, array_column(carte_lieux_a_placer(), 'nom'), true)
         );
+        // 1.31.0 : le menu du visiteur ne contient plus la carte du tout ;
+        // un compte connecté, lui, la garde quand un lieu est placé.
+        $compte = ['role' => 'famille', 'branch_id' => null];
         verifier(
-            'carte : le menu ne propose la carte que si au moins un lieu est placé',
+            'carte : le menu d’un compte connecté propose la carte si un lieu est placé',
             carte_exist(true) === true
-                && in_array('/carte', array_column(menu_rubriques(null, ['carte' => true]), 'href'), true)
-                && !in_array('/carte', array_column(menu_rubriques(null, ['carte' => false]), 'href'), true)
+                && in_array('/carte', array_column(menu_rubriques($compte, ['carte' => true]), 'href'), true)
+                && !in_array('/carte', array_column(menu_rubriques($compte, ['carte' => false]), 'href'), true)
+                && !in_array('/carte', array_column(menu_rubriques(null, ['carte' => true]), 'href'), true)
         );
 
         // Le tchat n'est jamais proposé à un visiteur, même avec la carte.

@@ -117,12 +117,19 @@ Exemple : `Toulouse	43.6043	1.4437	31`.
 ## Droits : on ne voit que ce qu'on a le droit de voir
 
 La carte suit **exactement** la règle de visibilité du site
-(`visibility_clause('person', …)`), sans exception :
+(`visibility_clause('person', …)`), sans exception.
 
-- un visiteur non connecté ne compte que les personnes **publiques** ;
+Depuis la **1.31.0**, la carte n'est plus publique : `/carte` et `/lieu/{id}`
+demandent la connexion et renvoient un visiteur vers `/connexion`, comme
+`/arbre`. La règle de visibilité est donc celle des comptes connectés :
+
 - un compte de famille voit le public, les contenus « toutes les familles » et
   ceux de sa branche ;
 - un administrateur voit tout.
+
+Si la carte redevenait publique un jour, la règle « visiteur = personnes
+publiques seulement » est toujours dans le code (`visibility_clause()`), et le
+cache a déjà son groupe de droits « visiteur ».
 
 Conséquences :
 

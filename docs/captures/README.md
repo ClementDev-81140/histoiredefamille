@@ -137,3 +137,27 @@ par largeur et par palette. La base de démonstration doit contenir un album
 « Album banc 1.30 » (visibilité famille) avec une photo privée et une photo
 publique, plus un lecteur ; ces lignes d'essai ne servent qu'aux captures, le
 site lui-même n'en dépend pas.
+
+### 1.31.0 — la Une du journal, et le menu d'un visiteur
+
+L'accueil d'un visiteur est désormais **la Une du journal** : bandeau, phrase
+d'accueil, gros bouton « Se connecter », le contenu public le plus récent en
+grand, puis la grille de tout le contenu public — regroupée par rubrique
+au-delà de six éléments. Les captures montrent la page d'un visiteur en 1280
+puis en 390 px, dans les deux palettes.
+
+| Fichier | Ce que l'on y voit |
+|---|---|
+| `ordinateur-une-publique.png` / `mobile-une-publique.png` | la Une du journal : menu « Accueil » + « Se connecter », la phrase, le gros bouton dans le premier écran, « À LA UNE » avec la photo et le titre en grand, puis les rubriques Articles / Photos / Vidéos / Recettes / Pages d'information |
+| `ordinateur-une-vide.png` / `mobile-une-vide.png` | le même accueil quand **rien n'est public** : la Une sobre « Le journal paraîtra bientôt », le bouton, contact@ et support@ — ni bloc vide, ni rubrique fantôme |
+| `ordinateur-contenu-public.png` / `mobile-contenu-public.png` | un contenu public ouvert **sans être connecté** (la fiche d'une photo de démonstration) |
+| `ordinateur-contenu-prive-404.png` / `mobile-contenu-prive-404.png` | un contenu **privé** ouvert par son adresse directe : exactement la page « introuvable », sans son titre ni son adresse |
+| les mêmes en `-bleu` | palette **bleu d'origine** |
+
+Elles sont engendrées par `tools/navigateur/actions-une-publique.mjs` —
+**19 vérifications** par largeur et par palette (76 contrôles) : deux entrées de
+menu et pas une de plus, bouton dans le premier écran, une en grand, grille
+regroupée, liens limités au contenu public et à la connexion, aucun style ni
+script en ligne, aucune ressource extérieure, aucun débordement horizontal,
+aucune erreur JavaScript. La page « vide » est rendue à partir d'une **copie**
+de la base de démonstration dont tout le contenu a été repassé en « Famille ».

@@ -133,13 +133,21 @@ function tests_contacts(): void
         $mailtoContact = 'mailto:' . site_adresse('contact');
         $mailtoSupport = 'mailto:' . site_adresse('support');
 
+        // Depuis la 1.31.0, l'accueil d'un visiteur est la Une du journal : la
+        // phrase « Nous écrire » n'y figure plus (aucun lien hors contenu public
+        // et connexion). L'adresse de contact reste joignable, en clair et en
+        // lien mailto ordinaire, dans le pied de page de toutes les pages.
         $accueil = tests_envoi_requete('GET', '/', null);
         verifier(
-            'accueil : « Nous écrire » avec l’adresse de contact, en lien mailto',
+            'accueil d’un visiteur : l’adresse de contact reste jointe (pied de page, lien mailto)',
             (int) $accueil['code'] === 200
-                && str_contains((string) $accueil['corps'], 'Nous écrire')
+                && str_contains((string) $accueil['corps'], 'pied__contact')
                 && str_contains((string) $accueil['corps'], $mailtoContact),
             'code ' . $accueil['code']
+        );
+        verifier(
+            'accueil d’un visiteur : plus de « Nous écrire » sur la Une (1.31.0)',
+            !str_contains((string) $accueil['corps'], 'Nous écrire')
         );
 
         $connexion = tests_envoi_requete('GET', '/connexion', null);

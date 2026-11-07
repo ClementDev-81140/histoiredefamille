@@ -10,14 +10,20 @@ declare(strict_types=1);
 /** Page d'accueil. */
 function public_accueil(): void
 {
+    // Un visiteur voit la Une du journal (1.31.0) : tout le contenu public, du
+    // plus récent au plus ancien. L'accueil d'un compte connecté ne change pas
+    // (1.29.0) : il est calculé juste après, comme avant.
+    if (!is_logged_in()) {
+        public_accueil_visiteur();
+        return;
+    }
+
     // Un bloc masqué dans « Composition des pages » n'est pas calculé : ni
     // requête, ni travail pour le Pi.
     $visible = static fn (string $cle): bool => composition_visible('public', $cle);
 
     $documents = $visible('documents') ? recent_documents(6) : [];
-    $photos    = $visible('documents') ? recent_documents(4, 'photo') : [];
     $articles  = $visible('une') ? recent_articles(4) : [];
-    $personnes = $visible('arbre') ? recent_persons(4) : [];
 
     $pages = [];
     if ($visible('lire')) {
@@ -63,26 +69,65 @@ function public_accueil(): void
         }
     }
 
-    $nbDocs = $nbPages = $nbPersonnes = 0;
-    if ($visible('chiffres')) {
-        $nbDocs      = count_visible('documents', 'document');
-        $nbPages     = count_visible('pages', 'page');
-        $nbPersonnes = count_visible('persons', 'person');
-    }
+    // Les chiffres de l'ancien en-tête ne sont plus affichés (1.31.0) : le bloc
+    // a été retiré de la composition, `composition_visible()` répond donc faux
+    // et plus aucune requête de comptage n'est faite.
 
     render('public/accueil', [
         'titre'      => null,
         'documents'  => $documents,
-        'photos'     => $photos,
         'articles'   => $articles,
         'pages'      => $pages,
-        'personnes'  => $personnes,
         'dansLaFamille' => $dansLaFamille,
         'uneArticle' => $uneArticle,
         'salutation' => $salutation,
-        'nbDocs'     => $nbDocs,
-        'nbPages'    => $nbPages,
-        'nbPersonnes' => $nbPersonnes,
+    ]);
+}
+
+/**
+ * Accueil d'un **visiteur** : la Une du journal (1.31.0).
+ *
+ * Une seule page pour tout le contenu public — articles, photos, vidéos,
+ * documents, recettes et pages d'information — du plus récent au plus ancien,
+ * le plus récent en grand. Aucun lien vers autre chose que du contenu public
+ * et la connexion.
+ *
+ * Le filtrage n'est pas refait ici : `une_publique_page()` passe par
+ * `visibility_clause()`, exactement comme les autres pages du site.
+ */
+function public_accueil_visiteur(): void
+{
+    $page    = max(1, query_int('page', 1));
+    $parPage = une_publique_par_page();
+
+    // La une : le contenu choisi par un administrateur (« Composition des
+    // pages »), sinon le contenu public le plus récent. Le choix est revérifié
+    // ici : un contenu repassé en privé ne s'affiche pas.
+    $une        = une_publique_une();
+    $uneChoisie = $une !== null;
+    $liste      = une_publique_page($parPage, $page, $une);
+
+    // Sans choix d'administrateur, c'est le premier de la liste qui tient la
+    // une : on le retire de la grille pour ne pas le montrer deux fois.
+    $items = $liste['items'];
+    if ($une === null && $items !== []) {
+        $une   = array_shift($items);
+        // Le total ne compte plus la une : la pagination reste juste.
+        $liste['total'] = max(0, $liste['total'] - 1);
+        $liste['pagination'] = pagination($liste['total'], $parPage, $page);
+    }
+
+    render('public/accueil', [
+        'titre'          => null,
+        'salutation'     => '',
+        'unePublique'    => $une,
+        'uneChoisie'     => $uneChoisie,
+        'itemsPubliques' => $items,
+        'totalPublique'  => $liste['total'],
+        'pagination'     => $liste['pagination'],
+        'pagePublique'   => $page,
+        'parPage'        => $parPage,
+        'phraseAccueil'  => apparence_accueil_phrase(),
     ]);
 }
 

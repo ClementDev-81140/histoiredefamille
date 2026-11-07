@@ -303,3 +303,65 @@ Pour l'ajout de photos dans un album (`actions-album.mjs`) :
 - l'album public montre le bouton à un administrateur, **jamais** à un visiteur ;
 - la palette du thème demandée est bien appliquée (couleur de fond du `body`) ;
 - à l'impression (`emulateMediaType('print')`), la page tient dans la largeur.
+
+### La Une du journal pour un visiteur (1.31.0)
+
+Cinq rendus suffisent, tous en **compte 0** (visiteur). La page « vide » vient
+d'une **copie** de la base de démonstration dont tout le contenu a été repassé
+en visibilité « Famille » (aucun contenu public, donc).
+
+```bash
+# 1. Les pages, par le routeur réel (0 = visiteur).
+cd /tmp/h
+php_rendre() { HDF_ENV='{"HDF_FORCE_CLI":"1"}' \
+    HDF_ARGV="[\"x\",\"$1\",\"$2\",\"0\"]" HDF_CONFIG="$3" \
+    node runcode.mjs /home/user/histoiredefamille/tools/navigateur/rendre.php; }
+php_rendre "/"                  /tmp/accueil.html           /tmp/demo/config.php
+php_rendre "/documents/1"       /tmp/contenu-public.html    /tmp/demo/config.php
+php_rendre "/documents/5"       /tmp/prive-404.html         /tmp/demo/config.php
+php_rendre "/documents/999999"  /tmp/introuvable-404.html   /tmp/demo/config.php
+php_rendre "/"                  /tmp/accueil-vide.html      /tmp/demo-vide/config.php
+# puis les images en `data:` (inline-medias.php) et /theme.css du thème voulu.
+
+# 2. Le serveur d'essai : la page vide et la page « introuvable » reçoivent des
+#    adresses à nous, le banc ne servant que des fichiers.
+PAGES_ALBUM='{"/":"/tmp/accueil-inline.html",
+  "/vide":"/tmp/accueil-vide-inline.html",
+  "/documents/1":"/tmp/contenu-public-inline.html",
+  "/documents/5":"/tmp/prive-404.html",
+  "/page-qui-n-existe-vraiment-pas":"/tmp/introuvable-404.html"}' \
+THEME_CSS=/tmp/theme-papier.css CAPTURES=/tmp \
+    node tools/navigateur/serveur.mjs
+
+# 3. Le contrôle : 19 vérifications par largeur et par palette.
+THEME=papier THEME_FOND='rgb(243, 231, 206)' CAPTURES=/tmp \
+    node tools/navigateur/actions-une-publique.mjs 1280
+# puis 390, puis la palette bleu (THEME_CSS=/tmp/theme-bleu.css,
+# THEME_FOND='rgb(246, 245, 242)', pages rendues après avoir choisi « bleu »
+# dans Administration → Apparence).
+```
+
+Ce que le banc exige, et qu'aucun essai PHP ne peut voir :
+
+- le menu d'un visiteur contient **exactement deux** liens, « Accueil » (`/`)
+  et « Se connecter » (`/connexion`) — ni « Consulter », ni « Carte » ;
+- le bouton « Se connecter » tient **entièrement dans le premier écran**
+  (800 px de haut) et mesure au moins 44 px de haut et 180 px de large ;
+- « À LA UNE » montre un contenu public en grand, titre cliquable vers
+  `/articles/…`, `/documents/…`, `/videos/…`, `/recettes/…` ou `/pages/…`, et sa
+  vignette est chargée (jamais d'image cassée : un document sans aperçu reçoit
+  un repère de rubrique) ;
+- au-delà de six contenus, la grille est **regroupée par rubrique**, avec les
+  seuls libellés du journal ;
+- **aucun lien** de la page ne mène ailleurs qu'à du contenu public, à la
+  connexion ou à l'adresse de contact du pied de page (liens `mailto:`) ;
+- aucun attribut `style`, aucun `<script>` en ligne, aucune ressource
+  extérieure, un seul `h1` (invisible), aucun débordement horizontal, aucune
+  erreur JavaScript ;
+- l'accueil vide n'a **ni une, ni grille, ni rubrique** : seulement le bloc
+  « Le journal paraîtra bientôt », le bouton et les deux adresses ;
+- un contenu **privé** ouvert par son adresse directe donne **exactement** le
+  texte de la page « introuvable ». Le code **404** lui-même et l'égalité
+  octet pour octet des deux réponses sont vérifiés par les essais PHP
+  (`tests_une.php`) : le banc ne sert que des fichiers, il ne peut pas rendre
+  un code HTTP.

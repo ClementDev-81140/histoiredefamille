@@ -860,8 +860,8 @@ if ($filtre === '' || $filtre === 'rubriques') {
             'obtenu : ' . json_encode($sansRien, JSON_UNESCAPED_UNICODE)
         );
         verifier(
-            'aucun contenu public : menu du visiteur réduit à deux entrées, sans arbre',
-            $menuSansRien === ['accueil', 'documents'],
+            'aucun contenu public : menu du visiteur réduit à « Accueil » (1.31.0)',
+            $menuSansRien === ['accueil'],
             'obtenu : ' . implode(', ', (array) $menuSansRien)
         );
 
@@ -886,9 +886,12 @@ if ($filtre === '' || $filtre === 'rubriques') {
             !empty($avecArticle['articles']),
             'obtenu : ' . json_encode($avecArticle, JSON_UNESCAPED_UNICODE)
         );
+        // 1.31.0 : la rubrique existe toujours (elle sert au classement de la
+        // Une), mais le menu du visiteur ne change pas : « Accueil », rien de
+        // plus. Un contenu public ne doit pas ajouter d'entrée au menu.
         verifier(
-            'un article public : lien Articles dans le menu du visiteur',
-            in_array('articles', array_column($menuArticle, 'cle'), true),
+            'un article public : le menu du visiteur reste « Accueil » seulement',
+            array_column($menuArticle, 'cle') === ['accueil'],
             'menu : ' . implode(', ', array_column($menuArticle, 'cle'))
         );
 
@@ -969,9 +972,8 @@ if ($filtre === '' || $filtre === 'rubriques') {
         $menuAdmin    = array_column(menu_rubriques($compteAdmin, $extras), 'cle');
 
         verifier(
-            'menu visiteur : commence par accueil et documents, jamais l’arbre',
-            array_slice($menuVisiteur, 0, 2) === ['accueil', 'documents']
-                && !in_array('arbre', $menuVisiteur, true),
+            'menu visiteur : « Accueil » seulement, ni documents ni carte ni arbre',
+            $menuVisiteur === ['accueil'],
             'obtenu : ' . implode(', ', $menuVisiteur)
         );
         verifier(
@@ -2131,10 +2133,17 @@ if ($filtre === '' || $filtre === 'composition') {
                 'visibleApres' => composition_visible('famille', 'annonces'),
             ];
 
-            // 3. Un bloc « toujours affiché » ne peut pas être masqué.
+            // 3. Plus aucun bloc « toujours affiché » (1.31.0) : l'accueil d'un
+            //    visiteur est la Une du journal, il ne suit pas la composition.
+            //    Le mécanisme reste dans le code, mais aucun bloc n'en dépend.
             $essais['fixe'] = [
-                'retour'  => composition_basculer('public', 'entrees'),
-                'visible' => composition_visible('public', 'entrees'),
+                'fixes' => array_values(array_map(
+                    static fn (array $bloc): string => $bloc['cle'],
+                    array_filter(
+                        composition_catalogue('public'),
+                        static fn (array $bloc): bool => !empty($bloc['fixe'])
+                    )
+                )),
             ];
 
             // 4. Monter / descendre : l'ordre change, la colonne jamais.
@@ -2272,9 +2281,15 @@ if ($filtre === '' || $filtre === 'composition') {
     // Composition d'origine : le site tel qu'il est aujourd'hui.
     $d = $ok('defauts') ? $essais['defauts'] : [];
     verifier(
-        'composition : les huit blocs de l’accueil, dans l’ordre d’origine',
-        ($d['public'] ?? []) === ['entrees', 'egalement', 'chiffres', 'reserve', 'famille', 'une', 'documents', 'lire'],
+        'composition : les quatre blocs de l’accueil des comptes connectés, dans l’ordre d’origine',
+        ($d['public'] ?? []) === ['famille', 'une', 'documents', 'lire'],
         json_encode($d['public'] ?? [], JSON_UNESCAPED_UNICODE)
+    );
+    verifier(
+        'composition : l’accueil d’un visiteur n’est pas composé (aucun bloc d’en-tête)',
+        ($d['colonnesPublic']['hero'] ?? null) === []
+            && array_keys(composition_colonnes_libelles()) === ['principale', 'laterale', 'pleine'],
+        json_encode(array_keys(composition_colonnes_libelles()), JSON_UNESCAPED_UNICODE)
     );
     verifier(
         'composition : les douze blocs de l’espace famille, dans l’ordre d’origine',
@@ -2290,7 +2305,8 @@ if ($filtre === '' || $filtre === 'composition') {
         ($d['colonnesFamille']['principale'] ?? []) === ['une', 'colonnes']
             && ($d['colonnesFamille']['laterale'] ?? []) === ['annonces', 'editions', 'courrier', 'acces', 'chiffres']
             && ($d['colonnesFamille']['pleine'] ?? []) === ['videos', 'albums', 'pages', 'documents', 'personnes']
-            && ($d['colonnesPublic']['hero'] ?? []) === ['entrees', 'egalement', 'chiffres', 'reserve'],
+            && ($d['colonnesPublic']['hero'] ?? null) === []
+            && ($d['colonnesPublic']['pleine'] ?? []) === ['famille', 'une', 'documents', 'lire'],
         json_encode($d['colonnesFamille'] ?? [], JSON_UNESCAPED_UNICODE)
     );
 
@@ -2309,7 +2325,11 @@ if ($filtre === '' || $filtre === 'composition') {
 
     // Bloc toujours affiché.
     $f = $ok('fixe') ? $essais['fixe'] : [];
-    verifier('composition : les trois entrées de l’accueil ne peuvent pas être masquées', ($f['retour'] ?? false) === true && ($f['visible'] ?? false) === true);
+    verifier(
+        'composition : aucun bloc n’est « toujours affiché » (l’accueil d’un visiteur est fixe)',
+        ($f['fixes'] ?? null) === [],
+        json_encode($f, JSON_UNESCAPED_UNICODE)
+    );
 
     // Monter / descendre.
     $mo = $ok('monter') ? $essais['monter'] : [];
@@ -2338,8 +2358,8 @@ if ($filtre === '' || $filtre === 'composition') {
     $l = $ok('lecture') ? $essais['lecture'] : [];
     verifier(
         'composition : un JSON illisible redonne la composition d’origine',
-        ($l['invalide'] ?? []) === ['entrees', 'egalement', 'chiffres', 'reserve', 'famille', 'une', 'documents', 'lire']
-            && ($l['vide'] ?? []) === ['entrees', 'egalement', 'chiffres', 'reserve', 'famille', 'une', 'documents', 'lire'],
+        ($l['invalide'] ?? []) === ['famille', 'une', 'documents', 'lire']
+            && ($l['vide'] ?? []) === ['famille', 'une', 'documents', 'lire'],
         json_encode($l, JSON_UNESCAPED_UNICODE)
     );
     verifier(
@@ -2352,7 +2372,7 @@ if ($filtre === '' || $filtre === 'composition') {
     );
     verifier(
         'composition : une clé inconnue est ignorée, un doublon aussi',
-        count($l['inconnue'] ?? []) === 8 && count($l['doublon'] ?? []) === 8,
+        count($l['inconnue'] ?? []) === 4 && count($l['doublon'] ?? []) === 4,
         json_encode(['inconnue' => $l['inconnue'] ?? [], 'doublon' => $l['doublon'] ?? []], JSON_UNESCAPED_UNICODE)
     );
     verifier(
@@ -2441,7 +2461,16 @@ if ($filtre === '' || $filtre === 'composition') {
             && !str_contains($vueFamille, 'db_one(')
     );
     $vuePublique = (string) file_get_contents(dirname(__DIR__) . '/views/public/accueil.php');
-    verifier('composition : la vue publique suit composition_colonne()', substr_count($vuePublique, "composition_colonne('public'") === 2);
+    $vueVisiteur = (string) file_get_contents(dirname(__DIR__) . '/views/public/accueil_visiteur.php');
+    verifier(
+        'composition : la vue publique suit composition_colonne()',
+        substr_count($vuePublique, "composition_colonne('public'") === 1
+            && str_contains($vuePublique, "composition_colonne('public', 'pleine')")
+    );
+    verifier(
+        'composition : l’accueil d’un visiteur ne lit aucune composition (page fixe)',
+        !str_contains($vueVisiteur, 'composition_')
+    );
 
     // Administration : accès et jeton CSRF, par lecture du code.
     $codeAdmin = (string) file_get_contents(dirname(__DIR__) . '/controllers/admin_composition.php');
@@ -2613,6 +2642,11 @@ if ($filtre === '' || $filtre === 'propositions') {
 if ($filtre === '' || $filtre === 'defauts') {
     require_once __DIR__ . '/tests_defauts.php';
     tests_defauts();
+}
+
+if ($filtre === '' || $filtre === 'une') {
+    require_once __DIR__ . '/tests_une.php';
+    tests_une();
 }
 
 if ($filtre === '' || $filtre === 'accueil') {

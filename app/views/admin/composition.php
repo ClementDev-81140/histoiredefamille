@@ -8,8 +8,9 @@
  * parmi ses voisins.
  *
  * @var array $pages, $catalogue, $colonnes, $erreurs, $old, $modeles
+ * @var array $uneCandidats  contenus publics proposés pour la une (1.31.0)
  * @var int   $colonnesUne
- * @var string $resume, $modeleDefaut
+ * @var string $resume, $modeleDefaut, $unePublique
  * @var bool  $unePhoto
  */
 $val = static function (string $cle, mixed $defaut = '') use ($old): mixed {
@@ -19,6 +20,7 @@ $resume = (string) $val('une_resume', $resume);
 $modele = (string) $val('modele_defaut', $modeleDefaut);
 $nbUne  = (int) $val('une_colonnes', $colonnesUne);
 $photo  = (string) $val('une_photo', $unePhoto ? '1' : '0') === '1';
+$une    = (string) $val('une_publique', $unePublique);
 ?>
 <nav class="fil" aria-label="Fil d’Ariane">
     <a href="/admin">Administration</a>
@@ -38,6 +40,15 @@ $photo  = (string) $val('une_photo', $unePhoto ? '1' : '0') === '1';
 <?php foreach ($pages as $clePage => $page): ?>
     <section class="section composition-page">
         <h2><?= e($page['nom']) ?></h2>
+        <?php if ($clePage === 'public'): ?>
+            <p class="aide">
+                Cette composition règle l’accueil des <strong>comptes connectés</strong>.
+                Un visiteur, lui, voit la <strong>Une du journal</strong> : tout le contenu
+                public, du plus récent au plus ancien, avec la porte « Se connecter ».
+                Le contenu présenté en grand se choisit plus bas
+                (<a href="#une_publique">À la une du site public</a>).
+            </p>
+        <?php endif; ?>
 
         <?php foreach ($colonnes as $cleColonne => $nomColonne): ?>
             <?php $blocs = $page['colonnes'][$cleColonne] ?? []; ?>
@@ -137,6 +148,27 @@ $photo  = (string) $val('une_photo', $unePhoto ? '1' : '0') === '1';
         <input type="checkbox" name="une_photo" value="1" <?= checked($photo) ?>>
         Afficher la photo de l’article à la une
     </label>
+
+    <?php /* La une du site public (1.31.0) : un seul contenu en grand sur
+             l'accueil d'un visiteur. La liste ne contient que des contenus
+             publics — le choix est donc toujours affichable. */ ?>
+    <div class="champ">
+        <label for="une_publique">À la une du site public</label>
+        <select id="une_publique" name="une_publique">
+            <option value="">Automatique — le contenu public le plus récent</option>
+            <?php foreach ($uneCandidats as $candidat): ?>
+                <option value="<?= e($candidat['cle']) ?>"<?= selected($une === $candidat['cle']) ?>>
+                    <?= e($candidat['libelle']) ?> — <?= e($candidat['titre']) ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
+        <p class="aide">
+            L’accueil d’un visiteur présente <strong>tout le contenu public</strong> du site,
+            du plus récent au plus ancien. Le contenu choisi ici s’affiche en grand ;
+            « automatique » garde le plus récent. Si ce contenu cesse d’être public,
+            la page reprend le plus récent toute seule.
+        </p>
+    </div>
 
     <p class="actions">
         <button type="submit" class="bouton">Enregistrer ces réglages</button>

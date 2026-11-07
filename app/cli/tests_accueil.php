@@ -3,10 +3,11 @@
  * Tests des pages d'accueil (lot 1.24.0).
  *
  * Deux pages, deux rôles :
- *   - la page publique (/) présente le journal et **deux portes** : « Consulter »
- *     et « Se connecter » (la seconde mise en avant). L'arbre généalogique n'y
- *     figure plus, et ses adresses sont fermées au visiteur. Une fois connecté,
- *     les deux portes disparaissent et « Dans la famille » les remplace :
+ *   - la page publique (/) est la **Une du journal** (1.31.0) : tout le contenu
+ *     public, du plus récent au plus ancien, et une seule porte, « Se
+ *     connecter », mise en avant dans le premier écran. L'arbre généalogique
+ *     n'y figure plus, et ses adresses sont fermées au visiteur. Une fois
+ *     connecté, la vitrine disparaît et « Dans la famille » la remplace :
  *   - l'accueil connecté (/famille) est la « une » du journal, strictement dans
  *     les droits du compte : articles, documents, personnes, anniversaires,
  *     nouveautés. Un journaliste y trouve « Proposer un article », un
@@ -41,7 +42,7 @@ function tests_accueil(): void
     verifier('accueil : les comptes d’essai sont annulés', true);
 }
 
-/** 1. La page publique et ses deux portes. */
+/** 1. La page publique : la Une du journal (1.31.0). */
 function tests_accueil_public(): void
 {
     $accueil = tests_envoi_requete('GET', '/', null);
@@ -51,10 +52,15 @@ function tests_accueil_public(): void
         'code ' . $accueil['code']
     );
 
-    verifier_contient(
-        'accueil public : la porte « Consulter » est là',
-        'Consulter',
-        (string) $accueil['corps']
+    // Depuis la 1.31.0, l'accueil d'un visiteur est la Une du journal : tout le
+    // contenu public, du plus récent au plus ancien. La porte « Consulter » a
+    // disparu — la page elle-même est la consultation.
+    verifier(
+        'accueil public : la Une du journal remplace la porte « Consulter »',
+        (str_contains((string) $accueil['corps'], 'À la une')
+            || str_contains((string) $accueil['corps'], 'Le journal paraîtra bientôt'))
+            && !str_contains((string) $accueil['corps'], '>Consulter<'),
+        'la page ne présente pas la une, ou propose encore « Consulter »'
     );
     verifier_contient(
         'accueil public : la porte « Se connecter » est là',
@@ -71,10 +77,10 @@ function tests_accueil_public(): void
     );
 
     // La porte de connexion est aussi la plus grande des deux (feuille de
-    // style) : contenu plus large, police plus forte que « Consulter ».
+    // style) : contenu plus large, police plus forte que les autres boutons.
     $css = (string) @file_get_contents(HDF_ROOT . '/public/assets/style.css');
     verifier(
-        'accueil public : la porte « Se connecter » est plus grande que « Consulter »',
+        'accueil public : la porte « Se connecter » est le plus grand bouton de la page',
         str_contains((string) $accueil['corps'], 'bouton--porte')
             && preg_match('/\.bouton--porte\s*\{[^}]*font-size:\s*1\.15rem/', $css) === 1
             // La règle doit venir APRÈS le bouton de base, sinon celui-ci
@@ -92,11 +98,13 @@ function tests_accueil_public(): void
         'un lien vers l’arbre subsiste'
     );
 
+    // 1.31.0 : le menu d'un visiteur n'a plus qu'une entrée — « Accueil ».
+    // « Se connecter » est la porte mise en avant, ajoutée par la mise en page.
     $menu = menu_rubriques(null, []);
     $libelles = array_column($menu, 'libelle');
     verifier(
-        'accueil public : le menu du visiteur ne contient plus « Arbre »',
-        !in_array('Arbre', $libelles, true) && in_array('Consulter', $libelles, true),
+        'accueil public : le menu du visiteur se réduit à « Accueil »',
+        $libelles === ['Accueil'],
         implode(', ', $libelles)
     );
 
@@ -287,9 +295,9 @@ function tests_accueil_dans_la_famille(): void
         'code ' . $pageAdmin['code']
     );
 
-    // Les deux portes du visiteur ont disparu pour un compte connecté.
+    // La vitrine du visiteur a disparu pour un compte connecté.
     verifier(
-        'accueil connecté : plus de porte « Consulter » sur la page publique',
+        'accueil connecté : plus de vitrine de visiteur sur la page d’accueil',
         !str_contains($corpsLecteur, 'actions--portes')
             && !str_contains($corpsLecteur, '>Consulter<'),
         'la porte du visiteur est encore là'
@@ -458,14 +466,15 @@ function tests_accueil_une(): void
             && str_contains($css, '.entete__date')
     );
 
-    // 6. La page d'un visiteur ne change pas.
+    // 6. La page d'un visiteur est la Une du journal (1.31.0) : la phrase
+    // d'accueil et la porte « Se connecter », rien de la page connectée.
     $visiteur = tests_envoi_requete('GET', '/', null);
     verifier(
-        'accueil public : le visiteur garde la phrase, les chiffres et « Nous écrire »',
-        str_contains((string) $visiteur['corps'], 'hero__texte')
-            && str_contains((string) $visiteur['corps'], 'hero__chiffres')
-            && str_contains((string) $visiteur['corps'], 'Nous écrire :')
-            && str_contains((string) $visiteur['corps'], 'actions--portes'),
+        'accueil public : le visiteur voit la phrase et la porte « Se connecter »',
+        str_contains((string) $visiteur['corps'], 'une-intro__phrase')
+            && str_contains((string) $visiteur['corps'], 'actions--portes')
+            && str_contains((string) $visiteur['corps'], 'bouton--porte')
+            && !str_contains((string) $visiteur['corps'], 'hero__chiffres'),
         'la vitrine du visiteur a changé'
     );
     verifier(

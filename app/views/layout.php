@@ -118,16 +118,24 @@ $navClass = static function (string $href) use ($currentPath): string {
             <?php foreach ($menuAvant as $entree): ?>
                 <a href="<?= e($entree['href']) ?>"<?= $navClass($entree['href']) ?>><?= e($entree['libelle']) ?></a>
             <?php endforeach; ?>
-            <?php foreach ($navPages as $navPage): ?>
-                <a href="/pages/<?= e($navPage['slug']) ?>"<?= $navClass('/pages/' . $navPage['slug']) ?>><?= e($navPage['title']) ?></a>
-            <?php endforeach; ?>
+            <?php /* Les pages d'information ne sont plus dans le menu public
+                     (1.31.0) : un visiteur a « Accueil » et « Se connecter », et
+                     retrouve les pages publiques dans la Une de l'accueil. Un
+                     compte connecté les garde ici. */ ?>
+            <?php if ($account !== null): ?>
+                <?php foreach ($navPages as $navPage): ?>
+                    <a href="/pages/<?= e($navPage['slug']) ?>"<?= $navClass('/pages/' . $navPage['slug']) ?>><?= e($navPage['title']) ?></a>
+                <?php endforeach; ?>
+            <?php endif; ?>
             <?php foreach ($menuTchat as $entree): ?>
                 <a href="<?= e($entree['href']) ?>"<?= $navClass($entree['href']) ?>><?= e($entree['libelle']) ?><?php if ($tchatNonLus > 0): ?><span class="pastille" aria-label="nouveaux messages"><?= $tchatNonLus > 99 ? '99+' : (int) $tchatNonLus ?></span><?php endif; ?></a>
             <?php endforeach; ?>
 
             <?php if ($account === null): ?>
                 <!-- La porte d'entrée : « Se connecter », mise en avant dans
-                     l'en-tête. « Consulter » est déjà l'entrée du menu. -->
+                     l'en-tête. Depuis la 1.31.0, c'est la seconde et dernière
+                     entrée du menu d'un visiteur : l'accueil fait office de
+                     « Consulter », il présente tout le contenu public. -->
                 <a class="nav__accent nav__accent--connexion" href="/connexion">Se connecter</a>
             <?php else: ?>
                 <a class="nav__accent" href="<?= $account['role'] === 'admin' ? '/admin' : '/famille' ?>">

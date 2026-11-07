@@ -116,6 +116,12 @@ function matrice_famille(string $methode, string $motif): string
     if (str_starts_with($motif, '/arbre') || str_starts_with($motif, '/api/arbre')) {
         return 'arbre';
     }
+    // La carte des lieux suit la même règle depuis la 1.31.0 : un visiteur est
+    // renvoyé vers la connexion (l'accueil public fait office de découverte),
+    // un compte connecté ouvre la carte et les fiches de lieu comme avant.
+    if ($motif === '/carte' || str_starts_with($motif, '/lieu/')) {
+        return 'carte';
+    }
     // La gazette en ligne n'est lisible que par les ayants droit : un visiteur
     // est renvoyé vers la connexion, et un compte sans numéro reçoit un 404.
     if (str_starts_with($motif, '/gazette/')) {
@@ -184,6 +190,11 @@ function matrice_attendu(string $methode, string $motif, string $profil): int
             return 200;
 
         case 'arbre':
+            return $connecte ? 200 : 303;
+
+        case 'carte':
+            // 1.31.0 : la carte et les fiches de lieu ne sont plus ouvertes à
+            // un visiteur ; les quatre profils connectés y entrent comme avant.
             return $connecte ? 200 : 303;
 
         case 'gazette':
@@ -968,6 +979,8 @@ function matrice_rapport(array $lignes, array $anomalies, array $controles): str
         . "| `GET /famille`, `/tchat`, `/admin` pour un visiteur | **303** : renvoi vers `/connexion` (avec le chemin de retour), jamais la page elle-même. |\n"
         . "| Contenu non autorisé | **404** identique à une page qui n'existe pas : l'existence d'un document privé n'est pas révélée. |\n"
         . "| `POST` sans jeton CSRF | **403**, y compris pour un administrateur. |\n"
+        . "| `GET /carte` et `GET /lieu/{id}` pour un visiteur | **303** depuis la 1.31.0 : renvoi vers `/connexion`, exactement comme `/arbre`. Les quatre profils connectés ouvrent la carte et les fiches de lieu (**200**) : rien n'a changé pour eux. |\n"
+        . "| `GET /articles`, `/documents`, `/albums`, `/videos`, `/recherche`, `/calendrier`, `/recettes`, `/frise`, `/temoignages` | **inchangés** : **200** pour un visiteur, comme avant la 1.31.0. Seul le *menu* d'un visiteur est réduit à « Accueil » et « Se connecter » ; aucune autre règle d'accès ne bouge. |\n"
         . "| Filtre `?visibilite=` des listes d'administration | **Aucun droit modifié** : c'est un filtre d'affichage réservé aux administrateurs (les pages concernées répondent déjà **303** à un visiteur, **200** à un administrateur). Une valeur inventée est ignorée et redonne la liste complète. |\n";
 
     return "# Matrice d'accès\n\n"

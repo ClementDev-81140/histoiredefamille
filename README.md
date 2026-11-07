@@ -40,14 +40,18 @@ et une installation qui tient en quelques commandes à copier-coller.
 
 ### Partie publique (visible par tous)
 
-- Une page d'accueil qui tient en **deux entrées** : *Consulter* (les
-  documents) et *Se connecter*, la seconde plus grosse et mise en avant. C'est
-  voulu : le site se consulte d'abord en privé, avec le compte de sa branche.
-  Une fois connecté, ces deux portes disparaissent et la page **commence par
-  la une** : l'article du jour dans le premier écran, puis le bloc
-  **« Dans la famille »** — dans une colonne à droite sur grand écran, juste
-  dessous sur téléphone (voir plus bas).
-  **L'arbre généalogique n'est plus public** : il s'ouvre une fois connecté.
+- Une page d'accueil qui est **la Une du journal** (1.31.0) : le bandeau de la
+  famille, un gros bouton **Se connecter**, puis **tout le contenu public du
+  site** — articles, photos, vidéos, documents, recettes, pages d'information —
+  du plus récent au plus ancien. Le plus récent tient la une, en grand ; les
+  autres suivent en grille, regroupés par rubrique dès qu'ils sont plus de six.
+  Le menu d'un visiteur ne contient que **« Accueil »** et **« Se connecter »**
+  (le bouton mène à `/connexion`).
+  Une fois connecté, la page **commence par la une** de la famille : l'article
+  du jour dans le premier écran, puis le bloc **« Dans la famille »** — dans une
+  colonne à droite sur grand écran, juste dessous sur téléphone (voir plus bas).
+  **L'arbre généalogique et la carte ne sont pas publics** : ils s'ouvrent une
+  fois connecté.
 - Les autres rubriques (Articles, Vidéos, Albums, Calendrier, Recherche)
   n'apparaissent dans le menu et sur l'accueil **que si quelque chose y a été
   publié en « Public »**. Un visiteur ne tombe jamais sur une rubrique vide.
@@ -1127,9 +1131,7 @@ trois boutons :
 
 Ce sont de vrais boutons : **aucun JavaScript n'est nécessaire**. Un bloc
 masqué **n'est pas calculé du tout** — le site ne va même pas chercher les
-vidéos ou les annonces, ce qui allège le Raspberry Pi. Le bloc des deux
-entrées de l'accueil (Consulter, Se connecter) reste toujours là : ce sont les
-portes du site, et elles ne s'affichent que pour un visiteur.
+vidéos ou les annonces, ce qui allège le Raspberry Pi.
 
 Les blocs de **l'espace famille** :
 
@@ -1139,18 +1141,20 @@ Les blocs de **l'espace famille** :
 | Colonne de droite | Petites annonces, Les éditions, Courrier des lecteurs, Accès rapides, En chiffres |
 | Toute la largeur | Dernières vidéos, Albums photos, Pages d'information, Derniers documents, Personnes récemment mises à jour |
 
-Ceux de **l'accueil public** : les deux entrées, « Également publié », les
-chiffres, « Dans la famille » (un compte connecté seulement), « À la une »
+Ceux de **l'accueil des comptes connectés** : « Dans la famille », « À la une »
 (les articles), les derniers documents et « À lire » (les pages d'information).
 
-Pour un **visiteur**, cet ordre est celui de la page. Pour un **compte
-connecté**, la une passe devant (1.29.0) : la phrase d'accueil, la ligne de
-chiffres et « Nous écrire » ne s'affichent plus (l'adresse reste dans le pied
-de page), une seule ligne de bienvenue prend place sous la date, et « Dans la
-famille » suit la une — colonne de droite à partir de 64 rem, jamais avant. Le
-bloc montre **cinq lignes** au plus, avec un lien « Tout voir » vers l'espace
-famille ; sur téléphone, au-delà de trois lignes, il est replié dans un
-`<details>` (aucun JavaScript).
+**L'accueil d'un visiteur ne se compose pas** : depuis la 1.31.0, c'est la Une
+du journal (tout le contenu public, du plus récent au plus ancien). Les quatre
+blocs de l'ancien en-tête public (les deux entrées, « Également publié », les
+chiffres, « Nous écrire ») ne s'affichaient plus pour personne : ils ont été
+retirés de cette page, avec leurs boutons sans effet.
+
+Pour un **compte connecté**, la une passe devant (1.29.0) : une seule ligne de
+bienvenue prend place sous la date, et « Dans la famille » suit la une — colonne
+de droite à partir de 64 rem, jamais avant. Le bloc montre **cinq lignes** au
+plus, avec un lien « Tout voir » vers l'espace famille ; sur téléphone, au-delà
+de trois lignes, il est replié dans un `<details>` (aucun JavaScript).
 
 **Réglages de la une.** Sur la même page :
 
@@ -1158,6 +1162,10 @@ famille ; sur téléphone, au-delà de trois lignes, il est replié dans un
   récent s'affiche en grand, les suivants en colonnes.
 - **Longueur du résumé** : court, moyen ou long.
 - **Photo de l'article à la une** : affichée ou non.
+- **À la une du site public** : le contenu que voit un visiteur en grand sur
+  l'accueil (1.31.0). La liste ne propose que des contenus publics ;
+  « Automatique » — le défaut — garde le plus récent. Si ce contenu cesse
+  d'être public, la page reprend le plus récent toute seule.
 - **Modèle d'article par défaut** : voir plus bas.
 
 **Les modèles d'article.** Chaque article peut avoir sa présentation, choisie
@@ -1337,21 +1345,24 @@ sur le Raspberry Pi.
 
 Rien à cocher : le site s'en occupe.
 
-- Un visiteur non connecté ne voit que **deux portes** : « Consulter » (les
-  documents) et « Se connecter ». **L'arbre généalogique n'est plus public** :
-  ses adresses renvoient vers la connexion. Les autres onglets apparaissent
-  **seulement** quand leur rubrique contient au moins un élément public (un
-  article publié et daté d'aujourd'hui ou du passé, une vidéo publique, un
-  album public, une personne publique avec des dates).
+- Un visiteur non connecté voit **une seule page** : la Une du journal
+  (1.31.0). Elle présente **tout ce qui est public**, du plus récent au plus
+  ancien, et son menu ne contient que **« Accueil »** et **« Se connecter »**.
+  **L'arbre généalogique, la carte et les fiches de lieu ne sont pas publics** :
+  leurs adresses (`/arbre`, `/carte`, `/lieu/{id}`) renvoient vers la connexion.
+  Les rubriques publiques qui existent (`/articles`, `/documents`, `/albums`,
+  `/videos`, `/recherche`, `/calendrier`, `/recettes`) gardent exactement leurs
+  règles d'accès : elles répondent à un visiteur comme avant, simplement elles
+  ne sont plus dans son menu.
 - Pour faire apparaître une rubrique : publier quelque chose dedans en
   visibilité « **Public** » (Administration → Articles / Vidéos / Albums, ou
   l'arbre pour le calendrier). Pour la faire disparaître : repasser ce contenu
   en « Famille » ou « Privé ».
 - Le tchat reste toujours privé : il n'apparaît jamais dans le menu public.
-- Un compte de famille ou d'administration garde, lui, **tout** le menu. Sur
-  la page d'accueil, les deux portes du visiteur laissent la place au bloc
-  « Dans la famille » (anniversaires, événements, personnes ajoutées,
-  nouveautés depuis la dernière visite), toujours filtré par ses droits.
+- Un compte de famille ou d'administration garde, lui, **tout** le menu. Son
+  accueil est celui de la 1.29.0 : la une d'abord, puis « Dans la famille »
+  (anniversaires, événements, personnes ajoutées, nouveautés depuis la dernière
+  visite), toujours filtré par ses droits.
 - Dans l'administration, chaque liste (articles, pages, documents, albums,
   vidéos, recettes) porte un filtre **« Visibilité »** : *Toutes*, *Public*,
   *Familles*, *Branches*, *Privé*. Le choix reste dans l'adresse
@@ -2994,7 +3005,9 @@ gazette (« Gazette du mois : 2 numéro(s) préparé(s) pour … ») au début d
 
 ## 16. La carte des lieux
 
-La page `/carte` dessine les lieux de la famille. Pour la placer au quotidien
+La page `/carte` dessine les lieux de la famille. Depuis la 1.31.0, elle
+demande la connexion : un visiteur est renvoyé vers `/connexion`, comme pour
+l'arbre. Pour la placer au quotidien
 (chercher une commune, saisir une position à la main, retirer un lieu), voir
 [6.17](#617-placer-les-lieux-sur-la-carte). Ce chapitre explique ce qui se
 passe derrière, pour pouvoir la réparer ou l'expliquer un jour.

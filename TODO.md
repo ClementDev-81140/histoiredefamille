@@ -3,6 +3,41 @@
 Ce fichier liste ce qui reste à faire, classé par priorité. Il n'y a pas de
 suivi automatique : cochez au fur et à mesure.
 
+## Fait (2026-11-07, 1.31.0 — une seule Une de journal, menu visiteur réduit)
+
+- [x] **Menu d'un visiteur = « Accueil » et « Se connecter »** seulement ;
+  « Consulter » et « Carte » retirés. Le menu d'un compte connecté ne change
+  pas.
+- [x] **`/carte` et `/lieu/{id}` renvoient un visiteur vers `/connexion`**
+  (303, comme `/arbre`). Aucun autre droit ne bouge : `/articles`,
+  `/documents`, `/albums`, `/videos`, `/recherche`, `/calendrier` répondent
+  encore **200** à un visiteur (vérifié dans la matrice).
+- [x] **Accueil public = la Une du journal** : phrase d'accueil, gros bouton
+  « Se connecter » dans le premier écran, puis À LA UNE en grand (contenu
+  public le plus récent, ou celui choisi par un administrateur), puis la grille
+  de tout le contenu public — regroupée par rubrique au-delà de six éléments —
+  avec « Voir plus » (GET) au-delà de 24, et un lien vers la page publique
+  existante de chaque contenu.
+- [x] **Nouveau réglage « À la une du site public »** (Composition des pages) :
+  liste de contenus publics seulement, « Automatique » par défaut, choix
+  revérifié à chaque affichage.
+- [x] **Accueil vide** : Une sobre, phrase d'accueil, « Se connecter » en grand,
+  contact@ et support@ en liens `mailto:` ; aucun bloc vide.
+- [x] **Test de fuite** : contenu privé, famille, branches, en attente de
+  validation, vidéo en conversion → aucun n'apparaît pour un visiteur (ni
+  vignette, ni titre, ni dans le HTML, ni dans une adresse d'image).
+- [x] **Défaut corrigé** : `visibility_clause()` applique `proposition_clause()`
+  aussi à un visiteur non connecté (un contenu en attente de validation
+  pouvait apparaître sur la Une publique).
+- [x] **L'accueil des comptes connectés ne change pas** (1.29.0) ; aucune
+  classe renommée, aucun style ni script en ligne, aucune ressource externe,
+  aucune migration.
+- [x] **Essais** : suite complète **1 310 essais, 0 échec** (dont 42 pour cette
+  version) ; matrice régénérée (192 routes, 768 vérifications, 0 anomalie) ;
+  navigateur réel 1280 et 390 px, papier et bleu ; captures
+  `docs/captures/*une-publique*`, `*une-vide*`, `*contenu-public*`,
+  `*contenu-prive-404*`.
+
 ## Fait (2026-11-07, 1.30.0 — verser dans un album ce qui est déjà sur le site)
 
 - [x] **Section « Ajouter depuis les documents du site »** sous le bloc d'envoi :

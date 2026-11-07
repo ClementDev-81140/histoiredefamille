@@ -43,6 +43,9 @@ function admin_composition(): void
         'unePhoto'      => composition_une_photo(),
         'modeleDefaut'  => site_setting('apparence_modele_defaut'),
         'modeles'       => article_modeles(),
+        // La une du site public (1.31.0) : choix parmi les contenus publics.
+        'unePublique'   => site_setting('une_publique'),
+        'uneCandidats'  => une_publique_candidats(40),
     ], 'layout_admin');
 }
 
@@ -108,6 +111,8 @@ function admin_composition_reglages(): void
         'Réglages de la une : ' . $valeurs['apparence_une_colonnes'] . ' article(s) en colonnes, '
         . 'résumé ' . $valeurs['apparence_une_resume'] . ', photo '
         . ($valeurs['apparence_une_photo'] === '1' ? 'affichée' : 'masquée')
+        . ', à la une du site public : '
+        . ($valeurs['une_publique'] === '' ? 'automatique' : $valeurs['une_publique'])
     );
     flash('succes', 'Les réglages de la une ont été enregistrés.');
     redirect('/admin/composition');

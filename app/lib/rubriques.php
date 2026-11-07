@@ -107,15 +107,6 @@ function rubrique_publique(string $cle): bool
     return rubriques_publiques()[$cle] ?? false;
 }
 
-/**
- * Le visiteur non connecté voit-il le menu réduit ?
- * (les comptes connectés gardent le menu complet)
- */
-function menu_public_reduit(): bool
-{
-    return !is_logged_in();
-}
-
 /** Recalcule rubriques_publiques() au prochain appel (tests automatiques). */
 function rubriques_publiques_oubli(): void
 {
@@ -125,13 +116,16 @@ function rubriques_publiques_oubli(): void
 /**
  * Entrées du menu principal, selon le profil.
  *
- * Visiteur non connecté : menu court, et seulement les rubriques qui ont du
- * contenu public. Compte de famille ou administrateur : menu complet, chaque
- * page filtrant ensuite selon les droits du compte.
+ * Visiteur non connecté : **« Accueil » seulement** (la porte « Se connecter »
+ * est ajoutée par la mise en page). Depuis la 1.31.0, l'accueil public présente
+ * tout le contenu public : plus aucune rubrique dans le menu. Compte de famille
+ * ou administrateur : menu complet, chaque page filtrant ensuite selon les
+ * droits du compte.
  *
  * @param array|null $compte  compte courant (null = visiteur non connecté)
  * @param array{recettes?:bool,temoignages?:bool,tchat?:bool,carte?:bool} $extras
- *        rubriques facultatives, déjà vérifiées par l'appelant
+ *        rubriques facultatives, déjà vérifiées par l'appelant ; sans effet pour
+ *        un visiteur depuis la 1.31.0
  * @return list<array{cle:string,href:string,libelle:string}>
  */
 function menu_rubriques(?array $compte, array $extras = []): array
@@ -139,34 +133,13 @@ function menu_rubriques(?array $compte, array $extras = []): array
     $entrees = [['cle' => 'accueil', 'href' => '/', 'libelle' => 'Accueil']];
 
     if ($compte === null) {
-        // --- Menu public réduit -------------------------------------------
-        $entrees[] = ['cle' => 'documents', 'href' => '/documents', 'libelle' => 'Consulter'];
-
-        foreach ([
-            ['articles', '/articles', 'Articles'],
-            ['videos', '/videos', 'Vidéos'],
-            ['albums', '/albums', 'Albums'],
-            ['calendrier', '/calendrier', 'Calendrier'],
-        ] as [$cle, $href, $libelle]) {
-            if (rubrique_publique($cle)) {
-                $entrees[] = ['cle' => $cle, 'href' => $href, 'libelle' => $libelle];
-            }
-        }
-
-        if (!empty($extras['recettes'])) {
-            $entrees[] = ['cle' => 'recettes', 'href' => '/recettes', 'libelle' => 'Recettes'];
-        }
-        if (!empty($extras['temoignages'])) {
-            $entrees[] = ['cle' => 'temoignages', 'href' => '/temoignages', 'libelle' => 'Témoignages'];
-        }
-        if (!empty($extras['carte'])) {
-            $entrees[] = ['cle' => 'carte', 'href' => '/carte', 'libelle' => 'Carte'];
-        }
-        if (rubrique_publique('recherche')) {
-            $entrees[] = ['cle' => 'recherche', 'href' => '/recherche', 'libelle' => 'Recherche'];
-        }
-
-        // Le tchat est privé : jamais dans le menu public.
+        // --- Menu public : deux entrées, pas une de plus (1.31.0) ----------
+        // L'accueil public est la Une du journal : il présente **tout** le
+        // contenu public, du plus récent au plus ancien, et chaque contenu mène
+        // à sa page. Il n'y a donc plus de rubriques dans le menu — ni
+        // « Consulter », ni « Carte » : un visiteur n'a que l'accueil et la
+        // porte d'entrée de la famille, ajoutée par la mise en page.
+        // Les comptes connectés gardent le menu complet (voir plus bas).
         return $entrees;
     }
 

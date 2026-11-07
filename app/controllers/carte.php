@@ -12,6 +12,10 @@ declare(strict_types=1);
 /** Page « Carte des lieux ». */
 function public_carte(): void
 {
+    // La carte n'est plus publique (1.31.0) : elle s'ouvre une fois connecté,
+    // comme l'arbre. Un visiteur est renvoyé vers la connexion.
+    require_login();
+
     $filtres  = carte_filtres();
     // Le cache est propre à chaque groupe de droits ; le paramètre permet de
     // forcer un recalcul (utile après avoir placé un lieu, et pour les tests).
@@ -48,6 +52,9 @@ function public_carte(): void
 /** Fiche d'un lieu : qui y est né, qui y est mort, qui s'y est marié. */
 function public_lieu(array $params): void
 {
+    // Même règle que la carte : la fiche d'un lieu n'est plus publique.
+    require_login();
+
     $id    = (int) ($params['id'] ?? 0);
     $place = carte_place($id);
 

@@ -3,6 +3,151 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.31.0] — 2026-11-07
+
+### Une seule Une de journal, et un menu de visiteur réduit
+
+Un visiteur qui arrivait sur le site trouvait une page d'accueil qui n'était pas
+un journal : une phrase, une ligne de chiffres, deux boutons — « Consulter » et
+« Se connecter » —, puis des rubriques à découvrir une par une, alors que
+**quatre autres rubriques** figuraient déjà dans son menu. Le contenu public,
+lui, n'était nulle part : il fallait ouvrir les listes pour savoir ce qui avait
+été publié.
+
+Décision du propriétaire : **une seule Une**, celle du journal, et **deux
+entrées de menu** — « Accueil » et « Se connecter » (le bouton mène à
+`/connexion`). L'accueil public fait
+désormais office de « Consulter », et il présente **tout le contenu public du
+site**, du plus récent au plus ancien.
+
+#### 1. Le menu d'un visiteur : Accueil et Connexion
+
+Le menu d'une personne non connectée ne contient plus que **« Accueil »** et
+**« Se connecter »**. « Consulter » et « Carte » n'y sont plus : la première menait
+à la liste des documents que l'accueil montre maintenant lui-même, la seconde
+n'était pas une lecture.
+
+Le menu d'un **compte connecté ne change pas** d'un caractère : mêmes rubriques,
+même ordre, mêmes droits.
+
+#### 2. La carte et les fiches de lieu demandent la connexion
+
+`/carte` et `/lieu/{id}` renvoient un visiteur vers **`/connexion`** (code
+**303**, comme `/arbre` depuis la 1.24.0), avec le chemin de retour. Un compte
+connecté ouvre la carte et les fiches comme avant.
+
+**Aucun autre droit ne change.** La matrice d'accès, régénérée, le montre route
+par route : pour un visiteur, `/articles`, `/documents`, `/albums`, `/videos`,
+`/recherche`, `/calendrier`, `/recettes`, `/frise`, `/temoignages` répondent
+**200** — exactement comme avant la version. Rien n'a été rendu plus ouvert :
+ce sont les deux seules routes qui bougent, et elles se ferment.
+
+#### 3. L'accueil d'un visiteur est la Une du journal
+
+Sous le bandeau de la famille (titre, date, numéro), la page commence par la
+phrase d'accueil et par le gros bouton **« Se connecter »**, dans le premier
+écran. Puis :
+
+- **À LA UNE** : le contenu public le plus récent, **en grand** — rubrique,
+  titre, date, type, vignette et résumé. Un administrateur peut en choisir un
+  autre (voir plus bas) ;
+- **la grille du journal** : tous les autres contenus publics, avec vignette,
+  titre, date et type. Dès qu'il y en a **plus de six**, ils sont regroupés par
+  rubrique — Articles, Photos, Vidéos, Documents, Recettes, Pages d'information —
+  comme les pages intérieures d'un journal ;
+- **« Voir plus »** (un simple lien `GET`, sans JavaScript) au-delà de
+  **24 contenus**, avec le nombre de pages et le total.
+
+Chaque contenu mène à **sa page publique existante** (`/articles/{slug}`,
+`/videos/{id}`, `/recettes/{slug}`, `/pages/{slug}`, sinon `/documents/{id}`).
+Le seul autre lien de la page est « Se connecter ». Aucune ressource externe,
+aucun style ni script en ligne : les nouvelles classes (`.une-intro`,
+`.une-grande`, `.une-grille`, `.une-carte`, `.une-rubrique`, `.une-vide`) sont
+dans `public/assets/style.css` ; **aucune classe existante n'a été renommée**.
+
+#### 4. Choisir le contenu de la Une
+
+Sur **Administration → Composition des pages**, un nouveau réglage :
+« **À la une du site public** ». La liste ne contient que des **contenus
+publics** ; « Automatique » (le défaut) garde le plus récent. Le choix est
+revérifié à chaque affichage : un contenu repassé en privé, en attente de
+validation ou encore en conversion ne s'affiche pas — la page reprend alors le
+plus récent toute seule, sans erreur. Le bandeau de la une dit « Choisi par la
+rédaction » quand le contenu a été choisi, « Le contenu public le plus récent »
+sinon.
+
+L'accueil d'un visiteur n'est plus composé de blocs : il ne suit donc plus la
+composition des pages. Les **quatre blocs de l'ancien en-tête public** (« les
+deux entrées », « Également publié », « le site en chiffres », « le mot sur
+l'espace réservé ») ne s'affichaient plus pour personne depuis que l'accueil
+d'un visiteur est fixe : ils sont **retirés de la page d'administration**, où
+ils proposaient des boutons sans effet. Les quatre blocs de l'accueil des
+comptes connectés restent, inchangés, et la page le dit en une phrase.
+
+#### 5. Quand il n'y a aucun contenu public
+
+Une Une **sobre**, sans bloc vide ni rubrique fantôme : la phrase d'accueil, le
+titre « Le journal paraîtra bientôt », une explication d'une phrase, le gros
+bouton **« Se connecter »**, puis les deux adresses — **contact@** pour écrire,
+**support@** pour demander un compte — en liens `mailto:` ordinaires.
+
+#### 6. Rien d'autre ne bouge
+
+- **L'accueil d'un compte connecté est celui de la 1.29.0** : bandeau, une,
+  « Dans la famille », documents, « À lire ». La page est identique (les essais
+  d'accueil, de composition et de carte le vérifient).
+- **Aucun droit nouveau ni élargi** ; les pages publiques existantes gardent
+  leurs règles.
+- **Aucune migration**, aucun réglage à faire : la version s'installe seule.
+- L'adresse de contact reste dans le pied de page de toutes les pages ; la
+  phrase « Nous écrire » de l'ancienne vitrine a disparu avec elle (une seule
+  fois, donc, dans le pied de page).
+
+#### 7. Un défaut corrigé au passage
+
+Le test de fuite demandé par le propriétaire a trouvé une vraie faille :
+`visibility_clause()` appliquait la règle de modération des propositions
+(`proposition_clause()`) aux **comptes connectés**, mais pas à un **visiteur
+non connecté**. Un article **en attente de validation** pouvait donc apparaître
+sur la Une publique. La branche « visiteur » applique désormais la même règle
+que les autres : attente de validation, visibilité, conversion des vidéos —
+mêmes conditions pour tout le monde. Vérifié par un essai qui crée un contenu
+privé, un contenu famille, un contenu branches, un contenu en attente et une
+vidéo en conversion, puis lit la page d'un visiteur : **aucun de ces contenus
+n'apparaît**, ni en vignette, ni en titre, ni dans le code de la page, ni dans
+une adresse d'image.
+
+#### Vérifications
+
+- Suite complète : **1 310 essais, 0 échec**, dont **42 nouveaux** : la famille
+  « Une » (38 essais), deux essais de composition des pages, un sur la carte
+  (un compte de famille l'ouvre) et un sur le pied de page. Contenu public le
+  plus récent en tête, choix de l'administrateur respecté puis abandonné si le
+  contenu cesse d'être public, regroupement par rubrique au-delà de six
+  éléments, « Voir plus » et pagination, accueil vide, document sans vignette
+  qui n'affiche pas d'image cassée, test de fuite des neuf contenus réservés,
+  menu d'un visiteur réduit à deux entrées, menu d'un compte connecté
+  inchangé.
+- Matrice d'accès régénérée : **192 routes**, **768 vérifications** (route ×
+  profil), **0 anomalie** ; `/carte` et `/lieu/{id}` y apparaissent en **303**
+  pour un visiteur et **200** pour les trois profils connectés.
+- Navigateur réel (`tools/navigateur/actions-une-publique.mjs`, Chromium) :
+  **19 vérifications** à **1280 px** et à **390 px**, palette **papier** et
+  palette **bleu** — soit 76 contrôles : deux entrées de menu et pas une de
+  plus, bouton « Se connecter » entier dans le premier écran (54 px de haut),
+  une en grand avec vignette chargée, grille regroupée par rubrique au-delà de
+  six contenus, **aucun lien** hors contenu public / connexion / contact,
+  aucun style ni script en ligne, aucune ressource extérieure, aucun
+  débordement horizontal, aucune erreur JavaScript, accueil vide sans une ni
+  grille, contenu privé par adresse directe affichant exactement la page
+  « introuvable » (sans son titre ni son adresse).
+- Captures dans `docs/captures/` : `ordinateur-` / `mobile-une-publique.png`,
+  `-une-vide.png`, `-contenu-public.png`, `-contenu-prive-404.png`, et les
+  mêmes en `-bleu` (16 fichiers).
+- **Non vérifié ici** : un vrai lecteur d'écran sur la grille de la Une,
+  l'impression de la page, et le rendu sur un vrai téléphone — seuls Chromium
+  et deux largeurs de fenêtre ont été mesurés.
+
 ## [1.30.0] — 2026-11-07
 
 ### Verser dans un album les photos déjà sur le site
