@@ -6051,6 +6051,12 @@ legend {
         grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
         gap: 1.6rem;
     }
+
+    /* Sans image, le texte de la une occupe toute la largeur : aucune zone
+       vide à droite (1.32.1). */
+    .une-grande__article--sans-image {
+        grid-template-columns: minmax(0, 1fr);
+    }
 }
 
 .une-grande__image {
@@ -6160,6 +6166,8 @@ legend {
     object-fit: cover;
 }
 
+/* Ancienne tuile du contenu sans image : plus aucun gabarit ne la pose depuis
+   la 1.32.1, la règle reste en place (aucune classe n'est retirée du site). */
 .une-carte__vide {
     display: flex;
     align-items: center;
@@ -6168,6 +6176,35 @@ legend {
     font-size: 0.72rem;
     letter-spacing: 0.08em;
     text-transform: uppercase;
+    color: var(--texte-doux);
+}
+
+/* Vignette d'une vidéo sans image : le repère de la 1.32.0 — le papier, une
+   icône de lecture — et non un carré gris. */
+.une-carte__vignette--video {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface);
+    border-bottom: var(--filet);
+}
+
+.une-carte__lecture {
+    font-size: 2.4rem;
+    line-height: 1;
+    color: var(--accent);
+}
+
+/* Carte texte seule (contenu sans image, 1.32.1) : titre, date, extrait.
+   Aucune zone d'image, aucune tuile grise, aucun bloc de rubrique. */
+.une-carte--texte .une-carte__lien {
+    height: 100%;
+    padding-bottom: 0.2rem;
+}
+
+.une-carte__resume {
+    font-size: 0.88rem;
+    line-height: 1.45;
     color: var(--texte-doux);
 }
 

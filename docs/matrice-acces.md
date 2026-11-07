@@ -4,7 +4,7 @@
 > réécrit par `php app/cli/tests.php matrice`. Il décrit ce que le site
 > répond réellement, route par route et profil par profil.
 
-Date de génération : 07/11/2026 à 20:04
+Date de génération : 07/11/2026 à 21:23
 
 ## Profils testés
 

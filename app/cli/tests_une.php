@@ -38,6 +38,7 @@ function tests_une(): void
             tests_une_choix();
             tests_une_pagination();
             tests_une_vide();
+            tests_une_sans_image();
 
             throw new RuntimeException('fin du test, annulation');
         });
@@ -432,6 +433,184 @@ function tests_une_medias(): void
         'une : un document sans vignette n’a pas d’adresse d’image (jamais d’image cassée)',
         $sansImage === null,
         var_export($sansImage, true)
+    );
+}
+
+/** Le morceau de HTML d'un conteneur (de son ouverture à sa fermeture). */
+function tests_une_morceau(string $corps, string $ouverture, string $fermeture): string
+{
+    $debut = strpos($corps, $ouverture);
+    if ($debut === false) {
+        return '';
+    }
+    $fin = strpos($corps, $fermeture, $debut);
+    if ($fin === false) {
+        return substr($corps, $debut);
+    }
+    return substr($corps, $debut, $fin - $debut + strlen($fermeture));
+}
+
+/** La carte de la grille qui porte ce titre (chaîne vide si absente). */
+function tests_une_carte(string $corps, string $titre): string
+{
+    $morceaux = explode('<li class="une-carte', $corps);
+    foreach ($morceaux as $morceau) {
+        if (str_contains($morceau, e($titre))) {
+            $fin = strpos($morceau, '</li>');
+            return '<li class="une-carte' . ($fin === false ? $morceau : substr($morceau, 0, $fin + 5));
+        }
+    }
+
+    return '';
+}
+
+/**
+ * 7. Accueil public sans tuile vide (1.32.1) : un contenu sans image donne une
+ *    carte texte seule, la une sans image occupe toute la largeur, et une vidéo
+ *    sans aperçu garde le repère de lecture de la 1.32.0.
+ */
+function tests_une_sans_image(): void
+{
+    $maintenant = time();
+
+    // La une : un article public SANS image, le plus récent de tous.
+    tests_une_article('sans-image-une', 'Une sans image 1.32.1', 'public', $maintenant);
+
+    // Dans la grille : un article sans image, une page d'information (une page
+    // n'a jamais d'image), une photo sans vignette, une vidéo sans aperçu et
+    // une vidéo AVEC aperçu.
+    tests_une_article('sans-image-grille', 'Article sans image 1.32.1', 'public', $maintenant - 100);
+    db_insert('pages', [
+        'slug'         => 'page-sans-image-' . bin2hex(random_bytes(3)),
+        'title'        => 'Page sans image 1.32.1',
+        'body'         => 'Texte de la page d’information.',
+        'visibility'   => 'public',
+        'is_published' => 1,
+        'created_at'   => $maintenant - 200,
+        'updated_at'   => $maintenant - 200,
+    ]);
+    db_insert('documents', [
+        'title'         => 'Photo sans vignette 1.32.1',
+        'description'   => 'Document de l’essai 1.32.1, sans vignette.',
+        'doc_date'      => '1971',
+        'doc_date_sort' => 1971,
+        'kind'          => 'photo',
+        'visibility'    => 'public',
+        'rel_path'      => 'essais/' . bin2hex(random_bytes(4)) . '.jpg',
+        'thumb_path'    => null,
+        'original_name' => 'essai-sans-vignette.jpg',
+        'mime'          => 'image/jpeg',
+        'ext'           => 'jpg',
+        'size'          => 1024,
+        'is_attachment' => 0,
+        'created_at'    => $maintenant - 400,
+        'updated_at'    => $maintenant - 400,
+    ]);
+    db_insert('documents', [
+        'title'         => 'Vidéo sans aperçu 1.32.1',
+        'description'   => 'Vidéo de l’essai 1.32.1 : aucune image extraite.',
+        'doc_date'      => '1972',
+        'doc_date_sort' => 1972,
+        'kind'          => 'video',
+        'visibility'    => 'public',
+        'rel_path'      => 'essais/' . bin2hex(random_bytes(4)) . '.mp4',
+        'thumb_path'    => null,
+        'original_name' => 'essai-sans-apercu.mp4',
+        'mime'          => 'video/mp4',
+        'ext'           => 'mp4',
+        'size'          => 4096,
+        'is_attachment' => 0,
+        'created_at'    => $maintenant - 300,
+        'updated_at'    => $maintenant - 300,
+    ]);
+    tests_une_document('Vidéo avec aperçu 1.32.1', 'public', 'video', $maintenant - 350);
+
+    $accueil = tests_envoi_requete('GET', '/', null);
+    $corps   = (string) $accueil['corps'];
+
+    // 1. À la une sans image : la classe dédiée, aucune zone d'image.
+    $blocUne = tests_une_morceau($corps, '<article class="une-grande__article', '</article>');
+    verifier(
+        'une : la une sans image occupe toute la largeur (aucune zone d’image)',
+        str_contains($blocUne, 'une-grande__article--sans-image')
+            && !str_contains($blocUne, 'une-grande__image')
+            && !str_contains($blocUne, '<img'),
+        $blocUne === '' ? 'bloc « À la une » absent' : 'bloc présent'
+    );
+    verifier(
+        'une : c’est bien l’article sans image qui tient la une',
+        tests_une_titre_de_la_une($corps) === 'Une sans image 1.32.1',
+        'une : ' . tests_une_titre_de_la_une($corps)
+    );
+
+    // 2. Carte texte seule : titre, date, extrait — et rien d'autre.
+    $carte = tests_une_carte($corps, 'Article sans image 1.32.1');
+    verifier(
+        'une : un article sans image donne une carte texte seule (aucun bloc image)',
+        $carte !== ''
+            && str_contains($carte, 'une-carte--texte')
+            && !str_contains($carte, '<img')
+            && !str_contains($carte, 'une-carte__vignette')
+            && !str_contains($carte, 'une-carte__type')
+            && !str_contains($carte, 'une-carte__vide'),
+        $carte === '' ? 'carte absente' : 'carte trouvée'
+    );
+    verifier(
+        'une : la carte texte porte le titre, l’extrait et la date',
+        $carte !== ''
+            && str_contains($carte, 'Article sans image 1.32.1')
+            && str_contains($carte, 'Résumé de l’essai')
+            && str_contains($carte, 'une-carte__meta'),
+        $carte === '' ? 'carte absente' : 'contenu vérifié'
+    );
+
+    // 3. Une page d'information n'a jamais d'image : même carte texte seule.
+    $cartePage = tests_une_carte($corps, 'Page sans image 1.32.1');
+    verifier(
+        'une : une page d’information donne aussi une carte texte seule',
+        $cartePage !== '' && str_contains($cartePage, 'une-carte--texte') && !str_contains($cartePage, '<img'),
+        $cartePage === '' ? 'carte absente' : 'carte trouvée'
+    );
+
+    // 4. Une photo sans vignette : carte texte seule, jamais d'image cassée.
+    $cartePhoto = tests_une_carte($corps, 'Photo sans vignette 1.32.1');
+    verifier(
+        'une : une photo sans vignette ne montre aucune image cassée',
+        $cartePhoto !== '' && !str_contains($cartePhoto, '<img'),
+        $cartePhoto === '' ? 'carte absente' : 'carte trouvée'
+    );
+
+    // 5. Vidéo sans aperçu : le repère de lecture de la 1.32.0, pas un carré.
+    $carteVideo = tests_une_carte($corps, 'Vidéo sans aperçu 1.32.1');
+    verifier(
+        'une : une vidéo sans aperçu garde l’icône de lecture de la 1.32.0',
+        $carteVideo !== ''
+            && str_contains($carteVideo, 'une-carte__vignette--video')
+            && str_contains($carteVideo, 'une-carte__lecture')
+            && !str_contains($carteVideo, '<img'),
+        $carteVideo === '' ? 'carte absente' : 'carte trouvée'
+    );
+
+    // 6. Vidéo avec aperçu : sa miniature, comme avant.
+    $carteVideoAvec = tests_une_carte($corps, 'Vidéo avec aperçu 1.32.1');
+    verifier(
+        'une : une vidéo avec aperçu montre sa miniature',
+        $carteVideoAvec !== ''
+            && str_contains($carteVideoAvec, '<img')
+            && !str_contains($carteVideoAvec, 'une-carte__vignette--video'),
+        $carteVideoAvec === '' ? 'carte absente' : 'carte trouvée'
+    );
+
+    // 7. Aucune tuile grise, aucune image sans source dans toute la page.
+    verifier(
+        'une : aucune tuile grise ni bloc de rubrique dans la grille',
+        !str_contains($corps, 'une-carte__vide'),
+        'classe « une-carte__vide » encore présente'
+    );
+    verifier(
+        'une : aucune balise d’image sans source dans l’accueil',
+        preg_match('/<img(?![^>]*\ssrc="[^"]+")/i', $corps) !== 1,
+        'une balise img est vide'
     );
 }
 

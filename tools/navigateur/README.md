@@ -365,3 +365,49 @@ Ce que le banc exige, et qu'aucun essai PHP ne peut voir :
   octet pour octet des deux réponses sont vérifiés par les essais PHP
   (`tests_une.php`) : le banc ne sert que des fichiers, il ne peut pas rendre
   un code HTTP.
+
+### L'accueil public sans tuiles vides (1.32.1)
+
+Un seul rendu, la page d'accueil d'un visiteur, dont la une **et** au moins
+deux contenus de la grille sont sans image (l'essai ajoute un article public
+sans photo, une page d'information et une vidéo publique sans miniature).
+
+```bash
+# 1. La page, puis ses images en data:, et la feuille du thème voulu.
+cd /tmp/h
+php_rendre() { HDF_ENV='{"HDF_FORCE_CLI":"1"}' \
+    HDF_ARGV="[\"x\",\"$1\",\"$2\",\"0\"]" HDF_CONFIG="$3" \
+    node runcode.mjs /home/user/histoiredefamille/tools/navigateur/rendre.php; }
+php_rendre "/"         /tmp/accueil.html        /tmp/demo/config.php
+php_rendre "/theme.css" /tmp/theme-papier.css   /tmp/demo/config.php
+HDF_CONFIG=/tmp/demo/config.php node runcode.mjs \
+    /home/user/histoiredefamille/tools/navigateur/inline-medias.php \
+    /tmp/accueil.html /tmp/accueil-inline.html
+
+# 2. Le serveur, puis le contrôle : 28 vérifications par largeur et palette.
+PAGES_ALBUM='{"/":"/tmp/accueil-inline.html"}' THEME_CSS=/tmp/theme-papier.css \
+    CAPTURES=/tmp node tools/navigateur/serveur.mjs
+THEME=papier THEME_FOND='rgb(243, 231, 206)' CAPTURES=/tmp \
+    node tools/navigateur/actions-une-sans-image.mjs 1280
+# puis 390, puis la palette bleu (THEME_CSS=/tmp/theme-bleu.css,
+# THEME_FOND='rgb(246, 245, 242)', page rendue après avoir choisi « bleu »
+# dans Administration → Apparence).
+```
+
+Ce que le banc exige, et qu'aucun essai PHP ne peut voir :
+
+- la une sans image porte `une-grande__article--sans-image`, n'a **ni image ni
+  zone d'image**, et son bloc de texte est **aussi large que l'article** (une
+  seule colonne : 1048 px sur 1048 px à 1280, 363 px sur 363 px à 390) ;
+- les cartes `une-carte--texte` n'ont **ni image, ni vignette, ni bloc de
+  rubrique, ni tuile `une-carte__vide`**, et **aucun descendant n'a la couleur
+  `--papier-moyen`** : c'est la tuile grise, mesurée et non devinée ;
+- chaque carte texte porte **titre, date et extrait**, un titre aussi large
+  que la carte, et une hauteur qui reste celle du texte (aucune boîte vide) ;
+- une vidéo sans miniature garde `une-carte__vignette--video` et
+  `une-carte__lecture` : icône **visible**, couleur d'accent, fond `--surface`
+  et **aucune balise d'image** ;
+- aucune balise `img` de la page n'est vide, toutes sont chargées, aucun
+  attribut `style`, aucun script en ligne, aucune ressource extérieure, aucun
+  débordement horizontal, aucune erreur JavaScript ;
+- la palette demandée est bien appliquée (fond du `body`).

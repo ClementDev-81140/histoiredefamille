@@ -220,6 +220,14 @@ nouvelles de la famille, les souvenirs, les annonces.
   (*Journal*, *Simple*, *Grande photo*) restent inchangés ; un article réglé en
   « Grande photo » qui n'a pas d'image retombe simplement sur « Journal », sans
   image.
+- **Sur l'accueil public** (1.32.1), la règle va plus loin : un contenu sans
+  image donne une **carte texte seule** dans « Dans le journal » — titre, date,
+  extrait, et **rien d'autre** : aucune tuile grise, aucun bloc de rubrique,
+  aucune hauteur réservée. Une page d'information et une photo sans vignette
+  suivent la même règle. Dans « À la une », le texte prend **toute la largeur**
+  quand il n'y a pas d'image : il ne reste pas de colonne vide à droite. Une
+  **vidéo sans miniature** garde le repère de lecture de la 1.32.0 (▶ sur le
+  papier du site) au lieu d'un carré vide.
 - Administration → **Articles** : liste de tous les articles (brouillons et
   programmés compris), création, modification, suppression. Un administrateur
   peut relire un brouillon en cliquant dessus.
@@ -1214,6 +1222,12 @@ du journal (tout le contenu public, du plus récent au plus ancien). Les quatre
 blocs de l'ancien en-tête public (les deux entrées, « Également publié », les
 chiffres, « Nous écrire ») ne s'affichaient plus pour personne : ils ont été
 retirés de cette page, avec leurs boutons sans effet.
+
+**Un contenu sans image, sur cet accueil** (1.32.1) : la grille ne réserve
+**aucune zone d'image**. La carte se réduit au texte — titre, date, extrait —
+sans tuile grise, sans cadre et sans bloc de rubrique ; la une, elle, donne
+toute la largeur à son texte. C'est un état normal, pas un manque : le journal
+d'une famille n'a pas de photo pour tout.
 
 Pour un **compte connecté**, la une passe devant (1.29.0) : une seule ligne de
 bienvenue prend place sous la date, et « Dans la famille » suit la une — colonne

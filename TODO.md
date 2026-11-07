@@ -3,6 +3,31 @@
 Ce fichier liste ce qui reste à faire, classé par priorité. Il n'y a pas de
 suivi automatique : cochez au fur et à mesure.
 
+## Fait (2026-11-07, 1.32.1 — accueil public sans tuiles vides)
+
+- [x] **Grille « Dans le journal »** : un contenu sans image donne une **carte
+  texte seule** (`une-carte--texte`) — titre, date, extrait — sans zone
+  d'image, sans tuile grise, sans bloc de rubrique. Vaut pour un article sans
+  photo, une page d'information, une photo ou un document sans miniature.
+- [x] **« À la une » sans image** : le texte prend **toute la largeur**
+  (`une-grande__article--sans-image`), plus de colonne vide à droite.
+- [x] **Vidéo sans miniature** : le repère de lecture de la 1.32.0
+  (`une-carte--video`, icône ▶ sur `--surface`), aucune balise d'image ; dès
+  que la miniature est fabriquée, la carte reprend la vraie image.
+- [x] **Essais** : 10 vérifications de plus dans `tests_une.php` (famille
+  « une », 48 essais) ; suite complète **1 410 essais, 0 échec**.
+- [x] **Navigateur réel** : `tools/navigateur/actions-une-sans-image.mjs`,
+  28 contrôles × 4 (1280 et 390 px, papier et bleu), 0 échec ; 4 captures.
+- [x] **1.31.1 fusionnée** : après la connexion, tout le monde arrive sur
+  l'accueil (`home_for_account()` → `/`), `next` inchangé, 5 essais.
+
+## À corriger (repéré en 1.32.1, hors périmètre)
+
+- [ ] **Étiquette en double** sur la une et sur les cartes avec image : pour un
+  article, une recette ou une page, la rubrique et le « genre » affichent le
+  même mot (« ARTICLES » puis « Articles »). Défaut de la 1.31.0 : n'afficher
+  le genre que lorsqu'il diffère du libellé de rubrique.
+
 ## Fait (2026-11-07, 1.32.0 — cinq améliorations demandées par le propriétaire)
 
 - [x] **Filtre « photo ancienne »** : réglage global *Aucun / Doux / Marqué*

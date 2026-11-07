@@ -65,7 +65,9 @@ $groupes    = count($itemsPubliques) > 6 ? une_publique_groupes($itemsPubliques)
                 : 'Le contenu public le plus récent' ?></span>
         </div>
 
-        <article class="une-grande__article">
+        <?php /* Sans image, la colonne de texte prend toute la largeur : pas de
+                 zone vide à droite (1.32.1). */ ?>
+        <article class="une-grande__article<?= ($unePublique['image'] ?? null) === null ? ' une-grande__article--sans-image' : '' ?>">
             <?php if (($unePublique['image'] ?? null) !== null): ?>
                 <a class="une-grande__image" href="<?= e($unePublique['url']) ?>" tabindex="-1" aria-hidden="true">
                     <img class="<?= e((string) ($unePublique['image_aspect'] ?? '')) ?>" src="<?= e($unePublique['image']) ?>" alt="" width="960" height="640" loading="eager">

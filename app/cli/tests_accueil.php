@@ -30,6 +30,7 @@ function tests_accueil(): void
             tests_accueil_connecte();
             tests_accueil_dans_la_famille();
             tests_accueil_une();
+            tests_accueil_connexion();
 
             throw new RuntimeException('fin du test, annulation');
         });
@@ -517,4 +518,37 @@ function tests_accueil_une(): void
 function current_account_compte(int $id): ?array
 {
     return db_one('SELECT * FROM accounts WHERE id = ?', [$id]);
+}
+
+
+/** 5. Après la connexion, tout le monde arrive sur l'accueil (1.31.1). */
+function tests_accueil_connexion(): void
+{
+    $branche     = tests_profils_branche('Branche connexion accueil');
+    $lecteur     = tests_profils_compte('branche', $branche);
+    $journaliste = tests_profils_compte('personne', $branche);
+    $admin       = tests_profils_compte('admin');
+
+    foreach (['lecteur' => $lecteur, 'journaliste' => $journaliste, 'administrateur' => $admin] as $nom => $id) {
+        $_SESSION = ['account_id' => $id];
+        verifier(
+            'connexion : un ' . $nom . ' arrive sur l’accueil du journal',
+            home_for_account() === '/',
+            'adresse : ' . home_for_account()
+        );
+    }
+    $_SESSION = [];
+
+    verifier(
+        'connexion : une adresse « next » externe reste refusée',
+        safe_next_path('https://exemple.fr') === ''
+            && safe_next_path('//exemple.fr') === ''
+            && safe_next_path('/\\exemple.fr') === '',
+        'redirection ouverte possible'
+    );
+    verifier(
+        'connexion : une adresse « next » locale est conservée',
+        safe_next_path('/admin/albums/2/photos') === '/admin/albums/2/photos',
+        'adresse locale refusée'
+    );
 }

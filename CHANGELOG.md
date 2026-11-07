@@ -3,6 +3,104 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.32.1] — 2026-11-07
+
+### Un accueil public sans tuiles vides
+
+Dans « Dans le journal », un contenu sans image laissait une **tuile grise** à
+la place de la vignette, surmontée d'un bloc de rubrique. Sur la page d'accueil
+d'un visiteur, cela faisait des trous : un article sans photo, une page
+d'information, une photo dont la miniature n'a pas encore été fabriquée
+occupaient la place d'une image qui n'existait pas — et, sur téléphone, une
+carte sur deux semblait cassée.
+
+Trois règles, tenues par les gabarits et par des **classes CSS ajoutées** :
+aucune classe existante n'est renommée, aucun attribut `style`, aucun script en
+ligne, et la règle de sécurité du site ne bouge pas.
+
+#### 1. Dans la grille : une carte texte seule
+
+Un contenu **sans image** donne une carte `une-carte une-carte--texte` : le
+**titre**, la **date**, l'**extrait** quand il y en a un — et rien d'autre.
+**Aucune zone d'image** n'est réservée, **aucune tuile grise** n'est peinte,
+**aucun bloc de rubrique** ne figure sous la carte. La règle vaut pour tout
+contenu qui n'a pas d'image : article sans photo, page d'information, document
+ou photo sans miniature.
+
+#### 2. Dans « À la une » : le texte prend toute la largeur
+
+L'élément de la une porte `une-grande__article--sans-image` quand il n'a pas
+d'image ; à partir de 48 rem, il passe d'une grille « image + texte » à **une
+seule colonne**. Le texte ne laisse plus de **colonne vide à droite** : mesuré
+à 1 048 px sur 1 048 px à 1280 px, 363 px sur 363 px à 390 px.
+
+#### 3. Vidéo sans miniature : le repère de la 1.32.0, jamais un carré
+
+Une vidéo dont la miniature n'a pas encore été extraite garde le repère de la
+1.32.0 : une vignette `une-carte__vignette--video` sur la couleur du site (fond
+`--surface`, filet en bas) avec l'**icône de lecture** `une-carte__lecture`
+(« ▶ », masquée aux lecteurs d'écran), et **aucune balise d'image**. Dès que
+`php app/cli/miniatures-videos.php --executer` a fabriqué l'image, la carte
+reprend la vraie miniature, comme avant.
+
+#### Ce qui ne change pas
+
+- **Aucune règle d'accès** n'est touchée, et **rien de nouveau n'est rendu
+  public** : seuls changent l'aspect des cartes et la largeur du texte.
+- **Aucune classe n'est retirée** : la règle `.une-carte__vide` de la 1.31.0
+  reste dans la feuille de style, même si plus aucun gabarit ne la pose.
+- **Aucune migration**, aucune colonne, aucun réglage de plus ; ni style ni
+  script en ligne : la politique de sécurité du contenu reste identique.
+
+#### Un défaut repéré, laissé tel quel
+
+Sur la une et sur les cartes **avec** image, l'étiquette de rubrique et le
+« genre » affiché en fin de ligne disent la même chose pour un article, une
+recette ou une page : on lit « ARTICLES » puis, dans la même ligne, « Articles »
+(le genre d'une photo ou d'une vidéo, lui, est bien distinct : « Photo »,
+« Vidéo »). Ce doublon vient de la 1.31.0 et n'a rien à voir avec les tuiles
+vides ; il n'a pas été touché ici pour ne pas mêler deux sujets dans une même
+livraison. Il est noté dans `TODO.md`.
+
+#### Vérifications
+
+- **10 essais nouveaux** dans `app/cli/tests_une.php` (famille « une », qui
+  compte désormais **48 essais**) : la une sans image occupe toute la largeur
+  et n'a ni image ni zone d'image ; c'est bien l'article sans image qui la
+  tient ; un article sans image donne une carte texte seule (aucun `<img>`,
+  aucune vignette, aucun bloc de rubrique, aucune tuile) ; la carte porte
+  titre, extrait et date ; une page d'information suit la même règle ; une
+  photo sans vignette ne montre aucune image cassée ; une vidéo sans aperçu
+  garde le repère de lecture et une vidéo avec aperçu sa miniature ; aucune
+  tuile nulle part ; aucune balise d'image sans source dans la page.
+- Familles : « accueil » **49/49** (dont les essais de la 1.31.1 fusionnée),
+  « une » **48/48**, suite complète **1 410 essais, 0 échec** (1 395 en 1.32.0,
+  plus 10 pour les cartes sans image et 5 pour la redirection après
+  connexion).
+- Navigateur réel (Chromium), **112 contrôles** : le nouveau
+  `tools/navigateur/actions-une-sans-image.mjs` (28 contrôles) joué à
+  **1280 px** et à **390 px**, palette **papier** et palette **bleu**. Ce que
+  le navigateur a vu : aucune carte sans image ne contient de balise `img`, de
+  vignette ou de bloc de rubrique ; **aucun descendant d'une carte n'a la
+  couleur `--papier-moyen`** (la tuile grise, mesurée et non devinée) ; chaque
+  carte porte son titre, sa date et son extrait ; le texte de la une est aussi
+  large que l'article ; l'icône de lecture d'une vidéo sans miniature est
+  visible, sur fond `--surface` ; aucune image cassée, aucun `style=`, aucun
+  script en ligne, aucune ressource extérieure, aucun débordement horizontal,
+  aucune erreur JavaScript.
+- Captures dans `docs/captures/` : `ordinateur-` / `mobile-`
+  `accueil-sans-image.png` et les mêmes en `-bleu` (4 fichiers).
+- **1.31.1 fusionnée** au passage : après la connexion, **tout le monde** —
+  lecteur, journaliste, administrateur — arrive sur l'accueil du journal
+  (`home_for_account()` renvoie `/`). Le tableau de bord reste à un clic par
+  « Administration ». Le paramètre `next` n'est pas touché : une adresse locale
+  connue est conservée, une adresse externe reste refusée. **Aucun droit
+  modifié** ; 6 essais dans la famille « accueil ».
+- **Non vérifié ici** : un vrai Raspberry Pi, un vrai téléphone, un lecteur
+  d'écran et l'impression papier — seuls Chromium et deux largeurs de fenêtre
+  ont été mesurés. Le doublon d'étiquettes de la 1.31.0 reste ouvert (voir
+  plus haut).
+
 ## [1.32.0] — 2026-11-07
 
 ### Cinq améliorations : photo ancienne, image des vidéos, articles sans photo, carte fermée, catégories et calendrier
@@ -221,6 +319,20 @@ défaut**, aucune donnée existante touchée.
   conversion essayées avec un ffmpeg simulé), un vrai Raspberry Pi, un vrai
   lecteur d'écran, l'impression papier, et le rendu sur un vrai téléphone —
   seuls Chromium et deux largeurs de fenêtre ont été mesurés.
+
+## [1.31.1] — 2026-11-07
+
+### Après la connexion, tout le monde arrive sur l'accueil
+
+Un administrateur était envoyé sur le tableau de bord, un lecteur sur « Espace
+famille ». Tous les profils (lecteur, journaliste, administrateur) arrivent
+maintenant sur l'accueil du journal (`/`). Le tableau de bord reste à un clic,
+par « Administration » dans le menu.
+
+- `home_for_account()` renvoie `/` pour tout le monde.
+- Le paramètre « next » est inchangé : une adresse locale connue est conservée,
+  les adresses externes (`https://…`, `//…`, `/\…`) restent refusées.
+- 6 essais ajoutés (famille « accueil »). Aucun droit modifié.
 
 ## [1.31.0] — 2026-11-07
 
