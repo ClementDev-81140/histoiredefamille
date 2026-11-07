@@ -177,16 +177,17 @@ défaut**, aucune donnée existante touchée.
 
 #### Vérifications
 
-- Suite complète : **1 393 essais, 0 échec**. Depuis la 1.31.0, **83 essais
-  nouveaux** : 15 pour les « catégories par type », 20 pour les « événements du
+- Suite complète : **1 395 essais, 0 échec**. Depuis la 1.31.0, **85 essais
+  nouveaux** : 17 pour les « catégories par type », 20 pour les « événements du
   calendrier », 3 sur les migrations 019 à 021, et 45 pour les lots 1 à 4
   (aspect 13, articles sans photo 8, carte fermée 11, miniatures de vidéos 13),
   le tout dans des familles qui se lancent seules (`php app/cli/tests.php`).
   Couverture : types par défaut,
   restriction à certains types, plusieurs catégories par contenu, catégorie
   d'un autre type ignorée, compteur d'un visiteur contre celui d'un
-  administrateur, catégorie vide invisible, filtres publics, cases des quatre
-  formulaires, migration sans perte, colonne et liaison synchronisées ;
+  administrateur, catégorie vide invisible, filtres publics, cases des cinq
+  formulaires (document, vidéo, article, album, recette), enregistrement d'une
+  vidéo, migration sans perte, colonne et liaison synchronisées ;
   événement privé par défaut, quatre profils (visiteur, famille,
   journaliste, administrateur) contre quatre visibilités, calendrier du mois,
   « Dans la famille », répétition annuelle, événement non annuel limité à son

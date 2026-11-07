@@ -125,7 +125,7 @@ if ($filtre === '' || $filtre === 'categories_types') {
 
         // 7. Les formulaires proposent bien des cases.
         $_SESSION['account_id'] = $adminId;
-        foreach ([['/admin/documents/nouveau', 'un document'], ['/admin/articles/nouveau', 'un article'], ['/admin/albums/nouveau', 'un album'], ['/admin/recettes/nouvelle', 'une recette']] as [$url, $libelle]) {
+        foreach ([['/admin/documents/nouveau', 'un document'], ['/admin/videos/nouvelle', 'une vidéo'], ['/admin/articles/nouveau', 'un article'], ['/admin/albums/nouveau', 'un album'], ['/admin/recettes/nouvelle', 'une recette']] as [$url, $libelle]) {
             $page = matrice_requete('GET', $url, $adminId);
             verifier(
                 'catégories : le formulaire d’' . $libelle . ' propose des cases « Catégories »',
@@ -177,7 +177,34 @@ if ($filtre === '' || $filtre === 'categories_types') {
             );
         }
 
-        // 9. L'administration des catégories montre les types et l'ordre.
+        // 9. Une vidéo enregistrée par le formulaire garde ses catégories, et
+        //    jamais celle d'un autre type.
+        $video = db_one("SELECT * FROM documents WHERE kind = 'video' AND is_attachment = 0 ORDER BY id LIMIT 1");
+        if ($video !== null) {
+            $catVideo = db_insert('categories', [
+                'name' => 'Film d’archive ' . $suffixe, 'slug' => 'film-' . $suffixe, 'position' => 9,
+                'kinds' => 'video', 'created_at' => $maintenant,
+            ]);
+            $videoId = (int) $video['id'];
+            matrice_requete('GET', '/admin/videos/' . $videoId, $adminId);
+            $jetonVideo = (string) ($_SESSION['_csrf'] ?? '');
+            $envoiVideo = matrice_requete('POST', '/admin/videos/' . $videoId, $adminId, [], [
+                '_csrf'         => $jetonVideo,
+                'title'         => (string) $video['title'],
+                'visibility'    => (string) $video['visibility'],
+                'is_featured'   => (string) (int) $video['is_featured'],
+                'display_order' => (string) (int) $video['display_order'],
+                'categories'    => [(string) $catVideo, (string) $catTous],
+            ]);
+            verifier(
+                'catégories : une vidéo garde sa catégorie, jamais celle d’un autre type',
+                $envoiVideo['code'] === 303
+                    && category_ids_pour('video', $videoId) === [(int) $catVideo]
+                    && (int) db_value('SELECT category_id FROM documents WHERE id = ?', [$videoId], 0) === (int) $catVideo
+            );
+        }
+
+        // 10. L'administration des catégories montre les types et l'ordre.
         $pageCats = matrice_requete('GET', '/admin/categories', $adminId);
         verifier(
             'catégories : l’administration propose les types et l’ordre d’affichage',

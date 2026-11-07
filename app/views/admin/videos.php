@@ -6,7 +6,7 @@
  * @var string $q, $visibility
  * @var int    $total, $maxStreams
  */
-$filtreActif = $q !== '' || $visibility !== '';
+$filtreActif = $q !== '' || $visibility !== '' || ($filtreCategorie ?? 0) > 0;
 ?>
 <div class="section__entete">
     <h1>Vidéos</h1>
@@ -35,6 +35,20 @@ $filtreActif = $q !== '' || $visibility !== '';
             <?php endforeach; ?>
         </select>
     </div>
+    <?php if ($filtreCategories !== []): ?>
+        <div class="champ">
+            <label for="categorie">Catégorie</label>
+            <select id="categorie" name="categorie">
+                <option value="0">Toutes</option>
+                <?php foreach ($filtreCategories as $categorieFiltre): ?>
+                    <option value="<?= (int) $categorieFiltre['id'] ?>"
+                        <?= selected($filtreCategorie === (int) $categorieFiltre['id']) ?>>
+                        <?= e((string) $categorieFiltre['name']) ?> (<?= (int) $categorieFiltre['nb'] ?>)
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+    <?php endif; ?>
     <div class="champ champ--bouton">
         <button type="submit" class="bouton">Filtrer</button>
         <?php if ($filtreActif): ?>
@@ -169,6 +183,15 @@ $filtreActif = $q !== '' || $visibility !== '';
                         <?php endforeach; ?>
                     </div>
                 </fieldset>
+
+                <?php
+                // Catégories (1.32.0) : plusieurs choix, celles prévues pour
+                // les vidéos seulement.
+                $kindCategorie   = 'video';
+                $categoriesCases = categories_pour_kinds([$kindCategorie]);
+                $categorieIds    = [];
+                require __DIR__ . '/partials/categories_cases.php';
+                ?>
 
                 <p class="actions">
                     <button type="submit" class="bouton">Importer cette vidéo</button>

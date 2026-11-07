@@ -121,6 +121,9 @@ function admin_document_save(array $params = []): void
         'description' => post('description'),
         'doc_date'    => post('doc_date'),
         'category_id' => (int) post('category_id'),
+        // Catégories (1.32.0) : plusieurs par fiche, réaffichées cochées si le
+        // formulaire revient avec une erreur.
+        'categories'  => array_map('intval', post_array('categories')),
         // Aspect « photo ancienne » : suivre le site, forcer, désactiver.
         'vintage_aspect' => (string) post('vintage_aspect', 'suivre'),
         'visibility'  => sanitize_visibility(post('visibility')),

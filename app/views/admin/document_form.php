@@ -74,7 +74,7 @@ $visibility = (string) $v('visibility', 'prive');
         default => 'document',
     };
     $categoriesCases = categories_pour_kinds([$kindCategorie, 'document', 'photo', 'video']);
-    $categorieIds    = $categorieIds ?? [];
+    $categorieIds    = (array) old_value($old, 'categories', $categorieIds ?? []);
     require __DIR__ . '/partials/categories_cases.php';
     ?>
 

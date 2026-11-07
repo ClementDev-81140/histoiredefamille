@@ -30,6 +30,12 @@ function admin_videos(): void
         $params[':vis'] = $visibility;
     }
 
+    // Filtre « Catégorie » (1.32.0).
+    $categorie = category_filtre_demande('video');
+    if ($categorie > 0) {
+        $where[] = category_where('d', $categorie, $params, "'video'");
+    }
+
     $whereSql = implode(' AND ', $where);
     $total    = (int) db_value("SELECT COUNT(*) FROM documents d WHERE {$whereSql}", $params, 0);
     $pg       = pagination($total, 0, max(1, query_int('page', 1)));
@@ -56,6 +62,8 @@ function admin_videos(): void
         'q'          => $q,
         'visibility' => $visibility,
         'enAttente'  => $enAttente,
+        'filtreCategories' => categories_avec_compteur_kinds(['video']),
+        'filtreCategorie'  => $categorie,
         'maxStreams' => max(1, (int) config('video.max_concurrent_streams', 2)),
     ], 'layout_admin');
 }
@@ -88,6 +96,7 @@ function admin_video_form(array $params = []): void
         'titre'         => $video ? 'Modifier « ' . $video['title'] . ' »' : 'Ajouter une vidéo',
         'video'         => $video,
         'categories'    => categories_list(),
+        'categorieIds'  => $video !== null ? category_ids_pour('video', $id) : [],
         'branches'      => branches_list(true),
         'videoBranches' => $videoBranches,
         'tags'          => $tags,
@@ -119,7 +128,9 @@ function admin_video_save(array $params = []): void
         'title'         => post('title'),
         'description'   => post('description'),
         'doc_date'      => post('doc_date'),
-        'category_id'   => (int) post('category_id'),
+        // Catégories (1.32.0) : plusieurs par vidéo, conservées si le
+        // formulaire revient avec une erreur.
+        'categories'    => array_map('intval', post_array('categories')),
         'visibility'    => sanitize_visibility(post('visibility')),
         'branches'      => array_map('intval', post_array('branches')),
         'tags'          => post('tags'),
@@ -148,10 +159,16 @@ function admin_video_save(array $params = []): void
         $errors[] = 'Visibilité « Branches précises » : cochez au moins une branche.';
     }
 
-    $categoryId = $old['category_id'] > 0 ? $old['category_id'] : null;
-    if ($categoryId !== null && !find_category($categoryId)) {
-        $errors[] = 'La catégorie sélectionnée n’existe pas.';
+    // Une catégorie prévue pour un autre type est ignorée : la fiche vidéo ne
+    // peut pas recevoir la catégorie d'un article ou d'un album.
+    $categoriesRetenues = [];
+    foreach ($old['categories'] as $candidat) {
+        $categorieCandidat = find_category((int) $candidat);
+        if ($categorieCandidat !== null && category_applicable($categorieCandidat, 'video')) {
+            $categoriesRetenues[] = (int) $candidat;
+        }
     }
+    $categoryId = $categoriesRetenues[0] ?? null;
 
     $order = (int) $old['display_order'];
     if ($order < 0 || $order > 9999) {
@@ -262,6 +279,17 @@ function admin_video_save(array $params = []): void
     if ($envoiPrepare !== null) {
         envoi_marquer_utilise($envoiPrepare, $videoId);
     }
+
+    category_enregistrer('video', $videoId, $categoriesRetenues);
+    // Catégories du type vidéo uniquement (1.32.0).
+    $categoriesImport = [];
+    foreach (array_map('intval', post_array('categories')) as $candidat) {
+        $categorieCandidat = find_category($candidat);
+        if ($categorieCandidat !== null && category_applicable($categorieCandidat, 'video')) {
+            $categoriesImport[] = $candidat;
+        }
+    }
+    category_enregistrer('video', $videoId, $categoriesImport);
 
     set_content_branches('document', $videoId, $visibility === 'branches' ? $branches : []);
     save_document_tags($videoId, $old['tags']);

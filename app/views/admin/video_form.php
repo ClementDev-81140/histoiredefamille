@@ -78,20 +78,16 @@ $dureeActuelle = $isEdit && !empty($video['duration_seconds'])
         </div>
     </div>
 
-    <div class="ligne-champs">
-        <div class="champ">
-            <label for="category_id">Catégorie</label>
-            <select id="category_id" name="category_id">
-                <option value="0">Sans catégorie</option>
-                <?php foreach ($categories as $category): ?>
-                    <option value="<?= (int) $category['id'] ?>"
-                        <?= selected((int) $v('category_id', 0) === (int) $category['id']) ?>>
-                        <?= e($category['name']) ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-        </div>
+    <?php
+    // Catégories (1.32.0) : plusieurs choix, et seulement celles prévues pour
+    // les vidéos. La première cochée reste dans `documents.category_id`.
+    $kindCategorie   = 'video';
+    $categoriesCases = categories_pour_kinds([$kindCategorie]);
+    $categorieIds    = (array) old_value($old, 'categories', $categorieIds ?? []);
+    require __DIR__ . '/partials/categories_cases.php';
+    ?>
 
+    <div class="ligne-champs">
         <div class="champ">
             <label for="display_order">Ordre d’affichage</label>
             <input type="number" id="display_order" name="display_order" min="0" max="9999"
