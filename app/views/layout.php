@@ -4,6 +4,7 @@
  *
  * @var string|null $titre
  * @var string      $contenu
+ * @var string|null $salutation  une ligne de bienvenue (accueil connecté)
  */
 $siteName   = site_setting('name');
 $siteSub    = site_setting('subtitle');
@@ -67,6 +68,14 @@ $navClass = static function (string $href) use ($currentPath): string {
             <span class="entete__edition"><?= e(apparence_texte('bandeau_milieu')) ?></span>
             <span><?= e(apparence_texte('bandeau_droite')) ?></span>
         </p>
+        <?php endif; ?>
+
+        <?php /* Une seule ligne de bienvenue, discrète, sous la date (1.29.0) :
+                 le prénom de la personne connectée. Facultative — un compte
+                 sans prénom n'a rien ici — et volontairement courte, pour ne
+                 pas repousser la une hors du premier écran. */ ?>
+        <?php if (($salutation ?? '') !== ''): ?>
+            <p class="entete__salutation"><?= e($salutation) ?></p>
         <?php endif; ?>
 
         <a class="entete__titre" href="/">

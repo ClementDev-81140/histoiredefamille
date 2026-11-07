@@ -3,6 +3,95 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.29.0] — 2026-11-07
+
+### La une d'abord, pour tout compte connecté
+
+Sur l'accueil d'un compte connecté, il fallait **défiler** pour voir le journal.
+Avant « À la une » venaient la phrase d'accueil, la ligne de chiffres
+(« 4 documents accessibles / 0 page d'information »), « Nous écrire », puis tout
+le bloc « Dans la famille ». Sur un écran de 1280 px, le titre de l'article du
+jour commençait à **1026 px** : le journal n'était plus un journal.
+
+#### 1. L'ordre : une, puis la famille
+
+L'accueil d'un compte connecté suit désormais l'ordre du papier : **bandeau**
+(titre, date, menu), puis **la une** — l'article principal, en grand —, puis
+**« Dans la famille »**, puis les derniers documents et « À lire ».
+
+À partir de **64 rem**, « Dans la famille » tient dans une **colonne à droite**
+de la une (19 rem), filet à gauche ; en dessous, il passe **juste dessous**,
+jamais avant. Sur grand écran, la photo de la une se place à droite du titre
+plutôt que sous lui : le titre et la photo tiennent alors dans le premier écran
+sans rapetisser la manchette.
+
+Mesures au navigateur, fenêtre de 800 px de haut : le titre de la une commence à
+**439 px** en 1280 et à **647 px** en 390, où il tient entièrement (bas à
+749 px) ; la photo est entièrement visible en 1280 (haut à 437 px, bas à
+644 px). Avant la version, ce titre commençait à 1026 px et à 1616 px.
+
+#### 2. La vitrine du visiteur ne s'affiche plus pour un compte connecté
+
+La phrase d'accueil longue, la ligne de chiffres et « Nous écrire » ont quitté
+l'accueil d'un compte connecté : elles poussaient la une hors de l'écran.
+L'adresse de contact reste dans le pied de page, **une seule fois**.
+
+À leur place, **une seule ligne discrète sous la date** : « Bonjour Élise » —
+le prénom du compte, en petit et en italique, supprimée si le compte n'en a pas.
+Elle ne coûte qu'une ligne.
+
+**La page d'un visiteur ne change pas** : phrase, chiffres, « Nous écrire » et
+les deux portes sont là comme avant (vérifié par un essai et par comparaison des
+pages rendues avant / après : seuls des espaces changent).
+
+#### 3. « Dans la famille » : cinq lignes, « Tout voir », replié sur téléphone
+
+Le bloc montrait quatre panneaux entiers — de quoi remplir un écran à lui seul.
+Il montre maintenant **cinq lignes au plus**, réparties entre les sections non
+vides (un tour chacune : anniversaires, événements, personnes ajoutées, depuis
+votre dernière visite), et un lien **« Tout voir »** vers l'espace famille.
+
+Sur téléphone, au-delà de **trois** lignes, le bloc est **replié** dans un
+`<details>` : une ligne « Dans la famille », le contenu au clic. **Aucun
+JavaScript** n'est nécessaire — c'est le comportement natif du navigateur, et
+l'essai le vérifie par un vrai clic. Sur grand écran, le bloc reste ouvert.
+
+#### 4. Plus jamais une page sans article
+
+- Bloc « une » **masqué** dans « Composition des pages » : la une est tout de
+  même affichée (le dernier article publié accessible), sans titre de rubrique.
+- **Aucun article du tout** : « Dans la famille » prend la première place.
+
+Les articles restent ceux que la personne a le droit de lire : `recent_articles()`
+applique les mêmes règles de visibilité qu'avant.
+
+#### 5. Ce qui ne change pas
+
+- **Aucun droit** : « Dans la famille » reste strictement dans les droits du
+  compte (anniversaires, événements, personnes, nouveautés filtrés comme avant).
+  La matrice d'accès est inchangée.
+- **Aucune classe renommée** : `.article-carte--une`, `.dans-la-famille`,
+  `.panneau--famille`, `.entete__date`… gardent leur nom. Les nouvelles
+  (`.accueil-journal`, `.accueil-famille`, `.entete__salutation`) sont ajoutées
+  à côté.
+- **Aucun style ni script en ligne** : tout est dans `public/assets/style.css`,
+  et l'essai le vérifie sur la page rendue.
+- **Aucune migration** : rien à changer dans la base.
+
+#### Vérifications
+
+- Suite complète : **1 241 essais, 0 échec** (dont 17 nouveaux pour cette
+  version, famille « accueil »).
+- Navigateur (`tools/navigateur/essai-une.mjs`, Chromium, fenêtre 1280 × 800 et
+  390 × 800, palette **papier** et **bleu**) : **13 / 13** vérifications à
+  chaque largeur et chaque palette.
+- Captures avant / après dans `docs/captures/` :
+  `ordinateur-accueil-une-avant.png` / `-apres.png`, `mobile-accueil-une-…`,
+  et leurs variantes `-bleu`.
+- **Non vérifié ici** : l'affichage sur un vrai iPad ou un vrai téléphone
+  (largeurs intermédiaires), l'usage avec un lecteur d'écran, et l'impression de
+  cet accueil — seuls Chromium 153, en 1280 et 390 px, ont été mesurés.
+
 ## [1.28.1] — 2026-11-07
 
 ### Relancer l'installateur ne doit rien défaire

@@ -6,8 +6,9 @@ morceaux (champ « Fichier », champ caché `envoi`, lien-ancre, clic sur le
 bouton d'enregistrement), les deux boutons de la liste des fichiers reçus
 (**Créer le document**, **Supprimer** et sa confirmation), et l'ajout de photos
 dans un album (**Ajouter des photos**, dépôt, formulaires de la liste), et les
-**adresses affichées** avec les écrans de courriel masqués (1.28.0), à 390 px et
-à 1280 px, en thème **papier** et **bleu**.
+**adresses affichées** avec les écrans de courriel masqués (1.28.0), et la
+**position verticale du titre de la une** dans l'accueil d'un compte connecté
+(1.29.0), à 390 px et à 1280 px, en thème **papier** et **bleu**.
 
 Ils ne font **pas** partie du site : `tools/` est hors de la racine web et rien
 n'y est chargé en production.
@@ -147,6 +148,45 @@ d'erreur JavaScript.
 
 Les captures d'écran et le corps du formulaire posté (fichiers `capture-*.txt`)
 sont écrits dans `/tmp` (ou dans `CAPTURES=`).
+
+### La une dans le premier écran (1.29.0)
+
+C'est la seule chose qu'aucun essai PHP ne peut mesurer : **où** le titre de la
+une tombe à l'écran, en pixels. L'essai PHP de la famille « accueil » vérifie
+l'ordre du document ; ici, on mesure.
+
+```bash
+# 1. L'accueil d'un compte connecté (ici le compte 4) et ses images en data:.
+HDF_CONFIG=/chemin/config.local.php php tools/navigateur/rendre.php \
+    / /tmp/accueil-lecteur.html 4
+HDF_CONFIG=/chemin/config.local.php php tools/navigateur/inline-medias.php \
+    /tmp/accueil-lecteur.html /tmp/accueil-lecteur-images.html
+
+# 2. Le banc, avec cette page à l'adresse « / » et la feuille du thème.
+PAGES_ALBUM='{"/":"/tmp/accueil-lecteur-images.html"}' \
+THEME_CSS=/tmp/theme-papier.css PORT=8199 node tools/navigateur/serveur.mjs
+
+# 3. La mesure, aux deux largeurs (fenêtre de 800 px de haut).
+CAPTURE=/tmp/une-1280.png node tools/navigateur/essai-une.mjs 1280
+CAPTURE=/tmp/une-390.png  node tools/navigateur/essai-une.mjs 390
+```
+
+Il exige, et affiche la mesure :
+
+- le **titre de la une** commence à moins de **800 px** (1280 × 800) ;
+- à 1280, la **photo** commence aussi dans le premier écran et y tient
+  entièrement ;
+- à 390, le **titre entier** tient dans le premier écran (bas ≤ 800 px) ;
+- « Dans la famille » vient **après** la une (jamais avant) et, à 1280, dans une
+  **colonne à droite** (bord gauche au-delà du milieu de la page) ;
+- la ligne de chiffres, « Nous écrire » et la phrase d'accueil ont **quitté**
+  l'accueil d'un compte connecté ;
+- le bloc montre **cinq lignes au plus** ;
+- au-delà de trois lignes, il est **replié** (`<details>` fermé) sur téléphone et
+  s'ouvre **au clic**, sans JavaScript ; sur grand écran il reste ouvert.
+
+`HAUTEUR=` change la hauteur de fenêtre (800 par défaut), `PORT=` le port du
+banc (8199 par défaut).
 
 ## Engendrer les captures de `docs/captures/`
 

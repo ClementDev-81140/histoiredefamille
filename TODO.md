@@ -3,6 +3,24 @@
 Ce fichier liste ce qui reste à faire, classé par priorité. Il n'y a pas de
 suivi automatique : cochez au fur et à mesure.
 
+## Fait (2026-11-07, 1.29.0 — la une d'abord)
+
+- [x] **La une dans le premier écran** pour tout compte connecté : titre à
+  439 px en 1280 × 800 (photo entièrement visible) et à 647 px en 390 × 800
+  (titre entier), mesuré au navigateur ; il commençait à 1026 px et 1616 px.
+- [x] **L'ordre** : bandeau → une → « Dans la famille » → documents / à lire.
+  La famille passe en **colonne à droite** à partir de 64 rem, jamais avant.
+- [x] **La vitrine du visiteur** (phrase, chiffres, « Nous écrire ») a quitté
+  l'accueil connecté ; une **seule ligne** discrète sous la date à la place.
+  La page d'un visiteur ne change pas.
+- [x] **« Dans la famille »** : cinq lignes au plus, lien « Tout voir », replié
+  dans un `<details>` sur téléphone au-delà de trois lignes (sans JavaScript).
+- [x] **Repli** : bloc « une » masqué → le dernier article publié reste en tête ;
+  aucun article → « Dans la famille » prend la première place.
+- [x] **Aucun droit modifié**, aucune classe renommée, aucun style ni script en
+  ligne, aucune migration. Suite : 1 241 essais, 0 échec ; navigateur 13/13
+  dans les deux palettes et les deux largeurs.
+
 ## Fait (2026-11-07, 1.28.1 — relancer install.sh ne défait plus rien)
 
 - [x] **`config.local.php` garde ses droits** : le `chmod 644` global l'exclut ;

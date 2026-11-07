@@ -11,7 +11,7 @@ versions. Elles sont **engendrées** : aucune n'est retouchée à la main.
 | `mobile-connexion-bleu.png` | la même page en palette **bleu** | 390 |
 | `ordinateur-mon-compte.png` / `mobile-mon-compte.png` | « Mon compte » d'un administrateur : « Besoin d'aide ? » et l'adresse d'assistance, **sans** section « Mes courriels » (envoi coupé) | 1280 / 390 |
 | `mobile-mon-compte-bleu.png` | la même page en palette **bleu** | 390 |
-| `ordinateur-accueil-dans-la-famille.png` / `mobile-accueil-dans-la-famille.png` | la même page `/` vue par un lecteur : plus de porte, et le bloc « Dans la famille » (anniversaires, événements, personnes, nouveautés) | 1280 / 390 |
+| `ordinateur-accueil-dans-la-famille.png` / `mobile-accueil-dans-la-famille.png` | la même page `/` vue par un lecteur (1.29.0) : la une d'abord, puis « Dans la famille » — colonne à droite en 1280, replié sous la une en 390 | 1280 / 390 |
 | `ordinateur-accueil-connecte.png` / `mobile-accueil-connecte.png` | accueil d'un lecteur (`/famille`) : nouveautés de la famille, une, encarts | 1280 / 390 |
 | `ordinateur-accueil-journaliste.png` / `mobile-accueil-journaliste.png` | accueil d'un journaliste : « Proposer un article » + « Mes propositions » | 1280 / 390 |
 | `ordinateur-mes-propositions.png` / `mobile-mes-propositions.png` | `/propositions` | 1280 / 390 |
@@ -39,6 +39,27 @@ choisie sur le site :
 Les autres fichiers (albums publics, articles, arbre, calendrier, frise, tchat,
 vidéos, recettes) datent des versions précédentes : les pages correspondantes
 n'ont ni menu d'administration ni changement depuis.
+
+### 1.29.0 — la une dans le premier écran
+
+L'accueil d'un compte connecté a changé d'ordre : la une passe devant le bloc
+« Dans la famille ». Les captures `-avant` montrent la page telle qu'elle était
+en 1.28.1 (phrase d'accueil, chiffres, « Nous écrire », puis « Dans la
+famille », et la une **hors de l'écran**) ; les `-apres` la même page en 1.29.0.
+Toutes sont prises **fenêtre de 800 px de haut**, sans défilement : c'est le
+« premier écran » dont parle la règle.
+
+| Fichier | Ce que l'on y voit |
+|---|---|
+| `ordinateur-accueil-une-avant.png` / `ordinateur-accueil-une-apres.png` | 1280 × 800, palette papier : le titre de la une commence à 1026 px avant, à 439 px après (photo entièrement visible) |
+| `mobile-accueil-une-avant.png` / `mobile-accueil-une-apres.png` | 390 × 800, palette papier : le titre commence à 1616 px avant, à 647 px après, et tient entièrement dans l'écran |
+| `ordinateur-accueil-une-avant-bleu.png` / `ordinateur-accueil-une-apres-bleu.png` | les mêmes, palette **bleu d'origine** |
+| `mobile-accueil-une-avant-bleu.png` / `mobile-accueil-une-apres-bleu.png` | les mêmes, palette **bleu d'origine** |
+| `ordinateur-accueil-dans-la-famille.png` / `mobile-accueil-dans-la-famille.png` | refaites : page entière, nouvel ordre |
+
+Elles sont engendrées par `tools/navigateur/capture.mjs` et mesurées par
+`tools/navigateur/essai-une.mjs` (voir `tools/navigateur/README.md`), avec la
+base de démonstration et un **compte lecteur** (compte 4, Élise).
 
 ### 1.28.0 — adresses affichées, écrans de courriel masqués
 

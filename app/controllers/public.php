@@ -35,6 +35,34 @@ function public_accueil(): void
     // calculé pour un visiteur (aucune requête, rien à filtrer).
     $dansLaFamille = is_logged_in() && $visible('famille') ? dans_la_famille() : [];
 
+    // La une d'abord (1.29.0) : pour un compte connecté, l'article principal
+    // est le plus récent qu'il peut lire. Il est cherché même si le bloc
+    // « une » est masqué dans la composition : un accueil connecté ne commence
+    // pas par une page sans article. Aucun article du tout : rien à montrer,
+    // « Dans la famille » passe en tête.
+    $uneArticle = null;
+    if (is_logged_in()) {
+        $uneArticle = $articles[0] ?? null;
+        if ($uneArticle === null) {
+            $derniers   = recent_articles(1);
+            $uneArticle = $derniers[0] ?? null;
+        }
+    }
+
+    // Une seule ligne de bienvenue, sous la date (layout.php) : le prénom, et
+    // rien d'autre. Absente si le compte n'en a pas.
+    $salutation = '';
+    $compte     = current_account();
+    if ($compte !== null) {
+        $prenom = trim((string) ($compte['first_name'] ?? ''));
+        if ($prenom === '') {
+            $prenom = trim((string) ($compte['display_name'] ?? ''));
+        }
+        if ($prenom !== '') {
+            $salutation = 'Bonjour ' . mb_substr($prenom, 0, 40);
+        }
+    }
+
     $nbDocs = $nbPages = $nbPersonnes = 0;
     if ($visible('chiffres')) {
         $nbDocs      = count_visible('documents', 'document');
@@ -50,6 +78,8 @@ function public_accueil(): void
         'pages'      => $pages,
         'personnes'  => $personnes,
         'dansLaFamille' => $dansLaFamille,
+        'uneArticle' => $uneArticle,
+        'salutation' => $salutation,
         'nbDocs'     => $nbDocs,
         'nbPages'    => $nbPages,
         'nbPersonnes' => $nbPersonnes,

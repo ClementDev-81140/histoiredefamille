@@ -43,8 +43,10 @@ et une installation qui tient en quelques commandes à copier-coller.
 - Une page d'accueil qui tient en **deux entrées** : *Consulter* (les
   documents) et *Se connecter*, la seconde plus grosse et mise en avant. C'est
   voulu : le site se consulte d'abord en privé, avec le compte de sa branche.
-  Une fois connecté, ces deux portes disparaissent : la page montre à leur
-  place le bloc **« Dans la famille »** (voir plus bas).
+  Une fois connecté, ces deux portes disparaissent et la page **commence par
+  la une** : l'article du jour dans le premier écran, puis le bloc
+  **« Dans la famille »** — dans une colonne à droite sur grand écran, juste
+  dessous sur téléphone (voir plus bas).
   **L'arbre généalogique n'est plus public** : il s'ouvre une fois connecté.
 - Les autres rubriques (Articles, Vidéos, Albums, Calendrier, Recherche)
   n'apparaissent dans le menu et sur l'accueil **que si quelque chose y a été
@@ -1139,6 +1141,15 @@ Les blocs de **l'espace famille** :
 Ceux de **l'accueil public** : les deux entrées, « Également publié », les
 chiffres, « Dans la famille » (un compte connecté seulement), « À la une »
 (les articles), les derniers documents et « À lire » (les pages d'information).
+
+Pour un **visiteur**, cet ordre est celui de la page. Pour un **compte
+connecté**, la une passe devant (1.29.0) : la phrase d'accueil, la ligne de
+chiffres et « Nous écrire » ne s'affichent plus (l'adresse reste dans le pied
+de page), une seule ligne de bienvenue prend place sous la date, et « Dans la
+famille » suit la une — colonne de droite à partir de 64 rem, jamais avant. Le
+bloc montre **cinq lignes** au plus, avec un lien « Tout voir » vers l'espace
+famille ; sur téléphone, au-delà de trois lignes, il est replié dans un
+`<details>` (aucun JavaScript).
 
 **Réglages de la une.** Sur la même page :
 

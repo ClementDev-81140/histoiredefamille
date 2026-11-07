@@ -28,6 +28,7 @@ function tests_accueil(): void
             tests_accueil_public();
             tests_accueil_connecte();
             tests_accueil_dans_la_famille();
+            tests_accueil_une();
 
             throw new RuntimeException('fin du test, annulation');
         });
@@ -317,6 +318,189 @@ function tests_accueil_dans_la_famille(): void
         'Dans la famille : les nouveautés partent de la visite précédente (sinon sept jours)',
         $depuisVisite === 1000000000 && $depuisDefaut > time() - 8 * 86400 && $depuisDefaut <= time(),
         $depuisVisite . ' / ' . $depuisDefaut
+    );
+}
+
+/**
+ * 4. La une d'abord, pour tout compte connecté (1.29.0).
+ *
+ * L'accueil d'un compte connecté commence par l'article du jour : plus de
+ * phrase d'accueil longue, plus de ligne de chiffres, plus de « Nous écrire »
+ * avant lui, et « Dans la famille » vient après — dans une colonne à droite sur
+ * grand écran (feuille de style), juste dessous sur téléphone. La page d'un
+ * visiteur, elle, ne change pas : c'est vérifié ici aussi.
+ *
+ * La position en pixels du titre (moins de 800 px) se mesure dans un vrai
+ * navigateur : `tools/navigateur/essai-une.mjs` (voir tools/navigateur/README.md).
+ * Aucun essai PHP ne peut la connaître ; on vérifie ici l'ordre du document, le
+ * nombre de lignes du bloc et les règles de la feuille de style.
+ */
+function tests_accueil_une(): void
+{
+    $suffixe    = bin2hex(random_bytes(3));
+    $branche    = tests_profils_branche('Branche une');
+    $lecteur    = tests_profils_compte('branche', $branche);
+    $maintenant = time();
+
+    // Cinq personnes ajoutées à l'instant : le bloc « Dans la famille » aura
+    // de quoi remplir ses cinq lignes.
+    for ($i = 1; $i <= 5; $i++) {
+        db_insert('persons', [
+            'first_name' => 'Une' . $i, 'last_name' => strtoupper($suffixe),
+            'birth_date' => '1960-03-0' . $i, 'visibility' => 'famille',
+            'created_at' => $maintenant, 'updated_at' => $maintenant,
+        ]);
+    }
+
+    // Deux articles publiés : le plus récent doit être la une.
+    $titreUne = 'Article de la une ' . $suffixe;
+    db_insert('articles', [
+        'slug' => 'essai-une-' . $suffixe, 'title' => $titreUne,
+        'summary' => 'Résumé de la une.', 'body' => 'Texte de la une.',
+        'category' => 'Souvenirs', 'visibility' => 'public', 'status' => 'publie',
+        'published_at' => $maintenant - 10, 'created_at' => $maintenant, 'updated_at' => $maintenant,
+    ]);
+    $titreAvant = 'Article précédent ' . $suffixe;
+    db_insert('articles', [
+        'slug' => 'essai-avant-' . $suffixe, 'title' => $titreAvant,
+        'summary' => 'Résumé précédent.', 'body' => 'Texte précédent.',
+        'category' => 'Souvenirs', 'visibility' => 'public', 'status' => 'publie',
+        'published_at' => $maintenant - 900, 'created_at' => $maintenant, 'updated_at' => $maintenant,
+    ]);
+
+    $page  = tests_envoi_requete('GET', '/', $lecteur);
+    $corps = (string) $page['corps'];
+    verifier('accueil connecté : la page s’ouvre', (int) $page['code'] === 200, 'code ' . $page['code']);
+
+    // 1. L'ordre : la une, puis « Dans la famille ».
+    $posUne     = strpos($corps, 'accueil-journal__une');
+    $posFamille = strpos($corps, 'dans-la-famille');
+    verifier(
+        'accueil connecté : la une ouvre la page, avant « Dans la famille »',
+        $posUne !== false && $posFamille !== false && $posUne < $posFamille,
+        'une à ' . var_export($posUne, true) . ', famille à ' . var_export($posFamille, true)
+    );
+    verifier(
+        'accueil connecté : le dernier article publié est celui de la une',
+        str_contains($corps, $titreUne)
+            && strpos($corps, $titreUne) < strpos($corps, $titreAvant)
+    );
+    verifier(
+        'accueil connecté : la une garde la carte d’article et son grand format',
+        str_contains($corps, 'article-carte article-carte--une')
+            && str_contains($corps, 'article-carte__titre')
+    );
+
+    // 2. La vitrine du visiteur a quitté l'accueil connecté.
+    verifier(
+        'accueil connecté : ni phrase d’accueil, ni chiffres, ni « Nous écrire » avant la une',
+        !str_contains($corps, 'hero__texte')
+            && !str_contains($corps, 'hero__chiffres')
+            && !str_contains($corps, 'hero__ecrire')
+            && !str_contains($corps, '<section class="hero"'),
+        'un élément de la vitrine est encore là'
+    );
+
+    // 3. Une seule ligne de bienvenue, sous la date.
+    verifier(
+        'accueil connecté : une seule ligne de bienvenue, sous la date',
+        substr_count($corps, 'entete__salutation') === 1
+            && preg_match('/entete__salutation[^>]*>Bonjour /', $corps) === 1
+            && strpos($corps, 'entete__salutation') < strpos($corps, 'entete__titre'),
+        'salutation absente ou en double'
+    );
+
+    // 4. Le bloc « Dans la famille » : cinq lignes au plus, lien « Tout voir »,
+    //    replié sur téléphone au-delà de trois lignes.
+    $debut = strpos($corps, 'class="dans-la-famille');
+    $fin   = $debut === false ? false : strpos($corps, '</aside>', $debut);
+    $bloc  = ($debut === false || $fin === false) ? '' : substr($corps, $debut, $fin - $debut);
+    // Le contenu est écrit deux fois (repli du téléphone, version ouverte) :
+    // dix lignes au total, donc cinq visibles.
+    $lignes = substr_count($bloc, '<li>');
+    verifier(
+        'accueil connecté : « Dans la famille » montre cinq lignes au plus',
+        $lignes > 0 && $lignes <= 10 && $lignes % 2 === 0,
+        $lignes . ' ligne(s) dans le bloc'
+    );
+    verifier(
+        'accueil connecté : « Dans la famille » mène à « Tout voir »',
+        str_contains($bloc, 'Tout voir') && str_contains($bloc, 'href="/famille"')
+    );
+    verifier(
+        'accueil connecté : au-delà de trois lignes, le bloc se replie sans JavaScript',
+        str_contains($bloc, '<details class="accueil-famille__repli"')
+            && str_contains($bloc, '<summary>'),
+        'repli absent'
+    );
+    verifier(
+        'accueil connecté : aucun style en ligne dans la une ni le bloc famille',
+        !str_contains($bloc, ' style="') && !str_contains(substr($corps, 0, (int) $posUne + 4000), ' style="')
+    );
+
+    // 5. La feuille de style : colonne à droite à partir de 64 rem, repli en
+    //    dessous (jamais l'inverse), et aucune classe renommée.
+    $css = (string) @file_get_contents(HDF_ROOT . '/public/assets/style.css');
+    verifier(
+        'accueil connecté : « Dans la famille » passe en colonne à droite à 64 rem',
+        preg_match('/@media\s*\(min-width:\s*64rem\)\s*\{[^@]*\.accueil-journal--deux[^@]*\.accueil-journal__famille/s', $css) === 1,
+        'règle absente'
+    );
+    verifier(
+        'accueil connecté : sur téléphone, c’est le repli qui s’affiche (pas le bloc ouvert)',
+        preg_match('/@media\s*\(max-width:\s*63\.99rem\)\s*\{[^@]*\.accueil-famille--repliable \.accueil-famille__bloc\s*\{\s*display:\s*none/s', $css) === 1,
+        'règle absente'
+    );
+    verifier(
+        'accueil connecté : les classes de la une et du bloc famille sont inchangées',
+        str_contains($css, '.article-carte--une .article-carte__titre')
+            && str_contains($css, '.dans-la-famille .panneau')
+            && str_contains($css, '.entete__date')
+    );
+
+    // 6. La page d'un visiteur ne change pas.
+    $visiteur = tests_envoi_requete('GET', '/', null);
+    verifier(
+        'accueil public : le visiteur garde la phrase, les chiffres et « Nous écrire »',
+        str_contains((string) $visiteur['corps'], 'hero__texte')
+            && str_contains((string) $visiteur['corps'], 'hero__chiffres')
+            && str_contains((string) $visiteur['corps'], 'Nous écrire :')
+            && str_contains((string) $visiteur['corps'], 'actions--portes'),
+        'la vitrine du visiteur a changé'
+    );
+    verifier(
+        'accueil public : le visiteur n’a ni salutation ni bloc famille',
+        !str_contains((string) $visiteur['corps'], 'entete__salutation')
+            && !str_contains((string) $visiteur['corps'], 'dans-la-famille')
+    );
+
+    // 7. Repli : bloc « une » masqué dans la composition, l'article reste en tête.
+    $blocs = composition_defauts('public');
+    foreach ($blocs as $i => $blocCompose) {
+        if ($blocCompose['cle'] === 'une') {
+            $blocs[$i]['actif'] = false;
+        }
+    }
+    composition_enregistrer('public', $blocs);
+    $sansBloc = (string) tests_envoi_requete('GET', '/', $lecteur)['corps'];
+    verifier(
+        'accueil connecté : bloc « une » masqué, le dernier article reste en tête',
+        str_contains($sansBloc, 'accueil-journal__une')
+            && str_contains($sansBloc, $titreUne)
+            && strpos($sansBloc, 'accueil-journal__une') < strpos($sansBloc, 'dans-la-famille'),
+        'la une a disparu avec le bloc'
+    );
+    composition_retablir('public');
+
+    // 8. Aucun article du tout : « Dans la famille » prend la première place.
+    db_exec('DELETE FROM articles');
+    $sansArticle = (string) tests_envoi_requete('GET', '/', $lecteur)['corps'];
+    verifier(
+        'accueil connecté : sans aucun article, « Dans la famille » prend la première place',
+        !str_contains($sansArticle, 'article-carte--une')
+            && str_contains($sansArticle, 'dans-la-famille')
+            && strpos($sansArticle, 'dans-la-famille') < strpos($sansArticle, 'Derniers documents'),
+        'le bloc famille n’est pas en tête'
     );
 }
 

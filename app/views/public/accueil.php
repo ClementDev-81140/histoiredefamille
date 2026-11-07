@@ -6,25 +6,38 @@
  * « Administration → Composition des pages » : les blocs de l'en-tête
  * (« également publié », chiffres) puis les rubriques, dans l'ordre choisi.
  * Les deux portes (« Consulter », « Se connecter ») ne s'affichent que pour
- * un visiteur ; un compte connecté trouve à leur place, plus bas, le bloc
- * « Dans la famille » — strictement dans ses droits.
+ * un visiteur.
+ *
+ * Depuis la 1.29.0, un compte connecté voit d'abord la une : bandeau du
+ * journal, article principal, puis « Dans la famille » (en colonne à droite
+ * sur grand écran), puis les derniers documents et « À lire ». La phrase
+ * d'accueil longue, la ligne de chiffres et « Nous écrire » ne s'affichent
+ * plus que pour un visiteur : elles poussaient l'article hors du premier
+ * écran, alors que l'adresse de contact reste dans le pied de page.
  *
  * @var array $documents
  * @var array $photos
  * @var array $pages
  * @var array $personnes
  * @var array $dansLaFamille
+ * @var array|null $uneArticle   article principal (compte connecté)
+ * @var string $salutation
  * @var int   $nbDocs, $nbPages, $nbPersonnes
  */
 $siteName = site_setting('name');
 $hero     = composition_colonne('public', 'hero');
 $pleine   = composition_colonne('public', 'pleine');
 ?>
+<?php /* Le nom et le sous-titre figurent déjà dans l'en-tête du journal :
+         on garde un h1 lisible par les lecteurs d'écran et les moteurs de
+         recherche, mais invisible à l'écran (évite le doublon). Il reste en
+         haut de page pour tout le monde : la une, elle, porte un h2. */ ?>
+<h1 class="sr-only"><?= e($siteName) ?></h1>
+
+<?php /* Un compte connecté n'a pas besoin de la vitrine : sa page commence par
+         la une (plus bas). Pour un visiteur, rien ne change. */ ?>
+<?php if (!is_logged_in()): ?>
 <section class="hero">
-    <?php /* Le nom et le sous-titre figurent déjà dans l'en-tête du journal :
-             on garde un h1 lisible par les lecteurs d'écran et les moteurs de
-             recherche, mais invisible à l'écran (évite le doublon). */ ?>
-    <h1 class="sr-only"><?= e($siteName) ?></h1>
     <?php /* Le sous-titre est déjà dans l'en-tête du journal : on ne
              l'affiche pas une deuxième fois ici. La phrase d'accueil est
              réglable dans « Apparence du journal » ; vide, elle reprend la
@@ -93,89 +106,66 @@ $pleine   = composition_colonne('public', 'pleine');
         <a href="mailto:<?= e(site_adresse('contact')) ?>"><?= e(site_adresse('contact')) ?></a>
     </p>
 </section>
+<?php endif; ?>
 
-<?php foreach ($pleine as $bloc): ?>
-
-    <?php if ($bloc === 'famille'): ?>
-        <?php if (!empty($dansLaFamille) && !dans_la_famille_vide($dansLaFamille)): ?>
-            <?php /* Ce qui concerne la personne connectée, et rien d'autre :
-                     les quatre listes sont déjà filtrées par ses droits
-                     (calendrier.php, visibility.php). Vide, le bloc
-                     disparaît : aucune section vide sur la page. */ ?>
-            <section class="section dans-la-famille">
-                <div class="section__entete">
-                    <h2>Dans la famille</h2>
-                    <a href="/famille">Votre espace famille →</a>
-                </div>
-                <div class="grille-pages">
-
-                    <?php if ($dansLaFamille['anniversaires'] !== []): ?>
-                        <section class="panneau panneau--famille">
-                            <h3>Anniversaires</h3>
-                            <ul class="liste-personnes">
-                                <?php foreach ($dansLaFamille['anniversaires'] as $evenement): ?>
-                                    <li>
-                                        <a href="<?= e($evenement['lien']) ?>"><?= e($evenement['nom']) ?></a>
-                                        <span class="discret"><?= e(calendrier_jour_lisible($evenement)) ?></span>
-                                    </li>
-                                <?php endforeach; ?>
-                            </ul>
-                        </section>
+<?php if (is_logged_in()): ?>
+    <?php
+    /* La une d'abord (1.29.0). `$uneArticle` est calculé par le contrôleur :
+       le plus récent des articles que cette personne peut lire, déjà filtré par
+       ses droits. */
+    $articleUne     = $uneArticle ?? null;
+    $familleVisible = !empty($dansLaFamille) && !dans_la_famille_vide($dansLaFamille);
+    // Cinq lignes visibles au plus, et repli sur téléphone au-delà de trois.
+    $familleMax = 5;
+    ?>
+    <div class="accueil-journal<?= ($articleUne !== null && $familleVisible) ? ' accueil-journal--deux' : '' ?>">
+        <?php if ($articleUne !== null): ?>
+            <div class="accueil-journal__une">
+                <?php /* Le bloc « une » de la composition est respecté ; s'il est
+                         masqué, l'article principal s'affiche quand même, sous
+                         un simple repère de rubrique. */ ?>
+                <?php $uneComposee = in_array('une', $pleine, true); ?>
+                <section class="section"<?= $uneComposee ? '' : ' aria-label="' . e(apparence_titre_encart('une')) . '"' ?>>
+                    <?php if ($uneComposee): ?>
+                        <div class="section__entete">
+                            <h2><?= e(apparence_titre_encart('une')) ?></h2>
+                            <a href="/articles">Tous les articles →</a>
+                        </div>
+                    <?php else: ?>
+                        <h2><?= e(apparence_titre_encart('une')) ?></h2>
                     <?php endif; ?>
-
-                    <?php if ($dansLaFamille['evenements'] !== []): ?>
-                        <section class="panneau panneau--famille">
-                            <h3>Événements à venir</h3>
-                            <ul class="liste-personnes">
-                                <?php foreach ($dansLaFamille['evenements'] as $evenement): ?>
-                                    <li>
-                                        <a href="<?= e($evenement['lien']) ?>"><?= e($evenement['nom']) ?></a>
-                                        <span class="discret">
-                                            <?= e(calendrier_jour_lisible($evenement)) ?> —
-                                            <?= $evenement['genre'] === 'mariage'
-                                                ? 'mariage, ' . (int) $evenement['ans'] . ' an' . ((int) $evenement['ans'] > 1 ? 's' : '')
-                                                : 'souvenir, ' . (int) $evenement['ans'] . ' an' . ((int) $evenement['ans'] > 1 ? 's' : '') ?>
-                                        </span>
-                                    </li>
-                                <?php endforeach; ?>
-                            </ul>
-                        </section>
-                    <?php endif; ?>
-
-                    <?php if ($dansLaFamille['personnes'] !== []): ?>
-                        <section class="panneau panneau--famille">
-                            <h3>Personnes ajoutées</h3>
-                            <ul class="liste-personnes">
-                                <?php foreach ($dansLaFamille['personnes'] as $personne): ?>
-                                    <li>
-                                        <a href="/arbre/<?= (int) $personne['id'] ?>"><?= e(person_full_name($personne)) ?></a>
-                                        <span class="discret"><?= e(format_date((int) $personne['created_at'])) ?></span>
-                                    </li>
-                                <?php endforeach; ?>
-                            </ul>
-                        </section>
-                    <?php endif; ?>
-
-                    <?php if ($dansLaFamille['nouveautes'] !== []): ?>
-                        <section class="panneau panneau--famille">
-                            <h3>Depuis votre dernière visite</h3>
-                            <ul class="liste-personnes">
-                                <?php foreach ($dansLaFamille['nouveautes'] as $nouveaute): ?>
-                                    <li>
-                                        <span class="nouveautes__type"><?= e($nouveaute['type']) ?></span>
-                                        <a href="<?= e($nouveaute['lien']) ?>"><?= e($nouveaute['titre']) ?></a>
-                                        <span class="discret"><?= e(format_date((int) $nouveaute['date'])) ?></span>
-                                    </li>
-                                <?php endforeach; ?>
-                            </ul>
-                        </section>
-                    <?php endif; ?>
-
-                </div>
-            </section>
+                    <div class="articles-liste">
+                        <?php $article = $articleUne; $grand = true; ?>
+                        <?php require __DIR__ . '/../partials/carte_article.php'; ?>
+                        <?php foreach (array_slice($articles, 1) as $article): ?>
+                            <?php $grand = false; ?>
+                            <?php require __DIR__ . '/../partials/carte_article.php'; ?>
+                        <?php endforeach; ?>
+                    </div>
+                </section>
+            </div>
         <?php endif; ?>
 
-    <?php elseif ($bloc === 'une'): ?>
+        <?php if ($familleVisible): ?>
+            <?php /* Colonne de droite sur grand écran, juste dessous sinon —
+                     jamais avant la une. */ ?>
+            <aside class="accueil-journal__famille" aria-label="Dans la famille">
+                <?php require __DIR__ . '/../partials/dans_la_famille.php'; ?>
+            </aside>
+        <?php endif; ?>
+    </div>
+<?php endif; ?>
+
+<?php
+/* Blocs de la partie pleine largeur. Pour un compte connecté, « une » et
+   « famille » sont déjà en haut de page (voir plus haut) : on ne les rejoue
+   pas ici. Pour un visiteur, « une » est la rubrique des articles ; le bloc
+   « famille » ne le concerne jamais. */
+$pleineAffichee = is_logged_in() ? array_values(array_diff($pleine, ['une', 'famille'])) : $pleine;
+?>
+<?php foreach ($pleineAffichee as $bloc): ?>
+
+    <?php if ($bloc === 'une'): ?>
         <?php if ($articles !== []): ?>
             <section class="section">
                 <div class="section__entete">

@@ -241,6 +241,17 @@ input[type="file"].sr-only {
     letter-spacing: 0.01em;
 }
 
+/* Une seule ligne de bienvenue, sous la date (accueil d'un compte connecté,
+   1.29.0). Volontairement discrète : elle ne doit pas repousser la une hors du
+   premier écran. Absente quand le compte n'a pas de prénom. */
+.entete__salutation {
+    margin: 0 0 0.2rem;
+    text-align: center;
+    font-style: italic;
+    font-size: 0.85rem;
+    color: var(--texte-doux);
+}
+
 .entete__titre {
     display: block;
     text-align: center;
@@ -369,6 +380,108 @@ body:not(.page-admin) .nav a.nav__accent--connexion {
 .dans-la-famille .liste-personnes li:last-child {
     border-bottom: 0;
     padding-bottom: 0;
+}
+
+/* Accueil d'un compte connecté (1.29.0) : la une d'abord, « Dans la famille »
+   ensuite. Une seule colonne par défaut (téléphone) : l'article, puis le bloc
+   famille juste dessous. À partir de 64 rem, le bloc famille passe dans une
+   colonne à droite — jamais avant la une, jamais au-dessus. */
+.accueil-journal {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.6rem;
+    margin-bottom: 1.6rem;
+}
+
+.accueil-journal__une,
+.accueil-journal__famille {
+    min-width: 0;
+}
+
+/* Le titre et la photo de la une doivent tenir dans le premier écran
+   (1280 × 800) : sur grand écran, la photo passe à droite du titre au lieu
+   d'attendre sous lui, et le résumé reprend toute la largeur en dessous. */
+/* Téléphone : la photo garde une hauteur qui laisse le titre entier dans le
+   premier écran (390 × 800). */
+@media (max-width: 63.99rem) {
+    .accueil-journal .article-carte--une .article-carte__image {
+        max-height: 10rem;
+    }
+}
+
+@media (min-width: 64rem) {
+    .accueil-journal .article-carte--une {
+        grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+        grid-template-areas:
+            "surtitre  surtitre"
+            "titre     image"
+            "signature image"
+            "resume    resume"
+            "suite     suite";
+    }
+
+    /* Le titre garde son ampleur de une, sans écraser la photo à côté : un
+       cran plus bas que sur la page publique, qui ne change pas. */
+    .accueil-journal .article-carte--une .article-carte__titre {
+        font-size: clamp(2.2rem, 3.6vw, 3.1rem);
+        line-height: 1.06;
+    }
+
+    .accueil-journal .article-carte--une .article-carte__image {
+        margin-bottom: 0.4rem;
+        max-height: 13rem;
+    }
+}
+
+@media (min-width: 64rem) {
+    .accueil-journal--deux {
+        grid-template-columns: minmax(0, 1fr) 19rem;
+        gap: 1.9rem;
+        align-items: start;
+    }
+
+    .accueil-journal__famille {
+        border-left: var(--filet);
+        padding-left: 1.2rem;
+    }
+
+    /* Les quatre panneaux s'empilent dans la colonne : un par ligne. */
+    .accueil-journal__famille .grille-pages {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0.9rem;
+    }
+}
+
+/* Repli sans JavaScript : au-delà de trois lignes, le bloc « Dans la famille »
+   est fermé sur téléphone (un <details>) et s'ouvre au clic. Sur grand écran,
+   il reste ouvert — la colonne de droite est faite pour être lue. */
+.accueil-famille--repliable .accueil-famille__repli {
+    display: none;
+}
+
+@media (max-width: 63.99rem) {
+    .accueil-famille--repliable .accueil-famille__repli {
+        display: block;
+    }
+
+    .accueil-famille--repliable .accueil-famille__bloc {
+        display: none;
+    }
+}
+
+.accueil-famille__repli summary {
+    cursor: pointer;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0.45rem 0;
+    border-bottom: var(--filet-fort);
+    margin-bottom: 0.9rem;
+}
+
+.accueil-famille__tout {
+    margin: 0.6rem 0 0;
+    text-align: right;
 }
 
 /* Les deux portes de la page d'accueil (Consulter / Se connecter). */
