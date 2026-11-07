@@ -5,7 +5,12 @@ versions. Elles sont **engendrées** : aucune n'est retouchée à la main.
 
 | Fichier | Page | Largeur |
 |---|---|---|
-| `ordinateur-accueil.png` / `mobile-accueil.png` | page publique `/` (deux portes : Consulter, Se connecter) | 1280 / 390 |
+| `ordinateur-accueil.png` / `mobile-accueil.png` | page publique `/` (deux portes : Consulter, Se connecter, et « Nous écrire ») | 1280 / 390 |
+| `ordinateur-accueil-bleu.png` / `mobile-accueil-bleu.png` | la même page d'accueil en palette **bleu** | 1280 / 390 |
+| `ordinateur-connexion.png` / `mobile-connexion.png` | `/connexion` : « Mot de passe oublié ou besoin d'un compte ? » et l'adresse d'assistance | 1280 / 390 |
+| `mobile-connexion-bleu.png` | la même page en palette **bleu** | 390 |
+| `ordinateur-mon-compte.png` / `mobile-mon-compte.png` | « Mon compte » d'un administrateur : « Besoin d'aide ? » et l'adresse d'assistance, **sans** section « Mes courriels » (envoi coupé) | 1280 / 390 |
+| `mobile-mon-compte-bleu.png` | la même page en palette **bleu** | 390 |
 | `ordinateur-accueil-dans-la-famille.png` / `mobile-accueil-dans-la-famille.png` | la même page `/` vue par un lecteur : plus de porte, et le bloc « Dans la famille » (anniversaires, événements, personnes, nouveautés) | 1280 / 390 |
 | `ordinateur-accueil-connecte.png` / `mobile-accueil-connecte.png` | accueil d'un lecteur (`/famille`) : nouveautés de la famille, une, encarts | 1280 / 390 |
 | `ordinateur-accueil-journaliste.png` / `mobile-accueil-journaliste.png` | accueil d'un journaliste : « Proposer un article » + « Mes propositions » | 1280 / 390 |
@@ -35,19 +40,32 @@ Les autres fichiers (albums publics, articles, arbre, calendrier, frise, tchat,
 vidéos, recettes) datent des versions précédentes : les pages correspondantes
 n'ont ni menu d'administration ni changement depuis.
 
-### 1.28.0 — pages refaites dans le banc, PNG de référence inchangés
+### 1.28.0 — adresses affichées, écrans de courriel masqués
 
-La 1.28.0 change des pages visibles sur **toutes** les pages (une ligne « Une
-question ? » avec l'adresse de contact dans le pied de page), sur l'accueil
-(« Nous écrire »), la connexion, « Mon compte », les pages d'erreur, la gazette
-et les réglages. Les PNG de référence ci-dessus **n'ont pas été refaits** : ils
-demandent la base de démonstration et l'intégration des images. En attendant,
-les captures de contrôle ont été prises dans le banc (`tools/navigateur/
-actions-contacts.mjs`) en **390 px et 1280 px**, palette **papier** et **bleu**,
-pour l'accueil, la connexion, « Mon compte » et la page 404 : **14 contrôles ×
-4, 0 échec**. Elles servent à vérifier la place et la lisibilité des adresses,
-pas à illustrer le README ; les PNG de référence seront refaits à la prochaine
-version qui touche la démonstration.
+La 1.28.0 est visible sur **toutes** les pages (une ligne « Une question ? »
+avec l'adresse de contact dans le pied de page), sur l'accueil (« Nous écrire :
+… »), la connexion, « Mon compte », les pages d'erreur, la gazette et les
+réglages. Les captures refaites :
+
+| Fichier | Ce que l'on y voit |
+|---|---|
+| `ordinateur-accueil.png`, `mobile-accueil.png` (+ versions `-bleu`) | « Nous écrire : contact@… » sous les deux portes, et la ligne du pied de page |
+| `ordinateur-connexion.png`, `mobile-connexion.png`, `mobile-connexion-bleu.png` | « Mot de passe oublié ou besoin d'un compte ? Écrivez à support@… » |
+| `ordinateur-mon-compte.png`, `mobile-mon-compte.png`, `mobile-mon-compte-bleu.png` | « Besoin d'aide ? Écrivez à support@… », et **aucune** section « Mes courriels » : ni champ d'adresse, ni case de consentement |
+| `ordinateur-reglages-tchat.png` (bleu, 1265 px) | le nouveau bloc **Adresses affichées** (contact, assistance) et la case **Courriels**, décochée |
+
+Elles sont faites comme les autres : base de démonstration chargée dans une base
+d'essai, pages rendues par le routeur du site, images converties en `data:` pour
+que le rendu soit complet hors serveur, puis photographiées avec un navigateur
+en 1280 px, 1265 px (administration) et 390 px, palette **papier** et **bleu**.
+`mobile-connexion.png` est passée de 375 à **390 px**, la largeur de toutes les
+autres captures de téléphone.
+
+Le contrôle automatique des mêmes pages (`tools/navigateur/actions-contacts.mjs`) :
+**14 contrôles × 4** (390 et 1280 px, papier et bleu), **0 échec** — liens
+`mailto:` ordinaires (ni `onclick`, ni style en ligne), adresse qui tient dans la
+largeur, contraste 6,98 (papier) et 6,30 (bleu), aucun débordement horizontal,
+aucune erreur JavaScript.
 
 ### 1.26.0 — aucune capture refaite
 
@@ -72,3 +90,7 @@ pour l'administration (1265 = 1280 moins la barre de défilement : les captures
 d'administration gardent ainsi la même largeur d'une version à l'autre). Les
 images servies par Apache sont intégrées pour que le rendu soit complet hors
 serveur. Aucune donnée réelle : tout le contenu est marqué « (démo) ».
+
+Les trois outils sont dans `tools/navigateur/`, qui explique la marche à suivre :
+`rendre.php` (la page par le routeur), `inline-medias.php` (les images en
+`data:`), `serveur.mjs` (le petit serveur) et `capture.mjs` (la photo).

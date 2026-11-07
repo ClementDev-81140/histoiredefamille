@@ -148,6 +148,29 @@ d'erreur JavaScript.
 Les captures d'écran et le corps du formulaire posté (fichiers `capture-*.txt`)
 sont écrits dans `/tmp` (ou dans `CAPTURES=`).
 
+## Engendrer les captures de `docs/captures/`
+
+Deux outils, en plus du serveur :
+
+```bash
+# 1. Une page rendue par le routeur (comme plus haut), puis ses images en data:.
+HDF_CONFIG=/chemin/config.local.php php tools/navigateur/inline-medias.php \
+    /tmp/accueil.html /tmp/accueil-images.html
+
+# 2. Le serveur d'essai avec cette page et la feuille du thème voulu, puis la
+#    capture (largeur, adresse, fichier, page entière = 1).
+PAGES_ALBUM='{"/":"/tmp/accueil-images.html"}' \
+THEME_CSS=/tmp/theme-papier.css PORT=8199 node tools/navigateur/serveur.mjs &
+node tools/navigateur/capture.mjs 1280 / /tmp/accueil.png 1
+node tools/navigateur/capture.mjs 390  / /tmp/mobile-accueil.png 1
+```
+
+`inline-medias.php` lit les fichiers réels du stockage (`/media/miniature/{id}`,
+`/f/{id}`) et les écrit en `data:` dans la page : la capture montre les vraies
+photos sans Apache. `capture.mjs` photographie la page servie par le banc, page
+entière par défaut. Les deux sont des outils de développement : hors de
+`public/`, jamais chargés par le site.
+
 Fichiers d'essai : n'importe quel fichier fait l'affaire
 (`FICHIER_VIDEO=/tmp/film.mp4`, `FICHIER_DOCUMENT=/tmp/lettre.pdf`).
 

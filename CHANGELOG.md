@@ -107,6 +107,14 @@ file, sans être traités.
 
 #### Essais
 
+Les captures de `docs/captures/` ont été **refaites** avec la base de
+démonstration : accueil, connexion et « Mon compte » en 1280 et 390 px, palette
+papier et bleu, plus les Réglages (bloc « Adresses affichées », case
+« Courriels ») en bleu. Deux outils de développement ont été ajoutés pour que
+la fabrication soit reproductible : `tools/navigateur/inline-medias.php` (les
+images réelles de la page en `data:`) et `tools/navigateur/capture.mjs` (la
+photo).
+
 Nouvelle famille **« contacts »** : **43/43**. Elle vérifie les adresses (repli,
 réglage, format, normalisation, enregistrement par le formulaire), leur
 présence aux cinq endroits demandés en lien `mailto:`, l'absence de toute
@@ -114,7 +122,7 @@ adresse de compte à l'écran, le refus d'enfiler et d'envoyer quand le réglage
 est faux, l'arrêt de la commande, la ligne « désactivé volontairement » de la
 vérification avant ouverture, chaque écran masqué — et leur retour quand le
 réglage est rallumé. Suite complète : **1 200 essais, 0 échec**. Lint :
-**192 fichiers, 0 erreur**.
+**193 fichiers, 0 erreur**.
 
 ## [1.27.0] — 2026-11-07
 

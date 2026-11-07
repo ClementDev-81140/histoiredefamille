@@ -33,10 +33,16 @@ suivi automatique : cochez au fur et à mesure.
   l'écrivant ; `verifier-mise-en-ligne.php` affiche « Envoi de courriels » en
   **OK** — « courriels désactivés volontairement ».
 - [x] **Essais** : famille « contacts » **43/43** ; suite complète **1 200
-  essais, 0 échec** ; lint **192 fichiers, 0 erreur** ; matrice regénérée.
+  essais, 0 échec** ; lint **193 fichiers, 0 erreur** ; matrice regénérée.
 - [x] **Documentation** : CHANGELOG 1.28.0, README § 6.20 et § 14 (bandeau
   « désactivés, comment réactiver »), § 15 (gazette sans envoi), TODO,
   `config.example.php`.
+- [x] **Captures de référence refaites** (base de démonstration, images en
+  `data:`) : accueil, connexion et « Mon compte » en **1280 et 390 px**, palette
+  **papier** et **bleu**, plus les **Réglages** (bloc « Adresses affichées » et
+  case « Courriels ») en bleu, 1265 px. `mobile-connexion.png` passe de 375 à
+  390 px. Deux outils ajoutés pour que ce soit reproductible :
+  `tools/navigateur/inline-medias.php` et `tools/navigateur/capture.mjs`.
 
 ## Fait (2026-11-07, 1.27.0 — ajouter des photos dans un album)
 
