@@ -2,14 +2,18 @@
 /**
  * Rubriques publiques du site.
  *
- * La page d'accueil et le menu public ne montrent que ce qui a du contenu
- * public : deux entrées de base (documents et espace famille) et, en plus,
- * les rubriques où quelque chose a réellement été publié. Un visiteur ne
- * doit jamais tomber sur une rubrique vide.
+ * Deux questions distinctes, à ne pas confondre :
+ *
+ *   - **le menu** (`menu_rubriques()`) : depuis la 1.31.0, celui d'un visiteur
+ *     ne contient que « Accueil » (la porte « Se connecter » est ajoutée par la
+ *     mise en page), et celui d'un compte connecté est complet ;
+ *   - **la présence** (`rubriques_publiques()`) : « cette rubrique a-t-elle
+ *     quelque chose de public ? ». Un visiteur ne doit jamais tomber sur une
+ *     rubrique vide, et l'accueil public — la Une du journal — ne montre que ce
+ *     qui est réellement publié.
  *
  * Une seule requête légère par rubrique (des EXISTS, servis par les index),
- * et le résultat est gardé en mémoire pour la durée de la requête : le menu
- * et la page d'accueil partagent la même réponse.
+ * et le résultat est gardé en mémoire pour la durée de la requête.
  *
  * Les droits ne changent pas ici : les pages elles-mêmes continuent de
  * filtrer avec visibility.php. Tout compte connecté (famille ou
@@ -19,10 +23,15 @@
 declare(strict_types=1);
 
 /**
- * Rubriques publiques à afficher, sous la forme clé => vrai.
+ * Rubriques qui ont du contenu public, sous la forme clé => vrai.
  *
- * Toujours présentes : documents, famille (l'entrée de connexion).
- * Les autres ne reviennent que si elles ont du contenu public.
+ * Toujours présentes : documents, famille. Les autres ne valent vrai que si
+ * elles ont réellement quelque chose de public (un article publié et daté, une
+ * vidéo publique, un album public, une personne publique avec des dates…).
+ *
+ * Depuis la 1.31.0, le menu d'un visiteur ne s'en sert plus (il n'a que
+ * « Accueil » et « Se connecter ») : la fonction reste la réponse à « y a-t-il
+ * quelque chose à voir ici ? », et les essais s'en servent pour le vérifier.
  *
  * @param bool $rafraichir recalcule le résultat (tests automatiques)
  * @return array<string, bool>
@@ -34,9 +43,9 @@ function rubriques_publiques(bool $rafraichir = false): array
         return $cache;
     }
 
-    // Les deux entrées de base : les documents à consulter, et la connexion
-    // pour les familles. L'arbre généalogique n'est plus public : il s'ouvre
-    // une fois connecté (voir menu_rubriques()).
+    // Les rubriques toujours présentes : les documents, et l'espace famille
+    // (la connexion). L'arbre généalogique et la carte ne sont plus publics
+    // (1.24.0, 1.31.0) : ils s'ouvrent une fois connecté.
     $cache = [
         'documents' => true,
         'arbre'     => false,

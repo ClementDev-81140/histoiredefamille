@@ -100,13 +100,17 @@ $navClass = static function (string $href) use ($currentPath): string {
 <?php endif; ?>
 
         <?php
-        // Menu : réduit pour un visiteur (seulement ce qui a du contenu
-        // public), complet pour un compte de famille ou un administrateur.
+        // Menu : depuis la 1.31.0, un visiteur n'a que « Accueil » et
+        // « Se connecter » (l'accueil public présente tout le contenu public) ;
+        // un compte de famille ou un administrateur garde le menu complet.
         // La règle est dans app/lib/rubriques.php, testée automatiquement.
-        $menu = menu_rubriques($account, [
+        // Ces rubriques facultatives ne servent qu'au menu d'un compte
+        // connecté : inutile d'interroger la base pour un visiteur (trois
+        // requêtes de moins sur chaque page publique).
+        $menu = menu_rubriques($account, $account === null ? [] : [
             'recettes'    => recipes_exist(),
             'temoignages' => audio_exist(),
-            'tchat'       => $account !== null && tchat_actif(),
+            'tchat'       => tchat_actif(),
             // La carte n'apparaît que si elle a quelque chose à montrer.
             'carte'       => carte_exist(),
         ]);

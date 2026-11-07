@@ -30,6 +30,10 @@ n'était pas une lecture.
 Le menu d'un **compte connecté ne change pas** d'un caractère : mêmes rubriques,
 même ordre, mêmes droits.
 
+Au passage, la mise en page n'interroge plus la base pour des rubriques qui ne
+figurent pas dans le menu d'un visiteur : **trois requêtes de moins** sur chaque
+page publique — ce qui compte sur le Raspberry Pi.
+
 #### 2. La carte et les fiches de lieu demandent la connexion
 
 `/carte` et `/lieu/{id}` renvoient un visiteur vers **`/connexion`** (code
