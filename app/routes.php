@@ -156,6 +156,8 @@ route('GET', '/admin/envoyer/etat', 'admin_envoi_etat');
 route('POST', '/admin/envoyer/terminer', 'admin_envoi_terminer');
 route('POST', '/admin/envoyer/decision', 'admin_envoi_decision');
 route('POST', '/admin/envoyer/annuler', 'admin_envoi_annuler');
+route('POST', '/admin/envoyer/creer-document', 'admin_envoi_creer_document');
+route('POST', '/admin/envoyer/supprimer', 'admin_envoi_supprimer');
 route('POST', '/admin/envoyer/lot', 'admin_envoi_lot_save');
 route('GET', '/admin/envois', 'admin_envois');
 

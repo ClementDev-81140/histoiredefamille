@@ -6,11 +6,12 @@
  * protocole d'envoi par morceaux répondent ce que répond le site (mêmes clés
  * JSON, mêmes codes), sans écrire sur le disque : ce que l'on vérifie ici est
  * le comportement du NAVIGATEUR (champ « Fichier », champ caché, lien-ancre,
- * envoi du formulaire au clic). Le protocole lui-même est couvert par
+ * envoi du formulaire au clic, boutons de la liste des fichiers reçus). Le
+ * protocole, la base et les droits sont couverts par
  * `php app/cli/tests.php envoi`.
  *
  *   PAGE_VIDEO=/tmp/video.html PAGE_DOCUMENT=/tmp/document.html \
- *   CAPTURES=/tmp node tools/navigateur/serveur.mjs
+ *   PAGE_ENVOYER=/tmp/envoyer.html CAPTURES=/tmp node tools/navigateur/serveur.mjs
  *
  * Écoute sur 127.0.0.1:8199 (port modifiable par PORT).
  */
@@ -28,6 +29,14 @@ const pages = {
     '/admin/videos/nouvelle': readFileSync(process.env.PAGE_VIDEO || '/tmp/video.html', 'utf8'),
     '/admin/documents/nouveau': readFileSync(process.env.PAGE_DOCUMENT || '/tmp/document.html', 'utf8'),
 };
+
+// Page « Envoyer des fichiers » : optionnelle (elle n'est utile qu'au contrôle
+// des deux boutons de la liste des fichiers reçus).
+try {
+    pages['/admin/envoyer'] = readFileSync(process.env.PAGE_ENVOYER || '/tmp/envoyer.html', 'utf8');
+} catch (e) {
+    // Pas de page rendue : l'adresse répondra 404, comme avant.
+}
 
 const morceauOctets = 1048576;
 const token = 'a'.repeat(32);
@@ -75,6 +84,16 @@ createServer((requete, reponse) => {
         }
         if (chemin === '/admin/envoyer/annuler' || chemin === '/admin/envoyer/decision') {
             return json(reponse, { ok: true, etat: 'annule' });
+        }
+
+        // --- Les deux actions de la liste des fichiers reçus --------------
+        // On note ce qui est posté, puis on renvoie vers la page : c'est le
+        // serveur PHP qui décidera, ici on ne vérifie que le navigateur.
+        if (requete.method === 'POST'
+            && (chemin === '/admin/envoyer/creer-document' || chemin === '/admin/envoyer/supprimer')) {
+            writeFileSync(sortie + '/capture-action' + (chemin.endsWith('supprimer') ? '-supprimer' : '-creer') + '.txt', corps);
+            reponse.writeHead(303, { location: '/admin/envoyer' });
+            return reponse.end('');
         }
 
         // --- Enregistrement du formulaire : on note ce qui est posté -------

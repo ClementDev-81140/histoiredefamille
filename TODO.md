@@ -3,6 +3,40 @@
 Ce fichier liste ce qui reste à faire, classé par priorité. Il n'y a pas de
 suivi automatique : cochez au fur et à mesure.
 
+## Fait (2026-11-07, 1.26.3 — deux actions sur les fichiers reçus)
+
+- [x] **« Créer le document »** : le fichier reçu devient une fiche **privée**
+  tout de suite, sans repasser par le formulaire — mêmes champs que la fiche
+  automatique de fin d'envoi (titre, miniature, dimensions, date lue dans le
+  fichier, empreinte), puis redirection vers la fiche à compléter (formulaire
+  vidéo pour un film).
+- [x] **« Supprimer »** : après **confirmation** nommant le fichier, efface le
+  **fichier assemblé** et les **morceaux** ; l'envoi quitte la liste.
+- [x] **Un seul document par fichier** : réservation atomique
+  (`UPDATE … WHERE state = 'pret'`) avant l'écriture de la fiche ; réservation
+  annulée si l'écriture échoue ; un fichier déjà rattaché n'est pas supprimable
+  depuis cette liste (c'est la fiche qui possède le fichier).
+- [x] **Droits** : administrateur, jeton CSRF, fichier existant, **fichier du
+  compte connecté**, état « prêt ». La page ne liste que ses propres fichiers ;
+  **Tous les envois** reste en lecture seule (lien « Compléter » retiré pour les
+  fichiers des autres).
+- [x] **Texte d'aide corrigé** : il ne renvoie plus à une « liste ci-dessous »
+  qui n'existe pas ; il dit ce que font les deux boutons, que le fichier reste
+  privé, qu'il ne devient un document qu'une fois, et que seul l'expéditeur agit.
+- [x] **Fuite corrigée** : `envoi_annuler()` effaçait le fichier assemblé
+  seulement pour l'état « doublon » ; il l'efface aussi pour « prêt » (jamais
+  pour « terminé », où le fichier appartient à la fiche).
+- [x] **Essais** : famille « envoi » **122/122** (+30) ; suite complète **1 101
+  essais, 0 échec** ; lint **188 fichiers, 0 erreur** ; matrice **187 routes,
+  748 vérifications, 0 anomalie**.
+- [x] **Vrai navigateur** (Chromium) : **12/12** à **390 px** et **1280 px**
+  (colonne « Actions », deux boutons, POST avec `_csrf` + `token` et rien
+  d'autre, confirmation qui nomme le fichier, refus de la confirmation sans
+  envoi, aucune barre horizontale, aucune erreur JavaScript) ; outil fourni,
+  `tools/navigateur/actions.mjs`.
+- [x] **Documentation** : CHANGELOG 1.26.3, README § 6.18 (« Fichiers reçus, en
+  attente de formulaire »), `tools/navigateur/README.md`.
+
 ## Fait (2026-11-07, 1.26.2 — l'envoi par morceaux remplit enfin le formulaire)
 
 - [x] **Le vrai défaut** : le script visait le premier `input[type=file]` de la

@@ -60,9 +60,13 @@ require __DIR__ . '/partials/envoi.php';
             <h2>Fichiers reçus, en attente de formulaire</h2>
         </div>
         <p class="aide">
-            Ces fichiers ont été envoyés depuis un formulaire (document ou vidéo) qui
-            n’a pas été validé. Ils restent privés et invisibles ; complétez leur fiche
-            depuis la liste ci-dessous.
+            Ces fichiers sont arrivés entiers : ils ont été envoyés depuis un formulaire
+            (document ou vidéo) qui n’a pas été validé. Ils restent privés et invisibles
+            pour la famille. <strong>« Créer le document »</strong> en fait tout de suite
+            une fiche privée, que vous compléterez ensuite à votre rythme.
+            <strong>« Supprimer »</strong> efface le fichier et les morceaux reçus.
+            Chaque fichier ne peut devenir un document qu’une seule fois, et vous seul
+            pouvez agir sur les fichiers que vous avez envoyés.
         </p>
         <div class="tableau-defilant">
             <table class="tableau">
@@ -71,14 +75,30 @@ require __DIR__ . '/partials/envoi.php';
                         <th scope="col">Fichier</th>
                         <th scope="col">Taille</th>
                         <th scope="col">Reçu le</th>
+                        <th scope="col">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ($prets as $pret): ?>
+                        <?php $nom = (string) $pret['original_name']; ?>
                         <tr>
-                            <td><?= e((string) $pret['original_name']) ?></td>
+                            <td><?= e($nom) ?></td>
                             <td><?= e(format_size((int) $pret['size'])) ?></td>
                             <td><?= e(format_date((int) $pret['updated_at'], true)) ?></td>
+                            <td class="colonne-actions">
+                                <form method="post" action="/admin/envoyer/creer-document" class="formulaire-en-ligne">
+                                    <?= csrf_field() ?>
+                                    <input type="hidden" name="token" value="<?= e((string) $pret['token']) ?>">
+                                    <button type="submit" class="lien-bouton">Créer le document</button>
+                                </form>
+                                <span aria-hidden="true"> · </span>
+                                <form method="post" action="/admin/envoyer/supprimer" class="formulaire-en-ligne"
+                                      data-confirmation="Supprimer définitivement « <?= e($nom) ?> » et ses morceaux reçus ? Cette action est irréversible.">
+                                    <?= csrf_field() ?>
+                                    <input type="hidden" name="token" value="<?= e((string) $pret['token']) ?>">
+                                    <button type="submit" class="lien-bouton lien-bouton--danger">Supprimer</button>
+                                </form>
+                            </td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
@@ -138,7 +158,9 @@ require __DIR__ . '/partials/envoi.php';
     <h2>Ce qu’il faut savoir</h2>
     <ul class="liste-simple">
         <li>Un fichier envoyé est <strong>toujours privé</strong> au départ : vous choisissez
-            ensuite sa visibilité, sa catégorie et son album.</li>
+            ensuite sa visibilité, sa catégorie et son album. « Créer le document » fait
+            naître la fiche tout de suite, en privé ; elle reste invisible pour la famille
+            jusqu’à ce que vous la complétiez et choisissiez sa visibilité.</li>
         <li>Si le même fichier existe déjà sur le site, un message vous le dit avant
             d’ajouter quoi que ce soit : vous pouvez le garder quand même ou l’ignorer.
             Rien n’est jamais supprimé automatiquement.</li>

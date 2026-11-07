@@ -2,7 +2,7 @@
 /**
  * Administration : envoi de gros fichiers par morceaux.
  *
- * Neuf routes, toutes réservées aux administrateurs (les fichiers envoyés
+ * Onze routes, toutes réservées aux administrateurs (les fichiers envoyés
  * peuvent être privés, et un envoi peut occuper le disque) :
  *
  *   GET  /admin/envoyer                 page « Envoyer des fichiers » ;
@@ -12,6 +12,8 @@
  *   POST /admin/envoyer/terminer        assemble et crée la fiche (JSON) ;
  *   POST /admin/envoyer/decision        garder / ignorer un doublon (JSON) ;
  *   POST /admin/envoyer/annuler         supprime les morceaux ;
+ *   POST /admin/envoyer/creer-document  fichier reçu → fiche privée, sans formulaire ;
+ *   POST /admin/envoyer/supprimer       efface un fichier reçu et ses morceaux ;
  *   GET  /admin/envoyer/lot             complète tout un lot d'un coup ;
  *   POST /admin/envoyer/lot             enregistre le lot ;
  *   GET  /admin/envois                  « Mes envois » (et supervision).
@@ -403,8 +405,169 @@ function admin_envoi_annuler(): void
         json_response(['ok' => true]);
     }
 
-    flash('succes', 'L’envoi a été annulé et ses morceaux supprimés.');
+    flash('succes', 'L’envoi a été annulé : les morceaux et le fichier déjà reçus ont été supprimés.');
     redirect('/admin/envois');
+}
+
+// ---------------------------------------------------------------------------
+// Fichiers reçus en attente de formulaire : deux actions, sans formulaire
+// ---------------------------------------------------------------------------
+
+/**
+ * Fichier reçu appartenant au compte connecté (l'état est vérifié par
+ * l'appelant).
+ *
+ * Renvoie null après avoir posé le message d'erreur et la redirection : les
+ * deux actions ci-dessous ne s'appliquent qu'aux fichiers que l'on a envoyés
+ * soi-même. Ceux des autres administrateurs restent consultables dans
+ * « Tous les envois », en lecture seule.
+ */
+function envoi_du_compte(string $token): ?array
+{
+    $envoi = envoi_par_token($token);
+
+    if ($envoi === null) {
+        flash('erreur', 'Ce fichier reçu n’existe plus : rechargez la page.');
+        redirect('/admin/envoyer');
+    }
+
+    if (!envoi_appartient($envoi, (int) current_account()['id'])) {
+        flash(
+            'erreur',
+            'Ce fichier a été envoyé par un autre administrateur : vous pouvez le consulter dans « Tous les envois », pas le modifier.'
+        );
+        redirect('/admin/envoyer');
+    }
+
+    return $envoi;
+}
+
+/**
+ * « Créer le document » : un fichier reçu devient une fiche privée, tout de
+ * suite, sans repasser par le formulaire.
+ *
+ * Le fichier est réservé AVANT l'insertion, par un UPDATE conditionnel
+ * (`WHERE state = 'pret'`) : un double clic, deux onglets ou deux personnes ne
+ * peuvent pas en tirer deux fiches. Si l'insertion échoue, la réservation est
+ * annulée pour que le fichier redevienne utilisable.
+ */
+function admin_envoi_creer_document(): void
+{
+    require_admin();
+    csrf_check();
+
+    $envoi = envoi_du_compte(post('token'));
+    if ($envoi === null) {
+        return;
+    }
+
+    if ((string) $envoi['state'] !== 'pret') {
+        flash(
+            'erreur',
+            'Ce fichier n’est pas en attente de formulaire : il est déjà rattaché à une fiche, ou son envoi n’est pas terminé. Rien n’a été créé.'
+        );
+        redirect('/admin/envoyer');
+    }
+
+    // La réservation est atomique : un double clic ou deux onglets ne peuvent
+    // pas tirer deux fiches du même fichier.
+    if (!envoi_reserver($envoi)) {
+        flash(
+            'erreur',
+            'Ce fichier est déjà rattaché à une fiche : un fichier reçu ne devient un document qu’une seule fois.'
+        );
+        redirect('/admin/envoyer');
+    }
+
+    // Mêmes champs que la fiche créée automatiquement en fin d'envoi : le
+    // fichier, sa miniature, ses dimensions, sa date et son empreinte sont
+    // déjà connus, il n'y a rien à recalculer ni à redemander.
+    $donnees = [
+        'sha256'     => (string) $envoi['sha256'],
+        'rel_path'   => (string) $envoi['rel_path'],
+        'thumb_path' => (string) ($envoi['thumb_path'] ?? '') !== '' ? (string) $envoi['thumb_path'] : null,
+        'ext'        => (string) $envoi['ext'],
+        'mime'       => (string) $envoi['mime'],
+        'kind'       => (string) $envoi['kind'],
+        'date_meta'  => (string) ($envoi['date_meta'] ?? ''),
+        'width'      => isset($envoi['width']) ? (int) $envoi['width'] : null,
+        'height'     => isset($envoi['height']) ? (int) $envoi['height'] : null,
+    ];
+
+    try {
+        // Fiche privée, comme toujours : visibilité « prive », aucune
+        // catégorie, aucun album. C'est l'administrateur qui complétera.
+        $documentId = envoi_creer_document($envoi, $donnees);
+    } catch (Throwable $e) {
+        $documentId = 0;
+        error_log('Fiche non créée depuis l’envoi ' . (int) $envoi['id'] . ' : ' . $e->getMessage());
+    }
+
+    if ($documentId <= 0) {
+        // Rien n'est perdu : le fichier redevient « prêt », à rattacher plus tard.
+        db_exec(
+            "UPDATE uploads SET state = 'pret', updated_at = ? WHERE id = ? AND document_id IS NULL",
+            [time(), (int) $envoi['id']]
+        );
+        flash('erreur', 'La fiche n’a pas pu être créée : le fichier est resté en attente de formulaire.');
+        redirect('/admin/envoyer');
+    }
+
+    $titre = (string) (db_one('SELECT title FROM documents WHERE id = ?', [$documentId])['title'] ?? '');
+
+    envoi_marquer_utilise($envoi, $documentId);
+    set_content_branches('document', $documentId, []);
+
+    // Une vidéo dans un format que les navigateurs ne lisent pas partout entre
+    // dans la file de conversion, comme depuis le formulaire.
+    conversion_planifier_document($documentId);
+
+    log_activity((int) current_account()['id'], 'document_ajoute', $titre);
+
+    flash(
+        'succes',
+        'Le document « ' . $titre . ' » a été créé en privé : il est invisible pour la famille jusqu’à ce que vous ayez complété sa fiche.'
+    );
+
+    redirect((string) $envoi['kind'] === 'video'
+        ? '/admin/videos/' . $documentId
+        : '/admin/documents/' . $documentId . '/modifier');
+}
+
+/**
+ * « Supprimer » : efface les morceaux reçus et le fichier assemblé.
+ *
+ * Uniquement un fichier encore en attente de formulaire : si une fiche existe
+ * déjà, c'est elle qui possède le fichier, et c'est depuis sa page qu'on le
+ * supprime (sinon la fiche pointerait sur un fichier disparu).
+ */
+function admin_envoi_supprimer(): void
+{
+    require_admin();
+    csrf_check();
+
+    $envoi = envoi_du_compte(post('token'));
+    if ($envoi === null) {
+        return;
+    }
+
+    if ((string) $envoi['state'] !== 'pret') {
+        flash('erreur', 'Ce fichier n’est plus en attente de formulaire : rien n’a été supprimé.');
+        redirect('/admin/envoyer');
+    }
+
+    envoi_annuler($envoi, 'supprime avant fiche');
+
+    log_activity(
+        (int) current_account()['id'],
+        'envoi_annule',
+        envoi_nom_propre((string) $envoi['original_name'])
+            . ' (' . format_size((int) $envoi['size']) . ', supprimé)'
+    );
+
+    flash('succes', 'Le fichier reçu et ses morceaux ont été supprimés.');
+
+    redirect('/admin/envoyer');
 }
 
 /** Journalise « envoi terminé » : nom nettoyé et taille, jamais le contenu. */

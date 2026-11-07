@@ -1441,6 +1441,28 @@ Côté serveur, le fichier n'est accepté que s'il appartient à l'administrateu
 connecté, s'il est terminé et s'il n'a pas déjà servi : un même envoi ne peut
 pas être rattaché à deux fiches.
 
+**Fichiers reçus, en attente de formulaire**
+
+Un fichier peut arriver entier sans que le formulaire ait été validé : il
+attend, en privé, dans le tableau **Fichiers reçus, en attente de formulaire**
+de la page **Envoyer des fichiers**. Chaque ligne offre deux actions :
+
+- **Créer le document** : la fiche naît tout de suite, **en privé**, avec le
+  fichier déjà en place — sans repasser par le formulaire. Le titre vient du nom
+  du fichier ; le bouton mène directement à la fiche à compléter (au formulaire
+  vidéo, s'il s'agit d'un film), où vous choisissez description, date,
+  catégorie, étiquettes et visibilité ;
+- **Supprimer** : après confirmation, le **fichier assemblé** et les **morceaux**
+  reçus sont effacés.
+
+Un fichier reçu ne devient **qu'une seule fois** un document : la réservation
+est atomique, donc un double clic ou deux onglets ne peuvent pas créer deux
+fiches. Une fois la fiche créée, le fichier lui appartient : c'est depuis la
+fiche qu'on le remplace ou qu'on le supprime, et la ligne quitte la liste (le
+bouton « Supprimer » ne s'applique qu'aux fichiers encore en attente). Seul le
+compte qui a envoyé le fichier peut agir ; les autres administrateurs le voient
+dans **Tous les envois**, en lecture seule.
+
 La page **Administration → Mes envois** liste vos envois des 30 derniers jours
 et tout ce qui n'est pas terminé, avec le bouton **Reprendre**. Une vue
 « Tous les envois » montre ceux de tous les administrateurs, en lecture seule :

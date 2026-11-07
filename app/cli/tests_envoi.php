@@ -218,6 +218,7 @@ function tests_envoi(): void
             tests_envoi_doublons($compte);
             tests_envoi_droits($compte, $autre, $famille);
             tests_envoi_formulaire($compte, $autre, $famille);
+            tests_envoi_fiches($compte, $autre, $famille);
             tests_envoi_menage($compte);
 
             // Tout est annulé : la base du site est rendue intacte.
@@ -1050,6 +1051,326 @@ function tests_envoi_droits(int $compte, int $autre, int $famille): void
     verifier(
         'droits : la page d’envoi n’a aucun style en ligne ni script en ligne',
         !str_contains($pageEnvoi['corps'], ' style=') && !str_contains($pageEnvoi['corps'], '<script>')
+    );
+}
+
+/**
+ * 6. « Créer le document » et « Supprimer » : les deux actions de la liste
+ * « Fichiers reçus, en attente de formulaire ».
+ *
+ * Un fichier reçu ne devient un document qu'une seule fois, seul le compte qui
+ * l'a envoyé peut agir (les autres administrateurs le lisent, sans bouton), et
+ * la suppression efface le fichier assemblé comme les morceaux.
+ */
+function tests_envoi_fiches(int $compte, int $autre, int $famille): void
+{
+    $nouveauJeton = static function (int $pour): string {
+        $_SESSION = ['account_id' => $pour];
+        return csrf_token();
+    };
+
+    /** Messages flash posés par la requête qui vient de tourner. */
+    $messages = static function (): string {
+        return implode(' | ', array_column((array) ($_SESSION['_flash'] ?? []), 'message'));
+    };
+
+    // --- a. « Créer le document » : une fiche privée, sans formulaire ------
+    $source = tests_envoi_texte(150_000);
+    $pret   = tests_envoi_pret($compte, $source, 'acte_naissance_1912.txt');
+    @unlink($source);
+    verifier('actions : un fichier assemblé attend son formulaire', $pret !== null);
+    if ($pret === null) {
+        return;
+    }
+
+    $fichier = storage_absolute((string) $pret['rel_path']);
+
+    // La page : deux boutons, une colonne d'actions, une aide honnête.
+    $_SESSION = ['account_id' => $compte];
+    $page = tests_envoi_requete('GET', '/admin/envoyer', $compte);
+    verifier_contient('actions : la liste propose « Créer le document »', 'Créer le document', $page['corps']);
+    verifier_contient(
+        'actions : la liste propose « Supprimer »',
+        'lien-bouton--danger">Supprimer<',
+        $page['corps']
+    );
+    verifier(
+        'actions : la suppression demande une confirmation',
+        str_contains($page['corps'], 'data-confirmation="Supprimer définitivement')
+            && str_contains($page['corps'], 'irréversible'),
+        ''
+    );
+    verifier(
+        'actions : le tableau des fichiers reçus a une colonne « Actions »',
+        str_contains($page['corps'], '<th scope="col">Actions</th>'),
+        ''
+    );
+    verifier(
+        'actions : l’aide ne renvoie plus à une liste qui n’existe pas',
+        !str_contains($page['corps'], 'liste ci-dessous')
+            && str_contains($page['corps'], 'devenir un document'),
+        ''
+    );
+    verifier(
+        'actions : la page n’a ni style ni script en ligne',
+        !str_contains($page['corps'], ' style=') && !str_contains($page['corps'], '<script>'),
+        ''
+    );
+
+    $creation = tests_envoi_requete('POST', '/admin/envoyer/creer-document', $compte, [
+        '_csrf' => $nouveauJeton($compte),
+        'token' => (string) $pret['token'],
+    ]);
+    $doc    = db_one('SELECT * FROM documents WHERE rel_path = ?', [(string) $pret['rel_path']]);
+    $envoi1 = envoi_par_token((string) $pret['token']);
+
+    verifier(
+        'actions : « Créer le document » crée une fiche privée, sans formulaire',
+        $doc !== null
+            && (string) $doc['visibility'] === 'prive'
+            && (int) $doc['created_by'] === $compte
+            && (string) $doc['rel_path'] === (string) $pret['rel_path']
+            && (string) $doc['sha256'] === (string) $pret['sha256']
+            && is_file($fichier),
+        $creation['code'] . ' ' . $creation['location'] . ' ' . $creation['erreur']
+    );
+    verifier(
+        'actions : le titre de la fiche vient du nom du fichier',
+        $doc !== null && (string) $doc['title'] === 'acte_naissance_1912',
+        (string) ($doc['title'] ?? '—')
+    );
+    verifier(
+        'actions : après création, on arrive sur la fiche à compléter',
+        $creation['code'] === 303 && $doc !== null
+            && $creation['location'] === '/admin/documents/' . (int) $doc['id'] . '/modifier',
+        $creation['code'] . ' ' . $creation['location']
+    );
+    verifier(
+        'actions : l’envoi est rattaché à la fiche, une seule fois',
+        $envoi1 !== null
+            && (string) $envoi1['state'] === 'termine'
+            && (int) $envoi1['document_id'] === (int) ($doc['id'] ?? 0),
+        (string) ($envoi1['state'] ?? '—')
+    );
+    verifier(
+        'actions : la confirmation annonce la fiche privée',
+        str_contains($messages(), 'créé en privé'),
+        $messages()
+    );
+
+    // Double clic, second onglet : la même fiche ne peut pas naître deux fois.
+    $encore = tests_envoi_requete('POST', '/admin/envoyer/creer-document', $compte, [
+        '_csrf' => $nouveauJeton($compte),
+        'token' => (string) $pret['token'],
+    ]);
+    $nombre = (int) db_value('SELECT COUNT(*) FROM documents WHERE rel_path = ?', [(string) $pret['rel_path']], -1);
+    verifier(
+        'actions : un fichier reçu ne devient un document qu’une seule fois',
+        $nombre === 1
+            && $encore['code'] === 303
+            && $encore['location'] === '/admin/envoyer'
+            && str_contains($messages(), 'déjà rattaché à une fiche')
+            && is_file($fichier),
+        $nombre . ' fiche(s) — ' . $encore['code'] . ' ' . $encore['location'] . ' — ' . $messages()
+    );
+
+    // La fiche créée reste invisible à la famille tant qu'elle est privée.
+    $_SESSION = ['account_id' => $famille];
+    $ficheFamille = tests_envoi_requete('GET', '/documents/' . (int) ($doc['id'] ?? 0), $famille);
+    verifier(
+        'actions : la fiche créée reste privée (404 pour la famille)',
+        $doc !== null && $ficheFamille['code'] === 404,
+        (string) $ficheFamille['code']
+    );
+
+    // --- b. Un envoi qui n'est pas « pret » ne crée rien -------------------
+    $source3 = tests_envoi_texte(60_000);
+    $enCours = tests_envoi_jouer($compte, 'encours.txt', $source3, [], false, false);
+    @unlink($source3);
+    $tokenEnCours = (string) ($enCours['envoi']['token'] ?? '');
+
+    $creationEnCours = $tokenEnCours === '' ? ['code' => 0, 'location' => '', 'corps' => '', 'erreur' => '']
+        : tests_envoi_requete('POST', '/admin/envoyer/creer-document', $compte, [
+            '_csrf' => $nouveauJeton($compte),
+            'token' => $tokenEnCours,
+        ]);
+    $apresEnCours = envoi_par_token($tokenEnCours);
+    verifier(
+        'actions : un envoi encore en cours ne crée pas de fiche',
+        $tokenEnCours !== ''
+            && $creationEnCours['code'] === 303
+            && $creationEnCours['location'] === '/admin/envoyer'
+            && $apresEnCours !== null
+            && (string) $apresEnCours['state'] === 'en_cours'
+            && (int) db_value('SELECT COUNT(*) FROM documents WHERE rel_path = ?', [(string) $apresEnCours['rel_path']], -1) === 0,
+        $creationEnCours['code'] . ' ' . $creationEnCours['location'] . ' — ' . $messages()
+    );
+
+    // --- c. Droits : seul le compte qui a envoyé agit ---------------------
+    $source2 = tests_envoi_texte(120_000);
+    $pret2   = tests_envoi_pret($compte, $source2, 'lettre-du-front.txt');
+    @unlink($source2);
+    verifier('droits : un deuxième fichier attend son formulaire', $pret2 !== null);
+    if ($pret2 === null) {
+        return;
+    }
+
+    $fichier2 = storage_absolute((string) $pret2['rel_path']);
+    $jeton2   = (string) $pret2['token'];
+
+    $_SESSION = ['account_id' => $autre];
+    $pageAutre = tests_envoi_requete('GET', '/admin/envoyer', $autre);
+    verifier(
+        'droits : le fichier d’un autre administrateur n’est pas sur sa page d’envoi',
+        $pageAutre['code'] === 200 && !str_contains($pageAutre['corps'], 'lettre-du-front.txt'),
+        (string) $pageAutre['code']
+    );
+
+    $supervision = tests_envoi_requete('GET', '/admin/envois?tous=1', $autre);
+    verifier(
+        'droits : la supervision montre le fichier d’un autre, en lecture seule',
+        $supervision['code'] === 200
+            && str_contains($supervision['corps'], 'lettre-du-front.txt')
+            && str_contains($supervision['corps'], 'lecture seule')
+            && !str_contains($supervision['corps'], '/admin/envoyer/creer-document')
+            && !str_contains($supervision['corps'], '/admin/envoyer/supprimer'),
+        (string) $supervision['code']
+    );
+
+    $creationAutre = tests_envoi_requete('POST', '/admin/envoyer/creer-document', $autre, [
+        '_csrf' => $nouveauJeton($autre),
+        'token' => $jeton2,
+    ]);
+    $apresTentative = envoi_par_token($jeton2);
+    verifier(
+        'droits : un autre administrateur ne peut pas créer la fiche',
+        $creationAutre['code'] === 303
+            && $creationAutre['location'] === '/admin/envoyer'
+            && $apresTentative !== null
+            && (string) $apresTentative['state'] === 'pret'
+            && is_file($fichier2)
+            && (int) db_value('SELECT COUNT(*) FROM documents WHERE rel_path = ?', [(string) $pret2['rel_path']], -1) === 0,
+        $creationAutre['code'] . ' ' . $creationAutre['location'] . ' — ' . $messages()
+    );
+
+    $suppressionAutre = tests_envoi_requete('POST', '/admin/envoyer/supprimer', $autre, [
+        '_csrf' => $nouveauJeton($autre),
+        'token' => $jeton2,
+    ]);
+    $apresSuppressionAutre = envoi_par_token($jeton2);
+    verifier(
+        'droits : un autre administrateur ne peut pas supprimer le fichier',
+        $suppressionAutre['code'] === 303
+            && $apresSuppressionAutre !== null
+            && (string) $apresSuppressionAutre['state'] === 'pret'
+            && is_file($fichier2),
+        (string) $suppressionAutre['code']
+    );
+
+    $familleCreation    = tests_envoi_requete('POST', '/admin/envoyer/creer-document', $famille, [
+        '_csrf' => $nouveauJeton($famille),
+        'token' => $jeton2,
+    ]);
+    $familleSuppression = tests_envoi_requete('POST', '/admin/envoyer/supprimer', $famille, [
+        '_csrf' => $nouveauJeton($famille),
+        'token' => $jeton2,
+    ]);
+    $apresFamille = envoi_par_token($jeton2);
+    verifier(
+        'droits : un compte de famille ne peut ni créer ni supprimer (403)',
+        $familleCreation['code'] === 403
+            && $familleSuppression['code'] === 403
+            && $apresFamille !== null
+            && (string) $apresFamille['state'] === 'pret'
+            && is_file($fichier2),
+        $familleCreation['code'] . ' / ' . $familleSuppression['code']
+    );
+
+    $sansJeton       = tests_envoi_requete('POST', '/admin/envoyer/creer-document', $compte, ['token' => $jeton2]);
+    $sansJetonSuppr  = tests_envoi_requete('POST', '/admin/envoyer/supprimer', $compte, ['token' => $jeton2]);
+    verifier(
+        'droits : sans jeton CSRF, aucune des deux actions ne passe (403)',
+        $sansJeton['code'] === 403
+            && $sansJetonSuppr['code'] === 403
+            && is_file($fichier2)
+            && (int) db_value('SELECT COUNT(*) FROM documents WHERE rel_path = ?', [(string) $pret2['rel_path']], -1) === 0,
+        $sansJeton['code'] . ' / ' . $sansJetonSuppr['code']
+    );
+
+    // --- d. « Supprimer » : le fichier assemblé et les morceaux partent ---
+    verifier('actions : avant suppression, le fichier est sur le disque', is_file($fichier2));
+
+    $suppression = tests_envoi_requete('POST', '/admin/envoyer/supprimer', $compte, [
+        '_csrf' => $nouveauJeton($compte),
+        'token' => $jeton2,
+    ]);
+    $apres = envoi_par_token($jeton2);
+    verifier(
+        'actions : « Supprimer » efface le fichier assemblé',
+        !is_file($fichier2)
+            && $suppression['code'] === 303
+            && $suppression['location'] === '/admin/envoyer'
+            && str_contains($messages(), 'supprimés'),
+        $suppression['code'] . ' ' . $suppression['location'] . ' — ' . $messages()
+    );
+    verifier(
+        'actions : « Supprimer » efface les morceaux et clôt l’envoi',
+        !is_dir(envoi_racine() . '/' . $jeton2)
+            && $apres !== null
+            && (string) $apres['state'] === 'annule',
+        (string) ($apres['state'] ?? '—')
+    );
+
+    $_SESSION = ['account_id' => $compte];
+    $pageApres = tests_envoi_requete('GET', '/admin/envoyer', $compte);
+    verifier(
+        'actions : le fichier supprimé ne figure plus dans la liste',
+        !str_contains($pageApres['corps'], 'lettre-du-front.txt'),
+        ''
+    );
+    verifier(
+        'actions : la fiche créée figure dans « Reçus depuis hier »',
+        str_contains($pageApres['corps'], 'acte_naissance_1912'),
+        ''
+    );
+
+    // Un fichier déjà devenu document ne se supprime pas depuis cette liste :
+    // c'est la fiche qui possède le fichier.
+    $suppressionDoc = tests_envoi_requete('POST', '/admin/envoyer/supprimer', $compte, [
+        '_csrf' => $nouveauJeton($compte),
+        'token' => (string) $pret['token'],
+    ]);
+    $envoiDoc = envoi_par_token((string) $pret['token']);
+    verifier(
+        'actions : un fichier déjà rattaché à une fiche n’est pas supprimé ici',
+        $suppressionDoc['code'] === 303
+            && $envoiDoc !== null
+            && (string) $envoiDoc['state'] === 'termine'
+            && is_file($fichier),
+        (string) $suppressionDoc['code'] . ' — ' . $messages()
+    );
+
+    // --- e. Une vidéo : la fiche s'ouvre dans le formulaire vidéo ---------
+    $film      = tests_envoi_film_mp4(120_000);
+    $pretVideo = tests_envoi_pret($compte, $film, 'film-du-mariage.mp4');
+    @unlink($film);
+    verifier('actions : un MP4 assemblé attend son formulaire', $pretVideo !== null);
+    if ($pretVideo === null) {
+        return;
+    }
+
+    $creationVideo = tests_envoi_requete('POST', '/admin/envoyer/creer-document', $compte, [
+        '_csrf' => $nouveauJeton($compte),
+        'token' => (string) $pretVideo['token'],
+    ]);
+    $docVideo = db_one('SELECT * FROM documents WHERE rel_path = ?', [(string) $pretVideo['rel_path']]);
+    verifier(
+        'actions : une vidéo reçue devient une fiche vidéo, ouverte dans son formulaire',
+        $docVideo !== null
+            && (string) $docVideo['kind'] === 'video'
+            && (string) $docVideo['visibility'] === 'prive'
+            && $creationVideo['location'] === '/admin/videos/' . (int) $docVideo['id'],
+        $creationVideo['code'] . ' ' . $creationVideo['location']
     );
 }
 

@@ -3,6 +3,112 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.26.3] — 2026-11-07
+
+### Les fichiers reçus n'avaient aucune action
+
+Constat sur **Administration → Envoyer des fichiers**, tableau « Fichiers reçus,
+en attente de formulaire » : ces fichiers étaient arrivés entiers, et la page ne
+proposait **rien** pour eux. Trois colonnes (Fichier, Taille, Reçu le), aucun
+bouton — et un texte d'aide qui renvoyait à « la liste ci-dessous », une liste
+qui n'existe pas : la section suivante, « Reçus depuis hier », ne montre que les
+fiches **déjà** créées. Il fallait donc retrouver le bon formulaire, le remplir
+et revalider le fichier, ou passer par « Compléter un lot » — pour un fichier
+déjà sur le serveur.
+
+#### Deux actions par fichier
+
+| Bouton | Ce qu'il fait |
+|---|---|
+| **Créer le document** | crée tout de suite la fiche, **en privé**, avec le fichier déjà en place. Aucun formulaire à repasser : le bouton mène **directement à la fiche à compléter** (au formulaire vidéo, s'il s'agit d'un film) |
+| **Supprimer** | après **confirmation** (le nom du fichier est rappelé dans la question), efface le **fichier assemblé** et les **morceaux** reçus ; l'envoi quitte la liste |
+
+La fiche créée reprend **exactement** ce que la fiche automatique de fin d'envoi
+aurait écrit : titre tiré du nom du fichier, miniature, dimensions, date lue
+dans le fichier (`date_meta`), empreinte `sha256`, visibilité `prive`, aucune
+catégorie, aucun album. Rien n'est recalculé ni redemandé, et une vidéo dans un
+format que les navigateurs ne lisent pas partout entre dans la file de
+conversion comme depuis le formulaire.
+
+#### Un fichier reçu ne devient un document qu'une seule fois
+
+La création réserve le fichier **avant** d'écrire la fiche, par un
+`UPDATE … WHERE state = 'pret'` conditionnel : un double clic, deux onglets ou
+deux administrateurs ne peuvent pas en tirer deux fiches — le second reçoit un
+message clair (« déjà rattaché à une fiche »). Si l'écriture de la fiche échoue,
+la réservation est **annulée** : le fichier redevient « en attente », rien n'est
+perdu.
+
+Un fichier déjà rattaché à une fiche ne se supprime **pas** depuis cette liste :
+le fichier appartient alors à la fiche, et c'est depuis sa page qu'on le
+remplace ou qu'on le supprime (sinon la fiche pointerait sur un fichier
+disparu). Le bouton « Supprimer » ne s'applique donc qu'à l'état « prêt ».
+
+#### Seul le compte qui a envoyé agit
+
+Les deux actions vérifient, dans cet ordre : administrateur connecté, jeton
+CSRF, fichier existant, **fichier appartenant au compte connecté**, état
+« prêt ». La page d'envoi ne liste de toute façon que **vos** fichiers, et la
+vue **Tous les envois** (« Mes envois » → supervision) est en **lecture seule** :
+elle montre le fichier d'un autre administrateur avec son auteur, sans aucun
+bouton d'action (le lien « Compléter » qui s'y trouvait, et qui menait au lot de
+celui qui regardait, a été retiré pour les fichiers des autres).
+
+Aucun chemin ne vient du navigateur : les formulaires n'envoient qu'un jeton de
+32 caractères hexadécimaux, et la redirection après action est fixe.
+
+#### Deux défauts voisins corrigés
+
+- **Le texte d'aide** du tableau ne renvoie plus à une liste inexistante : il
+  explique ce que font les deux boutons, que le fichier reste privé, qu'il ne
+  peut devenir un document qu'une fois, et que seul l'expéditeur peut agir ;
+- **« Annuler » sur un fichier prêt ne perd plus le fichier** : `envoi_annuler()`
+  n'effaçait le fichier assemblé que pour l'état « doublon ». Sur un envoi
+  « prêt » (ou depuis « Mes envois »), les morceaux partaient mais le fichier
+  restait sur le disque pour toujours. Il est maintenant supprimé pour les deux
+  états — et **jamais** pour « terminé », où le fichier appartient à la fiche.
+
+Aucune migration, aucune classe CSS renommée, aucun style ni script en ligne :
+deux routes POST (`/admin/envoyer/creer-document`, `/admin/envoyer/supprimer`),
+deux formulaires ordinaires avec jeton CSRF, et la confirmation passe par
+l'attribut `data-confirmation` déjà lu par `app.js`.
+
+#### Comment cela a été vérifié
+
+- **essais serveur** (`php app/cli/tests.php envoi`, **122/122**, dont 30
+  nouveaux) : création d'une fiche privée **sans formulaire** (visibilité
+  `prive`, auteur, empreinte, fichier intact, titre, redirection vers la fiche),
+  deuxième clic refusé (**une seule** fiche), fiche invisible pour la famille,
+  envoi encore en cours refusé, **autre administrateur** refusé (ni création ni
+  suppression, fichier intact), **compte de famille** refusé (403), **sans jeton
+  CSRF** refusé (403), suppression qui **efface le fichier assemblé** et les
+  morceaux, fichier déjà rattaché **non supprimé**, vidéo reçue qui ouvre le
+  formulaire vidéo, et le texte de la page (colonne « Actions », deux boutons,
+  confirmation, aide corrigée, aucun style ni script en ligne) ;
+- **vrai navigateur** (Chromium, page réelle rendue par le routeur, vrais
+  `assets`), à **390 px** et **1280 px** : **12 vérifications sur 12** par
+  largeur — aucune barre horizontale, colonne « Actions » présente, les deux
+  boutons dans l'ordre, deux POST avec jeton CSRF et jeton d'envoi (**aucun
+  autre champ**), la confirmation qui **nomme le fichier** au clic sur
+  « Supprimer », le refus de la confirmation qui ne poste rien, le clic sur
+  « Créer le document » qui poste bien `_csrf` et `token`, ligne de tableau
+  compacte, aucune erreur JavaScript. L'outil est fourni :
+  [`tools/navigateur/actions.mjs`](tools/navigateur/README.md) ;
+- **suite complète** : **1 101 essais, 0 échec** ; lint **188 fichiers, 0
+  erreur** ; matrice d'accès **187 routes, 748 vérifications, 0 anomalie**.
+
+#### Ce qui n'a pas pu être vérifié ici
+
+- les deux actions **sur le Pi** (Apache, Cloudflare) : le contrat est vérifié
+  par les essais serveur, la page et les clics par un navigateur réel servi par
+  un serveur d'essai local (les réponses du site y sont rejouées, seule la page
+  rendue par le routeur est servie telle quelle) ;
+- un **double clic réellement simultané** (deux requêtes en parallèle) : le banc
+  d'essai est mono-thread. La garantie est celle de la réservation atomique
+  (`WHERE state = 'pret'`), et le second passage est vérifié en séquence ;
+- la **conversion réelle** d'une vidéo reçue ainsi (pas de `ffmpeg` sur la
+  machine d'essai) : seule la mise en file est vérifiée.
+
 ## [1.26.2] — 2026-11-07
 
 ### Le fichier envoyé par morceaux ne remplissait pas le formulaire

@@ -92,14 +92,14 @@
 
                             <?php if ($doc): ?>
                                 <a href="/admin/documents/<?= (int) $doc['id'] ?>/modifier">Fiche</a>
-                            <?php elseif ($etat === 'pret'): ?>
-                                <a href="/admin/envoyer/lot">Compléter</a>
+                            <?php elseif ($etat === 'pret' && $estMoi): ?>
+                                <a href="/admin/envoyer">Créer le document</a>
                             <?php endif; ?>
 
                             <?php if ($estMoi && in_array($etat, ['en_cours', 'doublon', 'pret'], true)): ?>
                                 <?php if ($doc): ?><span aria-hidden="true"> · </span><?php endif; ?>
                                 <form method="post" action="/admin/envoyer/annuler" class="formulaire-en-ligne"
-                                      data-confirmation="Annuler cet envoi et supprimer les morceaux déjà reçus ?">
+                                      data-confirmation="Annuler cet envoi et supprimer définitivement les morceaux et le fichier déjà reçus ?">
                                     <?= csrf_field() ?>
                                     <input type="hidden" name="token" value="<?= e((string) $envoi['token']) ?>">
                                     <button type="submit" class="lien-bouton lien-bouton--danger">Annuler</button>

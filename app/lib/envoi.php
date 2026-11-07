@@ -739,8 +739,12 @@ function envoi_annuler(array $envoi, string $raison = 'annule'): void
 {
     envoi_supprimer_morceaux($envoi);
 
+    // Le fichier assemblé n'existe que pour deux états : « doublon » (gardé le
+    // temps de la décision) et « pret » (en attente de formulaire). Ailleurs il
+    // n'y a rien à effacer, et surtout pas pour « termine » : le fichier
+    // appartient alors à la fiche, qui le supprimera elle-même.
     $fichier = (string) ($envoi['rel_path'] ?? '');
-    if ($fichier !== '' && (string) $envoi['state'] === 'doublon') {
+    if ($fichier !== '' && in_array((string) $envoi['state'], ['doublon', 'pret'], true)) {
         storage_delete($fichier);
         storage_delete((string) ($envoi['thumb_path'] ?? ''));
     }
