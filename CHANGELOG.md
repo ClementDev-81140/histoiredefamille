@@ -3,6 +3,16 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.35.2] — 2026-11-08
+
+### Modifié
+- Administration : le menu complet du site (bandeau, titre, devise, menu
+  principal, bandeau du compte) s'affiche au-dessus du tableau de bord, comme
+  sur le reste du site. La petite barre « Voir le site / Mon compte /
+  Déconnexion » est supprimée. L'en-tête est un seul fichier commun
+  (`app/views/partials/entete_journal.php`) ; les règles CSS d'en-tête compact
+  de l'administration disparaissent.
+
 ## [1.35.1] — 2026-11-08
 
 ### Corrigé — les vidéos d'archives à marque « M4A » n'étaient plus refusées à tort
