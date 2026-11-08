@@ -104,3 +104,33 @@ CAPTURES=/tmp node tools/navigateur/actions-arbre-chene.mjs 390
 Les captures de `docs/captures/` (`ordinateur-arbre-*`, `mobile-arbre-*`)
 viennent de ces deux commandes, sur deux jeux d'essai : **un enfant** et
 **huit enfants**.
+
+## Exploration et parenté (1.35.0)
+
+- **Barre d'outils** « Exploration de l'arbre » au-dessus du dessin :
+  zoom (25 % à 250 %, niveau affiché), flèches, « Centrer la personne
+  sélectionnée », « Voir tout l'arbre ». Molette, glisser, pincement à
+  deux doigts ; les gestes passent par `public/assets/arbre-exploration.js`,
+  chargé seulement sur cette page. Les positions sont des propriétés CSS
+  personnalisées (`--explo-zoom`, `--explo-x`, `--explo-y`) posées en API
+  CSSOM : aucun `style=` dans le HTML du serveur. Sans JavaScript, la barre
+  (rendue `hidden`) ne paraît pas et le cadre ne contraint rien.
+- **Cadre** : environ 65 % de la hauteur de l'écran (320 à 640 px),
+  seulement quand le script est actif. Au chargement, la personne
+  sélectionnée est centrée ; sur téléphone, le zoom initial recule assez
+  pour montrer le tronc et la génération des parents.
+- **Relations** : chaque carte dit son lien avec la personne sélectionnée
+  (petit libellé + nom accessible). Le calcul (`arbre_chene_relation()`)
+  teste le couple **avant** la fratrie : un conjoint n'est jamais un
+  frère ou une sœur. Les ancêtres sont ceux de la personne sélectionnée,
+  jamais ceux du conjoint.
+- **Traits** : le serveur écrit un SVG par liaison (centres des cartes en
+  pourcentages, d'après le nombre de cartes par rangée) et marque les
+  couples d'une classe qui dessine le pointillé. Ni parent ni enfant
+  absent (rangée du « voir plus », personne invisible) ne reçoit de trait.
+
+```bash
+# Contrôle navigateur de l'exploration : 27 contrôles par largeur et palette.
+CAPTURES=/tmp node tools/navigateur/actions-arbre-exploration.mjs 1280
+CAPTURES=/tmp node tools/navigateur/actions-arbre-exploration.mjs 390
+```

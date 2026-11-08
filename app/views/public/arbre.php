@@ -83,7 +83,38 @@ $alphabet = range('A', 'Z');
             </figcaption>
         </figure>
 
-        <div class="arbre-chene__dessin">
+        <div class="arbre-explo" data-arbre-exploration>
+            <div class="arbre-explo__barre" role="toolbar" aria-label="Exploration de l’arbre"
+                 data-explo-barre hidden>
+                <button type="button" class="arbre-explo__bouton" data-explo="zoom-moins"
+                        aria-label="Dézoomer" title="Dézoomer">−</button>
+                <span class="arbre-explo__niveau" data-explo-niveau aria-live="polite">100 %</span>
+                <button type="button" class="arbre-explo__bouton" data-explo="zoom-plus"
+                        aria-label="Zoomer" title="Zoomer">+</button>
+                <button type="button" class="arbre-explo__bouton" data-explo="gauche"
+                        aria-label="Voir à gauche" title="Voir à gauche">←</button>
+                <button type="button" class="arbre-explo__bouton" data-explo="haut"
+                        aria-label="Voir en haut" title="Voir en haut">↑</button>
+                <button type="button" class="arbre-explo__bouton" data-explo="bas"
+                        aria-label="Voir en bas" title="Voir en bas">↓</button>
+                <button type="button" class="arbre-explo__bouton" data-explo="droite"
+                        aria-label="Voir à droite" title="Voir à droite">→</button>
+                <button type="button" class="arbre-explo__bouton arbre-explo__bouton--texte"
+                        data-explo="centrer"
+                        aria-label="Centrer la personne sélectionnée"
+                        title="Centrer la personne sélectionnée">Centrer</button>
+                <button type="button" class="arbre-explo__bouton arbre-explo__bouton--texte"
+                        data-explo="tout"
+                        aria-label="Voir tout l’arbre" title="Voir tout l’arbre">Voir tout</button>
+            </div>
+            <p class="arbre-explo__aide" data-explo-aide hidden>
+                Glissez pour déplacer l’arbre, molette ou pincement pour zoomer.
+                Au clavier : Tab pour entrer dans le cadre et en sortir,
+                flèches pour déplacer, + et − pour zoomer.
+            </p>
+            <div class="arbre-explo__cadre" data-explo-cadre tabindex="0" role="region"
+                 aria-label="Cadre d’exploration de l’arbre. Tab pour en sortir, flèches pour déplacer l’arbre.">
+        <div class="arbre-chene__dessin arbre-explo__dessin" data-explo-dessin>
             <section class="arbre-chene__partie arbre-chene__partie--branches" aria-labelledby="chene-ancetres">
                 <h2 id="chene-ancetres">Les ancêtres</h2>
                 <?php if ($arbre['ancetres'] === []): ?>
@@ -95,13 +126,16 @@ $alphabet = range('A', 'Z');
                             <?= e($generation['libelle']) ?>
                             <span class="arbre-chene__compte"><?= (int) $generation['total'] ?></span>
                         </p>
-                        <?php foreach ($generation['rangees'] as $rangee): ?>
+                        <?php foreach ($generation['rangees'] as $numeroRangee => $rangee): ?>
                             <ul class="arbre-chene__rangee arbre-chene__rangee--<?= count($rangee) ?>"
                                 aria-labelledby="<?= e($idLegende) ?>">
                                 <?php foreach ($rangee as $noeud): ?>
                                     <?php require __DIR__ . '/partials/carte_arbre.php'; ?>
                                 <?php endforeach; ?>
                             </ul>
+                            <?php if ($numeroRangee === 0): ?>
+                                <?php $traits = $generation['traits']; require __DIR__ . '/partials/traits_arbre.php'; ?>
+                            <?php endif; ?>
                         <?php endforeach; ?>
                     <?php endforeach; ?>
                 <?php endif; ?>
@@ -109,26 +143,22 @@ $alphabet = range('A', 'Z');
 
             <section class="arbre-chene__partie arbre-chene__partie--tronc" aria-labelledby="chene-tronc">
                 <h2 id="chene-tronc">Le tronc</h2>
-                <ul class="arbre-chene__rangee arbre-chene__rangee--1">
-                    <li class="arbre-chene__noeud arbre-chene__noeud--tronc">
-                        <a class="arbre-chene__lien" href="<?= e($arbre['racine']['url']) ?>">
-                            <span class="arbre-chene__nom"><?= e($arbre['racine']['nom']) ?></span>
-                            <?php if ($arbre['racine']['dates'] !== ''): ?>
-                                <span class="arbre-chene__dates"><?= e($arbre['racine']['dates']) ?></span>
+                <ul class="arbre-chene__rangee arbre-chene__rangee--<?= 1 + count($arbre['conjoints']) ?>">
+                    <?php $noeud = $arbre['racine']; ?>
+                    <li class="arbre-chene__noeud arbre-chene__noeud--tronc"
+                        data-relation="selection" data-explo-centre="1">
+                        <a class="arbre-chene__lien" href="<?= e($noeud['url']) ?>"
+                           aria-label="<?= e($noeud['nom'] . ', personne sélectionnée') ?>">
+                            <span class="arbre-chene__relation"><?= e($noeud['relation_libelle']) ?></span>
+                            <span class="arbre-chene__nom"><?= e($noeud['nom']) ?></span>
+                            <?php if ($noeud['dates'] !== ''): ?>
+                                <span class="arbre-chene__dates"><?= e($noeud['dates']) ?></span>
                             <?php endif; ?>
                         </a>
-                        <?php if ($arbre['conjoints'] !== []): ?>
-                            <?php foreach ($arbre['conjoints'] as $conjoint): ?>
-                                <span class="arbre-chene__et">et</span>
-                                <a class="arbre-chene__lien arbre-chene__lien--conjoint" href="<?= e($conjoint['url']) ?>">
-                                    <span class="arbre-chene__nom"><?= e($conjoint['nom']) ?></span>
-                                    <?php if ($conjoint['dates'] !== ''): ?>
-                                        <span class="arbre-chene__dates"><?= e($conjoint['dates']) ?></span>
-                                    <?php endif; ?>
-                                </a>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
                     </li>
+                    <?php foreach ($arbre['conjoints'] as $noeud): ?>
+                        <?php $classe = 'arbre-chene__noeud--tronc'; require __DIR__ . '/partials/carte_arbre.php'; ?>
+                    <?php endforeach; ?>
                 </ul>
             </section>
 
@@ -143,7 +173,10 @@ $alphabet = range('A', 'Z');
                             <?= e($generation['libelle']) ?>
                             <span class="arbre-chene__compte"><?= (int) $generation['total'] ?></span>
                         </p>
-                        <?php foreach ($generation['rangees'] as $rangee): ?>
+                        <?php foreach ($generation['rangees'] as $numeroRangee => $rangee): ?>
+                            <?php if ($numeroRangee === 0): ?>
+                                <?php $traits = $generation['traits_avant']; require __DIR__ . '/partials/traits_arbre.php'; ?>
+                            <?php endif; ?>
                             <ul class="arbre-chene__rangee arbre-chene__rangee--<?= count($rangee) ?>"
                                 aria-labelledby="<?= e($idLegende) ?>">
                                 <?php foreach ($rangee as $noeud): ?>
@@ -155,6 +188,9 @@ $alphabet = range('A', 'Z');
                 <?php endif; ?>
             </section>
         </div>
+            </div>
+        </div>
+        <script src="<?= e(asset_url('/assets/arbre-exploration.js')) ?>" defer></script>
 
         <?php if ($arbre['reste'] > 0 || $tout): ?>
             <p class="arbre-chene__plus">

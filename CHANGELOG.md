@@ -3,6 +3,59 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.35.0] — 2026-11-08
+
+### Explorer l'arbre : zoom, déplacement, recentrage
+La page `/arbre` gagne une barre d'outils « Exploration de l'arbre »
+(au-dessus du dessin) : **Zoomer / Dézoomer** avec le niveau en
+pourcentage (25 % à 250 %), **Voir à gauche / en haut / en bas / à
+droite**, **Centrer la personne sélectionnée** (zoom conservé) et
+**Voir tout l'arbre**. Au doigt et à la souris : glisser pour déplacer,
+molette pour zoomer, pincement à deux doigts sur téléphone. Le cadre
+fait environ 65 % de la hauteur de l'écran (entre 320 et 640 px), la
+page n'a jamais de défilement horizontal, et Tab sort du cadre — aucun
+piège au clavier. `prefers-reduced-motion` coupe l'animation.
+
+Tout cela tient dans `public/assets/arbre-exploration.js`, chargé
+uniquement sur `/arbre`, avec la CSP actuelle : les positions passent
+par des propriétés CSS personnalisées posées en API CSSOM (vérifié dans
+le navigateur : le transform calculé suit). **Si le script ne se charge
+pas, les boutons sont cachés et l'arbre reste celui du serveur**,
+complet et cliquable. Au chargement, la personne sélectionnée est
+centrée ; sur téléphone, le zoom de départ montre le tronc et la
+génération des parents.
+
+### Parenté lisible sur chaque carte
+- Chaque carte écrit sa relation avec la personne sélectionnée, en
+  petit au-dessus du nom, et dans son nom accessible (« Casimir
+  BERNARD, conjoint ») : Personne sélectionnée, Conjoint/conjointe,
+  Parent, Grand-parent, Arrière-grand-parent, Enfant, Petit-enfant,
+  Frère/sœur, Beau-parent, sinon Famille.
+- Un conjoint est toujours un conjoint : deux personnes qui forment un
+  couple ne sont jamais présentées comme frère et sœur, même si les
+  données les disaient aussi enfants des mêmes parents. Et les ancêtres
+  affichés sont ceux de la personne sélectionnée, jamais ceux de son
+  conjoint venu d'une autre famille.
+- Traits dessinés par le serveur (SVG, pourcentages calculés d'après
+  les rangées) : trait en pointillés entre les deux membres d'un couple,
+  trait vertical depuis le point central du couple, barre horizontale,
+  puis un trait vers chaque enfant. **Aucun trait vers une carte
+  absente** : une personne privée n'apparaît ni en nom, ni en lien, ni
+  en nombre, ni en trait — les droits sont inchangés.
+
+### Essais
+- `tests_arbre.php` grandit (87 essais) : barre et boutons libellés,
+  script externe, relations du jeu de démo, conjoint ≠ sœur, ancêtres du
+  conjoint absents du dessin, segments de traits comptés pour un
+  lecteur (2) et un administrateur (4).
+- Suite complète : 1 530 essais, 1 530 réussis.
+- Navigateur réel (Chromium) : `actions-arbre-exploration.mjs`,
+  27 contrôles à 1 280 et 390 px, en papier et en bleu, 0 échec, et
+  l'ancien contrôle du chêne (38 contrôles) toujours vert. Le
+  pincement est synthétisé par le protocole CDP : à confirmer sur un
+  vrai téléphone. Aucune migration : sur le Pi, `git pull` puis
+  `deploy/install.sh` suffisent.
+
 ## [1.34.0] — 2026-11-08
 
 ### Corrigé — l'étiquette « Années 2020 » au-dessus des articles

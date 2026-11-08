@@ -3,6 +3,26 @@
 Ce fichier liste ce qui reste à faire, classé par priorité. Il n'y a pas de
 suivi automatique : cochez au fur et à mesure.
 
+## Fait (2026-11-08, 1.35.0 — exploration de l'arbre, parenté lisible)
+
+- [x] **Barre d'outils « Exploration de l'arbre »** : zoom 25–250 % avec le
+  niveau en %, flèches de déplacement, « Centrer la personne sélectionnée »,
+  « Voir tout l'arbre » ; molette, glisser, pincement synthétisé en CDP.
+- [x] **`public/assets/arbre-exploration.js`** chargé seulement sur `/arbre` :
+  sans lui, boutons cachés et arbre complet ; positions en propriétés CSS
+  personnalisées via l'API CSSOM (CSP vérifiée en navigateur).
+- [x] **Parenté sur les cartes** : relation en petit au-dessus du nom et dans
+  le nom accessible ; conjoint jamais « frère/sœur » ; ancêtres du conjoint
+  absents ; frère/sœur et beau-parent dans la fonction de parenté.
+- [x] **Traits du serveur** : pointillés du couple, liaisons parents-enfants
+  en SVG ; aucun trait vers une personne invisible (2 segments pour un
+  lecteur, 4 pour l'administrateur, dans les essais).
+- [x] **Essais** : arbre 87/87 ; suite complète 1 530/1 530.
+- [x] **Navigateur réel** : `actions-arbre-exploration.mjs`, 27 contrôles × 4
+  (1 280 et 390 px, papier et bleu), 0 échec ; captures dans `docs/captures/`.
+  Reste à confirmer sur un vrai téléphone : le pincement réel, et le
+  glisser au doigt (ici : souris + pincement CDP synthétisé).
+
 ## Fait (2026-11-08, 1.34.0 — étiquette de décennie, calendrier, lignes vides)
 
 - [x] **Fusion 1.33.1** : `claude/accueil-sobre` fusionnée telle quelle

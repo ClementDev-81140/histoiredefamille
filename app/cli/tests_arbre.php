@@ -81,6 +81,7 @@ function tests_arbre(): void
             tests_arbre_acces();
             tests_arbre_droits();
             tests_arbre_rangees();
+            tests_arbre_exploration_parente();
 
             throw new RuntimeException('fin du test, annulation');
         });
@@ -281,8 +282,139 @@ function tests_arbre_rangees(): void
     verifier('arbre : aucune ressource extérieure',
         preg_match('#(?:src|href)="(?:https?:)?//#i', $html) !== 1, 'une adresse extérieure est présente');
     verifier('arbre : chaque carte est un lien vers une fiche',
-        preg_match_all('/<li class="arbre-chene__noeud[^"]*">\s*<a class="arbre-chene__lien"[^>]*href="\/arbre\/\d+"/', $html) ===
+        preg_match_all('/<li class="arbre-chene__noeud[^>]*>\s*<a class="arbre-chene__lien"[^>]*href="\/arbre\/\d+"/', $html) ===
         substr_count($html, '<li class="arbre-chene__noeud'),
-        'cartes liées : ' . preg_match_all('/<li class="arbre-chene__noeud[^"]*">\s*<a class="arbre-chene__lien"[^>]*href="\/arbre\/\d+"/', $html)
+        'cartes liées : ' . preg_match_all('/<li class="arbre-chene__noeud[^>]*>\s*<a class="arbre-chene__lien"[^>]*href="\/arbre\/\d+"/', $html)
         . ' sur ' . substr_count($html, '<li class="arbre-chene__noeud'));
+}
+
+/** 5. Exploration et parenté lisible (1.35.0). */
+function tests_arbre_exploration_parente(): void
+{
+    $admin = tests_envoi_compte('admin');
+    $lecteur = tests_envoi_compte('famille');
+
+    // Même famille que le rendu : Casimir, sa conjointe Odile (qui a ses
+    // propres parents, d'une autre famille), parents, grands-parents,
+    // arrière-grands-parents, un fils, un petit-fils.
+    $agp = tests_arbre_personne('Théodore', 'EXPLOR', 'famille');
+    $agm = tests_arbre_personne('Adèle', 'EXPLOR', 'famille', 'F');
+    $gp  = tests_arbre_personne('Pierre', 'EXPLOR', 'famille');
+    $gm  = tests_arbre_personne('Louise', 'EXPLOR', 'famille', 'F');
+    $moi = tests_arbre_personne('Casimir', 'EXPLOR', 'famille');
+    $elle = tests_arbre_personne('Odile', 'EXPLOR', 'famille', 'F');
+    $fils = tests_arbre_personne('Serge', 'EXPLOR', 'famille');
+    $petit = tests_arbre_personne('Léon', 'EXPLOR', 'famille');
+    $beauP = tests_arbre_personne('Henri', 'AILLEURS', 'famille');
+    $beauM = tests_arbre_personne('Marcelle', 'AILLEURS', 'famille', 'F');
+
+    $aagp = tests_arbre_personne('Sylvestre', 'EXPLOR', 'famille');
+    tests_arbre_famille($aagp, null, [$agp]);
+    tests_arbre_famille($agp, $agm, [$gp]);
+    tests_arbre_famille($gp, $gm, [$moi]);
+    tests_arbre_famille($moi, $elle, [$fils]);
+    tests_arbre_famille($fils, null, [$petit]);
+    tests_arbre_famille($beauP, $beauM, [$elle]);
+
+    $html = (string) tests_envoi_requete('GET', '/arbre?racine=' . $moi, $admin)['corps'];
+    $dessin = tests_arbre_morceau($html, 'arbre-chene__dessin', 'arbre-chene__plus');
+
+    // --- La barre d'outils et le script externe ---------------------------
+    verifier_contient('arbre 1.35 : la barre d’outils d’exploration est là',
+        'role="toolbar" aria-label="Exploration de l’arbre"', $html);
+    foreach (['Zoomer', 'Dézoomer', 'Voir à gauche', 'Voir en haut', 'Voir en bas',
+              'Voir à droite', 'Centrer la personne sélectionnée', 'Voir tout l’arbre'] as $libelle) {
+        verifier_contient('arbre 1.35 : le bouton « ' . $libelle . ' » est là',
+            'aria-label="' . $libelle . '"', $html);
+        verifier_contient('arbre 1.35 : le bouton « ' . $libelle . ' » a son title',
+            'title="' . $libelle . '"', $html);
+    }
+    verifier_contient('arbre 1.35 : le niveau de zoom en pourcentage est là',
+        'data-explo-niveau', $html);
+    verifier('arbre 1.35 : sans JavaScript, la barre est cachée (attribut hidden)',
+        preg_match('/data-explo-barre hidden/', $html) === 1, 'la barre n’est pas cachée au départ');
+    verifier_contient('arbre 1.35 : le script d’exploration est externe et propre à la page',
+        '/assets/arbre-exploration.js', $html);
+    verifier('arbre 1.35 : aucun style en ligne malgré l’exploration',
+        preg_match('/\sstyle\s*=/i', $html) !== 1, 'un attribut style= est présent');
+    verifier('arbre 1.35 : aucun script en ligne',
+        preg_match('/<script(?![^>]*\ssrc=)[^>]*>/i', $html) !== 1, 'un <script> sans src est présent');
+
+    // --- Les relations, sur les cartes et dans les noms accessibles --------
+    foreach ([
+        'Casimir EXPLOR, personne sélectionnée' => 'la personne sélectionnée',
+        'Odile EXPLOR, conjointe'               => 'la conjointe',
+        'Pierre EXPLOR, parent'                 => 'un parent',
+        'Adèle EXPLOR, grand-parent'            => 'une grand-mère affichée « Grand-parent »',
+        'Sylvestre EXPLOR, arrière-grand-parent' => 'un arrière-grand-parent',
+        'Serge EXPLOR, enfant'                  => 'un enfant',
+        'Léon EXPLOR, petit-enfant'             => 'un petit-enfant',
+    ] as $aria => $quoi) {
+        verifier_contient('arbre 1.35 : le nom accessible dit ' . $quoi,
+            'aria-label="' . $aria . '"', $dessin);
+    }
+    verifier_contient('arbre 1.35 : la relation est écrite en petit sur la carte',
+        'arbre-chene__relation">Conjointe<', $dessin);
+    verifier('arbre 1.35 : la conjointe n’est jamais une sœur',
+        !str_contains($dessin, 'Odile EXPLOR, sœur') && !str_contains($dessin, '>Sœur<'),
+        'la conjointe est présentée comme une sœur');
+    verifier('arbre 1.35 : les parents de la conjointe (autre famille) ne sont pas inventés comme ancêtres',
+        !str_contains($dessin, 'Henri AILLEURS') && !str_contains($dessin, 'Marcelle AILLEURS'),
+        'un beau-parent de naissance apparaît dans le dessin');
+
+    // Le couple a son trait, et les enfants sont reliés par un SVG du serveur.
+    verifier('arbre 1.35 : le trait en pointillés du couple est marqué',
+        str_contains($dessin, 'arbre-chene__noeud--couple'), 'aucune carte de couple marquée');
+    verifier('arbre 1.35 : les traits parents-enfants sont dessinés par le serveur',
+        str_contains($dessin, '<svg class="arbre-chene__traits"') && str_contains($dessin, '<line'),
+        'aucun SVG de liaison');
+
+    // --- La fonction de parenté, directement --------------------------------
+    // Une racine neuve (son contexte n'a encore jamais été calculé) : un
+    // frère dans la même famille, et la nouvelle épouse du père.
+    $papaF = tests_arbre_personne('Norbert', 'FRATRIE', 'famille');
+    $mamanF = tests_arbre_personne('Bertille', 'FRATRIE', 'famille', 'F');
+    $racineF = tests_arbre_personne('Urbain', 'FRATRIE', 'famille');
+    $frere = tests_arbre_personne('Rémi', 'FRATRIE', 'famille');
+    $belleMere = tests_arbre_personne('Josette', 'FRATRIE', 'famille', 'F');
+    tests_arbre_famille($papaF, $mamanF, [$racineF, $frere]);
+    tests_arbre_famille($papaF, $belleMere, []);
+    $ligne = static fn (int $id): array => db_one('SELECT * FROM persons WHERE id = ?', [$id]);
+    verifier('arbre 1.35 : un frère est un frère',
+        arbre_chene_relation($racineF, $ligne($frere))['libelle'] === 'Frère',
+        arbre_chene_relation($racineF, $ligne($frere))['libelle']);
+    verifier('arbre 1.35 : la nouvelle épouse du père est une belle-parent',
+        arbre_chene_relation($racineF, $ligne($belleMere))['libelle'] === 'Beau-parent',
+        arbre_chene_relation($racineF, $ligne($belleMere))['libelle']);
+
+    // Un conjoint qui serait aussi, dans les données, un enfant des mêmes
+    // parents reste un conjoint : le couple passe avant la fratrie.
+    $conjointeAussiSoeur = tests_arbre_personne('Alix', 'DOUBLE', 'famille', 'F');
+    $racineDouble = tests_arbre_personne('Bruno', 'DOUBLE', 'famille');
+    $papaDouble = tests_arbre_personne('Noël', 'DOUBLE', 'famille');
+    tests_arbre_famille($papaDouble, null, [$racineDouble, $conjointeAussiSoeur]);
+    tests_arbre_famille($racineDouble, $conjointeAussiSoeur, []);
+    verifier('arbre 1.35 : un conjoint reste un conjoint, même frère ou sœur dans les données',
+        arbre_chene_relation($racineDouble, $ligne($conjointeAussiSoeur))['cle'] === 'conjoint',
+        arbre_chene_relation($racineDouble, $ligne($conjointeAussiSoeur))['libelle']);
+
+    // --- Les traits ne montrent pas ce que le compte ne peut pas voir -------
+    $moi2 = tests_arbre_personne('Berthe', 'TRAITS', 'famille', 'F');
+    $visible = tests_arbre_personne('Visible', 'TRAITS', 'famille');
+    $cache = tests_arbre_personne('Invisible', 'TRAITS', 'prive');
+    tests_arbre_famille($moi2, null, [$visible, $cache]);
+
+    $htmlLecteur = (string) tests_envoi_requete('GET', '/arbre?racine=' . $moi2, $lecteur)['corps'];
+    $dessinLecteur = tests_arbre_morceau($htmlLecteur, 'arbre-chene__dessin', 'arbre-chene__plus');
+    verifier('arbre 1.35 : le lecteur voit l’enfant visible et son trait',
+        str_contains($dessinLecteur, 'Visible TRAITS') && str_contains($dessinLecteur, '<svg class="arbre-chene__traits"'),
+        'le trait de l’enfant visible manque');
+    verifier('arbre 1.35 : aucun trait vers l’enfant privé (2 segments seulement : descente et arrivée)',
+        substr_count($dessinLecteur, '<line') === 2,
+        'segments : ' . substr_count($dessinLecteur, '<line'));
+    $htmlAdmin = (string) tests_envoi_requete('GET', '/arbre?racine=' . $moi2, $admin)['corps'];
+    $dessinAdmin = tests_arbre_morceau($htmlAdmin, 'arbre-chene__dessin', 'arbre-chene__plus');
+    verifier('arbre 1.35 : contre-épreuve, l’administrateur a les traits des deux enfants (4 segments)',
+        substr_count($dessinAdmin, '<line') === 4,
+        'segments : ' . substr_count($dessinAdmin, '<line'));
 }

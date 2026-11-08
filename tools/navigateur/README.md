@@ -50,6 +50,33 @@ node tools/navigateur/essai.mjs 390 document
 node tools/navigateur/essai.mjs 1280 document
 ```
 
+### Exploration de l'arbre et parenté (1.35.0)
+
+```bash
+# Trois pages par le routeur réel (compte administrateur) : arbre complet,
+# huit enfants, un enfant.
+HDF_CONFIG=/chemin/config.local.php HDF_FORCE_CLI=1 \
+    HDF_ARGV='["/arbre?racine=15","/tmp/arbre-complet.html","7"]' \
+    php tools/navigateur/rendre.php
+# (même principe pour les racines des cas « huit » et « un »)
+
+PAGES_ALBUM='{"/arbre-complet":"/tmp/arbre-complet.html","/arbre-huit":"/tmp/arbre-huit.html","/arbre-un":"/tmp/arbre-un.html"}' \
+    THEME_CSS=/tmp/theme-papier.css node tools/navigateur/serveur.mjs
+
+CAPTURES=/tmp node actions-arbre-exploration.mjs 1280
+CAPTURES=/tmp node actions-arbre-exploration.mjs 390
+# puis la palette bleu comme pour le chêne (1.33.0).
+```
+
+27 contrôles par largeur et par palette : barre visible et boutons, niveau
+en %, API CSSOM sous la CSP, personne centrée au chargement, parents
+visibles à 390 px, zoom/déplacement/centrer/voir-tout, molette, glisser,
+pincement **synthétisé par CDP** (à confirmer sur un vrai téléphone),
+clavier sans piège, sans-JavaScript complet, mouvement réduit, huit
+cartes sans superposition, propreté habituelle. L'ancien contrôle
+`actions-arbre-chene.mjs` (38 contrôles) continue de tourner : il tolère
+désormais le seul `style` posé par le script sur le dessin.
+
 ### Étiquette, calendrier et fiche sans décès (1.34.0)
 
 ```bash

@@ -6705,3 +6705,177 @@ legend {
         display: none;
     }
 }
+
+/* ==========================================================================
+   1.35.0 — exploration de l'arbre et parenté lisible
+   La barre d'outils n'existe visuellement que si le script d'exploration
+   s'est chargé (il retire `hidden` et ajoute `arbre-explo--actif`) : sans
+   JavaScript, le cadre ne contraint rien et tout l'arbre reste lisible,
+   exactement comme le serveur l'a écrit. Les positions du dessin passent
+   par les propriétés personnalisées --explo-* posées en API CSSOM par
+   public/assets/arbre-exploration.js — jamais par un attribut style=
+   écrit dans la page.
+   ========================================================================== */
+
+/* La relation, en petit au-dessus du nom de chaque carte. */
+.arbre-chene__relation {
+    display: block;
+    font-size: 0.62rem;
+    font-weight: 400;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--texte-doux);
+}
+
+/* Le trait en pointillés du couple : il traverse l'écart entre les deux
+   cartes voisines (horizontal en rangée, vertical en colonne). */
+.arbre-chene__noeud--couple::before {
+    content: "";
+    position: absolute;
+    left: calc(-1 * var(--chene-gap));
+    top: 50%;
+    width: var(--chene-gap);
+    border-top: 2px dashed var(--texte-doux);
+}
+
+@media (max-width: 47.99rem) {
+    .arbre-chene__noeud--couple::before {
+        left: 50%;
+        top: calc(-1 * var(--chene-gap));
+        width: 0;
+        height: var(--chene-gap);
+        border-top: none;
+        border-left: 2px dashed var(--texte-doux);
+    }
+}
+
+/* Les traits parents → enfants, en SVG écrit par le serveur. */
+.arbre-chene__traits {
+    display: block;
+    width: 100%;
+    height: 1.4rem;
+    color: var(--texte-doux);
+}
+
+.arbre-chene__traits line {
+    stroke: var(--texte-doux);
+    stroke-width: 1.5;
+    opacity: 0.75;
+}
+
+/* --- La barre d'outils -------------------------------------------------- */
+.arbre-explo__barre {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0 0 0.5rem;
+}
+
+.arbre-explo__barre[hidden],
+.arbre-explo__aide[hidden] {
+    display: none;
+}
+
+.arbre-explo__bouton {
+    min-width: 2.5rem;
+    min-height: 2.5rem;
+    padding: 0.3rem 0.6rem;
+    font: inherit;
+    font-size: 1.05rem;
+    line-height: 1;
+    color: var(--texte);
+    background: var(--surface);
+    border: var(--filet-fort);
+    cursor: pointer;
+}
+
+.arbre-explo__bouton--texte {
+    font-size: 0.88rem;
+}
+
+.arbre-explo__bouton:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.arbre-explo__bouton:focus-visible,
+.arbre-explo__cadre:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.arbre-explo__niveau {
+    min-width: 3.6rem;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    color: var(--texte-doux);
+}
+
+.arbre-explo__aide {
+    margin: 0 0 0.5rem;
+    font-size: 0.85rem;
+    color: var(--texte-doux);
+}
+
+/* --- Le cadre -------------------------------------------------------------
+   Sans JavaScript : aucun de ces styles ne s'applique (la classe
+   `arbre-explo--actif` est ajoutée par le script). Avec : hauteur bornée,
+   dessin transformé, geste du doigt réservé à l'exploration dans le cadre
+   seulement — le défilement normal de la page reste libre en dehors. */
+.arbre-explo--actif .arbre-explo__cadre {
+    height: clamp(320px, 65vh, 640px);
+    overflow: hidden;
+    position: relative;
+    border: var(--filet);
+    touch-action: none;
+    cursor: grab;
+}
+
+.arbre-explo--actif .arbre-explo__cadre:active {
+    cursor: grabbing;
+}
+
+.arbre-explo--actif .arbre-explo__dessin {
+    transform: translate(var(--explo-x, 0), var(--explo-y, 0)) scale(var(--explo-zoom, 1));
+    transform-origin: 0 0;
+}
+
+/* Glisser depuis une carte ne doit pas partir en « glisser le lien » du
+   navigateur : dans le cadre, les cartes se déplacent avec l'arbre. */
+.arbre-explo--actif .arbre-chene__lien {
+    -webkit-user-drag: none;
+}
+
+.arbre-explo--anime .arbre-explo__dessin {
+    transition: transform 160ms ease-out;
+}
+
+.arbre-explo[data-glisse="1"] .arbre-explo__dessin {
+    transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .arbre-explo--anime .arbre-explo__dessin {
+        transition: none;
+    }
+}
+
+/* Impression : l'exploration n'a pas de sens sur papier, on réimprime
+   l'arbre entier, sans barre ni cadre. */
+@media print {
+    .arbre-explo__barre,
+    .arbre-explo__aide {
+        display: none;
+    }
+
+    .arbre-explo--actif .arbre-explo__cadre {
+        height: auto;
+        overflow: visible;
+        border: none;
+    }
+
+    .arbre-explo--actif .arbre-explo__dessin {
+        transform: none;
+    }
+}

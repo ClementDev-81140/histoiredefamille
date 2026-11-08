@@ -1343,6 +1343,23 @@ personne. **Depuis la 1.33.0**, la page est un « **chêne gravé** » :
   en ligne, seulement des classes de la feuille de style. Le déplacement dans
   l'arbre ne dépend donc d'aucun script, et se fait au clavier comme à la
   souris ;
+- **depuis la 1.35.0, chaque carte dit sa relation** avec la personne au
+  centre, en petit au-dessus du nom (« Conjointe », « Parent »,
+  « Grand-parent », « Arrière-grand-parent », « Enfant », « Petit-enfant »…)
+  et dans son nom accessible (« Odile MARTIN, conjointe »). Un conjoint
+  n'est jamais présenté comme un frère ou une sœur, et les ancêtres sont
+  ceux de la personne sélectionnée — jamais ceux de son conjoint. Un trait
+  en pointillés relie les deux membres d'un couple, et les enfants sont
+  reliés à leurs parents par des traits dessinés par le serveur ;
+- **exploration (1.35.0)** : au-dessus de l'arbre, une barre d'outils permet
+  de zoomer (25 % à 250 %), de se déplacer, de **centrer la personne
+  sélectionnée** ou de **voir tout l'arbre** ; au doigt et à la souris, on
+  glisse pour déplacer, on zoome à la molette ou au pincement. Tout tient
+  dans le script `public/assets/arbre-exploration.js`, chargé seulement sur
+  cette page : **sans JavaScript, la barre est cachée et l'arbre reste
+  entier et cliquable**, comme avant. Le cadre fait environ 65 % de la
+  hauteur de l'écran ; la page elle-même ne défile jamais de travers, et
+  la touche Tab sort du cadre au clavier.
 - **seules les personnes que votre compte a le droit de voir** apparaissent :
   ni nom, ni lien, ni compteur ne trahissent une fiche privée, et une personne
   privée demandée dans l'adresse (`?racine=…`) ne remplace pas la personne par

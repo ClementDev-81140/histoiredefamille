@@ -125,7 +125,11 @@ for (const cible of pages) {
                 rect: rect(dessin),
                 fondImage: getComputedStyle(dessin).backgroundImage,
             } : null,
-            stylesEnLigne: document.querySelectorAll('[style]').length,
+            // Depuis la 1.35.0, le seul `style` toléré est celui que le script
+            // d'exploration pose par l'API CSSOM sur le dessin (propriétés
+            // --explo-*) : il n'est pas dans le HTML du serveur.
+            stylesEnLigne: Array.from(document.querySelectorAll('[style]'))
+                .filter((el) => el.getAttribute('data-explo-dessin') === null).length,
             scriptsEnLigne: Array.from(document.querySelectorAll('script')).filter((s) => !s.src).length,
             etrangers: Array.from(document.querySelectorAll('[src], link[href]'))
                 .map((el) => el.getAttribute('src') || el.getAttribute('href') || '')
@@ -225,7 +229,7 @@ for (const cible of pages) {
     verifier(focus !== null && focus.contour, 'le focus se voit (contour dessiné)');
 
     // --- Sécurité et propreté ---------------------------------------------
-    verifier(vue.stylesEnLigne === 0, 'aucun attribut style= (' + vue.stylesEnLigne + ')');
+    verifier(vue.stylesEnLigne === 0, 'aucun attribut style= hors le dessin exploré (' + vue.stylesEnLigne + ')');
     verifier(vue.scriptsEnLigne === 0, 'aucun script en ligne (' + vue.scriptsEnLigne + ')');
     verifier(vue.etrangers === 0, 'aucune ressource extérieure (' + vue.etrangers + ')');
     verifier(erreursJs.length === 0, 'aucune erreur JavaScript (' + erreursJs.join(' / ') + ')');
