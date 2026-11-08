@@ -50,6 +50,32 @@ node tools/navigateur/essai.mjs 390 document
 node tools/navigateur/essai.mjs 1280 document
 ```
 
+### Vidéo d'archive à marque M4A (1.35.1)
+
+```bash
+# La page d'envoi rendue par le routeur réel (compte administrateur), le
+# fichier synthétique des essais PHP (conteneur ISO, marque M4A, piste
+# vidéo fabriquée octet par octet) et un fichier vide pour le refus.
+HDF_CONFIG=/chemin/config.local.php HDF_FORCE_CLI=1 \
+    HDF_ARGV='["/admin/envoyer","/tmp/envoyer.html","14"]' \
+    php tools/navigateur/rendre.php
+PAGE_ENVOYER=/tmp/envoyer.html \
+    PAGES_ALBUM='{"/admin/envoyer":"/tmp/envoyer.html"}' \
+    node tools/navigateur/serveur.mjs
+
+CAPTURES=/tmp FICHIER_VIDEO='/tmp/Bienvenue sur la lune.MP4' \
+    FICHIER_VIDE=/tmp/fichier-vide.mp4 \
+    node actions-envoi-media.mjs 1280
+# (puis 390)
+```
+
+7 contrôles par largeur : l'envoi du fichier à marque M4A aboutit, aucun
+refus de type ne s'affiche, le refus d'un fichier vide est une phrase
+simple avec une action, les nouvelles extensions sont annoncées dans
+l'attribut `accept`, propreté habituelle. Le protocole est simulé (mêmes
+clés JSON) : le jugement du contenu réel appartient aux essais PHP
+(`tests.php envoi` / `conversion`).
+
 ### Exploration de l'arbre et parenté (1.35.0)
 
 ```bash

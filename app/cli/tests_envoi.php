@@ -216,6 +216,7 @@ function tests_envoi(): void
         db_transaction(static function () use ($compte, $autre, $famille): void {
             tests_envoi_protocole($compte);
             tests_envoi_refus($compte);
+            tests_envoi_familles_media($compte);
             tests_envoi_doublons($compte);
             tests_envoi_droits($compte, $autre, $famille);
             tests_envoi_formulaire($compte, $autre, $famille);
@@ -499,7 +500,7 @@ function tests_envoi_refus(int $compte): void
     verifier(
         'refus : un exécutable renommé .jpg est refusé à l’assemblage (type réel)',
         ($resultat['terminer']['ok'] ?? true) === false
-            && str_contains((string) ($resultat['terminer']['error'] ?? ''), 'ne correspond pas à son extension'),
+            && str_contains((string) ($resultat['terminer']['error'] ?? ''), 'n’est pas celui d’une photo'),
         (string) ($resultat['terminer']['error'] ?? 'aucune erreur')
     );
     verifier(
@@ -1467,5 +1468,145 @@ function tests_envoi_menage(int $compte): void
             (string) @file_get_contents(HDF_APP . '/views/admin/courriels.php'),
             '<code>/var/www/histoiredefamille/config.local.php</code>'
         )
+    );
+}
+
+/** Fichier ISO synthétique : marque de conteneur + piste vidéo ou son (1.35.1). */
+function tests_envoi_fichier_iso(string $marque, bool $avecVideo): string
+{
+    $boite = static fn (string $type, string $contenu): string => pack('N', 8 + strlen($contenu)) . $type . $contenu;
+    $data = $boite('ftyp', $marque . pack('N', 0) . $marque . 'isom');
+    $handler = $avecVideo ? 'vide' : 'soun';
+    $nom = $avecVideo ? "VideoHandler\0" : "SoundHandler\0";
+    $hdlr = $boite('hdlr', "\0\0\0\0\0\0\0\0" . $handler . pack('NNN', 0, 0, 0) . $nom);
+    $minf = $boite('minf', $boite($avecVideo ? 'vmhd' : 'smhd', pack('Nn', 0, 0)));
+    $data .= $boite('moov', $boite('trak', $boite('mdia', $hdlr . $minf)));
+    $data .= $boite('mdat', str_repeat("\x00\x01\x02\x03", 512));
+
+    $chemin = storage_path('tmp') . '/iso-' . bin2hex(random_bytes(6)) . '.mp4';
+    file_put_contents($chemin, $data);
+    return $chemin;
+}
+
+/** 1.35.1 : familles de conteneurs, sonde ffprobe, messages simples. */
+function tests_envoi_familles_media(int $compte): void
+{
+    // Le cas du rapport : vraie vidéo, marque M4A, extension .mp4.
+    $videoM4a = tests_envoi_fichier_iso('M4A ', true);
+    $resultat = tests_envoi_jouer($compte, 'Bienvenue sur la lune.MP4', $videoM4a);
+    verifier(
+        'media : une vidéo à marque M4A et extension .mp4 est acceptée (cas du rapport)',
+        ($resultat['terminer']['ok'] ?? false) === true,
+        (string) ($resultat['terminer']['error'] ?? 'aucune erreur')
+    );
+    verifier_contient(
+        'media : le type retenu pour la marque M4A est bien celui du conteneur audio/mp4',
+        'audio/',
+        (string) ($resultat['envoi']['mime'] ?? '')
+    );
+    @unlink($videoM4a);
+
+    // Chaque marque de la famille MP4/QuickTime passe la signature.
+    foreach (['isom', 'mp42', 'qt  ', '3gp4', 'avc1'] as $marque) {
+        $fichier = tests_envoi_fichier_iso($marque, true);
+        $controle = envoi_verifier_contenu($fichier, 'mp4');
+        verifier(
+            'media : la marque ' . trim($marque) . ' du conteneur ISO est acceptée pour .mp4',
+            $controle['ok'],
+            $controle['error']
+        );
+        @unlink($fichier);
+    }
+
+    // Les refus restent des refus, avec une phrase simple (pas de type technique).
+    $faux = [
+        'un exécutable' => "MZ" . str_repeat("\x90", 2000),
+        'un script'     => "#!/bin/sh\necho bonjour\n" . str_repeat('x', 500),
+        'un PDF'        => "%PDF-1.4\n" . str_repeat('0', 1000),
+        'une archive'   => "PK\x03\x04" . str_repeat("\x00", 1000),
+    ];
+    foreach ($faux as $quoi => $contenu) {
+        $fichier = storage_path('tmp') . '/faux-' . bin2hex(random_bytes(6)) . '.mp4';
+        file_put_contents($fichier, $contenu);
+        $controle = envoi_verifier_contenu($fichier, 'mp4');
+        verifier(
+            'media : ' . $quoi . ' renommé .mp4 est refusé, message simple sans type technique',
+            !$controle['ok']
+                && str_contains($controle['error'], 'n’est pas celui d’une vidéo')
+                && str_contains($controle['error'], 'convertissez-le en MP4')
+                && !str_contains($controle['error'], 'type détecté'),
+            $controle['error']
+        );
+        @unlink($fichier);
+    }
+
+    // Son pur sous extension vidéo : ffprobe tranche quand il est là…
+    $son = tests_envoi_fichier_iso('M4A ', false);
+    try {
+        conversion_sonde_forcer(static fn (): array => [
+            'video' => false, 'audio' => true, 'codec_video' => null, 'codec_audio' => 'aac',
+        ]);
+        $controle = envoi_verifier_contenu($son, 'mp4');
+        verifier(
+            'media : un son pur en .mp4 est refusé par la sonde, avec la phrase du rapport',
+            !$controle['ok']
+                && str_contains($controle['error'], '.MP4 mais le site n’y a trouvé que du son')
+                && str_contains($controle['error'], 'convertissez-la en MP4 (H.264) puis recommencez'),
+            $controle['error']
+        );
+
+        // …la même sonde voit la piste vidéo du vrai film à marque M4A…
+        conversion_sonde_forcer(static fn (): array => [
+            'video' => true, 'audio' => true, 'codec_video' => 'h264', 'codec_audio' => 'aac',
+        ]);
+        $video = tests_envoi_fichier_iso('M4A ', true);
+        $controle = envoi_verifier_contenu($video, 'mp4');
+        verifier('media : avec une piste vidéo, la marque M4A est acceptée malgré le type audio', $controle['ok'], $controle['error']);
+        @unlink($video);
+
+        // …et sans ffprobe, la signature du conteneur suffit (la conversion décidera).
+        conversion_sonde_forcer(static fn () => null);
+        $controle = envoi_verifier_contenu($son, 'mp4');
+        verifier(
+            'media : sans ffprobe, un son en .mp4 de bonne famille est accepté (la conversion décidera)',
+            $controle['ok'],
+            $controle['error']
+        );
+    } finally {
+        conversion_sonde_forcer(null);
+    }
+    @unlink($son);
+
+    // La lecture de la sortie ffprobe est une fonction pure, testable partout.
+    $sonde = conversion_interpreter_sonde("video,h264\naudio,aac\n");
+    verifier(
+        'media : la sonde lit les pistes video/h264 et audio/aac',
+        $sonde !== null && $sonde['video'] && $sonde['audio']
+            && $sonde['codec_video'] === 'h264' && $sonde['codec_audio'] === 'aac'
+    );
+    verifier('media : une sonde vide ne dit rien (null, pas d’invention)', conversion_interpreter_sonde('') === null);
+
+    // Les nouvelles extensions vidéo et audio sont autorisées (liste blanche).
+    foreach (['3g2', 'mpg', 'mpeg', 'mts', 'm2ts', 'wmv', 'flv', 'vob', 'aac', 'flac'] as $ext) {
+        verifier(
+            'media : l’extension .' . $ext . ' est dans la liste autorisée',
+            in_array($ext, allowed_extensions(), true)
+        );
+    }
+
+    // Messages simples pour les autres refus de l’envoi par morceaux.
+    $vide = envoi_creer($compte, 'vide.mp4', 0);
+    verifier(
+        'media : un fichier vide est refusé avec une action possible',
+        !$vide['ok'] && str_contains($vide['error'], 'rien à envoyer')
+            && str_contains($vide['error'], 'recommencez'),
+        $vide['error']
+    );
+    $mauvaise = envoi_creer($compte, 'archive.zip', 1000);
+    verifier(
+        'media : une extension refusée dit quoi envoyer à la place',
+        !$mauvaise['ok'] && str_contains($mauvaise['error'], 'Extension non autorisée')
+            && str_contains($mauvaise['error'], 'Convertissez votre fichier'),
+        $mauvaise['error']
     );
 }

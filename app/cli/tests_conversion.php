@@ -311,6 +311,38 @@ function tests_conversion_file(int $compte): void
             'kind' => $kind, 'ext' => $ext, 'mime' => $mime, 'is_attachment' => 0,
         ]) === $attendu);
     }
+
+    // 1.35.1 : chaque format peu courant entre dans la file, le MP4 à marque
+    // audio aussi (son conteneur sera normalisé), un MP4 déjà conforme non.
+    foreach ([
+        ['3gp', 'video/3gpp'], ['3g2', 'video/3gpp'], ['mpg', 'video/mpeg'],
+        ['mpeg', 'video/mpeg'], ['mts', 'video/mp2t'], ['m2ts', 'video/mp2t'],
+        ['wmv', 'video/x-ms-asf'], ['flv', 'video/x-flv'], ['vob', 'video/mpeg'],
+        ['mp4', 'audio/mp4'],
+    ] as [$ext, $mime]) {
+        verifier('conversion : un fichier .' . $ext . ' (' . $mime . ') entre dans la file',
+            conversion_necessaire(['kind' => 'video', 'ext' => $ext, 'mime' => $mime, 'is_attachment' => 0]) === true);
+    }
+
+    // Le codec tranche pour un MP4 de bon conteneur : HEVC -> file, H.264+AAC -> rien.
+    $docHevc = db_one('SELECT * FROM documents WHERE id = ?',
+        [tests_conversion_document($compte, 'mp4', 'video/mp4', 'Film HEVC')['id']]);
+    $docBon = db_one('SELECT * FROM documents WHERE id = ?',
+        [tests_conversion_document($compte, 'mp4', 'video/mp4', 'Film conforme')['id']]);
+    try {
+        conversion_sonde_forcer(static fn (): array => [
+            'video' => true, 'audio' => true, 'codec_video' => 'hevc', 'codec_audio' => 'aac',
+        ]);
+        verifier('conversion : un MP4 en HEVC (sonde) entre dans la file',
+            conversion_necessaire($docHevc) === true);
+        conversion_sonde_forcer(static fn (): array => [
+            'video' => true, 'audio' => true, 'codec_video' => 'h264', 'codec_audio' => 'aac',
+        ]);
+        verifier('conversion : un MP4 H.264 + AAC (sonde) reste hors de la file',
+            conversion_necessaire($docBon) === false);
+    } finally {
+        conversion_sonde_forcer(null);
+    }
     verifier(
         'conversion : une photo rattachée à une personne n’est jamais convertie',
         conversion_necessaire(['kind' => 'photo', 'ext' => 'jpg', 'mime' => 'image/jpeg', 'is_attachment' => 1]) === false

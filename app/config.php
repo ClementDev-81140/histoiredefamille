@@ -60,7 +60,9 @@ function config_defaults(): array
                 // caméscopes, appareils photo) : ils sont acceptés pour être
                 // convertis en MP4 (H.264 + AAC) par la file de conversion.
                 // Le type réel est vérifié avec finfo, comme pour le reste.
-                'mov', 'avi', 'mkv', 'webm', '3gp',
+                'mov', 'avi', 'mkv', 'webm', '3gp', '3g2', 'mpg', 'mpeg', 'mts', 'm2ts', 'wmv', 'flv', 'vob',
+                // Sons d'archives ou de dictaphone, vérifiés comme le reste.
+                'aac', 'flac',
                 // WAV et AMR, eux, sont convertis en M4A (AAC).
                 'wav', 'amr',
             ],

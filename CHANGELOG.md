@@ -3,6 +3,71 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.35.1] — 2026-11-08
+
+### Corrigé — les vidéos d'archives à marque « M4A » n'étaient plus refusées à tort
+Une vraie vidéo nommée « Bienvenue sur la lune.MP4 » était refusée à
+l'envoi par morceaux : « Le contenu du fichier ne correspond pas à son
+extension (type détecté : audio/mp4) ». **Cause** : le contrôle comparait
+le type détecté par la signature (finfo) à une liste stricte par
+extension — pour `.mp4`, seuls `video/mp4` et `application/mp4`
+passaient. Or un conteneur ISO dont la marque est `M4A` (ou `qt`, `3gp4`…)
+est annoncé `audio/mp4` / `video/quicktime` / `video/3gpp` alors qu'il
+contient une vraie piste vidéo.
+
+- La correspondance extension → types est maintenant raisonnée en
+  **familles de conteneurs** : MP4/QuickTime/3GP (`audio/mp4`,
+  `video/mp4`, `video/quicktime`, `video/x-m4v`, `video/3gpp`,
+  `application/mp4`…), MKV, AVI (`video/x-msvideo`), MPEG (`video/mpeg`),
+  MPEG-TS (`video/mp2t`), WMV (`video/x-ms-asf`), FLV, VOB, WebM. Revue
+  des sons au passage : `.aac` et `.flac` sont acceptés, `.ogg` tolère
+  `video/ogg`, `.m4a` aussi `audio/3gpp`.
+- Nouvelles extensions autorisées (elles manquaient) : `.3g2`, `.mpg`,
+  `.mpeg`, `.mts`, `.m2ts`, `.wmv`, `.flv`, `.vob`, `.aac`, `.flac`.
+- Quand **ffprobe** est disponible (c'est le cas sur le Pi), il tranche
+  sur les pistes réelles : une piste vidéo fait une vidéo, quelle que
+  soit la marque ; un fichier **sans piste vidéo** sous une extension
+  vidéo est refusé avec la phrase « Ce fichier a l'extension .MP4 mais
+  le site n'y a trouvé que du son… ». Sans ffprobe, la signature de la
+  famille suffit et la conversion décide ensuite — un fichier sans image
+  finit alors marqué, dans son état de conversion, « ne contient pas
+  d'image vidéo » (échec définitif, sans réessais inutiles).
+- La sécurité ne bouge pas : aucun type passe-partout, un exécutable, un
+  script, un PDF ou une archive renommés restent refusés (essais dédiés),
+  fichiers hors racine web, aucune migration, aucun droit modifié.
+
+### Conversion : le codec des MP4 est vérifié
+Un MP4 de bon conteneur mais en **HEVC** (ou sans AAC) entre maintenant
+dans la file quand ffprobe peut le voir ; un MP4 H.264 + AAC reste
+intouché. Tous les formats peu courants du tableau ci-dessus entrent
+dans la file existante (une conversion à la fois, `nice`, original
+conservé, état visible sans bloquer l'envoi). La page Conversions
+rappelle qu'une vidéo de 100 Mo peut prendre de longues minutes sur le
+Pi — sans bloquer le site.
+
+### Messages d'envoi en français simple
+Le refus de contenu ne montre plus de type technique (il va au journal) :
+« Ce fichier a l'extension .MP4 mais son contenu réel n'est pas celui
+d'une vidéo… convertissez-le en MP4 (H.264) puis recommencez. » Même
+traitement pour l'extension refusée (avec les formats possibles), le
+fichier trop gros (avec l'action) et le fichier vide — côté serveur et
+côté script d'envoi.
+
+### Essais
+- Envoi : 150 essais (dont le cas du rapport joué en protocole complet,
+  les marques isom/mp42/qt/3gp4/avc1, les faux exe/script/PDF/archive,
+  le son pur sondé, les messages). Conversion : 142 essais (chaque
+  format en file, HEVC sondé en file, H.264 + AAC hors file).
+- Suite complète : 1 570 essais, 1 569 réussis — l'échec unique
+  (« arbre : la page retombe… ») est l'artefact de banc déjà documenté,
+  la famille arbre passe seule (87/87), matrice 0 anomalie.
+- Navigateur réel (Chromium) : `actions-envoi-media.mjs`, 7 contrôles à
+  1 280 et 390 px — le fichier synthétique à marque M4A déposé sur
+  `/admin/envoyer` aboutit, le refus d'un fichier vide est lisible ;
+  captures dans `docs/captures/`. Le protocole y est simulé comme pour
+  les autres contrôles d'envoi : le contenu réel est jugé par les essais
+  PHP. Aucune migration : `git pull` puis `install.sh` suffisent.
+
 ## [1.35.0] — 2026-11-08
 
 ### Explorer l'arbre : zoom, déplacement, recentrage

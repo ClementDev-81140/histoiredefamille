@@ -233,21 +233,25 @@ function envoi_creer(
         return ['ok' => false, 'error' => 'Compte inconnu.', 'envoi' => null];
     }
     if ($taille <= 0) {
-        return ['ok' => false, 'error' => 'Le fichier est vide.', 'envoi' => null];
+        return ['ok' => false, 'error' => 'Le fichier est vide (0 octet) : il n’y a rien à envoyer. '
+            . 'Choisissez un fichier complet puis recommencez.', 'envoi' => null];
     }
     if ($taille > $reglages['max_octets']) {
         return [
             'ok'    => false,
             'error' => 'Fichier trop volumineux : ' . format_size($taille)
-                . ' pour un maximum de ' . format_size($reglages['max_octets']) . '.',
+                . ' pour un maximum de ' . format_size($reglages['max_octets']) . '. '
+                . 'Réduisez sa taille — par exemple en le convertissant en MP4 — puis recommencez.',
             'envoi' => null,
         ];
     }
     if ($ext === '' || !in_array($ext, allowed_extensions(), true)) {
         return [
             'ok'    => false,
-            'error' => 'Extension non autorisée (' . ($ext !== '' ? $ext : 'aucune')
-                . '). Extensions acceptées : ' . implode(', ', allowed_extensions()) . '.',
+            'error' => 'Extension non autorisée (' . ($ext !== '' ? $ext : 'aucune') . '). '
+                . 'Vous pouvez envoyer des photos (JPG, PNG), des vidéos (MP4, MOV, AVI…), '
+                . 'des sons (MP3, M4A…) et des documents (PDF, DOCX…). '
+                . 'Convertissez votre fichier dans l’un de ces formats puis recommencez.',
             'envoi' => null,
         ];
     }
@@ -895,12 +899,10 @@ function envoi_verifier_contenu(string $chemin, string $ext): array
 
     $finfo = new finfo(FILEINFO_MIME_TYPE);
     $mime  = (string) $finfo->file($chemin);
-    $map   = mime_map();
-    $connus = $map[$ext] ?? [];
 
-    if ($connus !== [] && !in_array($mime, $connus, true)) {
-        $resultat['error'] = 'Le contenu du fichier ne correspond pas à son extension (type détecté : '
-            . ($mime !== '' ? $mime : 'inconnu') . ').';
+    $controle = verifier_contenu_fichier($chemin, $ext, $mime);
+    if (!$controle['ok']) {
+        $resultat['error'] = $controle['error'];
         return $resultat;
     }
 

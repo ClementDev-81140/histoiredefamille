@@ -185,7 +185,7 @@
             var tache = this.creerTache(fichier);
 
             if (fichier.size <= 0) {
-                this.signalerErreur(tache, 'Ce fichier est vide.');
+                this.signalerErreur(tache, 'Le fichier est vide (0 octet) : il n’y a rien à envoyer. Choisissez un fichier complet puis recommencez.');
                 continue;
             }
             if (this.album && this.types.length) {
@@ -199,7 +199,8 @@
             }
             if (fichier.size > this.tailleMax) {
                 this.signalerErreur(tache, 'Fichier trop gros : ' + octets(fichier.size)
-                    + ' pour un maximum de ' + octets(this.tailleMax) + '.');
+                    + ' pour un maximum de ' + octets(this.tailleMax)
+                    + '. Réduisez sa taille — par exemple en le convertissant en MP4 — puis recommencez.');
                 continue;
             }
             if (this.reprendre && (fichier.name !== this.reprendreNom || fichier.size !== this.reprendreTaille)) {

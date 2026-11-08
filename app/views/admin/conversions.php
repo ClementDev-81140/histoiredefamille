@@ -213,6 +213,15 @@ $derniereDate = isset($derniere['t']) && (int) $derniere['t'] > 0
             Réglable dans <a href="/admin/reglages">Réglages</a>.</li>
         <li><strong>En cas d’échec</strong> : trois essais, puis le fichier d’origine
             reste servi tel quel. « Relancer » remet le travail dans la file.</li>
+        <li><strong>Patience</strong> : sur le Raspberry Pi, convertir une grosse vidéo
+            (100 Mo, une archive de caméscope…) peut prendre de longues minutes,
+            parfois plus d’une heure. Ce n’est pas un blocage : l’envoi, la fiche et
+            le site restent utilisables, et la famille verra la vidéo dès que la
+            conversion sera terminée.</li>
+        <li><strong>Marques de fichiers</strong> : une vieille vidéo dont le conteneur
+            annonce « que du son » (marque M4A) est acceptée si elle contient bien
+            une image ; si le fichier ne contient que du son, il est refusé à
+            l’envoi avec l’explication, ou marqué ici « sans image vidéo ».</li>
         <li>Les conversions terminées depuis plus de 90 jours sont effacées de cette
             liste (les fichiers, eux, restent dans les fiches).</li>
     </ul>

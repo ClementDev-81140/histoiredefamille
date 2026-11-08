@@ -75,6 +75,9 @@ return [
             'mp4', 'm4v',
             'docx', 'xlsx', 'odt', 'ods',
             'mp3', 'm4a', 'ogg',
+            // Vidéos d'archives (converties en MP4) et sons.
+            'mov', 'avi', 'mkv', 'webm', '3gp', '3g2', 'mpg', 'mpeg',
+            'mts', 'm2ts', 'wmv', 'flv', 'vob', 'wav', 'amr', 'aac', 'flac',
         ],
 
         // Sécurité mémoire (le Pi 3B+ n'a que 1 Go de RAM) : au-delà de ce

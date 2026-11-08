@@ -101,12 +101,36 @@ function allowed_extensions(): array
  */
 function extensions_video(): array
 {
-    return ['mp4', 'm4v', 'mov', 'avi', 'mkv', 'webm', '3gp'];
+    return ['mp4', 'm4v', 'mov', '3gp', '3g2', 'mkv', 'avi', 'mpg', 'mpeg',
+        'mts', 'm2ts', 'wmv', 'flv', 'vob', 'webm'];
 }
 
-/** Correspondance extension → types MIME acceptés (vérification du type réel). */
+/** Extensions qui désignent un son. */
+function extensions_audio(): array
+{
+    return ['mp3', 'm4a', 'ogg', 'wav', 'amr', 'aac', 'flac'];
+}
+
+/**
+ * Correspondance extension → types MIME acceptés (vérification du type réel).
+ *
+ * Pour les conteneurs vidéo et audio, on raisonne en **familles** : un même
+ * conteneur peut être annoncé sous plusieurs types selon la marque écrite
+ * dans le fichier (un MP4 dont la marque est « M4A » est détecté
+ * `audio/mp4` alors qu'il contient une vraie piste vidéo — c'était le refus
+ * à tort de la 1.35.1). La famille dit quels types sont *possibles* pour ce
+ * conteneur ; quand ffprobe est là, la présence réelle d'une piste vidéo
+ * tranche (voir verifier_contenu_fichier()). Aucun type « passe-partout »
+ * n'est admis : un exécutable, un script, un PDF ou une archive renommés
+ * gardent leur type réel, qui n'est dans aucune famille.
+ */
 function mime_map(): array
 {
+    // Famille MP4 / QuickTime / 3GPP : mêmes boîtes ISO, marques différentes
+    // (isom, mp42, M4A, qt, 3gp4…), types détectés variables.
+    $familleMp4 = ['video/mp4', 'audio/mp4', 'audio/x-m4a', 'video/quicktime',
+        'video/x-m4v', 'video/3gpp', 'audio/3gpp', 'application/mp4'];
+
     return [
         'pdf'  => ['application/pdf'],
         'txt'  => ['text/plain'],
@@ -115,26 +139,115 @@ function mime_map(): array
         'png'  => ['image/png'],
         'webp' => ['image/webp'],
         'gif'  => ['image/gif'],
-        'mp4'  => ['video/mp4', 'application/mp4'],
-        'm4v'  => ['video/mp4', 'video/x-m4v', 'application/mp4'],
-        // Formats vidéo à convertir en MP4 : le type réel est toujours vérifié.
-        'mov'  => ['video/quicktime'],
-        'avi'  => ['video/x-msvideo', 'video/avi', 'video/vnd.avi'],
-        'mkv'  => ['video/x-matroska'],
-        'webm' => ['video/webm'],
-        '3gp'  => ['video/3gpp'],
+        'mp4'  => $familleMp4,
+        'm4v'  => $familleMp4,
+        'mov'  => $familleMp4,
+        '3gp'  => $familleMp4,
+        '3g2'  => $familleMp4,
+        'mkv'  => ['video/x-matroska', 'video/matroska', 'application/x-matroska'],
+        'avi'  => ['video/x-msvideo', 'video/avi', 'video/vnd.avi', 'video/x-avi'],
+        'mpg'  => ['video/mpeg', 'video/mpg'],
+        'mpeg' => ['video/mpeg', 'video/mpg'],
+        'mts'  => ['video/mp2t'],
+        'm2ts' => ['video/mp2t'],
+        'wmv'  => ['video/x-ms-wmv', 'video/x-ms-asf', 'video/x-ms-wm', 'application/vnd.ms-asf'],
+        'flv'  => ['video/x-flv'],
+        'vob'  => ['video/mpeg', 'video/dvd'],
+        'webm' => ['video/webm', 'audio/webm'],
         'docx' => ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/zip', 'application/octet-stream'],
         'xlsx' => ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/zip', 'application/octet-stream'],
         'odt'  => ['application/vnd.oasis.opendocument.text', 'application/zip', 'application/octet-stream'],
         'ods'  => ['application/vnd.oasis.opendocument.spreadsheet', 'application/zip', 'application/octet-stream'],
         'mp3'  => ['audio/mpeg', 'audio/mp3'],
-        'm4a'  => ['audio/mp4', 'audio/x-m4a'],
-        'ogg'  => ['audio/ogg', 'application/ogg'],
-        // Formats que les navigateurs ne lisent pas : acceptés pour être
-        // convertis en M4A (AAC) par la file de conversion.
+        'm4a'  => ['audio/mp4', 'audio/x-m4a', 'audio/3gpp'],
+        'ogg'  => ['audio/ogg', 'application/ogg', 'video/ogg'],
+        // Formats que les navigateurs ne lisent pas toujours : acceptés pour
+        // être convertis en M4A (AAC) par la file de conversion.
         'wav'  => ['audio/wav', 'audio/x-wav', 'audio/wave', 'audio/vnd.wave'],
         'amr'  => ['audio/amr', 'audio/3gpp', 'audio/amr-nb'],
+        'aac'  => ['audio/aac', 'audio/x-aac'],
+        'flac' => ['audio/flac', 'audio/x-flac'],
     ];
+}
+
+/**
+ * Message simple quand le contenu réel ne correspond pas à l'extension.
+ * Le détail technique (type détecté) va au journal, pas à l'écran : la
+ * personne qui envoie a besoin de savoir **quoi faire**, pas un nom de type.
+ */
+function message_contenu_refuse(string $ext): string
+{
+    $extension = '.' . mb_strtoupper($ext, 'UTF-8');
+    if (in_array($ext, extensions_video(), true)) {
+        return 'Ce fichier a l’extension ' . $extension . ' mais son contenu réel n’est pas celui d’une vidéo. '
+            . 'Vérifiez que c’est bien le bon fichier ; s’il s’agit d’un autre format, '
+            . 'convertissez-le en MP4 (H.264) puis recommencez.';
+    }
+    if (in_array($ext, extensions_audio(), true)) {
+        return 'Ce fichier a l’extension ' . $extension . ' mais son contenu réel n’est pas celui d’un son. '
+            . 'Vérifiez que c’est bien le bon fichier ; sinon, convertissez-le en MP3 ou M4A puis recommencez.';
+    }
+    if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif'], true)) {
+        return 'Ce fichier a l’extension ' . $extension . ' mais son contenu réel n’est pas celui d’une photo. '
+            . 'Vérifiez que c’est bien le bon fichier puis recommencez.';
+    }
+    return 'Ce fichier a l’extension ' . $extension . ' mais son contenu réel ne correspond pas à ce format. '
+        . 'Vérifiez que c’est bien le bon fichier puis recommencez.';
+}
+
+/**
+ * Vérifie le contenu réel d'un fichier : type détecté dans la famille de
+ * l'extension, et — quand ffprobe est disponible — pistes réellement
+ * présentes pour les vidéos et les sons.
+ *
+ * @return array{ok:bool, error:string, mime:string, detail:string}
+ */
+function verifier_contenu_fichier(string $chemin, string $ext, string $mime): array
+{
+    $resultat = ['ok' => false, 'error' => '', 'mime' => $mime, 'detail' => ''];
+    $map = mime_map();
+    $connus = $map[$ext] ?? [];
+
+    if ($connus !== [] && !in_array($mime, $connus, true)) {
+        $resultat['detail'] = 'type détecté : ' . ($mime !== '' ? $mime : 'inconnu')
+            . ' pour l’extension .' . $ext;
+        error_log('Envoi refusé — ' . $resultat['detail'] . ' (' . basename($chemin) . ')');
+        $resultat['error'] = message_contenu_refuse($ext);
+        return $resultat;
+    }
+
+    // Le conteneur est le bon : reste à savoir ce qu'il contient vraiment.
+    if (function_exists('conversion_sonder_media')
+        && (in_array($ext, extensions_video(), true) || in_array($ext, extensions_audio(), true))) {
+        $sonde = conversion_sonder_media($chemin);
+        if ($sonde !== null) {
+            $resultat['detail'] = 'pistes — vidéo : ' . ($sonde['video'] ? ($sonde['codec_video'] ?? 'oui') : 'aucune')
+                . ', son : ' . ($sonde['audio'] ? ($sonde['codec_audio'] ?? 'oui') : 'aucun');
+            if (in_array($ext, extensions_video(), true) && !$sonde['video']) {
+                error_log('Envoi refusé (son seul sous extension vidéo) — ' . $resultat['detail']
+                    . ' (' . basename($chemin) . ')');
+                $resultat['error'] = $sonde['audio']
+                    ? 'Ce fichier a l’extension .' . mb_strtoupper($ext, 'UTF-8')
+                        . ' mais le site n’y a trouvé que du son. S’il contient bien une vidéo, '
+                        . 'convertissez-la en MP4 (H.264) puis recommencez.'
+                    : 'Ce fichier a l’extension .' . mb_strtoupper($ext, 'UTF-8')
+                        . ' mais le site n’y a trouvé ni image ni son utilisable. Il est peut-être '
+                        . 'abîmé ou incomplet : convertissez-le en MP4 (H.264) puis recommencez.';
+                return $resultat;
+            }
+            if (in_array($ext, extensions_audio(), true) && $sonde['video']) {
+                error_log('Envoi refusé (vidéo sous extension audio) — ' . $resultat['detail']
+                    . ' (' . basename($chemin) . ')');
+                $resultat['error'] = 'Ce fichier a l’extension .' . mb_strtoupper($ext, 'UTF-8')
+                    . ' mais il contient une image de vidéo. Pour l’envoyer comme vidéo, '
+                    . 'renommez-le en .MP4 ; pour n’en garder que le son, convertissez-le en MP3 ou M4A.';
+                return $resultat;
+            }
+        }
+    }
+
+    $resultat['ok'] = true;
+    return $resultat;
 }
 
 /** Taille maximale d'envoi en octets (limitée aussi par php.ini). */
@@ -212,11 +325,13 @@ function validate_uploaded_file(array $file): array
 
     $size = (int) $file['size'];
     if ($size <= 0) {
-        $result['error'] = 'Le fichier est vide.';
+        $result['error'] = 'Le fichier est vide (0 octet) : il n’y a rien à envoyer. '
+            . 'Choisissez un fichier complet puis recommencez.';
         return $result;
     }
     if ($size > upload_max_bytes()) {
-        $result['error'] = 'Fichier trop volumineux (maximum ' . format_size(upload_max_bytes()) . ').';
+        $result['error'] = 'Fichier trop volumineux (maximum ' . format_size(upload_max_bytes()) . '). '
+            . 'Réduisez sa taille — par exemple en le convertissant — puis recommencez.';
         return $result;
     }
 
@@ -224,8 +339,10 @@ function validate_uploaded_file(array $file): array
     $ext      = strtolower(pathinfo($original, PATHINFO_EXTENSION));
 
     if ($ext === '' || !in_array($ext, allowed_extensions(), true)) {
-        $result['error'] = 'Extension non autorisée. Extensions acceptées : '
-            . implode(', ', allowed_extensions()) . '.';
+        $result['error'] = 'Extension non autorisée (' . ($ext !== '' ? $ext : 'aucune') . '). '
+            . 'Vous pouvez envoyer des photos (JPG, PNG), des vidéos (MP4, MOV, AVI…), '
+            . 'des sons (MP3, M4A…) et des documents (PDF, DOCX…). '
+            . 'Convertissez votre fichier dans l’un de ces formats puis recommencez.';
         return $result;
     }
 
@@ -236,12 +353,10 @@ function validate_uploaded_file(array $file): array
 
     $finfo = new finfo(FILEINFO_MIME_TYPE);
     $mime  = (string) $finfo->file($file['tmp_name']);
-    $map   = mime_map();
-    $known = $map[$ext] ?? [];
 
-    if ($known !== [] && !in_array($mime, $known, true)) {
-        $result['error'] = 'Le contenu du fichier ne correspond pas à son extension (type détecté : '
-            . ($mime !== '' ? $mime : 'inconnu') . ').';
+    $controle = verifier_contenu_fichier((string) $file['tmp_name'], $ext, $mime);
+    if (!$controle['ok']) {
+        $result['error'] = $controle['error'];
         return $result;
     }
 
@@ -275,15 +390,16 @@ function validate_local_file(string $path): array
 
     $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
     if ($ext === '' || !in_array($ext, allowed_extensions(), true)) {
-        $result['error'] = 'Extension non autorisée (' . ($ext !== '' ? $ext : 'aucune') . ').';
+        $result['error'] = 'Extension non autorisée (' . ($ext !== '' ? $ext : 'aucune') . '). '
+            . 'Convertissez le fichier dans un format accepté (MP4, MOV, MP3, PDF…) puis recommencez.';
         return $result;
     }
 
     $finfo = new finfo(FILEINFO_MIME_TYPE);
     $mime  = (string) $finfo->file($path);
-    $map   = mime_map();
-    if (isset($map[$ext]) && !in_array($mime, $map[$ext], true)) {
-        $result['error'] = 'Type réel non conforme (' . $mime . ').';
+    $controle = verifier_contenu_fichier($path, $ext, $mime);
+    if (!$controle['ok']) {
+        $result['error'] = $controle['error'];
         return $result;
     }
 

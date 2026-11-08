@@ -199,6 +199,22 @@ function conversion_executer(array $travail, array $reglages): bool|string|null
 
     $duree = conversion_duree($source, $reglages['ffprobe']);
     $audio = conversion_est_audio($doc);
+
+    // Une « vidéo » sans image ne deviendra jamais une vidéo : inutile de
+    // lancer ffmpeg trois fois, on le dit tout de suite, en français simple.
+    if (!$audio) {
+        $sonde = conversion_sonder_media($source);
+        if ($sonde !== null && !$sonde['video']) {
+            $message = $sonde['audio']
+                ? 'Ce fichier ne contient pas d’image vidéo : le site n’y a trouvé que du son. '
+                    . 'Il ne peut donc pas être converti en vidéo ; le fichier d’origine est conservé.'
+                : 'Ce fichier ne contient ni image ni son lisible : il est peut-être abîmé ou incomplet. '
+                    . 'Le fichier d’origine est conservé.';
+            conversion_inconvertible($id, $message);
+            echo '  ! ', $message, "\n";
+            return false;
+        }
+    }
     if ($duree !== null) {
         echo '  durée : ', conversion_duree_lisible($duree), "\n";
     }

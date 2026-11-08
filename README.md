@@ -1290,7 +1290,17 @@ Deux façons, selon la taille du fichier :
 1. **Administration → Vidéos → Ajouter une vidéo**.
 2. Choisir le fichier — MP4, mais aussi le MOV d'un téléphone, un AVI, un MKV
    ou un WebM : tout format que les navigateurs ne lisent pas partout est
-   converti automatiquement en MP4 (H.264 + AAC) après l'envoi. Saisir ensuite
+   converti automatiquement en MP4 (H.264 + AAC) après l'envoi. Depuis la
+   1.35.1, une vidéo d'archive dont le conteneur annonce « que du son »
+   (marque M4A dans un fichier .MP4) n'est plus refusée : le site regarde
+   les pistes réelles quand ffprobe est là, et sinon la famille du
+   conteneur (MP4/QuickTime/3GP, MKV, AVI, MPEG, MPEG-TS, WMV, FLV, VOB…)
+   suffit à accepter, la conversion tranchant ensuite. Un fichier qui ne
+   contient que du son sous une extension vidéo est refusé avec
+   l'explication et quoi faire. Les formats peu courants acceptés
+   (.mov, .avi, .wmv, .mkv, .mpg, .mts, .flv, .3gp, .vob…) entrent dans la
+   file de conversion ; un MP4 déjà en H.264 + AAC n'y entre pas — un MP4
+   en HEVC, si, quand ffprobe peut le vérifier. Saisir ensuite
    un titre, éventuellement une description, une date, une durée, une catégorie.
 3. Cocher **Mettre en avant** pour la placer en tête de l'onglet Vidéos,
    et régler l'**ordre d'affichage** (0 = pas de classement).

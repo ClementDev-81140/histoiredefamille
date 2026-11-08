@@ -234,6 +234,96 @@ function conversion_outils_forcer(?array $outils): void
 }
 
 /**
+ * Sonde un fichier média avec ffprobe : quelles pistes contient-il vraiment ?
+ *
+ * C'est elle qui tranche le cas de la 1.35.1 : un MP4 à marque « M4A » est
+ * annoncé `audio/mp4` par la signature, mais s'il a une piste vidéo, c'est
+ * une vidéo. Rend null quand on ne sait pas (pas de ffprobe, pas de
+ * proc_open, sortie illisible) : l'appelant retombe alors sur la signature
+ * du conteneur, sans rien inventer.
+ *
+ * @return array{video:bool, audio:bool, codec_video:?string, codec_audio:?string}|null
+ */
+function conversion_sonder_media(string $chemin): ?array
+{
+    $forcee = $GLOBALS['hdf_sonde_media'] ?? null;
+    if (is_callable($forcee)) {
+        $resultat = $forcee($chemin);
+        return is_array($resultat) ? $resultat : null;
+    }
+
+    $outils = conversion_outils();
+    if ($outils['ffprobe'] === null || !function_exists('proc_open') || !is_file($chemin)) {
+        return null;
+    }
+
+    $commande = [
+        $outils['ffprobe'], '-v', 'error',
+        '-show_entries', 'stream=codec_type,codec_name',
+        '-of', 'csv=p=0',
+        $chemin,
+    ];
+    $descripteurs = [0 => ['file', '/dev/null', 'r'], 1 => ['pipe', 'w'], 2 => ['file', '/dev/null', 'w']];
+    $processus = @proc_open($commande, $descripteurs, $tuyaux);
+    if (!is_resource($processus)) {
+        return null;
+    }
+    $sortie = '';
+    if (isset($tuyaux[1]) && is_resource($tuyaux[1])) {
+        $sortie = (string) stream_get_contents($tuyaux[1]);
+        @fclose($tuyaux[1]);
+    }
+    $code = proc_close($processus);
+    if ($code !== 0) {
+        return null;
+    }
+
+    return conversion_interpreter_sonde($sortie);
+}
+
+/**
+ * Lit la sortie CSV de ffprobe (« video,h264 » par ligne). Fonction pure :
+ * sans piste du tout, le fichier n'a rien de lisible — ce n'est pas « on ne
+ * sait pas », c'est une réponse (false/false) ; une sortie vide ou illisible
+ * rend null.
+ *
+ * @return array{video:bool, audio:bool, codec_video:?string, codec_audio:?string}|null
+ */
+function conversion_interpreter_sonde(string $sortie): ?array
+{
+    $resultat = ['video' => false, 'audio' => false, 'codec_video' => null, 'codec_audio' => null];
+    $vu = false;
+    foreach (preg_split('/\R/', $sortie) ?: [] as $ligne) {
+        $ligne = trim($ligne);
+        if ($ligne === '') {
+            continue;
+        }
+        // ffprobe écrit « codec_type,codec_name » (l'ordre peut varier selon
+        // la version : on repère le mot connu des deux côtés).
+        $morceaux = array_map('trim', explode(',', $ligne));
+        foreach (['video', 'audio'] as $type) {
+            if (in_array($type, $morceaux, true)) {
+                $codec = $morceaux[0] === $type ? ($morceaux[1] ?? null) : $morceaux[0];
+                $resultat[$type] = true;
+                $resultat['codec_' . $type] = $codec !== '' && $codec !== null ? strtolower($codec) : null;
+                $vu = true;
+            }
+        }
+    }
+    return $vu ? $resultat : null;
+}
+
+/** Impose une sonde d'essai (tests seulement, comme conversion_outils_forcer). */
+function conversion_sonde_forcer(?callable $sonde): void
+{
+    if ($sonde === null) {
+        unset($GLOBALS['hdf_sonde_media']);
+        return;
+    }
+    $GLOBALS['hdf_sonde_media'] = $sonde;
+}
+
+/**
  * Cette fiche a-t-elle besoin d'être convertie ?
  *
  * Un MP4 déjà en H.264 est laissé tel quel : le convertir à nouveau
@@ -251,9 +341,27 @@ function conversion_necessaire(array $doc): bool
     $mime = strtolower((string) ($doc['mime'] ?? ''));
 
     if ((string) ($doc['kind'] ?? '') === 'video') {
-        // Un MP4 en H.264 est laissé tel quel : le reconvertir abîmerait
-        // l'image (double encodage) et ne ferait gagner que des octets.
-        return !(in_array($ext, ['mp4', 'm4v'], true) && $mime === 'video/mp4');
+        // Un MP4 en H.264 + AAC est laissé tel quel : le reconvertir
+        // abîmerait l'image (double encodage) et ne ferait gagner que des
+        // octets. Les autres conteneurs passent toujours par la file.
+        $conforme = in_array($ext, ['mp4', 'm4v'], true)
+            && in_array($mime, ['video/mp4', 'application/mp4'], true);
+        if (!$conforme) {
+            return true;
+        }
+        // Le conteneur dit « MP4 », reste le codec : un MP4 en HEVC (ou sans
+        // AAC) ne se lit pas partout. Quand ffprobe est là, il tranche ;
+        // sans lui, on laisse le MP4 tel quel, comme avant.
+        $rel = (string) ($doc['rel_path'] ?? '');
+        if ($rel !== '' && is_file(storage_absolute($rel))) {
+            $sonde = conversion_sonder_media(storage_absolute($rel));
+            if ($sonde !== null && $sonde['video']) {
+                $videoOk = $sonde['codec_video'] === 'h264';
+                $audioOk = !$sonde['audio'] || $sonde['codec_audio'] === 'aac';
+                return !($videoOk && $audioOk);
+            }
+        }
+        return false;
     }
 
     // Témoignages et recettes : un WAV ou un AMR n'est lu par aucun navigateur.
@@ -481,6 +589,24 @@ function conversion_echouer(int $id, string $message): void
         'UPDATE conversions SET state = ?, message = ?, progress = 0, updated_at = ?, finished_at = ?
          WHERE id = ?',
         [$etat, $message, time(), $etat === 'echec' ? time() : null, $id]
+    );
+}
+
+/**
+ * Échec définitif, sans nouvel essai : le fichier lui-même ne changera pas
+ * (par exemple aucune piste vidéo dans une « vidéo »). Le message reste en
+ * français simple : c'est celui de l'état de conversion de la fiche.
+ */
+function conversion_inconvertible(int $id, string $message): void
+{
+    $ligne = conversion_par_id($id);
+    if ($ligne === null) {
+        return;
+    }
+    db_exec(
+        'UPDATE conversions SET state = ?, message = ?, progress = 0, updated_at = ?, finished_at = ?
+         WHERE id = ?',
+        ['echec', mb_substr(trim($message), 0, 500, 'UTF-8'), time(), time(), $id]
     );
 }
 

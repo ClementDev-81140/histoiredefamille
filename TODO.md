@@ -3,6 +3,28 @@
 Ce fichier liste ce qui reste à faire, classé par priorité. Il n'y a pas de
 suivi automatique : cochez au fur et à mesure.
 
+## Fait (2026-11-08, 1.35.1 — vidéos d'archives refusées à tort)
+
+- [x] **Cause** : correspondance extension→type trop stricte (`audio/mp4`
+  refusé pour `.mp4`) dans `mime_map()` et les trois validations.
+- [x] **Familles de conteneurs** (MP4/QT/3GP, MKV, AVI, MPEG, TS, WMV, FLV,
+  VOB, WebM) + extensions ajoutées : 3g2, mpg, mpeg, mts, m2ts, wmv, flv,
+  vob, aac, flac. Aucun passe-partout : exe/script/PDF/archive toujours refusés.
+- [x] **Sonde ffprobe** (`conversion_sonder_media`) : piste vidéo réelle
+  quand l'outil est là ; son pur sous extension vidéo refusé avec la phrase
+  simple ; sans ffprobe, la famille suffit et la conversion décide
+  (« sans image vidéo », échec définitif).
+- [x] **Conversion** : MP4 HEVC (ou sans AAC) sondé → file ; H.264+AAC → rien ;
+  tous les formats peu courants en file ; page Conversions : patience 100 Mo.
+- [x] **Messages simples** serveur et JS (contenu, extension, taille, vide) ;
+  le détail technique part au journal.
+- [x] **Essais** : envoi 150/150, conversion 142/142 ; suite 1 569/1 570
+  (échec « arbre » = artefact de banc connu, famille seule 87/87).
+- [x] **Navigateur réel** : `actions-envoi-media.mjs`, 7 contrôles à 1 280 et
+  390 px ; captures `docs/captures/envoi-*`. **À vérifier sur le Pi** : une
+  vraie conversion ffmpeg d'une archive (le bac à sable n'a pas ffmpeg),
+  et la sonde sur un vrai fichier du caméscope.
+
 ## Fait (2026-11-08, 1.35.0 — exploration de l'arbre, parenté lisible)
 
 - [x] **Barre d'outils « Exploration de l'arbre »** : zoom 25–250 % avec le
