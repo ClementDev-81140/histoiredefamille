@@ -22,21 +22,12 @@
 $pagesTotal = (int) ($pagination['pages'] ?? 1);
 $groupes    = count($itemsPubliques) > 6 ? une_publique_groupes($itemsPubliques) : [];
 ?>
-<section class="une-intro">
-    <?php if ($phraseAccueil !== ''): ?>
-        <p class="une-intro__phrase"><?= e($phraseAccueil) ?></p>
-    <?php endif; ?>
-
-    <?php /* La porte d'entrée de la famille, dans le premier écran : c'est la
-             seule chose que la page demande au visiteur. */ ?>
-    <p class="actions actions--portes">
-        <a class="bouton bouton--accent bouton--large bouton--porte" href="/connexion">Se connecter</a>
-    </p>
-</section>
+<?php /* 1.33.1 : plus de phrase ni de gros bouton en tête de page. « Se connecter »
+         est déjà dans le menu ; la page commence directement par la une. */ ?>
 
 <?php if ($unePublique === null): ?>
     <?php /* Aucun contenu public : une Une sobre, sans bloc vide ni rubrique
-             fantôme. La phrase, le bouton et les deux adresses suffisent. */ ?>
+             fantôme. Le bouton et les deux adresses suffisent. */ ?>
     <section class="section une-vide">
         <div class="section__entete">
             <h2>Le journal paraîtra bientôt</h2>

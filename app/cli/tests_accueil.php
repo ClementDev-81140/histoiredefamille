@@ -70,11 +70,10 @@ function tests_accueil_public(): void
     );
 
     // « Se connecter » est la porte mise en avant : elle porte la classe
-    // d'accent, dans l'en-tête comme dans le corps de la page.
+    // d'accent, dans l'en-tête (1.33.1 : plus de gros bouton dans le corps).
     verifier(
         'accueil public : « Se connecter » est mise en avant (classe d’accent)',
         str_contains((string) $accueil['corps'], 'nav__accent--connexion')
-            && str_contains((string) $accueil['corps'], 'bouton--accent')
     );
 
     // La porte de connexion est aussi la plus grande des deux (feuille de
@@ -82,8 +81,7 @@ function tests_accueil_public(): void
     $css = (string) @file_get_contents(HDF_ROOT . '/public/assets/style.css');
     verifier(
         'accueil public : la porte « Se connecter » est le plus grand bouton de la page',
-        str_contains((string) $accueil['corps'], 'bouton--porte')
-            && preg_match('/\.bouton--porte\s*\{[^}]*font-size:\s*1\.15rem/', $css) === 1
+        preg_match('/\.bouton--porte\s*\{[^}]*font-size:\s*1\.15rem/', $css) === 1
             // La règle doit venir APRÈS le bouton de base, sinon celui-ci
             // (0,74 rem) l'emporte : le test le vérifie sur la feuille.
             && strpos($css, '.bouton--porte') > strpos($css, "\n.bouton {")
@@ -471,10 +469,10 @@ function tests_accueil_une(): void
     // d'accueil et la porte « Se connecter », rien de la page connectée.
     $visiteur = tests_envoi_requete('GET', '/', null);
     verifier(
-        'accueil public : le visiteur voit la phrase et la porte « Se connecter »',
-        str_contains((string) $visiteur['corps'], 'une-intro__phrase')
-            && str_contains((string) $visiteur['corps'], 'actions--portes')
-            && str_contains((string) $visiteur['corps'], 'bouton--porte')
+        'accueil public : le visiteur ne voit ni phrase ni gros bouton en tête (menu seul)',
+        !str_contains((string) $visiteur['corps'], 'une-intro')
+            && !str_contains((string) $visiteur['corps'], 'bouton--porte')
+            && str_contains((string) $visiteur['corps'], 'href="/connexion"')
             && !str_contains((string) $visiteur['corps'], 'hero__chiffres'),
         'la vitrine du visiteur a changé'
     );
