@@ -37,7 +37,7 @@ $filtreActif = $q !== '' || $visibility !== '' || ($filtreCategorie ?? 0) > 0;
     </div>
     <?php if ($filtreCategories !== []): ?>
         <div class="champ">
-            <label for="categorie">Catégorie</label>
+            <label for="categorie">Thème</label>
             <select id="categorie" name="categorie">
                 <option value="0">Toutes</option>
                 <?php foreach ($filtreCategories as $categorieFiltre): ?>
@@ -185,7 +185,7 @@ $filtreActif = $q !== '' || $visibility !== '' || ($filtreCategorie ?? 0) > 0;
                 </fieldset>
 
                 <?php
-                // Catégories (1.32.0) : plusieurs choix, celles prévues pour
+                // Thèmes (1.32.0) : plusieurs choix, ceux prévus pour
                 // les vidéos seulement.
                 $kindCategorie   = 'video';
                 $categoriesCases = categories_pour_kinds([$kindCategorie]);

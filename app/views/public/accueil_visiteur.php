@@ -67,9 +67,10 @@ $groupes    = count($itemsPubliques) > 6 ? une_publique_groupes($itemsPubliques)
 
             <div class="une-grande__texte">
                 <p class="une-grande__meta">
-                    <span class="une-grande__rubrique"><?= e($unePublique['rubrique']) ?></span>
+                    <span class="une-grande__rubrique"><?= e(($unePublique['themes'] ?? []) !== [] ? implode(' · ', $unePublique['themes']) : $unePublique['rubrique']) ?></span>
                     <span class="discret"><?= e($unePublique['date_texte']) ?></span>
-                    <span class="discret"><?= e($unePublique['genre']) ?></span>
+                    <?php $genreGrande = ($unePublique['themes'] ?? []) !== [] ? (string) ($unePublique['genre'] ?? '') : une_genre_affiche($unePublique); ?>
+                    <?php if ($genreGrande !== ''): ?><span class="discret"><?= e($genreGrande) ?></span><?php endif; ?>
                 </p>
                 <h3 class="une-grande__titre">
                     <a href="<?= e($unePublique['url']) ?>"><?= e($unePublique['titre']) ?></a>

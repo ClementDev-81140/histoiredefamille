@@ -203,7 +203,8 @@ function envoi_creer(
     string $mime = '',
     bool $creerFiche = true,
     ?int $libre = null,
-    ?int $albumId = null
+    ?int $albumId = null,
+    bool $archive = false
 ): array {
     $reglages = envoi_reglages();
     $nom      = envoi_nom_propre($nom);
@@ -287,6 +288,8 @@ function envoi_creer(
         'state'         => 'en_cours',
         'creer_fiche'   => $creerFiche ? 1 : 0,
         'album_id'      => $album !== null ? (int) $album['id'] : null,
+        // 1.36.0 : « Classer en archive », coché dès l'envoi par morceaux.
+        'archive'       => $archive ? 1 : 0,
         'created_at'    => $maintenant,
         'updated_at'    => $maintenant,
     ]);
@@ -709,6 +712,8 @@ function envoi_creer_document(array $envoi, array $donnees): int
         // Sans album, la visibilité reste privée : rien n'est publié tant que
         // l'administrateur ne l'a pas validé explicitement.
         'visibility'    => $visibilite,
+        'est_archive'   => (int) ($envoi['archive'] ?? 0) === 1 ? 1 : 0,
+        'dossier_id'    => null,
         'kind'          => $album !== null ? 'photo' : (string) $donnees['kind'],
         'rel_path'      => (string) $donnees['rel_path'],
         'thumb_path'    => $donnees['thumb_path'] ?? null,

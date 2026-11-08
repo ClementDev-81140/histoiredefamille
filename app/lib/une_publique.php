@@ -89,7 +89,7 @@ function une_publique_sql(array &$params): string
                d.created_at AS tri,
                COALESCE(NULLIF(TRIM(d.doc_date), ''), '') AS date_texte
           FROM documents d
-         WHERE d.is_attachment = 0 AND {$documents}
+         WHERE d.is_attachment = 0 AND d.est_archive = 0 AND {$documents}
 
         UNION ALL
         SELECT 'recettes' AS type, r.id AS id, r.title AS titre,
@@ -182,7 +182,7 @@ function une_publique_candidats(int $limite = 40): array
         SELECT CASE d.kind WHEN 'photo' THEN 'photos' WHEN 'video' THEN 'videos' ELSE 'documents' END,
                d.id, d.title, d.created_at
           FROM documents d
-         WHERE d.is_attachment = 0 AND d.visibility = 'public'
+         WHERE d.is_attachment = 0 AND d.est_archive = 0 AND d.visibility = 'public'
            AND " . conversion_pretes_sql('d') . " AND {$documents}
 
         UNION ALL
@@ -302,6 +302,22 @@ function une_publique_une(array $items = []): ?array
 }
 
 /**
+ * Le « genre » (type au singulier) à afficher en petit sur une carte de la
+ * une (1.36.0) : vide s'il répète la rubrique déjà montrée en surtitre
+ * (« Photos » en grand et « Photo » en petit, c'est deux fois le même mot).
+ */
+function une_genre_affiche(array $item): string
+{
+    $genre    = trim((string) ($item['genre'] ?? ''));
+    $rubrique = trim((string) ($item['rubrique'] ?? ''));
+    $norm = static fn (string $mot): string => mb_strtolower(rtrim($mot, 's'));
+    if ($genre === '' || $norm($genre) === $norm($rubrique)) {
+        return '';
+    }
+    return $genre;
+}
+
+/**
  * Met les lignes SQL en forme pour l'affichage : adresse, image, date, genre.
  *
  * Les adresses d'images ne sont produites que pour des documents visibles :
@@ -386,9 +402,21 @@ function une_publique_items(array $lignes): array
             $dateTexte = format_date($tri);
         }
 
+        // Thèmes du contenu (1.36.0) : le surtitre de la carte, quand il y
+        // en a un ; le type reste en petit dans les métadonnées.
+        $kindTheme = match ($type) {
+            'articles' => 'article',
+            'photos'   => 'photo',
+            'videos'   => 'video',
+            'documents' => 'document',
+            'recettes' => 'recipe',
+            default    => '',
+        };
+
         $items[] = [
             'type'       => $type,
             'rubrique'   => $libelles[$type] ?? 'Documents',
+            'themes'     => $kindTheme !== '' ? themes_noms_pour($kindTheme, $id) : [],
             'id'         => $id,
             'titre'      => (string) $ligne['titre'],
             'resume'     => text_summary((string) ($ligne['resume'] ?? ''), 200),

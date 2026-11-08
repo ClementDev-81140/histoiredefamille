@@ -234,7 +234,7 @@ function admin_envoi_init(): void
         }
     }
 
-    $resultat = envoi_creer($compte, $nom, $taille, $mime, $creer, null, $albumId > 0 ? $albumId : null);
+    $resultat = envoi_creer($compte, $nom, $taille, $mime, $creer, null, $albumId > 0 ? $albumId : null, post('archive') === '1');
     if (!$resultat['ok']) {
         json_response(['ok' => false, 'erreur' => $resultat['error'], 'code' => 'refus'], 400);
     }
@@ -518,7 +518,7 @@ function admin_envoi_creer_document(): void
 
     try {
         // Fiche privée, comme toujours : visibilité « prive », aucune
-        // catégorie, aucun album. C'est l'administrateur qui complétera.
+        // thème, aucun album. C'est l'administrateur qui complétera.
         $documentId = envoi_creer_document($envoi, $donnees);
     } catch (Throwable $e) {
         $documentId = 0;
@@ -540,8 +540,8 @@ function admin_envoi_creer_document(): void
     envoi_marquer_utilise($envoi, $documentId);
     set_content_branches('document', $documentId, []);
 
-    // Catégories cochées devant « Créer le document » (1.32.0). Elles ne
-    // concernent que les catégories prévues pour le type réel du fichier :
+    // Thèmes cochées devant « Créer le document » (1.32.0). Elles ne
+    // concernent que les thèmes prévus pour le type réel du fichier :
     // la fiche reste privée, seul le classement est posé.
     category_enregistrer((string) $envoi['kind'], (int) $documentId, categories_saisies());
 
@@ -616,7 +616,7 @@ function journaliser_envoi_termine(?array $envoi): void
 
 /**
  * Les documents récemment créés par un envoi de ce compte, et pas encore
- * complétés (visibilité encore privée et aucune catégorie choisie).
+ * complétés (visibilité encore privée et aucun thème choisie).
  *
  * @return array<int, array<string, mixed>>
  */
@@ -678,11 +678,11 @@ function admin_envoi_lot_save(): void
         form_fail(['Visibilité « Branches précises » : cochez au moins une branche.'], $old, '/admin/envoyer/lot');
     }
 
-    // Catégories du lot (1.32.0) : plusieurs, appliquées à chaque fichier.
+    // Thèmes du lot (1.32.0) : plusieurs, appliquées à chaque fichier.
     $categoriesLot = categories_saisies();
     foreach ($categoriesLot as $categorieLot) {
         if (find_category($categorieLot) === null) {
-            form_fail(['Une des catégories choisies n’existe pas.'], $old, '/admin/envoyer/lot');
+            form_fail(['Un des thèmes choisies n’existe pas.'], $old, '/admin/envoyer/lot');
         }
     }
     $categoryId = $categoriesLot[0] ?? null;
@@ -731,7 +731,7 @@ function admin_envoi_lot_save(): void
 
         set_content_branches('document', $id, $visFin === 'branches' ? $branches : []);
 
-        // Catégories du lot, filtrées par le type réel de chaque fiche.
+        // Thèmes du lot, filtrées par le type réel de chaque fiche.
         $kindFiche = $kind !== '' ? $kind : (string) $autorises[$id]['kind'];
         category_enregistrer(
             in_array($kindFiche, ['photo', 'video'], true) ? $kindFiche : 'document',

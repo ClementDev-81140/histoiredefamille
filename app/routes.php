@@ -20,6 +20,8 @@ require_once __DIR__ . '/controllers/admin.php';
 require_once __DIR__ . '/controllers/admin_apparence.php';
 require_once __DIR__ . '/controllers/admin_composition.php';
 require_once __DIR__ . '/controllers/admin_documents.php';
+require_once __DIR__ . '/controllers/admin_dossiers.php';
+require_once __DIR__ . '/controllers/dossiers.php';
 require_once __DIR__ . '/controllers/admin_branches.php';
 require_once __DIR__ . '/controllers/admin_comptes.php';
 require_once __DIR__ . '/controllers/admin_courriels.php';
@@ -257,6 +259,11 @@ route('POST', '/admin/recettes/{id}/supprimer', 'admin_recette_delete');
 route('GET', '/admin/export/gedcom', 'admin_export_gedcom');
 
 // Catégories
+route('GET', '/dossiers/{id}', 'public_dossier');
+route('GET', '/admin/dossiers', 'admin_dossiers');
+route('POST', '/admin/dossiers/nouveau', 'admin_dossier_create');
+route('POST', '/admin/dossiers/{id}/modifier', 'admin_dossier_update');
+route('POST', '/admin/dossiers/{id}/supprimer', 'admin_dossier_delete');
 route('GET', '/admin/categories', 'admin_categories');
 route('POST', '/admin/categories/nouvelle', 'admin_category_create');
 route('POST', '/admin/categories/{id}/modifier', 'admin_category_update');

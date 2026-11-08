@@ -50,6 +50,7 @@ $envoiOptions = [
     'titre'     => 'Déposer des fichiers',
     'aide'      => 'Chaque fichier arrive en privé : personne ne le voit tant que vous ne l’avez pas complété.',
     'reprendre' => $reprendre,
+    'archive'   => true,
 ];
 require __DIR__ . '/partials/envoi.php';
 ?>
@@ -92,7 +93,7 @@ require __DIR__ . '/partials/envoi.php';
                                     <input type="hidden" name="token" value="<?= e((string) $pret['token']) ?>">
                                     <?php if ($categoriesPret !== []): ?>
                                         <fieldset class="cases-categories">
-                                            <legend>Catégories</legend>
+                                            <legend>Thèmes</legend>
                                             <?php foreach ($categoriesPret as $categoriePret): ?>
                                                 <label class="case">
                                                     <input type="checkbox" name="categories[]" value="<?= (int) $categoriePret['id'] ?>">
@@ -170,7 +171,7 @@ require __DIR__ . '/partials/envoi.php';
     <h2>Ce qu’il faut savoir</h2>
     <ul class="liste-simple">
         <li>Un fichier envoyé est <strong>toujours privé</strong> au départ : vous choisissez
-            ensuite sa visibilité, sa catégorie et son album. « Créer le document » fait
+            ensuite sa visibilité, sa thème et son album. « Créer le document » fait
             naître la fiche tout de suite, en privé ; elle reste invisible pour la famille
             jusqu’à ce que vous la complétiez et choisissiez sa visibilité.</li>
         <li>Si le même fichier existe déjà sur le site, un message vous le dit avant

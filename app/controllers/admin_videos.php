@@ -30,7 +30,7 @@ function admin_videos(): void
         $params[':vis'] = $visibility;
     }
 
-    // Filtre « Catégorie » (1.32.0).
+    // Filtre « Thème » (1.32.0).
     $categorie = category_filtre_demande('video');
     if ($categorie > 0) {
         $where[] = category_where('d', $categorie, $params, "'video'");
@@ -97,6 +97,7 @@ function admin_video_form(array $params = []): void
         'video'         => $video,
         'categories'    => categories_list(),
         'categorieIds'  => $video !== null ? category_ids_pour('video', $id) : [],
+        'dossiers'      => dossiers_liste(),
         'branches'      => branches_list(true),
         'videoBranches' => $videoBranches,
         'tags'          => $tags,
@@ -128,7 +129,7 @@ function admin_video_save(array $params = []): void
         'title'         => post('title'),
         'description'   => post('description'),
         'doc_date'      => post('doc_date'),
-        // Catégories (1.32.0) : plusieurs par vidéo, conservées si le
+        // Thèmes (1.32.0) : plusieurs par vidéo, conservées si le
         // formulaire revient avec une erreur.
         'categories'    => array_map('intval', post_array('categories')),
         'visibility'    => sanitize_visibility(post('visibility')),
@@ -159,8 +160,8 @@ function admin_video_save(array $params = []): void
         $errors[] = 'Visibilité « Branches précises » : cochez au moins une branche.';
     }
 
-    // Une catégorie prévue pour un autre type est ignorée : la fiche vidéo ne
-    // peut pas recevoir la catégorie d'un article ou d'un album.
+    // Un thème prévue pour un autre type est ignorée : la fiche vidéo ne
+    // peut pas recevoir le thème d'un article ou d'un album.
     $categoriesRetenues = [];
     foreach ($old['categories'] as $candidat) {
         $categorieCandidat = find_category((int) $candidat);
@@ -232,7 +233,16 @@ function admin_video_save(array $params = []): void
 
     $docDate = $old['doc_date'] !== '' ? mb_substr($old['doc_date'], 0, 100) : null;
 
+    // 1.36.0 : archive et dossier, comme sur la fiche d'un document.
+    $estArchive = !empty($_POST['archive']);
+    $dossierId  = (int) post('dossier_id');
+    if ($dossierId > 0 && dossier_par_id($dossierId) === null) {
+        $dossierId = 0;
+    }
+
     $data = [
+        'est_archive'     => $estArchive ? 1 : 0,
+        'dossier_id'      => $estArchive && $dossierId > 0 ? $dossierId : null,
         'title'           => $title,
         'description'     => $old['description'] !== '' ? $old['description'] : null,
         'doc_date'        => $docDate,
@@ -281,7 +291,7 @@ function admin_video_save(array $params = []): void
     }
 
     category_enregistrer('video', $videoId, $categoriesRetenues);
-    // Catégories du type vidéo uniquement (1.32.0).
+    // Thèmes du type vidéo uniquement (1.32.0).
     $categoriesImport = [];
     foreach (array_map('intval', post_array('categories')) as $candidat) {
         $categorieCandidat = find_category($candidat);

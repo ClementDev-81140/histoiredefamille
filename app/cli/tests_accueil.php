@@ -122,7 +122,7 @@ function tests_accueil_public(): void
     $menuConnecte = array_column(menu_rubriques((array) current_account_compte($lecteur), []), 'libelle');
     verifier(
         'accueil connecté : le menu garde « Arbre » pour un compte connecté',
-        in_array('Arbre', $menuConnecte, true),
+        in_array('Arbre généalogique', $menuConnecte, true),
         implode(', ', $menuConnecte)
     );
 }

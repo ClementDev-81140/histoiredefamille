@@ -3,6 +3,72 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.36.0] — 2026-11-08
+
+### Vocabulaire — « Type » et « Thème »
+- Le mot « catégorie » disparaît de l'interface : ce qui décrivait un sujet
+  s'appelle désormais un **thème** (« Un thème regroupe des contenus de tous
+  types qui parlent du même sujet. »), et ce qu'est un contenu (Article,
+  Document, Photo, Vidéo, Recette, Témoignage-son) est son **type**, donné par
+  le contenu lui-même. Administration « Catégories » → « Thèmes ». Les
+  anciennes adresses `?categorie=` et `?categorie_id=` redirigent en 301 vers
+  `?theme=` ; les noms internes du code ne changent pas.
+- Cartes, une et fiches : chaque information une seule fois — le thème en
+  surtitre, le type en petit dans les métadonnées, sans répéter un mot déjà
+  visible. Les compteurs de thèmes ne comptent que les contenus visibles par
+  le compte connecté. Onglets de la recherche étiquetés par type.
+
+### Accueil — blocs seulement s'ils sont remplis
+- « Petites annonces » devient « **Anniversaires à venir** » (anniversaires
+  de naissance et de mariage des 30 prochains jours, jamais de décès,
+  personnes invisibles pour le compte exclues) ; « Édito » devient « **Le mot
+  de la famille** ». Les blocs annonces, accès, chiffres et nouveautés de
+  l'accueil de la famille n'apparaissent que remplis : bloc vide = ni titre,
+  ni cadre, ni phrase « rien à signaler ».
+
+### Archives discrètes et dossiers d'archives
+- Case « **Classer en archive** » (décochée par défaut) dans l'envoi par
+  morceaux, les formulaires d'un document et d'une vidéo (administration) et
+  les propositions des journalistes, avec la phrase : « Un document d'archive
+  n'apparaît pas à la une et ne prévient personne. On le retrouve dans les
+  dossiers d'archives et par la recherche. » Un document d'archive ne change
+  ni de visibilité ni de droits (privé par défaut) ; il n'apparaît jamais à
+  la une, jamais dans les nouveautés, jamais dans la gazette du mois, jamais
+  en notification ni en pastille. On le retrouve dans Documents (filtre
+  « Archives »), par la recherche, dans son album et dans son dossier. La
+  bascule journal ↔ archive reste possible à tout moment par la fiche.
+- **Dossiers d'archives** : un administrateur crée des dossiers (nom,
+  description facultative, personne de l'arbre facultative) depuis
+  Contenus → « Dossiers d'archives ». Un document d'archive se range dans
+  **un** dossier, à l'envoi ou plus tard, et se déplace librement. Page par
+  dossier listant le contenu selon les droits du compte ; un dossier sans
+  rien de visible pour un compte est invisible pour lui (ni nom, ni nombre,
+  réponse 404 identique à un dossier inexistant). Supprimer un dossier rend
+  ses documents « sans dossier », sans jamais les supprimer. La fiche d'une
+  personne liée propose ses dossiers, seulement ceux visibles pour le compte.
+  Aucune entrée « Archives » au menu principal : l'accès passe par Documents
+  (filtre et section « Archives et dossiers »). Une archive proposée par un
+  journaliste reste soumise à validation, privée et invisible avant.
+- Migration **023 en ajout seul** (table `dossiers`,
+  `documents.est_archive`, `documents.dossier_id`, `uploads.archive`) : tous
+  les documents existants restent « journal ». `install.sh` sauvegarde la
+  base avant migration : `git pull` + `install.sh` suffisent.
+
+### Menu principal
+- Renommages seuls (structure et règles par profil inchangées) : « Arbre
+  généalogique », « Témoignages (sons) », « Albums photos ». Une phrase
+  d'aide d'une ligne sous le titre des grandes pages (Articles, Documents,
+  Vidéos, Albums, Calendrier, Arbre, Recettes, Témoignages). Recherche et
+  Tchat inchangés.
+
+### Essais
+- Nouvelle famille `tests.php archives36` (23 essais : migration, exclusions
+  des vitrines, droits et non-fuite des dossiers, suppression sans perte,
+  proposition d'archive en attente, vocabulaire, menu). Matrice d'accès
+  régénérée : 206 routes, **0 anomalie**. Contrôle navigateur
+  `tools/navigateur/actions-136.mjs` : 35 contrôles × 4 (papier/bleu ×
+  1280/390 px), captures dans `docs/captures/navigateur-136-*`.
+
 ## [1.35.2] — 2026-11-08
 
 ### Modifié

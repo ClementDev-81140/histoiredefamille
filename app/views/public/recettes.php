@@ -9,6 +9,7 @@
 <section class="section">
     <div class="section__entete">
         <h1>Recettes de famille</h1>
+        <p class="aide">Les recettes transmises dans la famille, avec leurs souvenirs.</p>
         <?php if (is_admin()): ?>
             <a class="bouton" href="/admin/recettes/nouvelle">Ajouter une recette</a>
         <?php endif; ?>

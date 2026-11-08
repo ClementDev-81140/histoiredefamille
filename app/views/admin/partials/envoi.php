@@ -28,6 +28,7 @@ $baseEnvoi    = rtrim((string) ($envoiOptions['base'] ?? '/admin/envoyer'), '/')
 $afficherLot  = (bool) ($envoiOptions['lot'] ?? true);
 $albumBloc    = (int) ($envoiOptions['album'] ?? 0);
 $versAlbum    = (string) ($envoiOptions['versAlbum'] ?? '');
+$archiveBloc  = (bool) ($envoiOptions['archive'] ?? false);
 $typesBloc    = array_values(array_filter(array_map('strval', (array) ($envoiOptions['types'] ?? []))));
 if ($typesBloc === []) {
     $typesBloc = allowed_extensions();
@@ -72,6 +73,16 @@ $reglages     = envoi_reglages();
             Reprise de <strong><?= e((string) $aReprendre['original_name']) ?></strong>
             (<?= e(format_size((int) $aReprendre['size'])) ?>) :
             déposez à nouveau ce même fichier, l’envoi continuera où il s’est arrêté.
+        </div>
+    <?php endif; ?>
+
+    <?php if ($archiveBloc): ?>
+        <div class="champ">
+            <label class="case">
+                <input type="checkbox" data-envoi-archive>
+                Classer en archive
+            </label>
+            <p class="aide"><?= e('Un document d’archive n’apparaît pas à la une et ne prévient personne. On le retrouve dans les dossiers d’archives et par la recherche.') ?></p>
         </div>
     <?php endif; ?>
 

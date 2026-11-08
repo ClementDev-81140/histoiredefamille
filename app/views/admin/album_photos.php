@@ -136,7 +136,7 @@ require __DIR__ . '/partials/envoi.php';
             </select>
         </div>
         <div class="champ">
-            <label for="f-categorie">Catégorie</label>
+            <label for="f-categorie">Thème</label>
             <select id="f-categorie" name="categorie">
                 <option value="">Toutes</option>
                 <?php foreach ($categories as $categorie): ?>
@@ -211,16 +211,16 @@ require __DIR__ . '/partials/envoi.php';
             </ul>
 
             <?php
-            // Catégories appliquées à TOUT le lot (1.32.0). Une photo ne garde
-            // que les catégories prévues pour son type ; la visibilité des
+            // Thèmes appliquées à TOUT le lot (1.32.0). Une photo ne garde
+            // que les thèmes prévus pour son type ; la visibilité des
             // documents ne change pas.
             $categoriesCases = categories_pour_kinds(['photo', 'document', 'video']);
             $categorieIds    = array_map('intval', post_array('categories'));
             ?>
             <fieldset class="champ">
-                <legend>Catégories de ce lot</legend>
+                <legend>Thèmes de ce lot</legend>
                 <p class="aide">
-                    Facultatif : ces catégories s'ajoutent à tous les documents cochés.
+                    Facultatif : ces thèmes s'ajoutent à tous les documents cochés.
                     Elles ne changent pas leur visibilité.
                 </p>
                 <?php foreach ($categoriesCases as $categorie): ?>

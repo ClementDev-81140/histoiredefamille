@@ -14,7 +14,8 @@ declare(strict_types=1);
 /** Liste des vidéos visibles (publiques pour un visiteur, plus selon les droits). */
 function public_videos(): void
 {
-    // Filtre par catégorie (1.32.0) : seules les catégories visibles comptent,
+    rediriger_ancien_param_theme();
+    // Filtre par thème (1.32.0) : seuls les thèmes visibles comptent,
     // et le total affiché suit le filtre.
     $categorie  = category_filtre_demande('video');
     $categories = categories_avec_compteur('video');

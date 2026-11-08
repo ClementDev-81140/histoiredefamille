@@ -3,6 +3,31 @@
 Ce fichier liste ce qui reste à faire, classé par priorité. Il n'y a pas de
 suivi automatique : cochez au fur et à mesure.
 
+## Fait (2026-11-08, 1.36.0 — Type/Thème, blocs conditionnels, archives et dossiers)
+
+- [x] **Type / Thème** : « catégorie » remplacé par « thème » partout dans
+  l'interface (accords corrigés), Type = le genre du contenu ; cartes sans
+  doublon (thème en surtitre, type en petit) ; compteurs visibles seulement ;
+  `?categorie=` / `?categorie_id=` → 301 vers `?theme=`.
+- [x] **Blocs d'accueil conditionnels** : annonces/acces/chiffres/nouveautes
+  affichés seulement si remplis ; « Anniversaires à venir » (naissances et
+  mariages, 30 jours, sans décès, droits respectés) ; « Le mot de la famille ».
+- [x] **Archives discrètes** : case « Classer en archive » (envoi par
+  morceaux, fiches document/vidéo, propositions journalistes), phrase
+  exacte ; jamais une/nouveautés/gazette/pastille ; Documents (filtre
+  « Archives »), recherche, album, dossier ; bascule journal ↔ archive.
+- [x] **Dossiers d'archives** : CRUD admin (Contenus → Dossiers
+  d'archives), page par dossier selon les droits, dossier invisible si rien
+  de visible dedans (404 identique), suppression sans perte de documents,
+  lien depuis la fiche de la personne liée.
+- [x] **Menu** : « Arbre généalogique », « Témoignages (sons) », « Albums
+  photos » ; phrases d'aide sous les titres des grandes pages.
+- [x] **Migration 023 en ajout seul** + copie de sécurité automatique
+  (`.avant-migration-…`) dans `migrate.php`, donc par `install.sh`.
+- [x] Essais `archives36` (24), matrice 206 routes 0 anomalie, navigateur
+  `actions-136.mjs` 35 × 4 (papier/bleu × 1280/390), captures
+  `docs/captures/navigateur-136-*`.
+
 ## Fait (2026-11-08, 1.35.1 — vidéos d'archives refusées à tort)
 
 - [x] **Cause** : correspondance extension→type trop stricte (`audio/mp4`
@@ -156,7 +181,7 @@ suivi automatique : cochez au fur et à mesure.
 - [x] **Carte désactivée par défaut** : lien retiré des menus, `/carte` et
   `/lieu/{id}` en 404 « introuvable » pour tout le monde, `/admin/lieux`
   redirige vers Réglages ; code, données et table `places` conservés.
-- [x] **Catégories par type** : une catégorie sert à un ou plusieurs types
+- [x] **Thèmes par type** : un thème sert à un ou plusieurs types
   (article, document, photo, album, vidéo, recette), ordre d'affichage, cases
   dans tous les formulaires (dont « Créer le document » et les envois par
   lot), filtre GET partout, compteur sans fuite ; migration 021 en ajout seul.
@@ -205,7 +230,7 @@ suivi automatique : cochez au fur et à mesure.
   grille de vignettes à cocher (photos d'abord), titre, date, type, badge de
   visibilité, 24 par page.
 - [x] **Filtres en GET** (recherche titre ou étiquette, type, visibilité,
-  catégorie) et case « pas encore dans cet album » cochée par défaut ; les
+  thème) et case « pas encore dans cet album » cochée par défaut ; les
   documents déjà dans l'album sont marqués et **non cochables**.
 - [x] **Ajout en fin de liste** (`MAX(position) + 1`), dans l'ordre de la
   sélection ; doublon ou identifiant inconnu **ignorés sans erreur** (jamais
@@ -642,7 +667,7 @@ suivi automatique : cochez au fur et à mesure.
 - [x] **Recherche générale** (`/recherche`) : documents, articles, pages
       d'information et personnes ; accents et majuscules ignorés, index `FTS5`
       tenu à jour par déclencheurs, repli `GLOB` si FTS5 manque.
-- [x] Résultats groupés par catégorie, onglets de filtrage, pagination de 24,
+- [x] Résultats groupés par thème, onglets de filtrage, pagination de 24,
       droits de visibilité respectés (aucun résultat interdit).
 - [x] **Fiche personne enrichie** : chronologie, famille élargie
       (grands-parents, oncles et tantes, petits-enfants, neveux et nièces),

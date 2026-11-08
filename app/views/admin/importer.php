@@ -65,9 +65,9 @@
                                maxlength="100" placeholder="ex. 1968">
                     </div>
                     <div class="champ">
-                        <label for="category-<?= e($file['name']) ?>">Catégorie</label>
+                        <label for="category-<?= e($file['name']) ?>">Thème</label>
                         <select id="category-<?= e($file['name']) ?>" name="category_id">
-                            <option value="0">Sans catégorie</option>
+                            <option value="0">Sans thème</option>
                             <?php foreach ($categories as $category): ?>
                                 <option value="<?= (int) $category['id'] ?>"><?= e($category['name']) ?></option>
                             <?php endforeach; ?>

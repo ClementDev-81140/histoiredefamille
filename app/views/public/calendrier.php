@@ -12,6 +12,7 @@ $moisNom = calendrier_mois_nom($mois);
 <section class="section calendrier">
     <div class="section__entete">
         <h1>Calendrier</h1>
+        <p class="aide">Anniversaires, mariages et souvenirs, mois par mois.</p>
         <p class="actions">
             <?php if (is_admin()): ?>
                 <a class="bouton" href="/calendrier/ajouter">Ajouter un événement</a>

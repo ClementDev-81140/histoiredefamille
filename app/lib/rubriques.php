@@ -157,8 +157,8 @@ function menu_rubriques(?array $compte, array $extras = []): array
         ['articles', '/articles', 'Articles'],
         ['documents', '/documents', 'Documents'],
         ['videos', '/videos', 'Vidéos'],
-        ['albums', '/albums', 'Albums'],
-        ['arbre', '/arbre', 'Arbre'],
+        ['albums', '/albums', 'Albums photos'],
+        ['arbre', '/arbre', 'Arbre généalogique'],
         ['calendrier', '/calendrier', 'Calendrier'],
     ] as [$cle, $href, $libelle]) {
         $entrees[] = ['cle' => $cle, 'href' => $href, 'libelle' => $libelle];
@@ -168,7 +168,7 @@ function menu_rubriques(?array $compte, array $extras = []): array
         $entrees[] = ['cle' => 'recettes', 'href' => '/recettes', 'libelle' => 'Recettes'];
     }
     if (!empty($extras['temoignages'])) {
-        $entrees[] = ['cle' => 'temoignages', 'href' => '/temoignages', 'libelle' => 'Témoignages'];
+        $entrees[] = ['cle' => 'temoignages', 'href' => '/temoignages', 'libelle' => 'Témoignages (sons)'];
     }
     if (!empty($extras['carte'])) {
         $entrees[] = ['cle' => 'carte', 'href' => '/carte', 'libelle' => 'Carte'];

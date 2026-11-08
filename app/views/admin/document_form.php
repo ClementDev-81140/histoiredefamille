@@ -67,7 +67,7 @@ $visibility = (string) $v('visibility', 'prive');
     </div>
 
     <?php
-    // Catégories du type de contenu (1.32.0) : plusieurs choix possibles.
+    // Thèmes du type de contenu (1.32.0) : plusieurs choix possibles.
     $kindCategorie = match ((string) ($doc['kind'] ?? '')) {
         'photo' => 'photo',
         'video' => 'video',
@@ -105,6 +105,28 @@ $visibility = (string) $v('visibility', 'prive');
         <input type="text" id="tags" name="tags" maxlength="400"
                placeholder="mariage, village, 1914" value="<?= e((string) old_value($old, 'tags', $tags)) ?>">
         <p class="aide">Séparez les étiquettes par des virgules.</p>
+    </div>
+
+    <?php /* 1.36.0 : classement en archive et dossier d'archives. */ ?>
+    <div class="champ">
+        <label class="case">
+            <input type="checkbox" name="archive" value="1"<?= checked(!empty(old_value($old, 'archive', (int) ($doc['est_archive'] ?? 0)))) ?>>
+            Classer en archive
+        </label>
+        <p class="aide">Un document d’archive n’apparaît pas à la une et ne prévient personne. On le retrouve dans les dossiers d’archives et par la recherche.</p>
+    </div>
+
+    <div class="champ">
+        <label for="dossier_id">Dossier d’archives</label>
+        <select id="dossier_id" name="dossier_id">
+            <option value="">Sans dossier</option>
+            <?php foreach (($dossiers ?? []) as $dossierChoix): ?>
+                <option value="<?= (int) $dossierChoix['id'] ?>"<?= selected((int) old_value($old, 'dossier_id', (int) ($doc['dossier_id'] ?? 0)) === (int) $dossierChoix['id']) ?>>
+                    <?= e((string) $dossierChoix['name']) ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
+        <p class="aide">Un document d’archive peut être rangé dans un dossier, et déplacé plus tard. Les dossiers se créent dans « Dossiers d’archives ».</p>
     </div>
 
     <fieldset class="champ">

@@ -3,14 +3,14 @@
  * Recherche générale : documents, articles, pages d'information et personnes.
  *
  * Une seule page (/recherche) ; le filtre `type` permet d'afficher une seule
- * catégorie avec une pagination complète. Les droits sont appliqués par les
+ * thème avec une pagination complète. Les droits sont appliqués par les
  * mêmes fonctions que les listes : un visiteur ne trouve que le public, un
  * compte de famille ce qui lui est ouvert, un administrateur tout.
  */
 
 declare(strict_types=1);
 
-/** Page de recherche (aperçu par catégorie, ou liste complète d'un type). */
+/** Page de recherche (aperçu par thème, ou liste complète d'un type). */
 function public_recherche(): void
 {
     $q = trim(query('q'));
@@ -33,13 +33,13 @@ function public_recherche(): void
 
     if ($mots !== []) {
         if ($type === '') {
-            // Aperçu : quelques résultats par catégorie.
+            // Aperçu : quelques résultats par thème.
             $apercu    = recherche_tout($mots, 5);
             $resultats = $apercu['resultats'];
             $totaux    = $apercu['totaux'];
             $total     = recherche_total($totaux);
         } else {
-            // Une seule catégorie : liste complète, paginée.
+            // Une seule thème : liste complète, paginée.
             $fonction = 'recherche_' . $type;
             $fonction($mots, 0, 0, $total);
             $pg = pagination($total, 0, max(1, query_int('page', 1)));

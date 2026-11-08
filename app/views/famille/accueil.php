@@ -51,11 +51,10 @@ if (est_journaliste()) {
 </section>
 <?php endif; ?>
 
+<?php /* 1.36.0 : les nouveautés aussi disparaissent quand elles sont vides. */ ?>
+<?php if (!empty($nouveautes)): ?>
 <section class="panneau panneau--famille">
     <h2>Nouveautés de votre famille</h2>
-    <?php if (empty($nouveautes)): ?>
-        <p class="discret">Rien de nouveau pour le moment : les derniers articles, documents et personnes ajoutés apparaîtront ici.</p>
-    <?php else: ?>
         <ul class="nouveautes">
             <?php foreach ($nouveautes as $nouveaute): ?>
                 <li>
@@ -65,8 +64,8 @@ if (est_journaliste()) {
                 </li>
             <?php endforeach; ?>
         </ul>
-    <?php endif; ?>
 </section>
+<?php endif; ?>
 
 <section class="section une-intro">
     <h1 class="une-intro__titre">Bonjour<?= !empty($account['display_name']) ? ' ' . e($account['display_name']) : '' ?></h1>
@@ -107,22 +106,23 @@ if (est_journaliste()) {
         <?php foreach ($laterale as $bloc): ?>
 
             <?php if ($bloc === 'annonces'): ?>
+                <?php /* 1.36.0 : un bloc vide disparaît complètement — ni
+                         titre, ni cadre, ni phrase « rien à signaler ». */ ?>
+                <?php if ($annonces !== []): ?>
                 <section class="encart">
                     <h2 class="encart__titre"><?= e(apparence_titre_encart('annonces')) ?></h2>
-                    <?php if ($annonces === []): ?>
-                        <p class="discret">Rien à signaler dans les trente prochains jours.</p>
-                    <?php else: ?>
-                        <ul class="encart__liste">
-                            <?php foreach ($annonces as $annonce): ?>
-                                <li>
-                                    <span class="encart__date"><?= (int) $annonce['jour'] ?>/<?= sprintf('%02d', (int) $annonce['mois']) ?></span>
-                                    <a href="<?= e($annonce['lien']) ?>"><?= e($annonce['texte']) ?></a>
-                                </li>
-                            <?php endforeach; ?>
-                        </ul>
-                    <?php endif; ?>
+                    <p class="aide">Anniversaires de naissance et de mariage des 30 prochains jours.</p>
+                    <ul class="encart__liste">
+                        <?php foreach ($annonces as $annonce): ?>
+                            <li>
+                                <span class="encart__date"><?= (int) $annonce['jour'] ?>/<?= sprintf('%02d', (int) $annonce['mois']) ?></span>
+                                <a href="<?= e($annonce['lien']) ?>"><?= e($annonce['texte']) ?></a>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
                     <p class="encart__suite"><a href="/calendrier">Calendrier →</a></p>
                 </section>
+                <?php endif; ?>
 
             <?php elseif ($bloc === 'editions'): ?>
                 <?php if ($branchesEdition !== [] || $decenniesEdition !== []): ?>
@@ -159,6 +159,7 @@ if (est_journaliste()) {
                 <?php endif; ?>
 
             <?php elseif ($bloc === 'acces'): ?>
+                <?php if ($acces !== []): ?>
                 <section class="encart">
                     <h2 class="encart__titre"><?= e(apparence_titre_encart('acces')) ?></h2>
                     <ul class="encart__liste encart__liste--liens">
@@ -167,8 +168,10 @@ if (est_journaliste()) {
                         <?php endforeach; ?>
                     </ul>
                 </section>
+                <?php endif; ?>
 
             <?php elseif ($bloc === 'chiffres'): ?>
+                <?php if ((int) $nbDocuments > 0 || (int) $nbPersonnes > 0 || (int) $nbPages > 0): ?>
                 <section class="encart">
                     <h2 class="encart__titre"><?= e(apparence_titre_encart('chiffres')) ?></h2>
                     <p class="hero__chiffres">
@@ -181,6 +184,7 @@ if (est_journaliste()) {
                         <a class="bouton bouton--secondaire" href="/arbre">Arbre généalogique</a>
                     </p>
                 </section>
+                <?php endif; ?>
             <?php endif; ?>
 
         <?php endforeach; ?>

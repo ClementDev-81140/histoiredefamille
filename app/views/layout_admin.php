@@ -106,7 +106,8 @@ $account = $accountAdmin;
         <?= $navLink('/admin/albums', 'Albums photos') ?>
         <?= $navLink('/admin/videos', 'Vidéos') ?>
         <?= $navLink('/admin/recettes', 'Recettes') ?>
-        <?= $navLink('/admin/categories', 'Catégories') ?>
+        <?= $navLink('/admin/categories', 'Thèmes') ?>
+        <?= $navLink('/admin/dossiers', 'Dossiers d’archives') ?>
 
         <p class="admin-menu__titre">Envois</p>
         <?= $navLink('/admin/envoyer', 'Envoyer des fichiers') ?>

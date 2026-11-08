@@ -97,7 +97,7 @@ et une installation qui tient en quelques commandes à copier-coller.
 ### Administration (3 comptes personnels)
 
 - Un **menu de gauche rangé par métier**, pas par partie du site : *Contenus*
-  (articles, pages, documents, albums, vidéos, recettes, catégories), *Envois*,
+  (articles, pages, documents, albums, vidéos, recettes, thèmes), *Envois*,
   *Personnes* (arbre, comptes, branches, administrateurs, et « lieux »
   **seulement si la carte est active**), *Journal* (gazette, apparence,
   composition, **calendrier**, et « courriels » **seulement si l’envoi est
@@ -108,7 +108,7 @@ et une installation qui tient en quelques commandes à copier-coller.
   « dont publics : N » et des raccourcis vers les listes déjà filtrées sur
   « Public ».
 - Documents : envoi par le navigateur (photos, PDF, sons, documents bureautiques
-  jusqu'à 50 Mo), titre, description, date, catégorie, étiquettes, **visibilité**,
+  jusqu'à 50 Mo), titre, description, date, thème, étiquettes, **visibilité**,
   modification et suppression.
 - **Envoyer des fichiers** : une page dédiée aux **gros fichiers** (vidéos,
   scans, lots de photos), **jusqu'à 4 Go** et depuis n'importe où. Le navigateur
@@ -124,10 +124,10 @@ et une installation qui tient en quelques commandes à copier-coller.
   facultative, visibilité.
 - **Export GEDCOM** de tout l'arbre en un clic (Arbre généalogique →
   Exporter GEDCOM).
-- **Catégories** (créées par les administrateurs) : depuis la 1.32.0, une
-  catégorie s’applique à un ou plusieurs **types** de contenu (article,
+- **Thèmes** (créées par les administrateurs) : depuis la 1.32.0, une
+  thème s’applique à un ou plusieurs **types** de contenu (article,
   document, photo, album, vidéo, recette), avec un **ordre d’affichage** ; un
-  contenu peut en porter plusieurs, et chaque liste a son filtre par catégorie.
+  contenu peut en porter plusieurs, et chaque liste a son filtre par thème.
 - Branches familiales : création, modification, suppression, **réinitialisation
   du mot de passe en un clic** (mot de passe lisible affiché une seule fois),
   désactivation/réactivation du compte. Case à cocher
@@ -343,7 +343,7 @@ Un onglet **Recherche** figure dans le menu, pour tout le monde.
 - Les accents, les majuscules et la ponctuation n'ont pas d'importance :
   « begles », « Bègles » et « BÈGLES » donnent le même résultat, et « 1928 »
   trouve les documents et les personnes de cette année-là.
-- Un lien par catégorie permet de ne voir que les documents, que les articles,
+- Un lien par thème permet de ne voir que les documents, que les articles,
   que les pages ou que les personnes.
 - **Chacun ne trouve que ce qu'il a le droit de voir** : un visiteur non
   connecté ne voit que le public, une branche voit en plus ce qui la concerne.
@@ -983,7 +983,7 @@ Onglet **Speed** : laisser la compression **désactivée pour les vidéos**
 
 1. **Administration → Documents → Nouveau document**.
 2. Choisir le fichier (jusqu'à 50 Mo), saisir un titre, éventuellement une
-   description, une date, **une ou plusieurs catégories** et des étiquettes.
+   description, une date, **une ou plusieurs thèmes** et des étiquettes.
 3. Choisir la **visibilité** — c'est le point à ne pas oublier.
 4. Enregistrer.
 
@@ -994,22 +994,22 @@ par un script PHP qui vérifie les droits.
 Une **miniature** est créée automatiquement pour les photos (480 px de côté
 maximum) : les listes restent rapides même sur un petit écran et sur le Pi.
 
-**Les catégories, depuis la 1.32.0.** Une catégorie ne sert plus seulement aux
-documents : *Administration → Catégories* indique, pour chacune, les **types de
+**Les thèmes, depuis la 1.32.0.** Une thème ne sert plus seulement aux
+documents : *Administration → Thèmes* indique, pour chacune, les **types de
 contenu** auxquels elle s'applique — **article, document, photo, album, vidéo,
-recette** — et son **ordre d'affichage**. Une catégorie neuve vaut pour les six
+recette** — et son **ordre d'affichage**. Une thème neuve vaut pour les six
 (ses cases sont cochées au départ) ; décocher un type la retire des formulaires
-de ce type. Un contenu peut porter **plusieurs catégories** : les cases
-« Catégories » des formulaires ne proposent que celles prévues pour son type.
-Sur *Envoyer des fichiers* et *Ajouter des photos à un album*, les catégories
+de ce type. Un contenu peut porter **plusieurs thèmes** : les cases
+« Thèmes » des formulaires ne proposent que celles prévues pour son type.
+Sur *Envoyer des fichiers* et *Ajouter des photos à un album*, les thèmes
 cochées s'appliquent à **tout le lot**. Chaque liste — publique ou
-d'administration — a un filtre « Catégorie » en formulaire `GET`
+d'administration — a un filtre « Thème » en formulaire `GET`
 (`/documents?categorie=3`, `/videos?categorie=3`, `/recettes?categorie=3`,
 `/albums?categorie=3`, `/articles?categorie_id=3`), et le **compteur** affiché
 ne compte que les contenus que **vous** pouvez voir : un visiteur ne peut donc
 pas déduire l'existence d'un contenu privé par le nombre affiché, et une
-catégorie dont rien ne lui est visible n'apparaît pas du tout. La migration
-`021_categories_types.sql` recopie les catégories déjà posées sur les
+thème dont rien ne lui est visible n'apparaît pas du tout. La migration
+`021_categories_types.sql` recopie les thèmes déjà posées sur les
 documents : **aucune n'est perdue**, et l'ancienne colonne
 `documents.category_id` reste tenue à jour pour les écrans qui la lisent.
 
@@ -1301,7 +1301,7 @@ Deux façons, selon la taille du fichier :
    (.mov, .avi, .wmv, .mkv, .mpg, .mts, .flv, .3gp, .vob…) entrent dans la
    file de conversion ; un MP4 déjà en H.264 + AAC n'y entre pas — un MP4
    en HEVC, si, quand ffprobe peut le vérifier. Saisir ensuite
-   un titre, éventuellement une description, une date, une durée, une catégorie.
+   un titre, éventuellement une description, une date, une durée, un thème.
 3. Cocher **Mettre en avant** pour la placer en tête de l'onglet Vidéos,
    et régler l'**ordre d'affichage** (0 = pas de classement).
 4. Décider si le bouton **Télécharger** est proposé.
@@ -1505,7 +1505,7 @@ sans date ni lieu de décès, la ligne « Décès » disparaît — ni tiret, ni
 1. Cliquer sur **Recherche** dans le menu.
 2. Taper un nom, un mot ou une année, puis **Chercher**. Par exemple
    « martin », « mariage 1928 » ou « Bègles ».
-3. Les résultats arrivent groupés par catégorie (documents, articles, pages
+3. Les résultats arrivent groupés par thème (documents, articles, pages
    d'information, personnes). Cliquer sur « Tout », « Documents », « Articles »,
    « Pages d'information » ou « Personnes » pour n'en voir qu'une.
 4. Sur la fiche d'une personne, **Chronologie** rassemble les grands moments de
@@ -1545,7 +1545,7 @@ Rien à cocher : le site s'en occupe.
   (`?visibilite=public`), donc il se met en favori et le tableau de bord peut
   y renvoyer directement.
 - Les listes d'administration ont aussi, depuis la 1.32.0, un filtre
-  **« Catégorie »**, limité aux catégories du type de la liste : le choix reste
+  **« Thème »**, limité aux thèmes du type de la liste : le choix reste
   dans l'adresse (`?categorie=3`), les autres filtres sont conservés.
 
 ### 6.16 Vérifier qui s'est connecté
@@ -1637,10 +1637,10 @@ famille, même lents.
    servir du site dans un autre onglet.
 4. Quand le fichier est reçu, sa fiche est créée **en privé** : personne ne le
    voit. Deux façons de la compléter :
-   - **Ouvrir la fiche** (titre, description, date, catégorie, étiquettes,
+   - **Ouvrir la fiche** (titre, description, date, thème, étiquettes,
      visibilité) ;
    - **Compléter ce lot d'un coup** (bouton en bas de la page) : les réglages
-     du haut s'appliquent à tous les fichiers cochés (type, catégorie, album,
+     du haut s'appliquent à tous les fichiers cochés (type, thème, album,
      branche, visibilité), puis vous ajustez titre, date et visibilité fichier
      par fichier.
 
@@ -1674,7 +1674,7 @@ de la page **Envoyer des fichiers**. Chaque ligne offre deux actions :
   fichier déjà en place — sans repasser par le formulaire. Le titre vient du nom
   du fichier ; le bouton mène directement à la fiche à compléter (au formulaire
   vidéo, s'il s'agit d'un film), où vous choisissez description, date,
-  catégorie, étiquettes et visibilité ;
+  thème, étiquettes et visibilité ;
 - **Supprimer** : après confirmation, le **fichier assemblé** et les **morceaux**
   reçus sont effacés.
 
@@ -1797,7 +1797,7 @@ Une photo envoyée la semaine dernière n'est pas perdue : elle est dans
    montre les photos déjà présentes — puis les autres documents — en vignettes
    avec leur titre, leur date et leur **badge de visibilité**.
 3. Filtrer au besoin : **recherche** (titre ou étiquette), **type** (Photos /
-   Tous les documents), **visibilité**, **catégorie**. La case « **Pas encore
+   Tous les documents), **visibilité**, **thème**. La case « **Pas encore
    dans cet album** » est cochée au départ ; décochée, elle montre aussi ce qui
    y est déjà, marqué « Déjà dans l'album » et impossible à cocher.
 4. Cocher les documents, puis **Ajouter la sélection à l'album** : ils entrent
@@ -2444,7 +2444,7 @@ d'erreur s'il y en a un.
   « Le disque est plein », « ffmpeg ne sait pas encoder en H.264 »… jamais une
   erreur technique ;
 - **la visibilité ne change pas** : convertir une vidéo ne modifie ni ses
-  droits, ni sa catégorie, ni ses albums ;
+  droits, ni sa thème, ni ses albums ;
 - **la mémoire reste basse** : la commande lit la sortie de ffmpeg ligne par
   ligne, ffmpeg écrit directement dans un fichier ; aucun film n'est jamais
   chargé en mémoire.

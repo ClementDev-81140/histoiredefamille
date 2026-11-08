@@ -71,9 +71,16 @@ $canAdmin  = is_admin();
                 <?php if (trim((string) $doc['doc_date']) !== ''): ?>
                     <dt>Date</dt><dd><?= e($doc['doc_date']) ?></dd>
                 <?php endif; ?>
-                <?php if ($category !== null): ?>
-                    <dt>Catégorie</dt>
-                    <dd><a href="/documents?categorie=<?= (int) $category['id'] ?>"><?= e($category['name']) ?></a></dd>
+                <?php if (($themes ?? []) !== []): ?>
+                    <dt>Thème<?= count($themes) > 1 ? 's' : '' ?></dt>
+                    <dd><?= e(implode(', ', $themes)) ?></dd>
+                <?php elseif ($category !== null): ?>
+                    <dt>Thème</dt>
+                    <dd><a href="/documents?theme=<?= (int) $category['id'] ?>"><?= e($category['name']) ?></a></dd>
+                <?php endif; ?>
+                <?php if (document_est_archive($doc)): ?>
+                    <dt>Classement</dt>
+                    <dd>Archive<?php if (($dossier ?? null) !== null): ?> — <a href="/dossiers/<?= (int) $dossier['id'] ?>"><?= e((string) $dossier['name']) ?></a><?php endif; ?></dd>
                 <?php endif; ?>
                 <dt>Format</dt>
                 <dd><?= e(strtoupper((string) $doc['ext'])) ?> — <?= e((string) $doc['mime']) ?></dd>
@@ -168,7 +175,7 @@ $canAdmin  = is_admin();
 
 <?php if ($related !== []): ?>
     <section class="section">
-        <h2>Dans la même catégorie</h2>
+        <h2>Dans la même thème</h2>
         <div class="grille-cartes">
             <?php foreach ($related as $doc): ?>
                 <?php require __DIR__ . '/../partials/carte_document.php'; ?>

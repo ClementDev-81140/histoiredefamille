@@ -37,7 +37,7 @@ function family_home(): void
             ['/articles', 'Articles'],
             ['/documents', 'Documents'],
             ['/videos', 'Vidéos'],
-            ['/albums', 'Albums'],
+            ['/albums', 'Albums photos'],
             ['/arbre', 'Arbre généalogique'],
             ['/calendrier', 'Calendrier'],
             ['/frise', 'Frise chronologique'],
@@ -47,7 +47,7 @@ function family_home(): void
             $acces[] = ['/recettes', 'Recettes'];
         }
         if (audio_exist()) {
-            $acces[] = ['/temoignages', 'Témoignages'];
+            $acces[] = ['/temoignages', 'Témoignages (sons)'];
         }
         if (tchat_actif()) {
             $acces[] = ['/tchat', 'Tchat'];

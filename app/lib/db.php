@@ -185,6 +185,35 @@ function db_transaction(callable $callback): mixed
 // Migrations
 // ---------------------------------------------------------------------------
 
+/** Noms des migrations pas encore appliquées (sans rien modifier). */
+function db_migrations_en_attente(): array
+{
+    $pdo = db();
+    $existe = (int) db_value(
+        "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'schema_migrations'",
+        [],
+        0
+    );
+    $appliquees = [];
+    if ($existe > 0) {
+        foreach (db_all('SELECT name FROM schema_migrations') as $row) {
+            $appliquees[] = (string) $row['name'];
+        }
+    }
+
+    $enAttente = [];
+    $files = glob(dirname(__DIR__) . '/migrations/*.sql') ?: [];
+    sort($files, SORT_STRING);
+    foreach ($files as $file) {
+        $name = basename($file);
+        if (!in_array($name, $appliquees, true)) {
+            $enAttente[] = $name;
+        }
+    }
+
+    return $enAttente;
+}
+
 /** Applique les fichiers SQL de app/migrations non encore exécutés. */
 function db_migrate(): array
 {

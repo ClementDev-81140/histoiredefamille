@@ -110,7 +110,7 @@ $photoId    = (int) $v('photo_id', (int) ($recette['photo_document_id'] ?? 0));
     </fieldset>
 
     <?php
-    // Catégories du type « recette » (1.32.0).
+    // Thèmes du type « recette » (1.32.0).
     $categoriesCases = categories_list('recette');
     $kindCategorie   = 'Recettes';
     require __DIR__ . '/partials/categories_cases.php';

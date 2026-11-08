@@ -9,6 +9,7 @@
 <section class="section">
     <div class="section__entete">
         <h1>Témoignages</h1>
+        <p class="aide">Des voix de la famille à écouter : récits et souvenirs enregistrés.</p>
         <?php if (is_admin()): ?>
             <a class="bouton" href="/admin/documents/nouveau">Envoyer un enregistrement</a>
         <?php endif; ?>

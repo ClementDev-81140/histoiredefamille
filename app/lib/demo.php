@@ -189,7 +189,7 @@ function demo_inventaire(?array $registre = null): array
         'recipes'       => 'recettes',
         'persons'       => 'personnes (arbre généalogique)',
         'families'      => 'couples',
-        'categories'    => 'catégories',
+        'categories'    => 'thèmes',
         'chat_messages' => 'messages du tchat',
     ];
 
@@ -217,7 +217,7 @@ function demo_inventaire(?array $registre = null): array
         }
 
         // 2. Repli : le marqueur « (démo) » écrit dans les titres. Pour les
-        //    personnes (qui n'ont pas de titre) et les catégories, on lit la
+        //    personnes (qui n'ont pas de titre) et les thèmes, on lit la
         //    note et le nom : le jeu de démonstration y écrit « démonstration »
         //    ou « (démo) ».
         if ($table !== 'chat_messages' && $table !== 'families') {

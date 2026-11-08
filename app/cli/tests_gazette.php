@@ -306,13 +306,13 @@ function tests_gazette(): void
         );
 
         verifier(
-            'gazette : le mot de l’éditeur est limité à 600 caractères',
+            'gazette : le mot de la famille est limité à 600 caractères',
             gazette_mot($idA, str_repeat('a', GAZETTE_MOT_MAX)) === true
             && gazette_mot($idA, str_repeat('a', GAZETTE_MOT_MAX + 1)) === false
         );
         gazette_mot($idA, 'Un mot simple pour ouvrir le numéro.');
         verifier(
-            'gazette : le mot de l’éditeur se retrouve dans le numéro',
+            'gazette : le mot de la famille se retrouve dans le numéro',
             (string) gazette_trouver($idA)['mot'] === 'Un mot simple pour ouvrir le numéro.'
         );
 
@@ -344,7 +344,7 @@ function tests_gazette(): void
 
         $texte = (string) db_value("SELECT body_text FROM email_queue WHERE kind = 'gazette' LIMIT 1", [], '');
         verifier(
-            'gazette : le message contient le mot de l’éditeur et le lien de lecture',
+            'gazette : le message contient le mot de la famille et le lien de lecture',
             str_contains($texte, 'Un mot simple pour ouvrir le numéro.')
             && str_contains($texte, '/gazette/2024-05')
         );

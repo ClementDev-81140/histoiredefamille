@@ -137,7 +137,7 @@ réseau*), coller le fichier.
 1. Se connecter au site avec un compte administrateur.
 2. Menu **Administration → Importer depuis le dossier arrivée**.
 3. La page liste les fichiers présents (nom, taille, date de dépôt).
-4. Pour chacun : titre, description, date du souvenir, catégorie, branche,
+4. Pour chacun : titre, description, date du souvenir, thème, branche,
    visibilité — puis **Importer**.
 5. Le fichier est déplacé dans `medias/année/mois/` sous un nom aléatoire,
    la miniature est créée si c'est une image, et le dossier `arrivee/` est

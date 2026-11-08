@@ -1,11 +1,12 @@
 <?php
 /**
- * Gestion des catégories.
+ * Gestion des thèmes.
  *
  * @var array $categories, $erreurs, $old
  */
 ?>
-<h1>Catégories</h1>
+<h1>Thèmes</h1>
+<p class="aide">Un thème regroupe des contenus de tous types qui parlent du même sujet.</p>
 
 <?php if ($erreurs !== []): ?>
     <div class="message message--erreur">
@@ -15,7 +16,7 @@
 
 <form method="post" action="/admin/categories/nouvelle" class="formulaire panneau">
     <?= csrf_field() ?>
-    <h2>Nouvelle catégorie</h2>
+    <h2>Nouveau thème</h2>
     <div class="ligne-champs">
         <div class="champ">
             <label for="name">Nom</label>
@@ -34,7 +35,7 @@
     <fieldset class="champ">
         <legend>Types de contenu</legend>
         <p class="aide">
-            Une catégorie peut servir aux articles, aux documents, aux photos, aux albums,
+            Un thème peut servir aux articles, aux documents, aux photos, aux albums,
             aux vidéos et aux recettes. Tout est coché par défaut. Aucune case cochée
             vaut « tous les types ».
         </p>
@@ -48,9 +49,9 @@
 </form>
 
 <section class="section">
-    <h2>Catégories existantes</h2>
+    <h2>Thèmes existants</h2>
     <?php if ($categories === []): ?>
-        <p class="discret">Aucune catégorie pour le moment.</p>
+        <p class="discret">Aucun thème pour le moment.</p>
     <?php else: ?>
         <div class="tableau-defilant">
             <table class="tableau">
@@ -72,13 +73,13 @@
                                       class="formulaire-en-ligne">
                                     <?= csrf_field() ?>
                                     <input type="text" name="name" value="<?= e($category['name']) ?>"
-                                           maxlength="80" aria-label="Nom de la catégorie" required>
+                                           maxlength="80" aria-label="Nom de le thème" required>
                                     <input type="number" name="position" value="<?= (int) $category['position'] ?>"
                                            min="0" max="999" class="champ-nombre" aria-label="Ordre">
                                     <button type="submit" class="lien-bouton">Renommer</button>
                                 </form>
                             </td>
-                            <td><code>/documents?categorie=<?= (int) $category['id'] ?></code></td>
+                            <td><code>/documents?theme=<?= (int) $category['id'] ?></code></td>
                             <td><?= (int) $category['position'] ?></td>
                             <td class="colonne-types">
                                 <?php $typesCat = category_kinds($category); ?>
@@ -104,7 +105,7 @@
                             <td class="colonne-actions">
                                 <form method="post" action="/admin/categories/<?= (int) $category['id'] ?>/supprimer"
                                       class="formulaire-en-ligne"
-                                      data-confirmation="Supprimer cette catégorie ? Les documents seront conservés sans catégorie.">
+                                      data-confirmation="Supprimer ce thème ? Les documents seront conservés sans thème.">
                                     <?= csrf_field() ?>
                                     <button type="submit" class="lien-bouton lien-bouton--danger">Supprimer</button>
                                 </form>

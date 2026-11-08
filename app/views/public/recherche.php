@@ -65,7 +65,7 @@ $onglets = ['' => 'Tout'] + $types;
         </p>
 
         <?php if ($total > 0): ?>
-            <nav class="recherche__onglets" aria-label="Filtrer par catégorie">
+            <nav class="recherche__onglets" aria-label="Filtrer par type">
                 <?php foreach ($onglets as $cle => $libelle): ?>
                     <?php
                     $compte = $cle === '' ? $total : ($totaux[$cle] ?? 0);
@@ -108,7 +108,7 @@ $onglets = ['' => 'Tout'] + $types;
             <?php endif; ?>
 
             <?php if ($type !== '' && $resultats[$type] === []): ?>
-                <p class="discret">Aucun résultat dans cette catégorie.</p>
+                <p class="discret">Aucun résultat dans ce type.</p>
             <?php endif; ?>
         <?php endif; ?>
     <?php endif; ?>

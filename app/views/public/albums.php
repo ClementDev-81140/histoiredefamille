@@ -9,6 +9,7 @@
 <section class="section">
     <div class="section__entete">
         <h1>Albums photos</h1>
+        <p class="aide">Les albums de photos de la famille, des plus récents aux plus anciens.</p>
         <?php if (is_admin()): ?>
             <a class="bouton" href="/admin/albums/nouveau">Créer un album</a>
         <?php endif; ?>
@@ -26,7 +27,7 @@
     $filtreCategories = $categories ?? [];
     $filtreCategorie  = (int) ($categorie ?? 0);
     $filtreAction     = '/albums';
-    $filtreParam      = 'categorie';
+    $filtreParam      = 'theme';
     require __DIR__ . '/../partials/filtre_categories.php';
     ?>
 

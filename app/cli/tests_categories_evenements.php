@@ -1,9 +1,9 @@
 <?php
 /**
- * Tests de la 1.32.0 — catégories par type de contenu et calendrier.
+ * Tests de la 1.32.0 — thèmes par type de contenu et calendrier.
  *
  * Deux familles :
- *   « categories_types »  une catégorie sert à un ou plusieurs types, un
+ *   « categories_types »  un thème sert à un ou plusieurs types, un
  *                         contenu peut en porter plusieurs, le compteur ne
  *                         compte que ce que la personne peut voir ;
  *   « evenements »        les événements de famille : privés par défaut,
@@ -16,10 +16,10 @@
 declare(strict_types=1);
 
 // ---------------------------------------------------------------------------
-// Catégories par type de contenu
+// Thèmes par type de contenu
 // ---------------------------------------------------------------------------
 if ($filtre === '' || $filtre === 'categories_types') {
-    echo "Catégories par type de contenu\n";
+    echo "Thèmes par type de contenu\n";
 
     $pdo = db();
     $transaction = !$pdo->inTransaction();
@@ -33,14 +33,14 @@ if ($filtre === '' || $filtre === 'categories_types') {
         $maintenant = time();
         $adminId = (int) db_value("SELECT id FROM accounts WHERE role = 'admin' ORDER BY id LIMIT 1", [], 0);
 
-        // 1. Une catégorie neuve s'applique aux six types par défaut.
+        // 1. Un thème neuve s'applique aux six types par défaut.
         $catTous = db_insert('categories', [
             'name' => 'Tous types ' . $suffixe, 'slug' => 'tous-' . $suffixe, 'position' => 0,
             'created_at' => $maintenant,
         ]);
         $catTousLigne = find_category((int) $catTous);
         verifier(
-            'catégories : une catégorie neuve vaut pour les six types de contenu',
+            'thèmes : un thème neuve vaut pour les six types de contenu',
             count(category_kinds($catTousLigne)) === count(CATEGORY_KINDS)
         );
 
@@ -48,26 +48,26 @@ if ($filtre === '' || $filtre === 'categories_types') {
         db_update('categories', (int) $catTous, ['kinds' => 'article,recette', 'position' => 5]);
         $catTousLigne = find_category((int) $catTous);
         verifier(
-            'catégories : une catégorie peut être réservée à certains types',
+            'thèmes : un thème peut être réservée à certains types',
             category_applicable($catTousLigne, 'article') && category_applicable($catTousLigne, 'recette')
                 && !category_applicable($catTousLigne, 'photo')
                 && in_array((int) $catTousLigne['id'], array_map('intval', array_column(categories_list('article'), 'id')), true)
                 && !in_array((int) $catTous, array_map('intval', array_column(categories_list('photo'), 'id')), true)
         );
 
-        // 3. Plusieurs catégories pour un même contenu.
+        // 3. Plusieurs thèmes pour un même contenu.
         $catBis = db_insert('categories', [
             'name' => 'Bis ' . $suffixe, 'slug' => 'bis-' . $suffixe, 'position' => 6,
             'kinds' => 'article', 'created_at' => $maintenant,
         ]);
         $articlePublic = db_insert('articles', [
-            'slug' => 'cat-public-' . $suffixe, 'title' => 'Article public de catégorie',
+            'slug' => 'cat-public-' . $suffixe, 'title' => 'Article public de thème',
             'summary' => '', 'body' => 'Texte.', 'category' => '', 'visibility' => 'public',
             'status' => 'publie', 'published_at' => $maintenant - 60,
             'created_at' => $maintenant, 'updated_at' => $maintenant,
         ]);
         $articlePrive = db_insert('articles', [
-            'slug' => 'cat-prive-' . $suffixe, 'title' => 'Article privé de catégorie',
+            'slug' => 'cat-prive-' . $suffixe, 'title' => 'Article privé de thème',
             'summary' => '', 'body' => 'Texte.', 'category' => '', 'visibility' => 'prive',
             'status' => 'publie', 'published_at' => $maintenant - 60,
             'created_at' => $maintenant, 'updated_at' => $maintenant,
@@ -80,11 +80,11 @@ if ($filtre === '' || $filtre === 'categories_types') {
         category_enregistrer('article', (int) $articlePrive, [(int) $catTous, (int) $catPrivee]);
 
         verifier(
-            'catégories : un contenu peut porter plusieurs catégories',
+            'thèmes : un contenu peut porter plusieurs thèmes',
             category_ids_pour('article', (int) $articlePublic) === [(int) $catTous, (int) $catBis]
         );
         verifier(
-            'catégories : une catégorie d’un autre type n’est jamais rattachée par erreur',
+            'thèmes : un thème d’un autre type n’est jamais rattachée par erreur',
             category_ids_pour('photo', (int) $articlePublic) === []
         );
 
@@ -96,31 +96,44 @@ if ($filtre === '' || $filtre === 'categories_types') {
         $compteurAdmin = category_compteur('article', (int) $catTous);
 
         verifier(
-            'catégories : le compteur d’un visiteur ne compte que les contenus publics',
+            'thèmes : le compteur d’un visiteur ne compte que les contenus publics',
             $compteurVisiteur === 1 && $compteurAdmin === 2,
             'visiteur ' . $compteurVisiteur . ', admin ' . $compteurAdmin
         );
         verifier(
-            'catégories : une catégorie dont rien n’est visible n’apparaît pas au visiteur',
+            'thèmes : un thème dont rien n’est visible n’apparaît pas au visiteur',
             !array_key_exists((int) $catPrivee, $listeVisiteur),
-            'catégorie ' . $catPrivee . ' présente : ' . (array_key_exists((int) $catPrivee, $listeVisiteur) ? 'oui' : 'non')
+            'thème ' . $catPrivee . ' présente : ' . (array_key_exists((int) $catPrivee, $listeVisiteur) ? 'oui' : 'non')
         );
 
         // 5. Le filtre de la liste publique respecte les droits.
         $_SESSION['account_id'] = null;
-        $visiteurFiltre = matrice_requete('GET', '/articles?categorie_id=' . (int) $catTous, null);
+        $visiteurFiltre = matrice_requete('GET', '/articles?theme=' . (int) $catTous, null);
         verifier(
-            'catégories : le filtre d’une liste publique ne montre que le contenu autorisé',
+            'thèmes : le filtre d’une liste publique ne montre que le contenu autorisé',
             $visiteurFiltre['code'] === 200
-                && str_contains($visiteurFiltre['corps'], 'Article public de catégorie')
-                && !str_contains($visiteurFiltre['corps'], 'Article privé de catégorie')
+                && str_contains($visiteurFiltre['corps'], 'Article public de thème')
+                && !str_contains($visiteurFiltre['corps'], 'Article privé de thème')
         );
 
         // 6. Une valeur d'adresse inconnue ne filtre rien (et ne casse rien).
-        $fauxFiltre = matrice_requete('GET', '/articles?categorie_id=99999999', null);
+        $fauxFiltre = matrice_requete('GET', '/articles?theme=99999999', null);
         verifier(
-            'catégories : une catégorie inventée dans l’adresse est ignorée',
-            $fauxFiltre['code'] === 200 && str_contains($fauxFiltre['corps'], 'Article public de catégorie')
+            'thèmes : un thème inventé dans l’adresse est ignoré',
+            $fauxFiltre['code'] === 200 && str_contains($fauxFiltre['corps'], 'Article public de thème')
+        );
+
+        // 6 bis (1.36.0). L'ancienne adresse « ?categorie=… » redirige vers
+        // « ?theme=… », et l'ancien « ?categorie_id=… » des articles aussi.
+        $ancien = matrice_requete('GET', '/documents?categorie=' . (int) $catTous, null);
+        verifier(
+            'thèmes : « ?categorie= » redirige vers « ?theme= »',
+            $ancien['code'] === 301 && str_contains((string) ($ancien['location'] ?? ''), 'theme=' . (int) $catTous)
+        );
+        $ancienId = matrice_requete('GET', '/articles?categorie_id=' . (int) $catTous, null);
+        verifier(
+            'thèmes : « ?categorie_id= » redirige aussi vers « ?theme= »',
+            $ancienId['code'] === 301 && str_contains((string) ($ancienId['location'] ?? ''), 'theme=' . (int) $catTous)
         );
 
         // 7. Les formulaires proposent bien des cases.
@@ -128,16 +141,16 @@ if ($filtre === '' || $filtre === 'categories_types') {
         foreach ([['/admin/documents/nouveau', 'un document'], ['/admin/videos/nouvelle', 'une vidéo'], ['/admin/articles/nouveau', 'un article'], ['/admin/albums/nouveau', 'un album'], ['/admin/recettes/nouvelle', 'une recette']] as [$url, $libelle]) {
             $page = matrice_requete('GET', $url, $adminId);
             verifier(
-                'catégories : le formulaire d’' . $libelle . ' propose des cases « Catégories »',
+                'thèmes : le formulaire d’' . $libelle . ' propose des cases « Thèmes »',
                 $page['code'] === 200 && str_contains($page['corps'], 'name="categories[]"')
             );
         }
 
-        // 8. La migration recopie les catégories déjà posées sur les documents,
+        // 8. La migration recopie les thèmes déjà posées sur les documents,
         //    et la fiche enregistrée garde les deux écritures synchronisées.
         $migration = (string) @file_get_contents(HDF_APP . '/migrations/021_categories_types.sql');
         verifier(
-            'catégories : la migration recopie les catégories déjà posées sur les documents',
+            'thèmes : la migration recopie les thèmes déjà posées sur les documents',
             str_contains($migration, 'INSERT OR IGNORE INTO category_links')
                 && str_contains($migration, 'FROM documents')
                 && str_contains($migration, 'WHERE category_id IS NOT NULL')
@@ -167,7 +180,7 @@ if ($filtre === '' || $filtre === 'categories_types') {
             );
             $ligne = db_one('SELECT category_id, kind FROM documents WHERE id = ?', [$docId]);
             verifier(
-                'catégories : la fiche enregistrée garde l’ancienne colonne et la liaison',
+                'thèmes : la fiche enregistrée garde l’ancienne colonne et la liaison',
                 $enregistre['code'] === 303
                     && (int) ($ligne['category_id'] ?? 0) === (int) $catDoc
                     && category_ids_pour((string) ($ligne['kind'] ?? 'document'), $docId) === [(int) $catDoc],
@@ -177,7 +190,7 @@ if ($filtre === '' || $filtre === 'categories_types') {
             );
         }
 
-        // 9. Une vidéo enregistrée par le formulaire garde ses catégories, et
+        // 9. Une vidéo enregistrée par le formulaire garde ses thèmes, et
         //    jamais celle d'un autre type.
         $video = db_one("SELECT * FROM documents WHERE kind = 'video' AND is_attachment = 0 ORDER BY id LIMIT 1");
         if ($video !== null) {
@@ -197,17 +210,17 @@ if ($filtre === '' || $filtre === 'categories_types') {
                 'categories'    => [(string) $catVideo, (string) $catTous],
             ]);
             verifier(
-                'catégories : une vidéo garde sa catégorie, jamais celle d’un autre type',
+                'thèmes : une vidéo garde sa thème, jamais celle d’un autre type',
                 $envoiVideo['code'] === 303
                     && category_ids_pour('video', $videoId) === [(int) $catVideo]
                     && (int) db_value('SELECT category_id FROM documents WHERE id = ?', [$videoId], 0) === (int) $catVideo
             );
         }
 
-        // 10. L'administration des catégories montre les types et l'ordre.
+        // 10. L'administration des thèmes montre les types et l'ordre.
         $pageCats = matrice_requete('GET', '/admin/categories', $adminId);
         verifier(
-            'catégories : l’administration propose les types et l’ordre d’affichage',
+            'thèmes : l’administration propose les types et l’ordre d’affichage',
             $pageCats['code'] === 200 && str_contains($pageCats['corps'], 'name="kinds[]"')
                 && str_contains($pageCats['corps'], 'name="position"')
         );

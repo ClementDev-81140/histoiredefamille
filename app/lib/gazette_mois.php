@@ -194,7 +194,7 @@ function gazette_contenu(string $periode, int $compteId): array
         $params[':gf1'] = $bornes['fin'];
         $photos = db_all(
             "SELECT d.* FROM documents d
-             WHERE {$clause} AND d.kind = 'photo' AND d.is_attachment = 0
+             WHERE {$clause} AND d.kind = 'photo' AND d.is_attachment = 0 AND d.est_archive = 0
                AND d.created_at >= :gd1 AND d.created_at < :gf1
              ORDER BY d.created_at DESC LIMIT " . GAZETTE_MAX_PAR_ENCART,
             $params
@@ -237,7 +237,7 @@ function gazette_contenu(string $periode, int $compteId): array
         $params[':gf3'] = $bornes['fin'];
         $videos = db_all(
             "SELECT d.* FROM documents d
-             WHERE {$clause} AND d.kind = 'video' AND d.is_attachment = 0
+             WHERE {$clause} AND d.kind = 'video' AND d.is_attachment = 0 AND d.est_archive = 0
                AND d.created_at >= :gd3 AND d.created_at < :gf3
              ORDER BY d.created_at DESC LIMIT " . GAZETTE_MAX_PAR_ENCART,
             $params
@@ -261,7 +261,7 @@ function gazette_contenu(string $periode, int $compteId): array
         $params[':gf4'] = $bornes['fin'];
         $audios = db_all(
             "SELECT d.* FROM documents d
-             WHERE {$clause} AND d.mime LIKE 'audio/%'
+             WHERE {$clause} AND d.est_archive = 0 AND d.mime LIKE 'audio/%'
                AND d.created_at >= :gd4 AND d.created_at < :gf4
              ORDER BY d.created_at DESC LIMIT " . GAZETTE_MAX_PAR_ENCART,
             $params

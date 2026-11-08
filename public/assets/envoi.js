@@ -85,6 +85,7 @@
         // Album de destination (page « Ajouter des photos ») : les fichiers y
         // entrent tout de suite, et seules les photos sont acceptées.
         this.album = racine.getAttribute('data-envoi-album') || '';
+        this.archiveCase = racine.querySelector('[data-envoi-archive]');
         this.versAlbum = racine.getAttribute('data-envoi-vers-album') || '';
         this.types = (racine.getAttribute('data-envoi-accept') || '')
             .split(',')
@@ -353,6 +354,9 @@
         donnees.append('reprise', this.reprendre ? '1' : '0');
         if (this.album) {
             donnees.append('album', this.album);
+        }
+        if (this.archiveCase && this.archiveCase.checked) {
+            donnees.append('archive', '1');
         }
 
         return this.poster(this.urls.init, donnees).then(function (reponse) {

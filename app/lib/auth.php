@@ -11,7 +11,7 @@
  *
  * Les deux types de comptes « famille » ont exactement les mêmes droits :
  * public + toutes les familles + les contenus de leur branche. Seule la case
- * « voit toutes les branches » diffère dans sa source : elle est portée par
+ * « voit toutes les branches » diffère dans sa source : elle est porté par
  * la branche pour un compte de branche, et par le compte pour une personne.
  */
 

@@ -134,6 +134,7 @@ function public_accueil_visiteur(): void
 /** Liste des documents (photos, vidéos, PDF, fichiers). */
 function public_documents(): void
 {
+    rediriger_ancien_param_theme();
     $params = [];
     $clause = visibility_clause('document', 'd', $params);
 
@@ -148,15 +149,26 @@ function public_documents(): void
         $params[':q'] = '%' . $q . '%';
     }
 
-    $categoryId = query_int('categorie');
+    $categoryId = query_int('theme');
     if ($categoryId > 0) {
-        // Catégories du document (1.32.0) : la liaison porte le type de la
+        // Thèmes du document (1.32.0) : la liaison porte le type de la
         // fiche (document, photo ou vidéo).
         $where[] = 'EXISTS (SELECT 1 FROM category_links cl
                              WHERE cl.category_id = :categorie
                                AND cl.content_id = d.id
                                AND cl.kind = d.kind)';
         $params[':categorie'] = $categoryId;
+    }
+
+    // Filtre « Archives » (1.36.0) : archives seulement, journal seulement,
+    // ou tout. La visibilité habituelle s'applique dans tous les cas.
+    $archives = query('archives');
+    if ($archives === '1') {
+        $where[] = 'd.est_archive = 1';
+    } elseif ($archives === '0') {
+        $where[] = 'd.est_archive = 0';
+    } else {
+        $archives = '';
     }
 
     $type = query('type');
@@ -174,7 +186,7 @@ function public_documents(): void
             LIMIT {$pg['perPage']} OFFSET {$pg['offset']}";
     $documents = db_all($sql, $params);
 
-    // Catégories ayant au moins un contenu visible par la personne (le
+    // Thèmes ayant au moins un contenu visible par la personne (le
     // compteur ne compte que ce qu'elle peut voir : aucune fuite).
     $categories = categories_avec_compteur_kinds(['document', 'photo', 'video']);
 
@@ -185,7 +197,12 @@ function public_documents(): void
         'pagination' => $pg,
         'q'          => $q,
         'categorie'  => $categoryId,
+        'theme'      => $categoryId,
         'type'       => $type,
+        'archives'   => $archives,
+        // Dossiers d'archives : seulement ceux qui ont quelque chose de
+        // visible pour ce compte (nom et nombre ne fuient jamais).
+        'dossiers'   => dossiers_visibles(),
         'total'      => $total,
     ]);
 }
@@ -217,10 +234,19 @@ function public_document_detail(array $params): void
         );
     }
 
+    // Dossier du document, seulement s'il a quelque chose de visible pour
+    // ce compte (sinon le nom du dossier ne doit pas fuir).
+    $dossierDoc = null;
+    if ((int) ($doc['dossier_id'] ?? 0) > 0 && dossier_visible_pour_compte((int) $doc['dossier_id'])) {
+        $dossierDoc = dossier_par_id((int) $doc['dossier_id']);
+    }
+
     render('public/document', [
         'titre'    => $doc['title'],
         'doc'      => $doc,
         'category' => $category,
+        'themes'   => themes_noms_pour((string) $doc['kind'], (int) $doc['id']),
+        'dossier'  => $dossierDoc,
         'tags'     => document_tags($doc),
         'branches' => content_branch_ids('document', (int) $doc['id']),
         'related'  => $related,
@@ -381,6 +407,7 @@ function public_personne(array $params): void
         'neveuxNieces'  => $neveuxNieces,
         'reperes'       => person_reperes($person, $unions),
         'homonymes'     => person_homonyms($person, 6),
+        'dossiers'      => dossiers_pour_personne((int) $person['id']),
         'photos'        => person_photos((int) $person['id'], 12),
         'nbPhotos'      => person_photo_count((int) $person['id']),
     ]);

@@ -3,7 +3,7 @@
  * Une ligne de résultat de la recherche générale.
  *
  * @var array  $ligne résultat (document, article, page ou personne)
- * @var string $cle   catégorie : documents, articles, pages, personnes
+ * @var string $cle   thème : documents, articles, pages, personnes
  */
 $lien    = '';
 $titre   = '';

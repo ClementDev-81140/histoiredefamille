@@ -35,23 +35,27 @@ function gazette_fondee(): string
 }
 
 /**
- * Les prochains anniversaires et événements de l'arbre (30 jours à venir),
- * pour les « petites annonces ».
+ * Les anniversaires à venir (30 prochains jours) : naissances et mariages
+ * seulement — jamais de décès (1.36.0).
+ *
+ * Les personnes citées sont celles que le compte peut voir : les événements
+ * viennent de calendrier.php, qui applique déjà les droits du compte.
  *
  * @return list<array{jour:int, mois:int, texte:string, lien:string}>
  */
 function gazette_annonces(int $limite = 5): array
 {
-    // Les événements sont calculés une seule fois, dans calendrier.php, avec
-    // les droits de la personne connectée : ici, on ne fait que les écrire.
+    $aVenir = array_values(array_filter(
+        calendrier_prochains(30, 60),
+        static fn (array $evenement): bool => in_array($evenement['genre'], ['naissance', 'mariage'], true)
+    ));
+
     return array_map(
         static function (array $evenement): array {
             $ans = (int) $evenement['ans'];
-            $texte = match ($evenement['genre']) {
-                'mariage'   => 'MARIAGE. ' . $evenement['nom'] . ' : ' . $ans . ' an' . ($ans > 1 ? 's' : '') . ' de mariage.',
-                'naissance' => 'ANNIVERSAIRE. ' . $evenement['nom'] . ' aurait ' . $ans . ' ans.',
-                default     => 'SOUVENIR. ' . $evenement['nom'] . ' nous quittait il y a ' . $ans . ' ans.',
-            };
+            $texte = $evenement['genre'] === 'mariage'
+                ? 'MARIAGE. ' . $evenement['nom'] . ' : ' . $ans . ' an' . ($ans > 1 ? 's' : '') . ' de mariage.'
+                : 'ANNIVERSAIRE. ' . $evenement['nom'] . ' : ' . $ans . ' ans.';
             return [
                 'jour'  => (int) $evenement['jour'],
                 'mois'  => (int) $evenement['mois'],
@@ -59,7 +63,7 @@ function gazette_annonces(int $limite = 5): array
                 'lien'  => (string) $evenement['lien'],
             ];
         },
-        calendrier_prochains(30, $limite)
+        array_slice($aVenir, 0, max(1, $limite))
     );
 }
 

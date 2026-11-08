@@ -29,7 +29,8 @@ function public_articles(): void
         $params[':categorie'] = $category;
     }
 
-    // Catégories « étiquettes » (1.32.0), distinctes de la rubrique libre.
+    // Thèmes « étiquettes » (1.32.0), distinctes de la rubrique libre.
+    rediriger_ancien_param_theme('categorie_id');
     $categorieId = category_filtre_demande('article', 'categorie_id');
     $catWhere    = category_where('a', $categorieId > 0 ? $categorieId : null, $params, 'article');
     if ($catWhere !== '') {
@@ -82,7 +83,7 @@ function public_articles(): void
          GROUP BY a.category ORDER BY a.category COLLATE NOCASE",
         $catParams
     );
-    // Étiquettes de catégorie (1.32.0), avec le compteur de ce qui est visible.
+    // Étiquettes de thème (1.32.0), avec le compteur de ce qui est visible.
     $categoriesEtiquettes = categories_avec_compteur('article');
 
     render('public/articles', [
@@ -208,7 +209,7 @@ function admin_articles(): void
         $where[] = 'a.visibility = :vis';
         $params[':vis'] = $visibility;
     }
-    // Filtre « Catégorie » (1.32.0) : la table `categories`, distincte de la
+    // Filtre « Thème » (1.32.0) : la table `categories`, distincte de la
     // rubrique (texte `a.category`).
     $categorie = category_filtre_demande('article');
     if ($categorie > 0) {
@@ -377,7 +378,7 @@ function admin_article_save(array $params = []): void
     }
 
     set_content_branches('article', $articleId, $visibility === 'branches' ? $branches : []);
-    // Catégories de l'article (1.32.0) : plusieurs possibles.
+    // Thèmes de l'article (1.32.0) : plusieurs possibles.
     category_enregistrer('article', $articleId, categories_saisies());
 
     log_activity(

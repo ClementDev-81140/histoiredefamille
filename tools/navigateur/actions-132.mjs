@@ -1,5 +1,5 @@
 /**
- * Contrôle « vrai navigateur » de la 1.32.0 : catégories, vidéos sans image,
+ * Contrôle « vrai navigateur » de la 1.32.0 : thèmes, vidéos sans image,
  * articles sans photo.
  *
  *   CAPTURES=/tmp node tools/navigateur/actions-132.mjs 390

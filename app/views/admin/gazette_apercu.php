@@ -58,7 +58,7 @@ foreach ($gazette['contenu_array']['sections'] as $section) {
 
 <?php if ($ouvert): ?>
     <section class="panneau">
-        <h2>Le mot de l’éditeur</h2>
+        <h2>Le mot de la famille</h2>
         <form method="post" action="/admin/gazette/<?= (int) $gazette['id'] ?>/mot" class="formulaire">
             <?= csrf_field() ?>
             <div class="champ">
@@ -73,7 +73,7 @@ foreach ($gazette['contenu_array']['sections'] as $section) {
     </section>
 <?php elseif (trim((string) $gazette['mot']) !== ''): ?>
     <section class="panneau">
-        <h2>Le mot de l’éditeur</h2>
+        <h2>Le mot de la famille</h2>
         <p><?= nl2br(e((string) $gazette['mot'])) ?></p>
     </section>
 <?php endif; ?>

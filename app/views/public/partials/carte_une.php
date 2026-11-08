@@ -27,11 +27,12 @@ $estVideoSansImage = $image === null && (string) ($item['type'] ?? '') === 'vide
             <span class="une-carte__vignette">
                 <img src="<?= e($image) ?>" alt="" width="320" height="240" loading="lazy">
             </span>
-            <span class="une-carte__type"><?= e($item['rubrique']) ?></span>
+            <span class="une-carte__type"><?= e(($item['themes'] ?? []) !== [] ? implode(' · ', $item['themes']) : $item['rubrique']) ?></span>
             <span class="une-carte__titre"><?= e($item['titre']) ?></span>
             <span class="une-carte__meta">
                 <span class="discret"><?= e($item['date_texte']) ?></span>
-                <span class="discret"><?= e($item['genre']) ?></span>
+                <?php $genreUne = ($item['themes'] ?? []) !== [] ? (string) ($item['genre'] ?? '') : une_genre_affiche($item); ?>
+                <?php if ($genreUne !== ''): ?><span class="discret"><?= e($genreUne) ?></span><?php endif; ?>
             </span>
         </a>
     </li>
@@ -41,11 +42,12 @@ $estVideoSansImage = $image === null && (string) ($item['type'] ?? '') === 'vide
             <span class="une-carte__vignette une-carte__vignette--video" aria-hidden="true">
                 <span class="une-carte__lecture">▶</span>
             </span>
-            <span class="une-carte__type"><?= e($item['rubrique']) ?></span>
+            <span class="une-carte__type"><?= e(($item['themes'] ?? []) !== [] ? implode(' · ', $item['themes']) : $item['rubrique']) ?></span>
             <span class="une-carte__titre"><?= e($item['titre']) ?></span>
             <span class="une-carte__meta">
                 <span class="discret"><?= e($item['date_texte']) ?></span>
-                <span class="discret"><?= e($item['genre']) ?></span>
+                <?php $genreUne = ($item['themes'] ?? []) !== [] ? (string) ($item['genre'] ?? '') : une_genre_affiche($item); ?>
+                <?php if ($genreUne !== ''): ?><span class="discret"><?= e($genreUne) ?></span><?php endif; ?>
             </span>
         </a>
     </li>

@@ -227,7 +227,7 @@ function albums_of_document(int $documentId): array
  * Filtres de la liste « Ajouter depuis les documents du site ».
  *
  * Rien n'est deviné : un type ou une visibilité inconnus retombent sur la
- * valeur sûre, et une catégorie qui n'existe pas est ignorée. La case « pas
+ * valeur sûre, et un thème qui n'existe pas est ignorée. La case « pas
  * encore dans cet album » est cochée par défaut — l'absence du paramètre veut
  * dire « coché », et le formulaire envoie `pas_album=0` quand on la décoche.
  *

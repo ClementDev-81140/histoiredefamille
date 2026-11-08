@@ -1,8 +1,8 @@
 <?php
 /**
- * Cases « Catégories » d'un formulaire de contenu (1.32.0).
+ * Cases « Thèmes » d'un formulaire de contenu (1.32.0).
  *
- * @var array  $categoriesCases catégories qui s'appliquent à ce type de contenu
+ * @var array  $categoriesCases thèmes qui s'appliquent à ce type de contenu
  * @var array  $categorieIds  celles déjà cochées
  * @var string $kindCategorie libellé du type (« Articles », « Photos »…)
  */
@@ -11,15 +11,15 @@ $categorieIds  = array_map('intval', (array) ($categorieIds ?? []));
 $categoriesCases = (array) ($categoriesCases ?? []);
 ?>
 <fieldset class="champ">
-    <legend>Catégories</legend>
+    <legend>Thèmes</legend>
     <p class="aide">
-        Seules les catégories prévues pour <?= e(mb_strtolower($kindCategorie)) ?> sont proposées.
+        Seuls les thèmes prévus pour <?= e(mb_strtolower($kindCategorie)) ?> sont proposées.
         Plusieurs choix sont possibles.
     </p>
     <?php if ($categoriesCases === []): ?>
         <p class="note">
-            Aucune catégorie ne s’applique encore à <?= e(mb_strtolower($kindCategorie)) ?>.
-            Elles se créent dans <a href="/admin/categories">Catégories</a>.
+            Aucun thème ne s’applique encore à <?= e(mb_strtolower($kindCategorie)) ?>.
+            Ils se créent dans <a href="/admin/categories">Thèmes</a>.
         </p>
     <?php else: ?>
         <?php foreach ($categoriesCases as $categorie): ?>

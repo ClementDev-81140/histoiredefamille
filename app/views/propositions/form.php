@@ -77,6 +77,14 @@ $action     = $isEdit ? '/propositions/' . $type . '/' . (int) $ligne['id'] : '/
             <label for="description">Description</label>
             <textarea id="description" name="description" rows="4" maxlength="2000"><?= e((string) $v('description')) ?></textarea>
         </div>
+        <div class="champ">
+            <label class="case">
+                <input type="checkbox" name="archive" value="1"<?= checked(!empty($v('archive', 0))) ?>>
+                Classer en archive
+            </label>
+            <p class="aide">Un document d’archive n’apparaît pas à la une et ne prévient personne. On le retrouve dans les dossiers d’archives et par la recherche. La proposition reste soumise à la validation d’un administrateur, comme les autres.</p>
+        </div>
+
         <div class="champ champ--petit">
             <label for="doc_date">Date du document</label>
             <input type="text" id="doc_date" name="doc_date" maxlength="100"

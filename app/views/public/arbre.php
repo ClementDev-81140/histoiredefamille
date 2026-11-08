@@ -19,6 +19,7 @@ $alphabet = range('A', 'Z');
 <section class="section arbre-chene" id="chene">
     <div class="section__entete">
         <h1 id="arbre-titre">Arbre généalogique</h1>
+        <p class="aide">Les personnes de la famille et leurs liens, génération après génération.</p>
         <?php if (is_admin()): ?>
             <span class="actions">
                 <a class="bouton" href="/admin/arbre/personne/nouvelle">Ajouter une personne</a>

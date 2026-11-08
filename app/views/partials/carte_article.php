@@ -39,6 +39,19 @@ $decennieSouvenir = article_decennie_souvenir($article);
 if ($decennieSouvenir > 0) {
     $surtitre[] = decennie_souvenir_libelle($decennieSouvenir);
 }
+// 1.36.0 : le type (« Article ») s'affiche en petit, jamais en double — si
+// le surtitre (le thème) contient déjà ce mot, on ne le répète pas, et un
+// thème qui n'est que le type (« Articles ») disparaît du surtitre.
+$surtitre = array_values(array_filter(
+    $surtitre,
+    static fn (string $mot): bool => mb_strtolower(rtrim($mot, 's')) !== 'article'
+));
+$typeDejaLa = false;
+foreach ($surtitre as $mot) {
+    if (mb_stripos($mot, 'article') !== false) {
+        $typeDejaLa = true;
+    }
+}
 ?>
 <?php $classes = 'article-carte' . ($grand ? ' article-carte--une' : '') . ($image === null ? ' article-carte--sans-image' : ''); ?>
 <article class="<?= e($classes) ?>">
@@ -63,7 +76,7 @@ if ($decennieSouvenir > 0) {
         </h3>
         <?php $auteur = trim((string) ($article['auteur'] ?? '')); ?>
         <p class="article-carte__signature">
-            <?php if ($grand): ?>
+            <?php if (!$typeDejaLa): ?><span class="article-carte__type">Article</span> · <?php endif; ?><?php if ($grand): ?>
                 <?php if ($auteur !== ''): ?>Par <?= e($auteur) ?> —<?php endif; ?>
                 <?= e(french_long_date((int) $article['published_at'], false)) ?>
             <?php elseif ($auteur !== ''): ?>

@@ -8,6 +8,10 @@ $thumb   = thumbnail_url($doc);
 $kind    = (string) $doc['kind'];
 $isVideo = $kind === 'video';
 $dates   = trim((string) ($doc['doc_date'] ?? ''));
+// 1.36.0 : le surtitre est le thème (s'il y en a un) ; le type s'affiche en
+// petit dans les métadonnées, sans répéter le mot déjà montré dans l'aperçu.
+$themesCarte = themes_noms_pour($kind, (int) $doc['id']);
+$typeDejaAffiche = $thumb === null && !$isVideo;
 ?>
 <article class="carte">
     <a class="carte__lien" href="<?= e(document_url($doc)) ?>">
@@ -22,11 +26,12 @@ $dates   = trim((string) ($doc['doc_date'] ?? ''));
             <?php endif; ?>
         </div>
         <div class="carte__corps">
+            <?php if ($themesCarte !== []): ?>
+                <p class="carte__surtitre"><?= e(implode(' · ', $themesCarte)) ?></p>
+            <?php endif; ?>
             <h3 class="carte__titre"><?= e($doc['title']) ?></h3>
             <p class="carte__meta">
-                <?= e(document_kind_label($kind, (string) $doc['ext'])) ?>
-                <?php if ($dates !== ''): ?> · <?= e($dates) ?><?php endif; ?>
-                · <?= e(format_size((int) $doc['size'])) ?>
+                <?php if (!$typeDejaAffiche): ?><?= e(document_kind_label($kind, (string) $doc['ext'])) ?> · <?php endif; ?><?php if ($dates !== ''): ?><?= e($dates) ?> · <?php endif; ?><?= e(format_size((int) $doc['size'])) ?><?php if (document_est_archive($doc)): ?> · Archive<?php endif; ?>
             </p>
             <?php if (is_logged_in()): ?>
                 <p class="carte__visibilite">

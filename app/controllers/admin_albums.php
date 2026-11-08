@@ -21,7 +21,7 @@ function admin_albums(): void
         $where[] = 'a.visibility = :vis';
         $params[':vis'] = $visibility;
     }
-    // Filtre « Catégorie » (1.32.0), en plus de la visibilité.
+    // Filtre « Thème » (1.32.0), en plus de la visibilité.
     $categorie = category_filtre_demande('album');
     if ($categorie > 0) {
         $where[] = category_where('a', $categorie, $params, "'album'");
@@ -186,7 +186,7 @@ function admin_album_save(array $params = []): void
 
     set_album_photos($albumId, $photosValides);
     set_content_branches('album', $albumId, $visibility === 'branches' ? $branches : []);
-    // Catégories de l'album (1.32.0).
+    // Thèmes de l'album (1.32.0).
     category_enregistrer('album', $albumId, categories_saisies());
 
     log_activity(
@@ -337,7 +337,7 @@ function admin_album_photos_ajouter(array $params = []): void
 
     $resultat = album_ajouter_documents($albumId, $demandes);
 
-    // Catégories du lot (1.32.0) : ajoutées aux documents réellement ajoutés,
+    // Thèmes du lot (1.32.0) : ajoutées aux documents réellement ajoutés,
     // sans toucher à leur visibilité.
     $categoriesLot = categories_saisies();
     if ($categoriesLot !== [] && $resultat['ajoutes'] !== []) {

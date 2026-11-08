@@ -86,9 +86,9 @@ function composition_catalogue(string $page): array
             'aide'    => 'Les articles suivants, en colonnes.',
         ],
         'annonces' => [
-            'nom'     => 'Petites annonces',
+            'nom'     => 'Anniversaires à venir',
             'colonne' => 'laterale',
-            'aide'    => 'Anniversaires et souvenirs des trente prochains jours.',
+            'aide'    => 'Anniversaires de naissance et de mariage des trente prochains jours (sans décès). N’apparaît que s’il y en a.',
         ],
         'editions' => [
             'nom'     => 'Les éditions',

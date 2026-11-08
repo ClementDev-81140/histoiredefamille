@@ -1,7 +1,7 @@
 <?php
 /**
  * Requêtes et petits utilitaires partagés autour des contenus
- * (documents, pages, personnes, branches, catégories).
+ * (documents, pages, personnes, branches, thèmes).
  */
 
 declare(strict_types=1);
@@ -297,7 +297,7 @@ function all_tags(): array
 }
 
 // ---------------------------------------------------------------------------
-// Branches et catégories
+// Branches et thèmes
 // ---------------------------------------------------------------------------
 
 /** Liste des branches (actives par défaut). */
@@ -317,7 +317,7 @@ function find_branch(int $id): ?array
     return db_one('SELECT * FROM branches WHERE id = ?', [$id]);
 }
 
-/** Les six types de contenu auxquels une catégorie peut s'appliquer (1.32.0). */
+/** Les six types de contenu auxquels un thème peut s'appliquer (1.32.0). */
 const CATEGORY_KINDS = [
     'article'  => 'Articles',
     'document' => 'Documents',
@@ -334,9 +334,9 @@ function category_kind_valide(string $kind): bool
 }
 
 /**
- * Types d'une catégorie, à partir de la colonne `kinds`.
+ * Types d'un thème, à partir de la colonne `kinds`.
  *
- * Une valeur vide ou inconnue vaut « tous les types » : une catégorie ne doit
+ * Une valeur vide ou inconnue vaut « tous les types » : un thème ne doit
  * jamais disparaître d'un formulaire à cause d'une donnée abîmée.
  *
  * @return list<string>
@@ -369,14 +369,14 @@ function category_kinds_texte(array $types): string
     return $gardes === [] ? '' : implode(',', $gardes);
 }
 
-/** Cette catégorie s'applique-t-elle à ce type de contenu ? */
+/** Ce thème s'applique-t-elle à ce type de contenu ? */
 function category_applicable(array $categorie, string $kind): bool
 {
     return in_array($kind, category_kinds($categorie), true);
 }
 
 /**
- * Catégories ordonnées (« Ordre » puis nom).
+ * Thèmes ordonnées (« Ordre » puis nom).
  *
  * @param string|null $kind ne garder que celles de ce type de contenu
  */
@@ -392,7 +392,7 @@ function categories_list(?string $kind = null): array
     ));
 }
 
-/** Catégories qui s'appliquent à au moins un des types demandés. */
+/** Thèmes qui s'appliquent à au moins un des types demandés. */
 function categories_pour_kinds(array $kinds): array
 {
     return array_values(array_filter(
@@ -408,7 +408,7 @@ function categories_pour_kinds(array $kinds): array
     ));
 }
 
-/** Identifiants des catégories d'un contenu, triés. */
+/** Identifiants des thèmes d'un contenu, triés. */
 function category_ids_pour(string $kind, int $contenuId): array
 {
     if (!category_kind_valide($kind) || $contenuId <= 0) {
@@ -422,9 +422,9 @@ function category_ids_pour(string $kind, int $contenuId): array
 }
 
 /**
- * Enregistre les catégories d'un contenu (remplace les précédentes).
+ * Enregistre les thèmes d'un contenu (remplace les précédentes).
  *
- * Seules les catégories qui s'appliquent vraiment au type sont gardées : une
+ * Seuls les thèmes qui s'appliquent vraiment au type sont gardées : une
  * valeur fabriquée à la main ne peut pas créer de liaison incohérente.
  */
 function category_enregistrer(string $kind, int $contenuId, array $ids): void
@@ -448,7 +448,7 @@ function category_enregistrer(string $kind, int $contenuId, array $ids): void
     }
 }
 
-/** Les catégories envoyées par un formulaire (`categories[]`), nettoyées. */
+/** Les thèmes envoyées par un formulaire (`categories[]`), nettoyées. */
 function categories_saisies(): array
 {
     $brut = $_POST['categories'] ?? [];
@@ -458,7 +458,7 @@ function categories_saisies(): array
     return array_values(array_unique(array_filter(array_map('intval', $brut), static fn (int $id): bool => $id > 0)));
 }
 
-/** Nombre de contenus de ce type visibles par la personne, dans une catégorie. */
+/** Nombre de contenus de ce type visibles par la personne, dans un thème. */
 function category_compteur(string $kind, int $categorieId): int
 {
     $tables = [
@@ -481,7 +481,7 @@ function category_compteur(string $kind, int $categorieId): int
         $extra = " AND {$alias}.is_attachment = 0 AND {$alias}.kind = :kinddoc";
         $params[':kinddoc'] = $kind === 'document' ? 'document' : $kind;
         if ($kind === 'document') {
-            // Un « document » au sens des catégories, c'est tout ce qui n'est
+            // Un « document » au sens des thèmes, c'est tout ce qui n'est
             // ni une photo ni une vidéo.
             $extra = " AND {$alias}.is_attachment = 0 AND {$alias}.kind NOT IN ('photo', 'video')";
             unset($params[':kinddoc']);
@@ -502,8 +502,8 @@ function category_compteur(string $kind, int $categorieId): int
 }
 
 /**
- * Catégories d'un type, avec le nombre de contenus visibles par la personne.
- * Une catégorie vide pour elle n'apparaît pas : ni le compteur ni la liste ne
+ * Thèmes d'un type, avec le nombre de contenus visibles par la personne.
+ * Un thème vide pour elle n'apparaît pas : ni le compteur ni la liste ne
  * révèlent un contenu qu'elle n'a pas le droit de voir.
  */
 function categories_avec_compteur(string $kind): array
@@ -518,7 +518,28 @@ function categories_avec_compteur(string $kind): array
     return $lignes;
 }
 
-/** Catégorie par identifiant. */
+/**
+ * Noms des thèmes d'un contenu, dans l'ordre des thèmes (1.36.0).
+ * Sert aux cartes : le thème est le surtitre, le type reste en petit.
+ *
+ * @return list<string>
+ */
+function themes_noms_pour(string $kind, int $contenuId): array
+{
+    if (!category_kind_valide($kind) || $contenuId <= 0) {
+        return [];
+    }
+    $lignes = db_all(
+        'SELECT c.name FROM category_links cl
+         JOIN categories c ON c.id = cl.category_id
+         WHERE cl.kind = ? AND cl.content_id = ?
+         ORDER BY c.position, c.name COLLATE NOCASE',
+        [$kind, $contenuId]
+    );
+    return array_map(static fn (array $l): string => (string) $l['name'], $lignes);
+}
+
+/** Thème par identifiant. */
 function find_category(int $id): ?array
 {
     return db_one('SELECT * FROM categories WHERE id = ?', [$id]);
@@ -628,8 +649,11 @@ function recent_documents(int $limit = 6, ?string $kind = null): array
 {
     $params = [];
     $clause = visibility_clause('document', 'd', $params);
+    // 1.36.0 : un document d'archive n'apparaît jamais dans les vitrines
+    // (accueil, nouveautés). Il reste dans Documents, la recherche, son
+    // album et son dossier.
     $sql = "SELECT d.* FROM documents d
-            WHERE d.is_attachment = 0 AND {$clause}";
+            WHERE d.is_attachment = 0 AND d.est_archive = 0 AND {$clause}";
     if ($kind !== null) {
         $sql .= ' AND d.kind = :kind';
         $params[':kind'] = $kind;
@@ -1008,7 +1032,7 @@ function recent_articles(int $limit = 4): array
     return articles_avec_branches($lignes);
 }
 
-/** Catégories d'un ou plusieurs types, avec le nombre de contenus visibles. */
+/** Thèmes d'un ou plusieurs types, avec le nombre de contenus visibles. */
 function categories_avec_compteur_kinds(array $kinds): array
 {
     $lignes = [];
@@ -1025,14 +1049,21 @@ function categories_avec_compteur_kinds(array $kinds): array
 }
 
 /**
- * Catégorie demandée dans l'adresse, si elle s'applique bien à ce type.
+ * Thème demandée dans l'adresse, si elle s'applique bien à ce type.
  *
  * Une valeur inconnue est ignorée (aucun filtre) : on n'invente jamais un
  * filtre à partir d'une adresse fabriquée.
  */
-function category_filtre_demande(string|array $kind, string $param = 'categorie'): int
+function category_filtre_demande(string|array $kind, string $param = 'theme'): int
 {
-    $id = query_int($param);
+    // 1.36.0 : le paramètre s'appelle « theme ». L'ancien « categorie »
+    // (ou « categorie_id ») reste lu ici pour que les anciens liens
+    // filtrent encore ; les pages publiques redirigent en plus vers la
+    // nouvelle adresse (voir rediriger_ancien_param_theme()).
+    $id = query_int('theme');
+    if ($id <= 0 && $param !== 'theme') {
+        $id = query_int($param);
+    }
     if ($id <= 0) {
         return 0;
     }
@@ -1050,7 +1081,25 @@ function category_filtre_demande(string|array $kind, string $param = 'categorie'
 }
 
 /**
- * Condition SQL « ce contenu appartient à cette catégorie » (ou rien).
+ * Ancienne adresse « ?categorie=… » (ou « ?categorie_id=… ») : redirection
+ * permanente vers la même page en « ?theme=… » (1.36.0). Les autres
+ * paramètres (recherche, page…) sont conservés tels quels. Sans ancien
+ * paramètre, ou si le nouveau est déjà là, ne fait rien.
+ */
+function rediriger_ancien_param_theme(string $ancien = 'categorie'): void
+{
+    if (!isset($_GET[$ancien]) || isset($_GET['theme'])) {
+        return;
+    }
+    $params = $_GET;
+    $params['theme'] = (string) $params[$ancien];
+    unset($params[$ancien]);
+    $chemin = parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?: '/';
+    redirect($chemin . '?' . http_build_query($params), 301);
+}
+
+/**
+ * Condition SQL « ce contenu appartient à ce thème » (ou rien).
  *
  * @param array $params paramètres de la requête, complétés par référence
  */

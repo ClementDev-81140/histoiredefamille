@@ -1,8 +1,8 @@
 <?php
 /**
- * Filtre « Catégorie » d'une liste (1.32.0).
+ * Filtre « Thème » d'une liste (1.32.0).
  *
- * @var array  $filtreCategories  catégories visibles, avec leur compteur
+ * @var array  $filtreCategories  thèmes visibles, avec leur compteur
  * @var int    $filtreCategorie   celle qui est demandée (0 = toutes)
  * @var string $filtreAction      adresse de la liste
  * @var string $filtreParam       nom du paramètre d'adresse (« categorie »)
@@ -10,16 +10,16 @@
 $filtreCategories = (array) ($filtreCategories ?? []);
 $filtreCategorie  = (int) ($filtreCategorie ?? 0);
 $filtreAction     = (string) ($filtreAction ?? '');
-$filtreParam      = (string) ($filtreParam ?? 'categorie');
+$filtreParam      = (string) ($filtreParam ?? 'theme');
 
 if ($filtreCategories === []) {
     return;
 }
 ?>
 <form method="get" action="<?= e($filtreAction) ?>" class="formulaire-en-ligne filtre-categories">
-    <label for="filtre-categorie">Catégorie</label>
+    <label for="filtre-categorie">Thème</label>
     <select id="filtre-categorie" name="<?= e($filtreParam) ?>">
-        <option value="0">Toutes les catégories</option>
+        <option value="0">Tous les thèmes</option>
         <?php foreach ($filtreCategories as $categorie): ?>
             <option value="<?= (int) $categorie['id'] ?>"
                 <?= selected($filtreCategorie === (int) $categorie['id']) ?>>

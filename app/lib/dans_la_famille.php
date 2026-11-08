@@ -77,7 +77,7 @@ function dans_la_famille(int $jours = 30, int $limite = 4): array
     $documents = db_all(
         "SELECT d.id, d.title, d.created_at
          FROM documents d
-         WHERE d.is_attachment = 0 AND {$clause} AND d.created_at > :depuis
+         WHERE d.is_attachment = 0 AND d.est_archive = 0 AND {$clause} AND d.created_at > :depuis
          ORDER BY d.created_at DESC
          LIMIT 6",
         $params

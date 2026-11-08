@@ -1,6 +1,6 @@
 <?php
 /**
- * Administration des documents (photos, vidéos, PDF, fichiers) et des catégories.
+ * Administration des documents (photos, vidéos, PDF, fichiers) et des thèmes.
  */
 
 declare(strict_types=1);
@@ -31,7 +31,7 @@ function admin_documents(): void
     if (query('attachments') !== '1') {
         $where[] = 'd.is_attachment = 0';
     }
-    // Filtre « Catégorie » (1.32.0) : une catégorie ne s'applique qu'aux types
+    // Filtre « Thème » (1.32.0) : un thème ne s'applique qu'aux types
     // qu'elle autorise ; une valeur inconnue ne filtre rien.
     $categorie = category_filtre_demande(['document', 'photo', 'video']);
     if ($categorie > 0) {
@@ -91,6 +91,7 @@ function admin_document_form(array $params = []): void
         'doc'         => $doc,
         'categories'  => categories_list(),
         'categorieIds' => $id > 0 ? category_ids_pour((string) ($doc['kind'] ?? 'document'), $id) : [],
+        'dossiers'    => dossiers_liste(),
         'branches'    => branches_list(true),
         'docBranches' => $docBranches,
         'tags'        => $tags,
@@ -121,7 +122,7 @@ function admin_document_save(array $params = []): void
         'description' => post('description'),
         'doc_date'    => post('doc_date'),
         'category_id' => (int) post('category_id'),
-        // Catégories (1.32.0) : plusieurs par fiche, réaffichées cochées si le
+        // Thèmes (1.32.0) : plusieurs par fiche, réaffichées cochées si le
         // formulaire revient avec une erreur.
         'categories'  => array_map('intval', post_array('categories')),
         // Aspect « photo ancienne » : suivre le site, forcer, désactiver.
@@ -129,6 +130,8 @@ function admin_document_save(array $params = []): void
         'visibility'  => sanitize_visibility(post('visibility')),
         'branches'    => array_map('intval', post_array('branches')),
         'tags'        => post('tags'),
+        'archive'     => post('archive') !== '' ? 1 : 0,
+        'dossier_id'  => (int) post('dossier_id'),
         // Conservé pour réafficher le fichier déjà assemblé si le formulaire
         // revient avec une erreur (titre vide, par exemple) : sans lui, la
         // personne devrait renvoyer plusieurs gigaoctets.
@@ -146,6 +149,10 @@ function admin_document_save(array $params = []): void
     }
 
     $visibility = sanitize_visibility($old['visibility']);
+
+    // 1.36.0 : case « Classer en archive » et dossier choisi.
+    $estArchive = !empty($old['archive']);
+    $dossierId  = (int) ($old['dossier_id'] ?? 0);
     $branches   = array_values(array_unique(array_filter($old['branches'])));
     if ($visibility === 'branches' && $branches === []) {
         $errors[] = 'Visibilité « Branches précises » : cochez au moins une branche.';
@@ -157,11 +164,11 @@ function admin_document_save(array $params = []): void
         $aspect   = 'suivre';
     }
 
-    // Catégories (1.32.0) : plusieurs par contenu. La première cochée reste
+    // Thèmes (1.32.0) : plusieurs par contenu. La première cochée reste
     // aussi dans `documents.category_id`, que d'anciens écrans lisent encore.
     $categoriesChoisies = categories_saisies();
     if ($categoriesChoisies !== [] && !find_category($categoriesChoisies[0])) {
-        $errors[] = 'Une des catégories cochées n’existe pas.';
+        $errors[] = 'Un des thèmes cochés n’existe pas.';
         $categoriesChoisies = [];
     }
     $categoryId = $categoriesChoisies[0] ?? null;
@@ -241,7 +248,11 @@ function admin_document_save(array $params = []): void
 
     $docDate = $old['doc_date'] !== '' ? mb_substr($old['doc_date'], 0, 100) : null;
 
+    // 1.36.0 : archive et dossier (validés plus haut, avec les autres
+    // champs). Un document « journal » n'a pas de dossier.
     $data = [
+        'est_archive'  => $estArchive ? 1 : 0,
+        'dossier_id'   => $estArchive && $dossierId > 0 ? $dossierId : null,
         'title'        => $title,
         'description'  => $old['description'] !== '' ? $old['description'] : null,
         'doc_date'     => $docDate,
@@ -289,8 +300,8 @@ function admin_document_save(array $params = []): void
         envoi_marquer_utilise($envoiPrepare, $documentId);
     }
 
-    // Les catégories se rattachent au contenu après sa création : le type est
-    // celui de la fiche enregistrée (photo, vidéo ou document). Une catégorie
+    // Les thèmes se rattachent au contenu après sa création : le type est
+    // celui de la fiche enregistrée (photo, vidéo ou document). Un thème
     // prévue pour un autre type est ignorée, même si le formulaire l'a envoyée.
     $kindEnregistre = (string) db_value('SELECT kind FROM documents WHERE id = ?', [$documentId], 'document');
     if (!in_array($kindEnregistre, ['photo', 'video', 'document'], true)) {
@@ -305,7 +316,7 @@ function admin_document_save(array $params = []): void
     }
     category_enregistrer($kindEnregistre, $documentId, $categoriesRetenues);
 
-    // L'ancienne colonne `documents.category_id` suit la première catégorie
+    // L'ancienne colonne `documents.category_id` suit la première thème
     // retenue : jamais celle d'un autre type.
     if ($categoryId !== null && !in_array((int) $categoryId, $categoriesRetenues, true)) {
         db_update('documents', $documentId, ['category_id' => $categoriesRetenues[0] ?? null]);
@@ -364,15 +375,15 @@ function admin_document_delete(array $params): void
 }
 
 // ---------------------------------------------------------------------------
-// Catégories
+// Thèmes
 // ---------------------------------------------------------------------------
 
-/** Page de gestion des catégories. */
+/** Page de gestion des thèmes. */
 function admin_categories(): void
 {
     require_admin();
 
-    // Nombre de contenus par catégorie, tous types confondus (un
+    // Nombre de contenus par thème, tous types confondus (un
     // administrateur voit tout : le compteur ne cache rien ici).
     $categories = categories_list();
     foreach ($categories as $index => $categorie) {
@@ -384,14 +395,14 @@ function admin_categories(): void
     }
 
     render('admin/categories', [
-        'titre'      => 'Catégories',
+        'titre'      => 'Thèmes',
         'categories' => $categories,
         'erreurs'    => form_errors(),
         'old'        => form_old(),
     ], 'layout_admin');
 }
 
-/** Création d'une catégorie. */
+/** Création d'un thème. */
 function admin_category_create(): void
 {
     require_admin();
@@ -402,30 +413,30 @@ function admin_category_create(): void
     $kinds = category_kinds_texte(is_array($_POST['kinds'] ?? null) ? $_POST['kinds'] : []);
 
     if ($name === '' || mb_strlen($name) > 80) {
-        form_fail(['Le nom de la catégorie est obligatoire (80 caractères maximum).'], ['name' => $name], '/admin/categories');
+        form_fail(['Le nom de le thème est obligatoire (80 caractères maximum).'], ['name' => $name], '/admin/categories');
     }
 
     $slug = slugify($name);
     $exists = db_one('SELECT id FROM categories WHERE slug = ?', [$slug]);
     if ($exists) {
-        form_fail(['Une catégorie porte déjà ce nom.'], ['name' => $name], '/admin/categories');
+        form_fail(['Un thème porte déjà ce nom.'], ['name' => $name], '/admin/categories');
     }
 
     $id = db_insert('categories', [
         'name'       => $name,
         'slug'       => $slug,
         'position'   => $position,
-        // Aucun type coché = « tous » : on n'enferme jamais une catégorie.
+        // Aucun type coché = « tous » : on n'enferme jamais un thème.
         'kinds'      => $kinds,
         'created_at' => time(),
     ]);
 
     log_activity((int) current_account()['id'], 'categorie_ajoutee', $name . ' (#' . $id . ')');
-    flash('succes', 'La catégorie a été créée.');
+    flash('succes', 'Le thème a été créée.');
     redirect('/admin/categories');
 }
 
-/** Modification d'une catégorie. */
+/** Modification d'un thème. */
 function admin_category_update(array $params): void
 {
     require_admin();
@@ -435,11 +446,11 @@ function admin_category_update(array $params): void
     $name = post('name');
 
     if (!db_one('SELECT id FROM categories WHERE id = ?', [$id])) {
-        flash('erreur', 'Catégorie introuvable.');
+        flash('erreur', 'Thème introuvable.');
         redirect('/admin/categories');
     }
     if ($name === '' || mb_strlen($name) > 80) {
-        form_fail(['Le nom de la catégorie est obligatoire (80 caractères maximum).'], ['name' => $name], '/admin/categories');
+        form_fail(['Le nom de le thème est obligatoire (80 caractères maximum).'], ['name' => $name], '/admin/categories');
     }
 
     db_update('categories', $id, [
@@ -450,11 +461,11 @@ function admin_category_update(array $params): void
     ]);
 
     log_activity((int) current_account()['id'], 'categorie_modifiee', $name . ' (#' . $id . ')');
-    flash('succes', 'La catégorie a été modifiée.');
+    flash('succes', 'Le thème a été modifiée.');
     redirect('/admin/categories');
 }
 
-/** Suppression d'une catégorie (les documents ne sont pas supprimés). */
+/** Suppression d'un thème (les documents ne sont pas supprimés). */
 function admin_category_delete(array $params): void
 {
     require_admin();
@@ -463,12 +474,12 @@ function admin_category_delete(array $params): void
     $id = (int) ($params['id'] ?? 0);
     $category = db_one('SELECT * FROM categories WHERE id = ?', [$id]);
     if (!$category) {
-        flash('erreur', 'Catégorie introuvable.');
+        flash('erreur', 'Thème introuvable.');
         redirect('/admin/categories');
     }
 
     db_exec('DELETE FROM categories WHERE id = ?', [$id]);
     log_activity((int) current_account()['id'], 'categorie_supprimee', (string) $category['name']);
-    flash('succes', 'La catégorie a été supprimée. Les documents concernés n’ont plus de catégorie.');
+    flash('succes', 'Le thème a été supprimée. Les documents concernés n’ont plus de thème.');
     redirect('/admin/categories');
 }

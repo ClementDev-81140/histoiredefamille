@@ -315,7 +315,7 @@ if ($filtre === '' || $filtre === 'recherche') {
         'obtenu : ' . recherche_requete_fts(['jean', 'martin'])
     );
     verifier(
-        'catégories cherchées',
+        'thèmes cherchées',
         array_keys(recherche_types()) === ['documents', 'articles', 'pages', 'personnes'],
         'obtenu : ' . implode(', ', array_keys(recherche_types()))
     );
@@ -1971,7 +1971,7 @@ if ($filtre === '' || $filtre === 'apparence') {
     verifier(
         'apparence : les sept titres d’encart par défaut',
         $ok('defauts') && $essais['defauts']['encarts'] === [
-            'Petites annonces', 'Courrier des lecteurs', 'Les éditions',
+            'Anniversaires à venir', 'Courrier des lecteurs', 'Les éditions',
             'Accès rapides', 'En chiffres', 'À la une', 'À lire aussi',
         ],
         $ok('defauts') ? json_encode($essais['defauts']['encarts'], JSON_UNESCAPED_UNICODE) : ''
@@ -1985,7 +1985,7 @@ if ($filtre === '' || $filtre === 'apparence') {
     verifier('apparence : texte trop long coupé à 80 caractères', $ok('nettoyage') && $essais['nettoyage']['long'] === 80, $ok('nettoyage') ? (string) $essais['nettoyage']['long'] : '');
     verifier('apparence : le HTML saisi reste du texte', $ok('nettoyage') && $essais['nettoyage']['html'] === '<b>gras</b>');
     verifier('apparence : les textes saisis remplacent les textes par défaut', $ok('saisis') && $essais['saisis']['midi'] === 'Notre journal de famille' && $essais['saisis']['droite'] === 'Prix : deux sourires', $ok('saisis') ? json_encode($essais['saisis'], JSON_UNESCAPED_UNICODE) : '');
-    verifier('apparence : un encart renommé, les autres inchangés', $ok('saisis') && $essais['saisis']['courrier'] === 'Le courrier' && $essais['saisis']['annonces'] === 'Petites annonces');
+    verifier('apparence : un encart renommé, les autres inchangés', $ok('saisis') && $essais['saisis']['courrier'] === 'Le courrier' && $essais['saisis']['annonces'] === 'Anniversaires à venir');
 
     // Numéro d'édition.
     verifier('apparence : numéro en texte libre', $ok('numeroLibre') && $essais['numeroLibre'] === 'N° 12', $ok('numeroLibre') ? $essais['numeroLibre'] : '');
@@ -2535,7 +2535,16 @@ if ($filtre === '' || $filtre === 'composition') {
     $derniere = basename((string) end($migrations));
     $sql009   = (string) @file_get_contents(dirname(__DIR__) . '/migrations/009_articles_modele.sql');
     // Chaque lot ajoute SA migration ; les précédentes ne bougent jamais.
-    verifier('migration : 022 est la dernière migration', $derniere === '022_evenements_statut.sql', $derniere);
+    verifier('migration : 023 est la dernière migration', $derniere === '023_archives_dossiers.sql', $derniere);
+    $migration023 = (string) @file_get_contents(dirname(__DIR__) . '/migrations/023_archives_dossiers.sql');
+    verifier(
+        'migration : 023 ajoute dossiers et archives, EN AJOUT SEUL',
+        str_contains($migration023, 'CREATE TABLE dossiers')
+            && str_contains($migration023, 'ALTER TABLE documents ADD COLUMN est_archive INTEGER NOT NULL DEFAULT 0')
+            && str_contains($migration023, 'ALTER TABLE uploads ADD COLUMN archive INTEGER NOT NULL DEFAULT 0')
+            && preg_match('/^\s*(UPDATE|DELETE FROM|DROP)\s/im', $migration023) !== 1,
+        $migration023 === '' ? 'fichier absent' : 'ok'
+    );
     $migration019 = (string) @file_get_contents(dirname(__DIR__) . '/migrations/019_aspect_photo.sql');
     verifier(
         'migration : 019 ajoute « documents.vintage_aspect » EN AJOUT SEUL',
@@ -2554,10 +2563,10 @@ if ($filtre === '' || $filtre === 'composition') {
     );
     $migration021 = (string) @file_get_contents(dirname(__DIR__) . '/migrations/021_categories_types.sql');
     verifier(
-        'migration : 021 ouvre les catégories aux six types, sans rien perdre',
+        'migration : 021 ouvre les thèmes aux six types, sans rien perdre',
         str_contains($migration021, 'ALTER TABLE categories ADD COLUMN kinds')
             && str_contains($migration021, 'CREATE TABLE category_links')
-            // Les catégories déjà posées sont RECOPIÉES (INSERT), jamais effacées.
+            // Les thèmes déjà posées sont RECOPIÉES (INSERT), jamais effacées.
             && str_contains($migration021, 'INSERT OR IGNORE INTO category_links')
             && str_contains($migration021, 'FROM documents')
             && preg_match('/^\s*(UPDATE|DELETE|DROP)\s/im', $migration021) !== 1
@@ -2814,6 +2823,10 @@ if ($filtre === '' || $filtre === 'assets') {
     verifier('les deux mises en page (site et administration) utilisent l’adresse versionnée',
         str_contains((string) @file_get_contents(dirname(__DIR__) . '/views/layout.php'), "asset_url('/assets/style.css')")
         && str_contains((string) @file_get_contents(dirname(__DIR__) . '/views/layout_admin.php'), "asset_url('/assets/style.css')"));
+}
+
+if ($filtre === '' || $filtre === 'archives36') {
+    require_once __DIR__ . '/tests_archives.php';
 }
 
 // Le réglage « courriels_actifs » est remis dans l'état où il était avant la

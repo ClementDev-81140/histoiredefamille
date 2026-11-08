@@ -4,7 +4,7 @@
 > réécrit par `php app/cli/tests.php matrice`. Il décrit ce que le site
 > répond réellement, route par route et profil par profil.
 
-Date de génération : 08/11/2026 à 10:57
+Date de génération : 08/11/2026 à 16:10
 
 ## Profils testés
 
@@ -25,10 +25,10 @@ Date de génération : 08/11/2026 à 10:57
 
 ## Résultat
 
-- Routes lues dans `app/routes.php` : **201** ;
-- Vérifications (route × profil) : **804** ;
+- Routes lues dans `app/routes.php` : **206** ;
+- Vérifications (route × profil) : **824** ;
 - Anomalies : **0** ;
-- Contrôles ciblés : **260**, dont **0** en échec.
+- Contrôles ciblés : **266**, dont **0** en échec.
 
 ## Points examinés
 
@@ -42,7 +42,7 @@ Date de génération : 08/11/2026 à 10:57
 | `GET /carte` et `GET /lieu/{id}` | **404** pour les quatre profils quand la carte est fermée (réglage « Carte des lieux » décoché, le défaut depuis la 1.32.0) : la même page « introuvable » qu'une adresse qui n'existe pas, administrateur compris. Carte ouverte, un visiteur est renvoyé vers `/connexion` (**303**, comme `/arbre`) et les trois profils connectés ouvrent la page (**200**). |
 | `GET /articles`, `/documents`, `/albums`, `/videos`, `/recherche`, `/calendrier`, `/recettes`, `/frise`, `/temoignages` | **inchangés** : **200** pour un visiteur, comme avant la 1.31.0. Seul le *menu* d'un visiteur est réduit à « Accueil » et « Se connecter » ; aucune autre règle d'accès ne bouge. |
 | Filtre `?visibilite=` des listes d'administration | **Aucun droit modifié** : c'est un filtre d'affichage réservé aux administrateurs (les pages concernées répondent déjà **303** à un visiteur, **200** à un administrateur). Une valeur inventée est ignorée et redonne la liste complète. |
-| Filtres `?categorie=` / `?categorie_id=` | **Aucun droit modifié** : c'est un filtre d'affichage. Une catégorie inconnue, ou prévue pour un autre type, est ignorée ; le compteur affiché ne compte que les contenus visibles par la personne. |
+| Filtres `?categorie=` / `?categorie_id=` | **Aucun droit modifié** : c'est un filtre d'affichage. Un thème inconnue, ou prévue pour un autre type, est ignorée ; le compteur affiché ne compte que les contenus visibles par la personne. |
 | `/admin/calendrier` et ses actions | **303** pour un visiteur, **403** pour un lecteur ou un journaliste, **200** (GET) ou **303** (POST avec jeton) pour un administrateur : même règle que le reste de l'administration. Un POST sans jeton CSRF répond **403**. |
 
 ## Anomalies constatées
@@ -53,66 +53,66 @@ Aucune anomalie : pour chaque route, le code obtenu correspond au code attendu.
 
 | Contrôle | Attendu | Obtenu |
 |---|---|---|
-| fichier public — /f/12 — Visiteur (non connecté) | 200 | 200 |
-| fichier public — /f/12/telecharger — Visiteur (non connecté) | 200 | 200 |
-| fichier public — /media/miniature/12 — Visiteur (non connecté) | 200 | 200 |
-| fichier public — /f/12 — Lecteur (branche A) | 200 | 200 |
-| fichier public — /f/12/telecharger — Lecteur (branche A) | 200 | 200 |
-| fichier public — /media/miniature/12 — Lecteur (branche A) | 200 | 200 |
-| fichier public — /f/12 — Journaliste (branche B) | 200 | 200 |
-| fichier public — /f/12/telecharger — Journaliste (branche B) | 200 | 200 |
-| fichier public — /media/miniature/12 — Journaliste (branche B) | 200 | 200 |
-| fichier public — /f/12 — Administrateur | 200 | 200 |
-| fichier public — /f/12/telecharger — Administrateur | 200 | 200 |
-| fichier public — /media/miniature/12 — Administrateur | 200 | 200 |
-| fichier famille — /f/13 — Visiteur (non connecté) | 404 | 404 |
-| fichier famille — /f/13/telecharger — Visiteur (non connecté) | 404 | 404 |
-| fichier famille — /media/miniature/13 — Visiteur (non connecté) | 404 | 404 |
-| fichier famille — /f/13 — Lecteur (branche A) | 200 | 200 |
-| fichier famille — /f/13/telecharger — Lecteur (branche A) | 200 | 200 |
-| fichier famille — /media/miniature/13 — Lecteur (branche A) | 200 | 200 |
-| fichier famille — /f/13 — Journaliste (branche B) | 200 | 200 |
-| fichier famille — /f/13/telecharger — Journaliste (branche B) | 200 | 200 |
-| fichier famille — /media/miniature/13 — Journaliste (branche B) | 200 | 200 |
-| fichier famille — /f/13 — Administrateur | 200 | 200 |
-| fichier famille — /f/13/telecharger — Administrateur | 200 | 200 |
-| fichier famille — /media/miniature/13 — Administrateur | 200 | 200 |
-| fichier branche A — /f/14 — Visiteur (non connecté) | 404 | 404 |
-| fichier branche A — /f/14/telecharger — Visiteur (non connecté) | 404 | 404 |
-| fichier branche A — /media/miniature/14 — Visiteur (non connecté) | 404 | 404 |
-| fichier branche A — /f/14 — Lecteur (branche A) | 200 | 200 |
-| fichier branche A — /f/14/telecharger — Lecteur (branche A) | 200 | 200 |
-| fichier branche A — /media/miniature/14 — Lecteur (branche A) | 200 | 200 |
-| fichier branche A — /f/14 — Journaliste (branche B) | 404 | 404 |
-| fichier branche A — /f/14/telecharger — Journaliste (branche B) | 404 | 404 |
-| fichier branche A — /media/miniature/14 — Journaliste (branche B) | 404 | 404 |
-| fichier branche A — /f/14 — Administrateur | 200 | 200 |
-| fichier branche A — /f/14/telecharger — Administrateur | 200 | 200 |
-| fichier branche A — /media/miniature/14 — Administrateur | 200 | 200 |
-| fichier branche B — /f/15 — Visiteur (non connecté) | 404 | 404 |
-| fichier branche B — /f/15/telecharger — Visiteur (non connecté) | 404 | 404 |
-| fichier branche B — /media/miniature/15 — Visiteur (non connecté) | 404 | 404 |
-| fichier branche B — /f/15 — Lecteur (branche A) | 404 | 404 |
-| fichier branche B — /f/15/telecharger — Lecteur (branche A) | 404 | 404 |
-| fichier branche B — /media/miniature/15 — Lecteur (branche A) | 404 | 404 |
-| fichier branche B — /f/15 — Journaliste (branche B) | 200 | 200 |
-| fichier branche B — /f/15/telecharger — Journaliste (branche B) | 200 | 200 |
-| fichier branche B — /media/miniature/15 — Journaliste (branche B) | 200 | 200 |
-| fichier branche B — /f/15 — Administrateur | 200 | 200 |
-| fichier branche B — /f/15/telecharger — Administrateur | 200 | 200 |
-| fichier branche B — /media/miniature/15 — Administrateur | 200 | 200 |
-| fichier privé — /f/16 — Visiteur (non connecté) | 404 | 404 |
-| fichier privé — /f/16/telecharger — Visiteur (non connecté) | 404 | 404 |
-| fichier privé — /media/miniature/16 — Visiteur (non connecté) | 404 | 404 |
-| fichier privé — /f/16 — Lecteur (branche A) | 404 | 404 |
-| fichier privé — /f/16/telecharger — Lecteur (branche A) | 404 | 404 |
-| fichier privé — /media/miniature/16 — Lecteur (branche A) | 404 | 404 |
-| fichier privé — /f/16 — Journaliste (branche B) | 404 | 404 |
-| fichier privé — /f/16/telecharger — Journaliste (branche B) | 404 | 404 |
-| fichier privé — /media/miniature/16 — Journaliste (branche B) | 404 | 404 |
-| fichier privé — /f/16 — Administrateur | 200 | 200 |
-| fichier privé — /f/16/telecharger — Administrateur | 200 | 200 |
-| fichier privé — /media/miniature/16 — Administrateur | 200 | 200 |
+| fichier public — /f/11 — Visiteur (non connecté) | 200 | 200 |
+| fichier public — /f/11/telecharger — Visiteur (non connecté) | 200 | 200 |
+| fichier public — /media/miniature/11 — Visiteur (non connecté) | 200 | 200 |
+| fichier public — /f/11 — Lecteur (branche A) | 200 | 200 |
+| fichier public — /f/11/telecharger — Lecteur (branche A) | 200 | 200 |
+| fichier public — /media/miniature/11 — Lecteur (branche A) | 200 | 200 |
+| fichier public — /f/11 — Journaliste (branche B) | 200 | 200 |
+| fichier public — /f/11/telecharger — Journaliste (branche B) | 200 | 200 |
+| fichier public — /media/miniature/11 — Journaliste (branche B) | 200 | 200 |
+| fichier public — /f/11 — Administrateur | 200 | 200 |
+| fichier public — /f/11/telecharger — Administrateur | 200 | 200 |
+| fichier public — /media/miniature/11 — Administrateur | 200 | 200 |
+| fichier famille — /f/12 — Visiteur (non connecté) | 404 | 404 |
+| fichier famille — /f/12/telecharger — Visiteur (non connecté) | 404 | 404 |
+| fichier famille — /media/miniature/12 — Visiteur (non connecté) | 404 | 404 |
+| fichier famille — /f/12 — Lecteur (branche A) | 200 | 200 |
+| fichier famille — /f/12/telecharger — Lecteur (branche A) | 200 | 200 |
+| fichier famille — /media/miniature/12 — Lecteur (branche A) | 200 | 200 |
+| fichier famille — /f/12 — Journaliste (branche B) | 200 | 200 |
+| fichier famille — /f/12/telecharger — Journaliste (branche B) | 200 | 200 |
+| fichier famille — /media/miniature/12 — Journaliste (branche B) | 200 | 200 |
+| fichier famille — /f/12 — Administrateur | 200 | 200 |
+| fichier famille — /f/12/telecharger — Administrateur | 200 | 200 |
+| fichier famille — /media/miniature/12 — Administrateur | 200 | 200 |
+| fichier branche A — /f/13 — Visiteur (non connecté) | 404 | 404 |
+| fichier branche A — /f/13/telecharger — Visiteur (non connecté) | 404 | 404 |
+| fichier branche A — /media/miniature/13 — Visiteur (non connecté) | 404 | 404 |
+| fichier branche A — /f/13 — Lecteur (branche A) | 200 | 200 |
+| fichier branche A — /f/13/telecharger — Lecteur (branche A) | 200 | 200 |
+| fichier branche A — /media/miniature/13 — Lecteur (branche A) | 200 | 200 |
+| fichier branche A — /f/13 — Journaliste (branche B) | 404 | 404 |
+| fichier branche A — /f/13/telecharger — Journaliste (branche B) | 404 | 404 |
+| fichier branche A — /media/miniature/13 — Journaliste (branche B) | 404 | 404 |
+| fichier branche A — /f/13 — Administrateur | 200 | 200 |
+| fichier branche A — /f/13/telecharger — Administrateur | 200 | 200 |
+| fichier branche A — /media/miniature/13 — Administrateur | 200 | 200 |
+| fichier branche B — /f/14 — Visiteur (non connecté) | 404 | 404 |
+| fichier branche B — /f/14/telecharger — Visiteur (non connecté) | 404 | 404 |
+| fichier branche B — /media/miniature/14 — Visiteur (non connecté) | 404 | 404 |
+| fichier branche B — /f/14 — Lecteur (branche A) | 404 | 404 |
+| fichier branche B — /f/14/telecharger — Lecteur (branche A) | 404 | 404 |
+| fichier branche B — /media/miniature/14 — Lecteur (branche A) | 404 | 404 |
+| fichier branche B — /f/14 — Journaliste (branche B) | 200 | 200 |
+| fichier branche B — /f/14/telecharger — Journaliste (branche B) | 200 | 200 |
+| fichier branche B — /media/miniature/14 — Journaliste (branche B) | 200 | 200 |
+| fichier branche B — /f/14 — Administrateur | 200 | 200 |
+| fichier branche B — /f/14/telecharger — Administrateur | 200 | 200 |
+| fichier branche B — /media/miniature/14 — Administrateur | 200 | 200 |
+| fichier privé — /f/15 — Visiteur (non connecté) | 404 | 404 |
+| fichier privé — /f/15/telecharger — Visiteur (non connecté) | 404 | 404 |
+| fichier privé — /media/miniature/15 — Visiteur (non connecté) | 404 | 404 |
+| fichier privé — /f/15 — Lecteur (branche A) | 404 | 404 |
+| fichier privé — /f/15/telecharger — Lecteur (branche A) | 404 | 404 |
+| fichier privé — /media/miniature/15 — Lecteur (branche A) | 404 | 404 |
+| fichier privé — /f/15 — Journaliste (branche B) | 404 | 404 |
+| fichier privé — /f/15/telecharger — Journaliste (branche B) | 404 | 404 |
+| fichier privé — /media/miniature/15 — Journaliste (branche B) | 404 | 404 |
+| fichier privé — /f/15 — Administrateur | 200 | 200 |
+| fichier privé — /f/15/telecharger — Administrateur | 200 | 200 |
+| fichier privé — /media/miniature/15 — Administrateur | 200 | 200 |
 | vidéo publique — lecture complète (visiteur) | 200 | 200 |
 | vidéo publique — lecture par morceaux (Range) | 206 | 206 |
 | vidéo publique — plage invalide refusée | 416 | 416 |
@@ -248,6 +248,12 @@ Aucune anomalie : pour chaque route, le code obtenu correspond au code attendu.
 | POST /admin/recettes/{id} — lecteur | 403 | 403 |
 | POST /admin/recettes/{id}/supprimer — sans jeton CSRF (administrateur) | 403 | 403 |
 | POST /admin/recettes/{id}/supprimer — lecteur | 403 | 403 |
+| POST /admin/dossiers/nouveau — sans jeton CSRF (administrateur) | 403 | 403 |
+| POST /admin/dossiers/nouveau — lecteur | 403 | 403 |
+| POST /admin/dossiers/{id}/modifier — sans jeton CSRF (administrateur) | 403 | 403 |
+| POST /admin/dossiers/{id}/modifier — lecteur | 403 | 403 |
+| POST /admin/dossiers/{id}/supprimer — sans jeton CSRF (administrateur) | 403 | 403 |
+| POST /admin/dossiers/{id}/supprimer — lecteur | 403 | 403 |
 | POST /admin/categories/nouvelle — sans jeton CSRF (administrateur) | 403 | 403 |
 | POST /admin/categories/nouvelle — lecteur | 403 | 403 |
 | POST /admin/categories/{id}/modifier — sans jeton CSRF (administrateur) | 403 | 403 |
@@ -468,6 +474,11 @@ Aucune anomalie : pour chaque route, le code obtenu correspond au code attendu.
 | POST | `/admin/recettes/{id}` | 303 | 403 | 403 | 403 | administration |
 | POST | `/admin/recettes/{id}/supprimer` | 303 | 403 | 403 | 403 | administration |
 | GET | `/admin/export/gedcom` | 303 | 403 | 403 | 200 | administration |
+| GET | `/dossiers/{id}` | 200 | 200 | 200 | 200 | contenu |
+| GET | `/admin/dossiers` | 303 | 403 | 403 | 200 | administration |
+| POST | `/admin/dossiers/nouveau` | 303 | 403 | 403 | 403 | administration |
+| POST | `/admin/dossiers/{id}/modifier` | 303 | 403 | 403 | 403 | administration |
+| POST | `/admin/dossiers/{id}/supprimer` | 303 | 403 | 403 | 403 | administration |
 | GET | `/admin/categories` | 303 | 403 | 403 | 200 | administration |
 | POST | `/admin/categories/nouvelle` | 303 | 403 | 403 | 403 | administration |
 | POST | `/admin/categories/{id}/modifier` | 303 | 403 | 403 | 403 | administration |

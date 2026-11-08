@@ -3,7 +3,7 @@
  * Import depuis le dossier « arrivée ».
  *
  * Les fichiers déposés sur le Raspberry Pi (SFTP/Samba) sont listés ici ;
- * l'administrateur leur donne un titre, une catégorie et une visibilité,
+ * l'administrateur leur donne un titre, un thème et une visibilité,
  * puis le site les déplace dans le stockage définitif.
  */
 

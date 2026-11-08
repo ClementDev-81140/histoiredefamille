@@ -249,6 +249,18 @@ $listePersonnes = static function (array $personnes): void {
         </ul>
     <?php endif; ?>
 
+    <?php if (($dossiers ?? []) !== []): ?>
+        <h2>Dossiers d’archives</h2>
+        <ul>
+            <?php foreach ($dossiers as $dossier): ?>
+                <li>
+                    <a href="/dossiers/<?= (int) $dossier['id'] ?>"><?= e((string) $dossier['name']) ?></a>
+                    <span class="discret">(<?= (int) $dossier['nb'] ?> document<?= (int) $dossier['nb'] > 1 ? 's' : '' ?>)</span>
+                </li>
+            <?php endforeach; ?>
+        </ul>
+    <?php endif; ?>
+
     <?php if ($grandsParents !== [] || $petitsEnfants !== [] || $onclesTantes !== [] || $neveuxNieces !== []): ?>
         <h2>Famille élargie</h2>
         <div class="famille-elargie">

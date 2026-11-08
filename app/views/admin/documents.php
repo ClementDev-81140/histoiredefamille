@@ -37,7 +37,7 @@
     </div>
     <?php if ($filtreCategories !== []): ?>
         <div class="champ">
-            <label for="categorie">Catégorie</label>
+            <label for="categorie">Thème</label>
             <select id="categorie" name="categorie">
                 <option value="0">Toutes</option>
                 <?php foreach ($filtreCategories as $categorieFiltre): ?>
@@ -69,7 +69,7 @@
                 <tr>
                     <th scope="col">Titre</th>
                     <th scope="col">Type</th>
-                    <th scope="col">Catégorie</th>
+                    <th scope="col">Thème</th>
                     <th scope="col">Visibilité</th>
                     <th scope="col">Taille</th>
                     <th scope="col">Ajouté le</th>
@@ -83,6 +83,9 @@
                             <a href="/documents/<?= (int) $doc['id'] ?>"><?= e($doc['title']) ?></a>
                             <?php if ((int) $doc['is_attachment'] === 1): ?>
                                 <span class="etiquette">photo de fiche</span>
+                            <?php endif; ?>
+                            <?php if (document_est_archive($doc)): ?>
+                                <span class="etiquette">Archive</span>
                             <?php endif; ?>
                         </td>
                         <td><?= e(document_kind_label((string) $doc['kind'], (string) $doc['ext'])) ?></td>

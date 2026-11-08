@@ -1102,6 +1102,22 @@ legend {
     color: var(--texte-doux);
 }
 
+/* Surtitre d'une carte : le thème du contenu (1.36.0). Le type reste en
+   petit dans .carte__meta, sans jamais répéter le même mot. */
+.carte__surtitre {
+    margin: 0 0 0.25em;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+}
+
+.article-carte__type {
+    font-style: italic;
+    color: var(--texte-doux);
+}
+
 .carte__visibilite { margin: 0.35rem 0 0; }
 
 .carte__duree {
@@ -6285,10 +6301,10 @@ legend {
 
 
 /* ==========================================================================
-   1.32.0 — catégories par type de contenu
+   1.32.0 — thèmes par type de contenu
    ========================================================================== */
 
-/* Cases « Catégories » devant « Créer le document » : un fichier reçu peut
+/* Cases « Thèmes » devant « Créer le document » : un fichier reçu peut
    recevoir son classement au moment où il devient une fiche. */
 .cases-categories {
     display: inline-flex;
@@ -6311,7 +6327,7 @@ legend {
     margin: 0;
 }
 
-/* Filtre « Catégorie » des listes publiques et d'administration. */
+/* Filtre « Thème » des listes publiques et d'administration. */
 .filtre-categories {
     display: flex;
     flex-wrap: wrap;

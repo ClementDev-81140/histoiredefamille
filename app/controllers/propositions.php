@@ -206,6 +206,7 @@ function proposition_save(array $params = []): void
 
             $date = trim(post('doc_date'));
             $donnees = [
+                'est_archive'   => !empty($_POST['archive']) ? 1 : 0,
                 'title'         => $titre !== '' ? $titre : 'Sans titre',
                 'description'   => trim(post('description')) !== '' ? mb_substr(trim(post('description')), 0, 2000, 'UTF-8') : null,
                 'doc_date'      => $date !== '' ? mb_substr($date, 0, 100, 'UTF-8') : null,

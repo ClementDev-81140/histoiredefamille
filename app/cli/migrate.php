@@ -20,6 +20,21 @@ echo "-------------------------------------------\n";
 echo 'Base de données : ' . config('database') . "\n";
 echo 'Stockage        : ' . config('storage.root') . "\n\n";
 
+// Sauvegarde avant migration : s'il reste des migrations à appliquer et que
+// la base existe déjà, on en garde une copie datée à côté (jamais écrasée).
+// C'est cette commande que lance deploy/install.sh : un « git pull » suivi
+// d'install.sh applique donc la migration avec sa copie de sécurité.
+$enAttente = db_migrations_en_attente();
+$base = (string) config('database');
+if ($enAttente !== [] && $base !== '' && is_file($base) && filesize($base) > 0) {
+    $copie = $base . '.avant-migration-' . date('Ymd-His');
+    if (@copy($base, $copie)) {
+        echo 'Copie de sécurité avant migration : ' . $copie . "\n\n";
+    } else {
+        cli_err("Attention : copie de sécurité impossible avant migration (" . $copie . ").\n");
+    }
+}
+
 $applied = db_migrate();
 
 if ($applied === []) {

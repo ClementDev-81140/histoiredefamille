@@ -137,7 +137,7 @@ $couverture = (int) $v('couverture', (int) ($album['cover_document_id'] ?? 0));
     </fieldset>
 
     <?php
-    // Catégories du type « album » (1.32.0).
+    // Thèmes du type « album » (1.32.0).
     $categoriesCases = categories_list('album');
     $kindCategorie   = 'Albums';
     require __DIR__ . '/partials/categories_cases.php';

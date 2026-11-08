@@ -1,12 +1,12 @@
 <?php
 /**
- * Filtre « Catégorie » d'une liste de l'administration (1.32.0).
+ * Filtre « Thème » d'une liste de l'administration (1.32.0).
  *
  * Formulaire GET : l'adresse garde le filtre (`?categorie=3`), les autres
  * filtres de la page (visibilité, recherche…) sont conservés en champs
  * cachés. Aucun JavaScript.
  *
- * @var array  $filtreCategories catégories du type, avec leur compteur
+ * @var array  $filtreCategories thèmes du type, avec leur compteur
  * @var int    $filtreCategorie  celle qui est demandée (0 = toutes)
  * @var string $action           adresse de la liste
  * @var array  $filtreAutres     autres filtres à conserver (nom => valeur)
@@ -27,7 +27,7 @@ if ($filtreCategories === []) {
         <?php endif; ?>
     <?php endforeach; ?>
     <div class="champ">
-        <label for="categorie">Catégorie</label>
+        <label for="categorie">Thème</label>
         <select id="categorie" name="categorie">
             <option value="0">Toutes</option>
             <?php foreach ($filtreCategories as $categorie): ?>

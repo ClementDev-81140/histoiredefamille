@@ -131,7 +131,7 @@ function tests_une_menu(): void
     verifier(
         'une : le menu d’un compte connecté ne change pas (articles, documents, arbre…)',
         in_array('Articles', $connecte, true) && in_array('Documents', $connecte, true)
-            && in_array('Arbre', $connecte, true) && in_array('Recherche', $connecte, true),
+            && in_array('Arbre généalogique', $connecte, true) && in_array('Albums photos', $connecte, true) && in_array('Recherche', $connecte, true),
         implode(', ', $connecte)
     );
 

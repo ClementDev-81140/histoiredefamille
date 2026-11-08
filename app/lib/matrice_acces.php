@@ -287,6 +287,8 @@ function matrice_url(string $motif, array $f): string
             str_starts_with($url, '/admin/admins/')             => $f['account_admin'],
             str_starts_with($url, '/admin/pages/')              => $f['page'],
             str_starts_with($url, '/admin/categories/')         => $f['category'],
+            str_starts_with($url, '/dossiers/')                => $f['dossier_archive'],
+            str_starts_with($url, '/admin/dossiers/')          => $f['dossier_archive'],
             str_starts_with($url, '/admin/calendrier/')         => $f['evenement'],
             str_starts_with($url, '/admin/gazette/')            => $f['gazette'],
             str_starts_with($url, '/lieu/')                     => $f['place'],
@@ -382,7 +384,7 @@ function matrice_fixtures(): array
     }
 
     $categorie = db_insert('categories', [
-        'name' => 'Catégorie (matrice)', 'slug' => 'matrice-' . $suffixe,
+        'name' => 'Thème (matrice)', 'slug' => 'matrice-' . $suffixe,
         'position' => 0, 'created_at' => $maintenant,
     ]);
 
@@ -502,6 +504,15 @@ function matrice_fixtures(): array
     ]);
     db_update('persons', $person, ['birth_place' => $nomPlace]);
 
+    // Un dossier d'archives (1.36.0) contenant l'acte public : sa page
+    // répond donc 200 aux quatre profils, comme le document lui-même.
+    $dossierArchive = db_insert('dossiers', [
+        'name' => 'Dossier (essai)', 'description' => 'Dossier fictif du test d’accès.',
+        'person_id' => $person, 'created_by' => $compteAdmin,
+        'created_at' => $maintenant, 'updated_at' => $maintenant,
+    ]);
+    db_update('documents', $docPdf, ['est_archive' => 1, 'dossier_id' => $dossierArchive]);
+
     $chat = db_insert('chat_messages', [
         'account_id' => $compteBrancheA, 'author_label' => 'Branche A (essai)',
         'author_branch' => 'MATR-A', 'body' => 'Message de test.',
@@ -555,6 +566,7 @@ function matrice_fixtures(): array
         'secret_article' => 'SECRET-PRIVE-' . $suffixe,
         'secret_page' => 'SECRET-PAGE-' . $suffixe,
         'dossier_fichiers' => $dossier,
+        'dossier_archive' => $dossierArchive,
     ];
 }
 
@@ -1015,7 +1027,7 @@ function matrice_rapport(array $lignes, array $anomalies, array $controles): str
         . "| `GET /carte` et `GET /lieu/{id}` | **404** pour les quatre profils quand la carte est fermée (réglage « Carte des lieux » décoché, le défaut depuis la 1.32.0) : la même page « introuvable » qu'une adresse qui n'existe pas, administrateur compris. Carte ouverte, un visiteur est renvoyé vers `/connexion` (**303**, comme `/arbre`) et les trois profils connectés ouvrent la page (**200**). |\n"
         . "| `GET /articles`, `/documents`, `/albums`, `/videos`, `/recherche`, `/calendrier`, `/recettes`, `/frise`, `/temoignages` | **inchangés** : **200** pour un visiteur, comme avant la 1.31.0. Seul le *menu* d'un visiteur est réduit à « Accueil » et « Se connecter » ; aucune autre règle d'accès ne bouge. |\n"
         . "| Filtre `?visibilite=` des listes d'administration | **Aucun droit modifié** : c'est un filtre d'affichage réservé aux administrateurs (les pages concernées répondent déjà **303** à un visiteur, **200** à un administrateur). Une valeur inventée est ignorée et redonne la liste complète. |\n"
-        . "| Filtres `?categorie=` / `?categorie_id=` | **Aucun droit modifié** : c'est un filtre d'affichage. Une catégorie inconnue, ou prévue pour un autre type, est ignorée ; le compteur affiché ne compte que les contenus visibles par la personne. |\n"
+        . "| Filtres `?categorie=` / `?categorie_id=` | **Aucun droit modifié** : c'est un filtre d'affichage. Un thème inconnue, ou prévue pour un autre type, est ignorée ; le compteur affiché ne compte que les contenus visibles par la personne. |\n"
         . "| `/admin/calendrier` et ses actions | **303** pour un visiteur, **403** pour un lecteur ou un journaliste, **200** (GET) ou **303** (POST avec jeton) pour un administrateur : même règle que le reste de l'administration. Un POST sans jeton CSRF répond **403**. |\n";
 
     return "# Matrice d'accès\n\n"

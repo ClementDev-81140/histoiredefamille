@@ -568,7 +568,7 @@ function recherche_types(): array
 }
 
 /**
- * Cherche dans toutes les catégories à la fois (aperçu de la page /recherche).
+ * Cherche dans tous les thèmes à la fois (aperçu de la page /recherche).
  *
  * @return array{resultats:array<string,array>, totaux:array<string,int>}
  */
@@ -587,7 +587,7 @@ function recherche_tout(array $mots, int $limite = 8): array
     return ['resultats' => $resultats, 'totaux' => $totaux];
 }
 
-/** Nombre total de résultats, toutes catégories confondues. */
+/** Nombre total de résultats, toutes thèmes confondues. */
 function recherche_total(array $totaux): int
 {
     return array_sum($totaux);

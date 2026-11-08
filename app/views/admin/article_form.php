@@ -182,7 +182,7 @@ $publishedAt = (string) old_value($old, 'published_at', date('Y-m-d\TH:i', $ts))
     </fieldset>
 
     <?php
-    // Catégories du type « article » (1.32.0) : plusieurs choix possibles.
+    // Thèmes du type « article » (1.32.0) : plusieurs choix possibles.
     $categoriesCases = categories_list('article');
     $kindCategorie   = 'Articles';
     require __DIR__ . '/partials/categories_cases.php';

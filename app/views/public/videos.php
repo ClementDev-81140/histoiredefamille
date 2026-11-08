@@ -10,6 +10,7 @@
 <section class="section">
     <div class="section__entete">
         <h1>Vidéos</h1>
+        <p class="aide">Les films et vidéos de la famille, à regarder en ligne.</p>
         <?php if (is_admin()): ?>
             <span class="actions">
                 <a class="bouton" href="/admin/videos">Gérer les vidéos</a>

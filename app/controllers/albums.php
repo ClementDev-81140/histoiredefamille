@@ -11,6 +11,7 @@ declare(strict_types=1);
 /** Liste des albums visibles. */
 function public_albums(): void
 {
+    rediriger_ancien_param_theme();
     $categorie  = category_filtre_demande('album');
     $categories = categories_avec_compteur('album');
 

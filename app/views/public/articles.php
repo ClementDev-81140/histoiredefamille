@@ -14,6 +14,7 @@ $aLaUne = $articles !== [] && $page === 1 && $categorie === '';
         <div>
             <h1>Articles</h1>
             <p class="gazette-sous-titre">Le journal de la famille, numéro après numéro</p>
+            <p class="aide">Les récits et nouvelles de la famille, du plus récent au plus ancien.</p>
         </div>
         <?php if (is_admin()): ?>
             <a class="bouton" href="/admin/articles/nouveau">Écrire un article</a>
@@ -21,11 +22,11 @@ $aLaUne = $articles !== [] && $page === 1 && $categorie === '';
     </div>
 
     <?php
-    // Étiquettes de catégorie (1.32.0), à côté des rubriques libres.
+    // Étiquettes de thème (1.32.0), à côté des rubriques libres.
     $filtreCategories = $categoriesEtiquettes ?? [];
     $filtreCategorie  = (int) ($categorieId ?? 0);
     $filtreAction     = '/articles';
-    $filtreParam      = 'categorie_id';
+    $filtreParam      = 'theme';
     require __DIR__ . '/../partials/filtre_categories.php';
     ?>
 

@@ -26,7 +26,8 @@ $envoye   = $gazette['status'] === 'envoye';
 
     <?php if (trim((string) $gazette['mot']) !== ''): ?>
         <section class="panneau gazette__mot">
-            <h2>Le mot de l’éditeur</h2>
+            <h2>Le mot de la famille</h2>
+            <p class="aide">Quelques mots écrits pour la famille, en ouverture de ce numéro.</p>
             <p><?= nl2br(e((string) $gazette['mot'])) ?></p>
         </section>
     <?php endif; ?>

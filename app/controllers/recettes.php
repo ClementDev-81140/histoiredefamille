@@ -10,6 +10,7 @@ declare(strict_types=1);
 /** Liste des recettes visibles. */
 function public_recettes(): void
 {
+    rediriger_ancien_param_theme();
     $categorie  = category_filtre_demande('recette');
     $categories = categories_avec_compteur('recette');
 

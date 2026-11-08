@@ -115,14 +115,14 @@ function admin_gazette_mot(array $params): void
     $texte = (string) post('mot');
     if (!gazette_mot($id, $texte)) {
         form_fail(
-            ['Le mot de l’éditeur est limité à ' . GAZETTE_MOT_MAX . ' caractères, et ne se modifie plus une fois le numéro envoyé.'],
+            ['Le mot de la famille est limité à ' . GAZETTE_MOT_MAX . ' caractères, et ne se modifie plus une fois le numéro envoyé.'],
             ['mot' => $texte],
             '/admin/gazette/' . $id
         );
         return;
     }
 
-    flash('succes', 'Le mot de l’éditeur est enregistré.');
+    flash('succes', 'Le mot de la famille est enregistré.');
     redirect('/admin/gazette/' . $id);
 }
 

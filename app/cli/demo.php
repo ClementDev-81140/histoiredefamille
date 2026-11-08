@@ -156,7 +156,7 @@ if ((int) db_value("SELECT COUNT(*) FROM accounts WHERE account_type = 'personne
 }
 
 // ---------------------------------------------------------------------------
-// Catégories
+// Thèmes
 // ---------------------------------------------------------------------------
 $categoryIds = [];
 $categories = [
@@ -179,7 +179,7 @@ foreach ($categories as [$name, $position]) {
         'created_at' => $now,
     ]);
 }
-echo "  · " . count($categoryIds) . " catégorie(s) prêtes\n";
+echo "  · " . count($categoryIds) . " thème(s) prêtes\n";
 
 // ---------------------------------------------------------------------------
 // Personnes et couples

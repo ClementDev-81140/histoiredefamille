@@ -79,7 +79,7 @@ $dureeActuelle = $isEdit && !empty($video['duration_seconds'])
     </div>
 
     <?php
-    // Catégories (1.32.0) : plusieurs choix, et seulement celles prévues pour
+    // Thèmes (1.32.0) : plusieurs choix, et seulement ceux prévus pour
     // les vidéos. La première cochée reste dans `documents.category_id`.
     $kindCategorie   = 'video';
     $categoriesCases = categories_pour_kinds([$kindCategorie]);
@@ -104,6 +104,27 @@ $dureeActuelle = $isEdit && !empty($video['duration_seconds'])
         <input type="text" id="tags" name="tags" maxlength="400"
                placeholder="mariage, village, 1914" value="<?= e((string) old_value($old, 'tags', $tags)) ?>">
         <p class="aide">Séparez les étiquettes par des virgules.</p>
+    </div>
+
+    <div class="champ">
+        <label class="case">
+            <input type="checkbox" name="archive" value="1"<?= checked(!empty(old_value($old, 'archive', (int) ($video['est_archive'] ?? 0)))) ?>>
+            Classer en archive
+        </label>
+        <p class="aide">Un document d’archive n’apparaît pas à la une et ne prévient personne. On le retrouve dans les dossiers d’archives et par la recherche.</p>
+    </div>
+
+    <div class="champ">
+        <label for="dossier_id">Dossier d’archives</label>
+        <select id="dossier_id" name="dossier_id">
+            <option value="">Sans dossier</option>
+            <?php foreach (($dossiers ?? []) as $dossierChoix): ?>
+                <option value="<?= (int) $dossierChoix['id'] ?>"<?= selected((int) old_value($old, 'dossier_id', (int) ($video['dossier_id'] ?? 0)) === (int) $dossierChoix['id']) ?>>
+                    <?= e((string) $dossierChoix['name']) ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
+        <p class="aide">Un document d’archive peut être rangé dans un dossier, et déplacé plus tard.</p>
     </div>
 
     <fieldset class="champ">

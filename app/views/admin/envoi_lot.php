@@ -48,16 +48,16 @@ $val = static function (string $cle, mixed $defaut = '') use ($old): mixed {
             </div>
 
             <?php
-            // Catégories appliquées à TOUT le lot (1.32.0) : plusieurs choix,
+            // Thèmes appliquées à TOUT le lot (1.32.0) : plusieurs choix,
             // et chaque fichier ne reçoit que celles de son type.
             $categoriesCases = categories_pour_kinds(['document', 'photo', 'video']);
             $categorieIds    = array_map('intval', post_array('categories'));
             ?>
             <fieldset class="champ">
-                <legend>Catégories du lot</legend>
+                <legend>Thèmes du lot</legend>
                 <p class="aide">
                     Elles s'appliquent à tous les fichiers cochés ci-dessous. Chaque fichier ne
-                    garde que les catégories prévues pour son type.
+                    garde que les thèmes prévus pour son type.
                 </p>
                 <?php foreach ($categoriesCases as $categorie): ?>
                     <label class="case">

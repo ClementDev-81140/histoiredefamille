@@ -18,7 +18,7 @@ function admin_recettes(): void
         $where[] = 'r.visibility = :vis';
         $params[':vis'] = $visibility;
     }
-    // Filtre « Catégorie » (1.32.0), en plus de la visibilité.
+    // Filtre « Thème » (1.32.0), en plus de la visibilité.
     $categorie = category_filtre_demande('recette');
     if ($categorie > 0) {
         $where[] = category_where('r', $categorie, $params, "'recette'");
@@ -161,7 +161,7 @@ function admin_recette_save(array $params = []): void
     }
 
     set_content_branches('recipe', $recipeId, $visibility === 'branches' ? $branches : []);
-    // Catégories de la recette (1.32.0).
+    // Thèmes de la recette (1.32.0).
     category_enregistrer('recette', $recipeId, categories_saisies());
 
     log_activity(
