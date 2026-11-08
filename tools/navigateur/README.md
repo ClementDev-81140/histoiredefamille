@@ -50,6 +50,34 @@ node tools/navigateur/essai.mjs 390 document
 node tools/navigateur/essai.mjs 1280 document
 ```
 
+### Étiquette, calendrier et fiche sans décès (1.34.0)
+
+```bash
+# Les pages par le routeur réel : article d'actualité et article de souvenir
+# (visiteur 0), calendrier d'un administrateur et fiche d'une personne sans
+# date de décès (compte 1).
+HDF_CONFIG=/chemin/config.local.php HDF_FORCE_CLI=1 \
+    HDF_ARGV='["/articles/une-soupe-pour-l-hiver","/tmp/article-actu.html","0"]' \
+    php tools/navigateur/rendre.php
+HDF_CONFIG=/chemin/config.local.php HDF_FORCE_CLI=1 \
+    HDF_ARGV='["/calendrier?mois=2026-06","/tmp/calendrier-admin.html","1"]' \
+    php tools/navigateur/rendre.php
+# (même principe pour l'article de souvenir et la fiche)
+
+PAGES_ALBUM='{"/article-actu":"/tmp/article-actu.html","/article-souvenir":"/tmp/article-souvenir.html","/calendrier":"/tmp/calendrier-admin.html","/fiche":"/tmp/fiche-sans-deces.html"}' \
+    THEME_CSS=/tmp/theme-papier.css node tools/navigateur/serveur.mjs
+
+CAPTURES=/tmp node actions-ajouts34.mjs 1280
+CAPTURES=/tmp node actions-ajouts34.mjs 390
+# puis la palette bleu (THEME=bleu THEME_FOND='rgb(246, 245, 242)').
+```
+
+17 contrôles par largeur et par palette : aucune étiquette de décennie sur
+l'article d'actualité, « Souvenir des années … » sur celui de souvenir, le
+bouton « Ajouter un événement » visible, des anniversaires (jamais de
+naissances), aucun décès sans le réglage, aucune ligne « Décès » sur la
+fiche, et la propreté habituelle (style, scripts, débordement, erreurs JS).
+
 ### Le chêne gravé de `/arbre` (1.33.0)
 
 ```bash

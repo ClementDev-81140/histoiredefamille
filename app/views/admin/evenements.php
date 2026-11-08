@@ -26,8 +26,10 @@
 
 <p class="aide">
     Un événement créé ici est <strong>privé</strong> tant que vous ne choisissez pas
-    qui peut le voir. Les dates de l’arbre (naissances, mariages, décès) restent
-    affichées automatiquement dans le calendrier.
+    qui peut le voir. Les dates de l’arbre (anniversaires, mariages) restent
+    affichées automatiquement dans le calendrier. Un événement proposé par un
+    journaliste apparaît ici <strong>en attente de validation</strong> : il n'est
+    visible nulle part tant que vous ne l'avez pas validé.
 </p>
 
 <?php if ($evenements === []): ?>
@@ -42,6 +44,7 @@
                     <th scope="col">Date</th>
                     <th scope="col">Titre</th>
                     <th scope="col">Lieu</th>
+                    <th scope="col">État</th>
                     <th scope="col">Visibilité</th>
                     <th scope="col">Répétition</th>
                     <th scope="col"><span class="sr-only">Actions</span></th>
@@ -66,7 +69,19 @@
                                 <span class="discret">à <?= e((string) $evenement['start_time']) ?></span>
                             <?php endif; ?>
                         </td>
-                        <td><?= e((string) $evenement['title']) ?></td>
+                        <td>
+                            <?= e((string) $evenement['title']) ?>
+                            <?php if (evenement_type_libelle((string) ($evenement['type'] ?? '')) !== ''): ?>
+                                <span class="discret"><?= e(evenement_type_libelle((string) ($evenement['type'] ?? ''))) ?></span>
+                            <?php endif; ?>
+                        </td>
+                        <td>
+                            <?php if ((string) ($evenement['status'] ?? 'publie') === 'en_attente'): ?>
+                                <span class="etiquette">En attente de validation</span>
+                            <?php else: ?>
+                                <span class="discret">Publié</span>
+                            <?php endif; ?>
+                        </td>
                         <td><?= e((string) $evenement['place']) ?></td>
                         <td>
                             <span class="<?= e(visibility_class((string) $evenement['visibility'])) ?>">
@@ -78,6 +93,13 @@
                         </td>
                         <td><?= (int) $evenement['annual'] === 1 ? 'Chaque année' : 'Une seule fois' ?></td>
                         <td class="colonne-actions">
+                            <?php if ((string) ($evenement['status'] ?? 'publie') === 'en_attente'): ?>
+                                <form method="post" action="/admin/calendrier/<?= (int) $evenement['id'] ?>/valider"
+                                      class="formulaire-en-ligne">
+                                    <?= csrf_field() ?>
+                                    <button type="submit" class="lien-bouton">Valider</button>
+                                </form>
+                            <?php endif; ?>
                             <a class="lien-bouton" href="/admin/calendrier/<?= (int) $evenement['id'] ?>/modifier">Modifier</a>
                             <form method="post" action="/admin/calendrier/<?= (int) $evenement['id'] ?>/supprimer"
                                   class="formulaire-en-ligne"

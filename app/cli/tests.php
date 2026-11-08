@@ -2535,7 +2535,7 @@ if ($filtre === '' || $filtre === 'composition') {
     $derniere = basename((string) end($migrations));
     $sql009   = (string) @file_get_contents(dirname(__DIR__) . '/migrations/009_articles_modele.sql');
     // Chaque lot ajoute SA migration ; les précédentes ne bougent jamais.
-    verifier('migration : 021 est la dernière migration', $derniere === '021_categories_types.sql', $derniere);
+    verifier('migration : 022 est la dernière migration', $derniere === '022_evenements_statut.sql', $derniere);
     $migration019 = (string) @file_get_contents(dirname(__DIR__) . '/migrations/019_aspect_photo.sql');
     verifier(
         'migration : 019 ajoute « documents.vintage_aspect » EN AJOUT SEUL',
@@ -2564,6 +2564,14 @@ if ($filtre === '' || $filtre === 'composition') {
             // L'ancienne colonne des documents reste en place.
             && !str_contains($migration021, 'DROP COLUMN'),
         $migration021 === '' ? 'fichier absent' : 'ok'
+    );
+    $migration022 = (string) @file_get_contents(dirname(__DIR__) . '/migrations/022_evenements_statut.sql');
+    verifier(
+        'migration : 022 ajoute statut et type aux événements, EN AJOUT SEUL',
+        str_contains($migration022, "ALTER TABLE events ADD COLUMN status TEXT NOT NULL DEFAULT 'publie'")
+            && str_contains($migration022, 'ALTER TABLE events ADD COLUMN type')
+            && preg_match('/^\\s*(UPDATE|DELETE|DROP|INSERT|REPLACE)\\s/im', $migration022) !== 1,
+        $migration022 === '' ? 'fichier absent' : 'ok'
     );
     $migration018 = (string) @file_get_contents(dirname(__DIR__) . '/migrations/018_album_envois.sql');
     verifier(
@@ -2698,6 +2706,7 @@ require_once __DIR__ . '/tests_conversion.php';
 require_once __DIR__ . '/tests_profils.php';
 require_once __DIR__ . '/tests_album.php';
 require_once __DIR__ . '/tests_arbre.php';
+require_once __DIR__ . '/tests_calendrier34.php';
 
 // Les propositions des journalistes ont besoin des mêmes outils d'essai que
 // les profils (tests_envoi_requete) : ce bloc vient donc après eux.
@@ -2742,6 +2751,12 @@ if ($filtre === '' || $filtre === 'accueil') {
 // L'arbre « chêne gravé » (1.33.0) : rendu, droits, rangées, accessibilité.
 if ($filtre === '' || $filtre === 'arbre') {
     tests_arbre();
+}
+
+// 1.34.0 : étiquette de décennie, calendrier (anniversaires, propositions),
+// lignes de décès vides.
+if ($filtre === '' || $filtre === 'calendrier34') {
+    tests_calendrier34();
 }
 
 if ($filtre === '' || $filtre === 'admin') {

@@ -90,6 +90,30 @@ function admin_evenement_save(array $params = []): void
     redirect('/admin/calendrier');
 }
 
+/** Validation d'un événement proposé par un journaliste (1.34.0). */
+function admin_evenement_valider(array $params = []): void
+{
+    require_admin();
+    csrf_check();
+
+    $id        = (int) ($params['id'] ?? 0);
+    $evenement = evenement_par_id($id);
+    if ($evenement === null) {
+        flash('erreur', 'Événement introuvable.');
+        redirect('/admin/calendrier');
+    }
+
+    evenement_valider_publication($id);
+    log_activity(
+        (int) current_account()['id'],
+        'evenement_valide',
+        (string) $evenement['title'] . ' (' . (string) $evenement['start_date'] . ')'
+    );
+
+    flash('succes', 'L’événement a été validé : il apparaît dans le calendrier.');
+    redirect('/admin/calendrier');
+}
+
 /** Suppression, après confirmation dans le navigateur. */
 function admin_evenement_supprimer(array $params = []): void
 {

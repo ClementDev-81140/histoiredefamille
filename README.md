@@ -238,6 +238,12 @@ nouvelles de la famille, les souvenirs, les annonces.
   - **Années** : une frise par décennie (`1950`, `1960`…). L'année est celle
     racontée dans l'article (« Mariage de 1958 » → 1958), pas la date de mise
     en ligne ; à défaut, on prend l'année de publication.
+  - **Étiquette de souvenir (1.34.0)** : au-dessus du titre d'un article et
+    sur ses cartes, la décennie ne s'affiche que si l'article raconte un
+    souvenir daté (une année dans son titre ou son résumé), et sous la forme
+    « Souvenir des années 1950 ». Un article d'actualité publié aujourd'hui
+    n'affiche rien : fini le « Années 2020 » qui se lisait comme une date de
+    publication erronée. La ligne « Par … — date » ne change pas.
   - Chaque clic recharge la page avec `?branche=…` ou `?decennie=…` : aucun
     JavaScript, le lien se partage par courriel. Les deux filtres peuvent se
     combiner, et les règles de visibilité restent les mêmes (un article
@@ -380,9 +386,19 @@ ni déplacé, un album n'est qu'un rangement.
 Deux façons de traverser les dates de la famille, ouvertes à tout le monde.
 
 - **Calendrier** (`/calendrier`) : une grille mensuelle, toutes années
-  confondues. Chaque jour signale les naissances, mariages et décès qui y sont
-  tombés, avec le détail sous la grille (« 18 novembre 1982 — décès de Marie
-  LEROY, 77 ans »). Les flèches changent de mois.
+  confondues. Chaque jour signale les anniversaires qui y tombent, avec le
+  détail sous la grille : « Anniversaire de Luc MARTIN (63 ans) »,
+  « Anniversaire de mariage de Jean MARTIN et Marie LEROY (98 ans) ».
+  Les dates de décès n'y figurent que si un administrateur a coché
+  « Afficher les dates de décès dans le calendrier »
+  (Administration → Réglages ; décochée par défaut), sous le libellé sobre
+  « In memoriam : Prénom NOM ». Les flèches changent de mois.
+  En haut de la page, un administrateur trouve le bouton
+  « Ajouter un événement » (un journaliste y voit « Proposer un événement ») :
+  formulaire simple — titre, date, type, visibilité privée par défaut, note.
+  Une proposition de journaliste reste invisible partout tant qu'un
+  administrateur ne l'a pas validée dans Administration → Calendrier
+  (bouton « Valider » sur la ligne, colonne « État »).
 - **Frise** (`/frise`) : les mêmes événements, plus les documents datés, année
   par année, par périodes de cinquante ans (1900-1949, 1950-1999…).
 - Les dates sont lues telles que la famille les a écrites : « 12 juin 1928 »,
@@ -1415,7 +1431,8 @@ Réglages utiles (Administration → Réglages, bloc « Tchat de la famille ») 
   automatiquement.
 
 Les **événements de famille** (une fête, une réunion, un voyage) se créent
-dans **Administration → Calendrier** :
+depuis le bouton « **Ajouter un événement** » en haut de `/calendrier`
+(administrateurs), ou dans **Administration → Calendrier** :
 
 1. « **Nouvel événement** » : titre, date de début, **heure facultative**,
    date et heure de fin facultatives, **lieu** en texte libre, description ;
@@ -1430,6 +1447,21 @@ répétition, et permet de le **modifier** ou de le **supprimer**. La suppressio
 demande **confirmation** dans le navigateur : elle est définitive. Les
 événements visibles apparaissent aussi dans le bloc « **Dans la famille** » de
 l'accueil des comptes connectés, quand leur date approche.
+
+Un **journaliste** peut proposer un événement depuis `/calendrier`
+(« Proposer un événement ») : il naît « en attente », invisible pour tous
+les autres comptes — calendrier, accueil, compteurs — et apparaît dans
+Administration → Calendrier avec le bouton « **Valider** ». La validation
+le publie avec la visibilité proposée, que l'administrateur peut ajuster
+avant avec « Modifier ». Depuis la 1.34.0, les événements ont aussi un
+**type** (fête, réunion, voyage, messe du souvenir, anniversaire, autre) et
+un **statut** (migration 022, en ajout seul : les événements existants
+deviennent « publie », rien ne change pour eux).
+
+Sur la fiche d'une personne, aucune ligne vide ne s'affiche plus (1.34.0) :
+sans date ni lieu de décès, la ligne « Décès » disparaît — ni tiret, ni
+« inconnu » — et les dates de vie ne gardent plus de tiret en attente
+(« 1901 » suffit). Une date de décès connue reste affichée telle quelle.
 
 ### 6.13 Envoyer un témoignage sonore ou écrire une recette
 

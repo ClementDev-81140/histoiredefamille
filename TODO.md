@@ -3,6 +3,40 @@
 Ce fichier liste ce qui reste à faire, classé par priorité. Il n'y a pas de
 suivi automatique : cochez au fur et à mesure.
 
+## Fait (2026-11-08, 1.34.0 — étiquette de décennie, calendrier, lignes vides)
+
+- [x] **Fusion 1.33.1** : `claude/accueil-sobre` fusionnée telle quelle
+  (commit `b17067f`, arbre identique à la branche d'origine).
+- [x] **Étiquette de décennie** : elle ne s'affiche plus que pour un article
+  de souvenir (année dans le titre ou le résumé), sous la forme « Souvenir
+  des années 1950 » ; un article d'actualité n'en a aucune, nulle part.
+  Cause : le millésime retombait sur l'année de publication.
+- [x] **Calendrier** : bouton « Ajouter un événement » sur `/calendrier`
+  (administrateurs), « Proposer un événement » pour les journalistes —
+  proposition invisible partout jusqu'à validation (« Valider » dans
+  Administration → Calendrier, colonne « État »). Type d'événement ajouté.
+- [x] **Libellés du calendrier** : « Anniversaire de Prénom NOM (62 ans) »,
+  « Anniversaire de mariage de X et Y (40 ans) » ; décès cachés par défaut,
+  réglage administrateur « Afficher les dates de décès » → « In memoriam ».
+- [x] **Lignes vides** : plus de « Décès : — » sur les fiches ; dates de vie
+  sans tiret en attente.
+- [x] **Migration 022** (ajout seul) : `events.status` + `events.type`.
+- [x] **Essais** : `tests_calendrier34.php`, 32 essais ; suite 1 490 essais,
+  1 489 réussis (1 échec « arbre » préexistant sur ce banc, identique avant
+  la 1.34.0) ; matrice 201 routes, 0 anomalie.
+- [x] **Navigateur réel** : `actions-ajouts34.mjs`, 17 contrôles × 4
+  (1 280 et 390 px, papier et bleu), 0 échec.
+
+## À corriger (repéré en 1.34.0, hors périmètre)
+
+- [ ] **Frise chronologique** : elle garde les libellés historiques
+  « Naissance » / « Décès » et montre les décès sans le nouveau réglage
+  (c'est un relevé d'archives, pas le calendrier). À harmoniser seulement
+  si le propriétaire le demande.
+- [ ] **Échec « arbre » en suite complète** sur le banc reconstruit : la
+  famille passe seule (47/47) et l'échec existe avant la 1.34.0 sur le
+  même banc ; à reproduire sur le Pi ou un banc PHP natif pour conclure.
+
 ## Fait (2026-11-07, 1.33.0 — arbre généalogique « chêne gravé »)
 
 - [x] **Nouvelle page `/arbre`** : gravure de chêne en fond (bandeau sur

@@ -11,6 +11,13 @@
  * défaut, on prend l'année de publication. La décennie est ce millésime
  * arrondi vers le bas (1965 → 1960).
  *
+ * 1.34.0 — l'ÉTIQUETTE, elle, ne suit plus cette règle : un article
+ * d'actualité publié en 2026 affichait « Années 2020 » au-dessus de son
+ * titre, ce qui se lisait comme une date erronée. On ne montre donc une
+ * décennie que lorsque l'article raconte un souvenir (une année écrite
+ * dans son titre ou son résumé), et sous la forme « Souvenir des
+ * années 1950 » : voir article_decennie_souvenir().
+ *
  * Les droits ne changent pas ici : les fonctions reçoivent des articles
  * déjà filtrés par visibility.php (article_visible_clause). Un visiteur ne
  * peut donc jamais obtenir un article non public, même en changeant
@@ -50,6 +57,43 @@ function article_decennie(array $article): int
     return intdiv(article_millesime($article), 10) * 10;
 }
 
+/**
+ * Année de SOUVENIR d'un article : la première année (1800-2099) écrite dans
+ * son titre ou son résumé, et rien d'autre. Contrairement à
+ * article_millesime(), il n'y a AUCUN repli sur la date de publication : un
+ * article d'actualité n'a pas d'année de souvenir (null).
+ */
+function article_millesime_souvenir(array $article): ?int
+{
+    $texte = trim((string) ($article['title'] ?? '') . ' ' . (string) ($article['summary'] ?? ''));
+
+    if ($texte !== '' && preg_match_all('/(?<!\d)(1[89]\d{2}|20\d{2})(?!\d)/u', $texte, $trouves) > 0) {
+        $annee = (int) $trouves[1][0];
+        if ($annee >= 1800 && $annee <= 2099) {
+            return $annee;
+        }
+    }
+
+    return null;
+}
+
+/**
+ * Décennie de souvenir d'un article : 1958 → 1950, ou 0 quand l'article ne
+ * raconte aucun souvenir daté (article d'actualité). C'est la SEULE décennie
+ * affichée au lecteur (article, cartes, listes, frise) depuis la 1.34.0.
+ */
+function article_decennie_souvenir(array $article): int
+{
+    $millesime = article_millesime_souvenir($article);
+    return $millesime === null ? 0 : intdiv($millesime, 10) * 10;
+}
+
+/** Libellé de l'étiquette de souvenir : 1950 → « Souvenir des années 1950 ». */
+function decennie_souvenir_libelle(int $decennie): string
+{
+    return 'Souvenir des années ' . $decennie;
+}
+
 /** Libellé court d'une décennie : 1960 → « 1960 » ; 2020 → « 2020 ». */
 function decennie_libelle(int $decennie): string
 {
@@ -66,7 +110,13 @@ function editions_decennies(array $articles): array
 {
     $compte = [];
     foreach ($articles as $article) {
-        $decennie = article_decennie($article);
+        // 1.34.0 : seuls les articles de souvenir créent un point de frise ;
+        // un article d'actualité publié cette année n'y fait pas apparaître
+        // la décennie courante.
+        $decennie = article_decennie_souvenir($article);
+        if ($decennie <= 0) {
+            continue;
+        }
         $compte[$decennie] = ($compte[$decennie] ?? 0) + 1;
     }
 
@@ -88,7 +138,7 @@ function editions_filtrer_decennie(array $articles, int $decennie): array
 
     return array_values(array_filter(
         $articles,
-        static fn (array $article): bool => article_decennie($article) === $decennie
+        static fn (array $article): bool => article_decennie_souvenir($article) === $decennie
     ));
 }
 

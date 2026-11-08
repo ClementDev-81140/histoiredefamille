@@ -103,24 +103,32 @@ $listePersonnes = static function (array $personnes): void {
         <div>
             <h2>Repères</h2>
             <dl class="fiche">
+                <?php // 1.34.0 : aucune ligne vide. Sans date ni lieu de
+                      // naissance, pas de ligne « Naissance » ; sans date ni
+                      // lieu de décès, pas de ligne « Décès » (ni tiret, ni
+                      // « inconnu ») — sur la fiche comme à l'impression. ?>
+                <?php if (trim((string) $person['birth_date']) !== '' || trim((string) $person['birth_place']) !== ''): ?>
                 <dt>Naissance</dt>
                 <dd>
-                    <?= trim((string) $person['birth_date']) !== '' ? e($person['birth_date']) : '—' ?>
+                    <?= e($person['birth_date']) ?>
                     <?php if (trim((string) $person['birth_place']) !== ''): ?>
                         <span class="discret">à
                             <a href="<?= e($lienLieu(trim((string) $person['birth_place']))) ?>"><?= e($person['birth_place']) ?></a>
                         </span>
                     <?php endif; ?>
                 </dd>
+                <?php endif; ?>
+                <?php if (trim((string) $person['death_date']) !== '' || trim((string) $person['death_place']) !== ''): ?>
                 <dt>Décès</dt>
                 <dd>
-                    <?= trim((string) $person['death_date']) !== '' ? e($person['death_date']) : '—' ?>
+                    <?= e($person['death_date']) ?>
                     <?php if (trim((string) $person['death_place']) !== ''): ?>
                         <span class="discret">à
                             <a href="<?= e($lienLieu(trim((string) $person['death_place']))) ?>"><?= e($person['death_place']) ?></a>
                         </span>
                     <?php endif; ?>
                 </dd>
+                <?php endif; ?>
                 <?php if (trim((string) $person['sex']) !== ''): ?>
                     <dt>Sexe</dt>
                     <dd><?= $person['sex'] === 'M' ? 'Homme' : 'Femme' ?></dd>

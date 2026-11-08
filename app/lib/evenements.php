@@ -12,14 +12,47 @@
  *     branches passant par content_branches (kind = 'event') ;
  *   - un événement annuel revient chaque année, à la même date ;
  *   - un événement sans répétition n'apparaît que dans son année.
+ *
+ * 1.34.0 — propositions des journalistes : un événement peut naître
+ * « en_attente » (colonne status, migration 022). Il est alors invisible
+ * PARTOUT (calendrier, listes, compteurs), y compris pour les autres
+ * journalistes ; seul son auteur le revoit (sa liste « en attente ») et les
+ * administrateurs le valident, le modifient ou le suppriment depuis
+ * Administration → Calendrier. La validation ne change ni sa visibilité
+ * ni ses droits : elle le fait simplement passer à « publie ».
  */
 
 declare(strict_types=1);
 
+/** Types d'événement proposés dans le formulaire (clé => libellé). */
+function evenement_types(): array
+{
+    return [
+        'fete'         => 'Fête de famille',
+        'reunion'      => 'Réunion',
+        'voyage'       => 'Voyage',
+        'souvenir'     => 'Messe du souvenir',
+        'anniversaire' => 'Anniversaire',
+        'autre'        => 'Autre événement',
+    ];
+}
+
+/** Libellé d'un type d'événement ('' si le type est vide ou inconnu). */
+function evenement_type_libelle(string $type): string
+{
+    return evenement_types()[$type] ?? '';
+}
+
 /** Champs d'un événement, tels que le formulaire les envoie. */
 function evenement_valeurs(array $saisie): array
 {
+    $type = trim((string) ($saisie['type'] ?? ''));
+    if (!array_key_exists($type, evenement_types())) {
+        $type = '';
+    }
+
     return [
+        'type'        => $type,
         'title'       => trim((string) ($saisie['title'] ?? '')),
         'start_date'  => trim((string) ($saisie['start_date'] ?? '')),
         'start_time'  => trim((string) ($saisie['start_time'] ?? '')),
@@ -99,10 +132,47 @@ function evenement_par_id(int $id): ?array
  */
 function evenement_visible(array $evenement): bool
 {
+    // 1.34.0 : un événement en attente de validation n'existe pour personne
+    // dans les affichages (ni calendrier, ni listes, ni compteurs). Une base
+    // pas encore migrée n'a pas la colonne : elle vaut « publie ».
+    if ((string) ($evenement['status'] ?? 'publie') !== 'publie') {
+        return false;
+    }
+
     return can_view(
         (string) ($evenement['visibility'] ?? 'prive'),
         content_branch_ids('event', (int) ($evenement['id'] ?? 0))
     );
+}
+
+/**
+ * Les événements qu'un compte a proposés et qui attendent validation.
+ * Ils ne sont montrés qu'à leur auteur (et, dans l'administration, aux
+ * administrateurs) : c'est la seule liste où un événement en attente
+ * apparaît.
+ *
+ * @return list<array>
+ */
+function evenements_en_attente_de(int $compteId): array
+{
+    if ($compteId <= 0) {
+        return [];
+    }
+
+    try {
+        return db_all(
+            "SELECT * FROM events WHERE status = 'en_attente' AND created_by = ? ORDER BY start_date, title COLLATE NOCASE",
+            [$compteId]
+        );
+    } catch (Throwable) {
+        return []; // base pas encore migrée (colonne status absente)
+    }
+}
+
+/** Valide un événement en attente : il passe à « publie », droits inchangés. */
+function evenement_valider_publication(int $id): void
+{
+    db_update('events', $id, ['status' => 'publie', 'updated_at' => time()]);
 }
 
 /** Événements visibles, du plus proche au plus lointain (calendrier, listes). */
@@ -114,9 +184,11 @@ function evenements_visibles(int $limite = 200): array
 }
 
 /** Crée un événement et rend son identifiant (0 si la saisie est refusée). */
-function evenement_creer(array $valeurs, ?int $compteId = null): int
+function evenement_creer(array $valeurs, ?int $compteId = null, string $statut = 'publie'): int
 {
     $id = db_insert('events', [
+        'status'      => $statut === 'en_attente' ? 'en_attente' : 'publie',
+        'type'        => (string) ($valeurs['type'] ?? ''),
         'title'       => (string) $valeurs['title'],
         'start_date'  => (string) $valeurs['start_date'],
         'start_time'  => $valeurs['start_time'] !== '' ? (string) $valeurs['start_time'] : null,
@@ -140,6 +212,7 @@ function evenement_creer(array $valeurs, ?int $compteId = null): int
 function evenement_modifier(int $id, array $valeurs): void
 {
     db_update('events', $id, [
+        'type'        => (string) ($valeurs['type'] ?? ''),
         'title'       => (string) $valeurs['title'],
         'start_date'  => (string) $valeurs['start_date'],
         'start_time'  => $valeurs['start_time'] !== '' ? (string) $valeurs['start_time'] : null,

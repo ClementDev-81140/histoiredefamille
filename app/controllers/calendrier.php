@@ -42,6 +42,60 @@ function public_calendrier(): void
     ]);
 }
 
+// ---------------------------------------------------------------------------
+// Ajouter / proposer un événement depuis le calendrier (1.34.0)
+// ---------------------------------------------------------------------------
+
+/**
+ * Formulaire simple d'ajout d'événement, depuis /calendrier.
+ *
+ * Un administrateur publie directement (avec la visibilité choisie, privée
+ * par défaut) ; un journaliste PROPOSE : son événement naît « en attente »
+ * et n'apparaît nulle part tant qu'un administrateur ne l'a pas validé
+ * dans Administration → Calendrier. Un lecteur reçoit 403, un visiteur est
+ * renvoyé vers la connexion (require_proposer, comme /propositions).
+ */
+function public_calendrier_ajouter(): void
+{
+    require_proposer();
+    $compte = current_account();
+
+    render('public/calendrier_ajouter', [
+        'titre'     => is_admin() ? 'Ajouter un événement' : 'Proposer un événement',
+        'estAdmin'  => is_admin(),
+        'enAttente' => evenements_en_attente_de((int) $compte['id']),
+        'branches'  => branches_list(true),
+        'erreurs'   => form_errors(),
+        'old'       => form_old(),
+    ]);
+}
+
+/** Enregistrement depuis /calendrier/ajouter (administrateur ou journaliste). */
+function public_calendrier_ajouter_save(): void
+{
+    require_proposer();
+    csrf_check();
+
+    [$valeurs, $erreurs] = evenement_valider($_POST);
+    if ($erreurs !== []) {
+        form_fail($erreurs, $valeurs, '/calendrier/ajouter');
+    }
+
+    $compte = current_account();
+    if (is_admin()) {
+        $id = evenement_creer($valeurs, (int) $compte['id'], 'publie');
+        log_activity((int) $compte['id'], 'evenement_ajoute', (string) $valeurs['title'] . ' (' . (string) $valeurs['start_date'] . ')');
+        flash('succes', 'L’événement a été ajouté au calendrier.');
+        $mois = substr((string) $valeurs['start_date'], 0, 7);
+        redirect('/calendrier?mois=' . $mois);
+    }
+
+    $id = evenement_creer($valeurs, (int) $compte['id'], 'en_attente');
+    log_activity((int) $compte['id'], 'evenement_propose', (string) $valeurs['title'] . ' (' . (string) $valeurs['start_date'] . ')');
+    flash('succes', 'Votre événement a été proposé : il apparaîtra après validation par un administrateur.');
+    redirect('/calendrier/ajouter');
+}
+
 /** Frise chronologique d'une période de cinquante ans. */
 function public_frise(): void
 {

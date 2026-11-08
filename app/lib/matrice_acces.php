@@ -111,6 +111,12 @@ function matrice_famille(string $methode, string $motif): string
     if ($motif === '/propositions' || str_starts_with($motif, '/propositions/')) {
         return 'propositions';
     }
+    // Ajouter / proposer un événement (1.34.0) : mêmes droits que les
+    // propositions — visiteur renvoyé à la connexion, lecteur 403,
+    // journaliste et administrateur admis.
+    if ($motif === '/calendrier/ajouter') {
+        return 'propositions';
+    }
     // L'arbre généalogique n'est plus public (1.24.0) : un visiteur est
     // renvoyé vers la connexion, un compte connecté l'ouvre.
     if (str_starts_with($motif, '/arbre') || str_starts_with($motif, '/api/arbre')) {

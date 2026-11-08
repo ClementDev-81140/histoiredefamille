@@ -65,6 +65,16 @@ $annuel = (string) old_value($old, 'annual', (string) ($evenement['annual'] ?? '
     </div>
 
     <div class="champ">
+        <label for="type">Type</label>
+        <select id="type" name="type">
+            <option value="">Non précisé</option>
+            <?php foreach (evenement_types() as $cle => $libelle): ?>
+                <option value="<?= e($cle) ?>"<?= selected((string) $v('type') === $cle) ?>><?= e($libelle) ?></option>
+            <?php endforeach; ?>
+        </select>
+    </div>
+
+    <div class="champ">
         <label for="place">Lieu (texte libre)</label>
         <input type="text" id="place" name="place" maxlength="120" value="<?= e((string) $v('place')) ?>">
     </div>

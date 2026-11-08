@@ -160,6 +160,23 @@ $val = static fn (string $key, string $default = ''): string => (string) old_val
     </fieldset>
 
     <fieldset class="champ">
+        <legend>Calendrier</legend>
+
+        <label class="case">
+            <input type="checkbox" id="calendrier_deces" name="calendrier_deces" value="1"
+                   <?= checked($val('calendrier_deces') === '1') ?>>
+            Afficher les dates de décès dans le calendrier
+        </label>
+        <p class="aide">
+            <strong>Décochée (par défaut)</strong>, le calendrier ne montre que les
+            anniversaires et les anniversaires de mariage. Cochée, les dates de
+            décès y figurent aussi, sous le libellé sobre « In memoriam ». Les
+            personnes que le compte n'a pas le droit de voir n'y apparaissent
+            jamais, dans un cas comme dans l'autre.
+        </p>
+    </fieldset>
+
+    <fieldset class="champ">
         <legend>Envoi de gros fichiers</legend>
 
         <div class="ligne-champs">

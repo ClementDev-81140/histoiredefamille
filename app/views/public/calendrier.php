@@ -13,13 +13,19 @@ $moisNom = calendrier_mois_nom($mois);
     <div class="section__entete">
         <h1>Calendrier</h1>
         <p class="actions">
+            <?php if (is_admin()): ?>
+                <a class="bouton" href="/calendrier/ajouter">Ajouter un événement</a>
+            <?php elseif (est_journaliste()): ?>
+                <a class="bouton" href="/calendrier/ajouter">Proposer un événement</a>
+            <?php endif; ?>
             <a class="bouton bouton--secondaire" href="/frise">Frise chronologique</a>
         </p>
     </div>
 
     <p class="calendrier__intro">
-        Toutes les naissances, mariages et décès du mois de
-        <strong><?= e($moisNom) ?></strong>, toutes années confondues.
+        Les anniversaires et anniversaires de mariage du mois de
+        <strong><?= e($moisNom) ?></strong>, toutes années confondues<?php if (calendrier_afficher_deces()): ?>,
+        et les dates de décès (réglage de l'administration)<?php endif; ?>.
     </p>
 
     <nav class="calendrier__nav" aria-label="Changer de mois">
@@ -51,10 +57,10 @@ $moisNom = calendrier_mois_nom($mois);
                                         <span class="sr-only">
                                             <?= e($evenement['annee']) ?> —
                                             <?= e(match ($evenement['genre']) {
-                                                'naissance' => 'naissance',
-                                                'deces'     => 'décès',
+                                                'naissance' => 'anniversaire',
+                                                'deces'     => 'in memoriam',
                                                 'evenement' => 'événement de famille',
-                                                default     => 'mariage',
+                                                default     => 'anniversaire de mariage',
                                             }) ?>
                                         </span>
                                         <span aria-hidden="true"><?= e((string) $evenement['annee']) ?></span>
@@ -91,6 +97,10 @@ $moisNom = calendrier_mois_nom($mois);
                                 <?php if ($evenement['genre'] === 'evenement'): ?>
                                     <?= $evenement['annuel'] ? 'Chaque année : ' : 'Événement : ' ?>
                                     <strong><?= e((string) $evenement['titre']) ?></strong>
+                                    <?php $typeLibelle = evenement_type_libelle((string) ($evenement['type'] ?? '')); ?>
+                                    <?php if ($typeLibelle !== ''): ?>
+                                        <span class="discret"><?= e($typeLibelle) ?></span>
+                                    <?php endif; ?>
                                     <?php if ((string) $evenement['heure'] !== ''): ?>
                                         <span class="discret">à <?= e((string) $evenement['heure']) ?></span>
                                     <?php endif; ?>
@@ -98,18 +108,24 @@ $moisNom = calendrier_mois_nom($mois);
                                         <span class="discret">— <?= e((string) $evenement['lieu']) ?></span>
                                     <?php endif; ?>
                                 <?php elseif ($evenement['genre'] === 'mariage'): ?>
-                                    Mariage de
+                                    <?php $ansMariage = (int) $annee - (int) $evenement['annee']; ?>
+                                    Anniversaire de mariage de
                                     <a href="/arbre/<?= (int) $evenement['epoux']['id'] ?>"><?= e(person_full_name($evenement['epoux'])) ?></a>
                                     et
-                                    <a href="/arbre/<?= (int) $evenement['epouse']['id'] ?>"><?= e(person_full_name($evenement['epouse'])) ?></a>
+                                    <a href="/arbre/<?= (int) $evenement['epouse']['id'] ?>"><?= e(person_full_name($evenement['epouse'])) ?></a><?php if ($ansMariage > 0): ?>
+                                        <span class="discret">(<?= $ansMariage ?> an<?= $ansMariage > 1 ? 's' : '' ?>)</span>
+                                    <?php endif; ?>
                                     <?php if ($evenement['lieu'] !== ''): ?>
                                         <span class="discret">à <?= e($evenement['lieu']) ?></span>
                                     <?php endif; ?>
-                                <?php else: ?>
-                                    <?= $evenement['genre'] === 'naissance' ? 'Naissance de' : 'Décès de' ?>
+                                <?php elseif ($evenement['genre'] === 'deces'): ?>
+                                    In memoriam :
                                     <a href="/arbre/<?= (int) $evenement['personne']['id'] ?>"><?= e(person_full_name($evenement['personne'])) ?></a>
-                                    <?php if ($evenement['age'] !== null): ?>
-                                        <span class="discret"><?= (int) $evenement['age'] ?> ans</span>
+                                <?php else: ?>
+                                    <?php $ans = (int) $annee - (int) $evenement['annee']; ?>
+                                    Anniversaire de
+                                    <a href="/arbre/<?= (int) $evenement['personne']['id'] ?>"><?= e(person_full_name($evenement['personne'])) ?></a><?php if ($ans > 0): ?>
+                                        <span class="discret">(<?= $ans ?> an<?= $ans > 1 ? 's' : '' ?>)</span>
                                     <?php endif; ?>
                                 <?php endif; ?>
                             </li>

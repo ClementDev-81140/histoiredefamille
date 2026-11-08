@@ -19,7 +19,7 @@ function person_full_name(array $person): string
     return $name !== '' ? $name : 'Personne sans nom';
 }
 
-/** Dates de vie : « 1901 – 1975 », « 1901 », « – 1975 », ''. */
+/** Dates de vie : « 1901 – 1975 », « 1901 », « 1975 » (décès seul), ''. */
 function person_dates(array $person): string
 {
     $birth = trim((string) ($person['birth_date'] ?? ''));
@@ -28,7 +28,12 @@ function person_dates(array $person): string
         return '';
     }
     if ($death === '') {
-        return $birth . ' –';
+        // 1.34.0 : pas de tiret en attente d'un décès inconnu — la naissance
+        // seule, sans ligne ni signe « vide ».
+        return $birth;
+    }
+    if ($birth === '') {
+        return $death;
     }
     return $birth . ' – ' . $death;
 }

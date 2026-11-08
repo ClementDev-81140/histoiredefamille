@@ -197,6 +197,8 @@ function admin_settings(): void
             'tchat_actif' => tchat_actif() ? '1' : '0',
             // Carte des lieux : fermée par défaut (1.32.0).
             'carte_active' => carte_active() ? '1' : '0',
+            // Dates de décès dans le calendrier : cachées par défaut (1.34.0).
+            'calendrier_deces' => calendrier_afficher_deces() ? '1' : '0',
             'tchat_conservation_mois' => (string) tchat_conservation_mois(),
             // Envoi de gros fichiers par morceaux.
             'envoi_morceau_mo' => (string) envoi_reglages()['morceau_mo'],
@@ -231,6 +233,8 @@ function admin_settings_save(): void
         'tchat_actif' => post('tchat_actif') === '1' ? '1' : '0',
         // Carte des lieux : la case absente vaut « non » (désactivée).
         'carte_active' => post('carte_active') === '1' ? '1' : '0',
+        // Décès dans le calendrier : la case absente vaut « non » (cachés).
+        'calendrier_deces' => post('calendrier_deces') === '1' ? '1' : '0',
         'tchat_conservation_mois' => (string) post('tchat_conservation_mois', '12'),
         'envoi_morceau_mo' => (string) post('envoi_morceau_mo', '5'),
         'envoi_max_mo'     => (string) post('envoi_max_mo', '4096'),

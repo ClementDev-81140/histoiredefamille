@@ -3,6 +3,73 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.34.0] — 2026-11-08
+
+### Corrigé — l'étiquette « Années 2020 » au-dessus des articles
+La décennie affichée au-dessus du titre d'un article était déduite du
+« millésime » de l'article : l'année écrite dans son titre ou son résumé,
+à défaut **l'année de publication**. Un article d'actualité publié
+aujourd'hui portait donc « Années 2020 », qui se lisait comme une date
+erronée alors que la ligne de publication, plus bas, est correcte.
+Désormais, l'étiquette n'existe que pour un article qui raconte un
+souvenir daté (année dans le titre ou le résumé), sous la forme
+« **Souvenir des années 1950** » — sur la page de l'article, ses cartes
+(listes, accueil, « à lire aussi ») et la frise des décennies. Un article
+sans date de souvenir n'affiche aucune étiquette, nulle part. La ligne
+« Par … — date de publication » est inchangée.
+
+### Calendrier : ajouter un événement sans passer par l'administration
+- Bouton « **Ajouter un événement** » en haut de `/calendrier` pour les
+  administrateurs (les événements se créaient déjà dans
+  Administration → Calendrier depuis la 1.32.0, mais rien ne le disait
+  sur la page). Formulaire simple : titre, date, type, visibilité
+  (**privée par défaut**), lieu et note facultatifs. Modification et
+  suppression restent dans Administration → Calendrier, comme avant.
+- Un **journaliste** y voit « Proposer un événement » : sa proposition
+  naît « en attente » et reste **invisible pour tous les autres comptes,
+  partout** (calendrier, accueil, listes, compteurs), jusqu'au bouton
+  « Valider » d'un administrateur (colonne « État » de la liste).
+- Les événements gagnent un **type** (fête, réunion, voyage, messe du
+  souvenir, anniversaire, autre), affiché dans le détail du calendrier.
+- Le calendrier parle d'**anniversaires** : « Anniversaire de Prénom NOM
+  (62 ans) », « Anniversaire de mariage de X et Y (40 ans) » — jamais de
+  « naissances ». La frise chronologique, relevé historique, ne change pas.
+- Les **décès quittent le calendrier par défaut**. Nouveau réglage
+  administrateur « Afficher les dates de décès dans le calendrier »
+  (Administration → Réglages, décochée par défaut) ; activée, l'entrée
+  s'écrit sobrement « In memoriam : Prénom NOM ».
+- Les droits des personnes sont inchangés : quelqu'un que le compte n'a
+  pas le droit de voir n'apparaît ni en anniversaire, ni en mariage, ni
+  en décès, ni en nombre.
+
+### Corrigé — plus aucune ligne « Décès » vide
+Sur la fiche d'une personne sans date de décès, la ligne « Décès : — »
+a disparu, comme toutes les lignes de repères vides (naissance sans date
+ni lieu, etc.) ; les champs ne réapparaissent que dans les formulaires
+de saisie. Les dates de vie des listes et de l'arbre ne gardent plus de
+tiret en attente (« 1901 » au lieu de « 1901 – »). Une date de décès
+connue reste affichée telle quelle.
+
+### Migration 022 (en ajout seul)
+`events` gagne deux colonnes : `status` (« publie » par défaut — tous les
+événements existants le deviennent, rien ne change pour eux) et `type`
+(vide par défaut). Aucune ligne touchée, rien de supprimé. Sur le
+Raspberry Pi, `git pull` puis `deploy/install.sh` suffisent : le script
+lance les migrations comme d'habitude.
+
+### Essais
+- Nouvelle famille `tests_calendrier34.php` : 32 essais (étiquette,
+  libellés, décès réglés, bouton selon le compte, proposition invisible
+  puis validée, fiche sans décès).
+- Suite complète : 1 490 essais, 1 489 réussis ; le seul échec
+  (« arbre : la page retombe alors sur une personne visible ») existe à
+  l'identique sur le code d'avant la 1.34.0 lancé sur le même banc, et
+  la famille « arbre » passe seule (47/47) : ce n'est pas une régression.
+- Matrice d'accès : 201 routes, 0 anomalie (document régénéré).
+- Navigateur réel (Chromium) : `tools/navigateur/actions-ajouts34.mjs`,
+  17 contrôles à 1 280 et 390 px, en papier et en bleu, 0 échec ;
+  captures dans `docs/captures/`.
+
 ## [1.33.1] — 2026-11-08
 
 ### Modifié

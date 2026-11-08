@@ -162,6 +162,33 @@ function calendrier_age(?int $anneeNaissance, int $annee): ?int
 }
 
 // ---------------------------------------------------------------------------
+// Réglage « décès dans le calendrier » (1.34.0)
+// ---------------------------------------------------------------------------
+
+/**
+ * Les dates de décès apparaissent-elles dans le calendrier ?
+ *
+ * Réglage « Afficher les dates de décès dans le calendrier »
+ * (Administration → Réglages), DÉSACTIVÉ par défaut : le calendrier montre
+ * les anniversaires et les anniversaires de mariage ; un décès n'y figure,
+ * sous le libellé sobre « In memoriam », que si un administrateur a coché
+ * la case. La frise chronologique, elle, reste un relevé historique et
+ * n'est pas concernée.
+ */
+function calendrier_afficher_deces(bool $relire = false): bool
+{
+    static $affiche = null;
+    if ($relire) {
+        $affiche = null;
+    }
+    if ($affiche === null) {
+        $affiche = site_setting('calendrier_deces') === '1';
+    }
+
+    return $affiche;
+}
+
+// ---------------------------------------------------------------------------
 // Données : calendrier d'un mois, frise d'une période
 // ---------------------------------------------------------------------------
 
@@ -201,7 +228,10 @@ function calendrier_evenements(int $mois): array
             ];
         }
 
-        $deces = date_parts((string) $personne['death_date']);
+        // 1.34.0 : aucun décès dans le calendrier tant que le réglage
+        // « Afficher les dates de décès » n'est pas activé par un
+        // administrateur (décoché par défaut).
+        $deces = calendrier_afficher_deces() ? date_parts((string) $personne['death_date']) : null;
         if ($deces !== null && $deces['mois'] === $mois && $deces['jour'] > 0) {
             $evenements[$deces['jour']][] = [
                 'genre'    => 'deces',
@@ -260,6 +290,7 @@ function calendrier_evenements(int $mois): array
                 'genre'    => 'evenement',
                 'annee'    => $debut['annee'] ?? (int) date('Y'),
                 'id'       => (int) $evenement['id'],
+                'type'     => (string) ($evenement['type'] ?? ''),
                 'titre'    => (string) $evenement['title'],
                 'heure'    => (string) ($evenement['start_time'] ?? ''),
                 'lieu'     => (string) $evenement['place'],

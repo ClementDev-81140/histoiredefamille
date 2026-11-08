@@ -33,7 +33,12 @@ $brancheNom = trim((string) ($article['branche_nom'] ?? ''));
 if ($brancheNom !== '') {
     $surtitre[] = $brancheNom;
 }
-$surtitre[] = decennie_libelle(article_decennie($article));
+// 1.34.0 : l'étiquette de décennie n'existe que pour un article de souvenir,
+// sous la forme « Souvenir des années 1950 » ; un article d'actualité n'en a pas.
+$decennieSouvenir = article_decennie_souvenir($article);
+if ($decennieSouvenir > 0) {
+    $surtitre[] = decennie_souvenir_libelle($decennieSouvenir);
+}
 ?>
 <?php $classes = 'article-carte' . ($grand ? ' article-carte--une' : '') . ($image === null ? ' article-carte--sans-image' : ''); ?>
 <article class="<?= e($classes) ?>">

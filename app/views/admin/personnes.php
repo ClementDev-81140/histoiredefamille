@@ -57,8 +57,8 @@
                     <tr>
                         <td><?= e((string) $person['last_name']) ?></td>
                         <td><?= e((string) $person['first_name']) ?></td>
-                        <td><?= e((string) ($person['birth_date'] ?? '—')) ?></td>
-                        <td><?= e((string) ($person['death_date'] ?? '—')) ?></td>
+                        <td><?= e(trim((string) ($person['birth_date'] ?? ''))) ?></td>
+                        <td><?= e(trim((string) ($person['death_date'] ?? ''))) ?></td>
                         <td><span class="<?= e(visibility_class((string) $person['visibility'])) ?>">
                             <?= e(visibility_short((string) $person['visibility'])) ?></span></td>
                         <td>

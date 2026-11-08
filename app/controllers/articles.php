@@ -184,7 +184,8 @@ function public_article_detail(array $params): void
         'branchesNoms'  => $noms,
         'auteur'        => (string) $auteur,
         'millesime'     => article_millesime($article),
-        'decennie'      => article_decennie($article),
+        // 1.34.0 : l'étiquette ne montre que la décennie de SOUVENIR (0 = aucune).
+        'decennie'      => article_decennie_souvenir($article),
         'others'        => $others,
     ]);
 }

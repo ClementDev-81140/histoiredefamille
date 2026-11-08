@@ -19,7 +19,9 @@ foreach ($branchesNoms ?? [] as $nom) {
     }
 }
 if ((int) $decennie > 0) {
-    $surtitre[] = 'Années ' . decennie_libelle((int) $decennie);
+    // 1.34.0 : « Souvenir des années 1950 », jamais « Années 1950 » seul —
+    // et rien du tout pour un article sans date de souvenir.
+    $surtitre[] = decennie_souvenir_libelle((int) $decennie);
 }
 ?><nav class="fil" aria-label="Fil d’Ariane">
     <a href="/articles">Articles</a>
