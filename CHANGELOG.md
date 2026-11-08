@@ -3,6 +3,14 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.33.1] — 2026-11-08
+
+### Modifié
+- Accueil d'un visiteur : la phrase d'introduction et le gros bouton
+  « Se connecter » ne sont plus affichés en tête de page. La page commence
+  directement par la une ; « Se connecter » reste dans le menu. (Un site sans
+  aucun contenu public garde son bouton et ses deux adresses.)
+
 ## [1.33.0] — 2026-11-07
 
 ### L'arbre généalogique devient un chêne gravé

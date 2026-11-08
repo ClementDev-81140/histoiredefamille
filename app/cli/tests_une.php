@@ -206,13 +206,13 @@ function tests_une_contenu(): void
         substr_count($corps, 'une-carte__titre') . ' carte(s)'
     );
 
-    // « Se connecter » est dans le premier écran : avant la une dans le HTML.
-    $positionBouton = strpos($corps, 'bouton--porte');
-    $positionUne    = strpos($corps, 'une-grande__article');
+    // 1.33.1 : la page commence par la une, sans phrase ni gros bouton ;
+    // « Se connecter » reste dans le menu.
     verifier(
-        'une : le bouton « Se connecter » vient avant la une (premier écran)',
-        $positionBouton !== false && $positionUne !== false && $positionBouton < $positionUne,
-        'bouton ' . var_export($positionBouton, true) . ', une ' . var_export($positionUne, true)
+        'une : pas de bloc d’introduction avant la une, « Se connecter » dans le menu',
+        !str_contains($corps, 'une-intro')
+            && !str_contains($corps, 'bouton--porte')
+            && str_contains($corps, 'href="/connexion"')
     );
 
     // Aucun style ni script en ligne, aucune ressource extérieure.

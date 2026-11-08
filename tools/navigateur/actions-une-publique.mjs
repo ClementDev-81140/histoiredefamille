@@ -127,15 +127,9 @@ try {
     });
 
     verifier(
-        'premier écran : le bouton « Se connecter » y est en entier, grand et large',
-        une.boutonTexte === 'Se connecter'
-            && une.boutonAdresse === '/connexion'
-            && une.boutonHaut >= 0
-            && une.boutonBas <= hauteur
-            && une.boutonHauteur >= 44
-            && une.boutonLarge >= 180,
-        'haut ' + une.boutonHaut + ' px, bas ' + une.boutonBas + ' px, '
-            + une.boutonLarge + ' × ' + une.boutonHauteur + ' px'
+        'premier écran : plus de gros bouton ni de phrase (1.33.1), « Se connecter » est dans le menu',
+        une.boutonTexte === '' && une.boutonHaut === -1,
+        'bouton en tête : ' + (une.boutonTexte || 'aucun')
     );
     verifier(
         'à la une : un contenu en grand, titre cliquable vers sa page publique',
