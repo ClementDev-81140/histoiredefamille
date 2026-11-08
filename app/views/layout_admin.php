@@ -17,6 +17,22 @@ if ($account === null) {
 }
 $flashes   = take_flashes();
 
+// Données du menu principal, comme dans layout.php.
+try {
+    $navPages    = nav_pages();
+    $tchatNonLus = $account['username'] !== '' ? tchat_non_lus() : 0;
+} catch (Throwable) {
+    $navPages    = [];
+    $tchatNonLus = 0;
+}
+$currentPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+$navClass = static function (string $href) use ($currentPath): string {
+    $active = $href === '/'
+        ? $currentPath === '/'
+        : str_starts_with($currentPath, $href);
+    return $active ? ' class="actif" aria-current="page"' : '';
+};
+
 // Alerte de sauvegarde : affichée en haut de TOUTES les pages de
 // l'administration (clé absente, sauvegarde trop ancienne ou en échec).
 // Un défaut de lecture ne doit jamais empêcher d'ouvrir l'administration.
@@ -46,7 +62,7 @@ $navLink = static function (string $href, string $label, bool $exact = false) us
 };
 ?>
 <!doctype html>
-<html lang="fr">
+<html lang="fr"<?= apparence_gothique_disponible() ? ' class="police-titre"' : '' ?>>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -56,26 +72,22 @@ $navLink = static function (string $href, string $label, bool $exact = false) us
 <?php if (apparence_feuille_active()): ?>
     <link rel="stylesheet" href="/theme.css?v=<?= apparence_version() ?>">
 <?php endif; ?>
+    <link rel="preload" href="/assets/fonts/old-standard-tt-400.woff2" as="font" type="font/woff2" crossorigin>
 </head>
 <body class="page-admin">
 <a class="lien-evitement" href="#contenu">Aller au contenu principal</a>
 
-<header class="entete entete--admin">
-    <div class="conteneur entete__barre">
-        <a class="entete__titre" href="/admin">
-            <span class="entete__nom"><?= e($siteName) ?></span>
-            <span class="entete__sous-titre">Administration</span>
-        </a>
-        <nav class="nav" aria-label="Navigation d'administration">
-            <a href="/" target="_blank" rel="noopener">Voir le site</a>
-            <a href="/mon-compte"<?= str_starts_with($current, '/mon-compte') ? ' class="actif" aria-current="page"' : '' ?>>Mon compte</a>
-            <form method="post" action="/deconnexion" class="nav__form">
-                <?= csrf_field() ?>
-                <button type="submit" class="lien-bouton">Déconnexion</button>
-            </form>
-        </nav>
-    </div>
-</header>
+<?php /* 1.35.2 : le même menu complet que sur le site, au-dessus du tableau de
+         bord (plus de petite barre « Voir le site / Mon compte / Déconnexion »). */ ?>
+<?php
+// Un compte absent (page d'erreur) ne doit pas passer pour un compte connecté.
+$accountAdmin = $account;
+if (($account['username'] ?? '') === '') {
+    $account = null;
+}
+require __DIR__ . '/partials/entete_journal.php';
+$account = $accountAdmin;
+?>
 
 <div class="conteneur admin-corps">
     <aside class="admin-menu" aria-label="Menu de l'administration">

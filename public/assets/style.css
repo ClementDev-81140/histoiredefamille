@@ -324,7 +324,7 @@ input[type="file"].sr-only {
 
 /* La marge intérieure de la pastille doit tenir : « .nav a » (plus précise)
    la remet à zéro, et le texte touche alors le bord du fond plein. */
-body:not(.page-admin) .nav a.nav__accent--connexion {
+body .nav a.nav__accent--connexion {
     padding: 0.55rem 1.25rem;
     border-bottom-color: transparent;
 }
@@ -3290,62 +3290,8 @@ code,
     background: var(--papier-moyen);
 }
 
-/* --------------------------------------------------------------------------
-   Administration : en-tête compact (le grand titre « gazette » reste sur
-   les pages publiques ; ici on veut de la place pour le travail)
-   -------------------------------------------------------------------------- */
-.page-admin .entete {
-    border-bottom: var(--filet-double);
-}
-
-.page-admin .entete__barre {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 0.5rem;
-    padding-top: 0.7rem;
-    padding-bottom: 0.45rem;
-}
-
-.page-admin .entete__titre {
-    text-align: left;
-    margin-bottom: 0;
-}
-
-.page-admin .entete__nom {
-    display: inline;
-    font-size: 1.3rem;
-    text-align: left;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    font-weight: 700;
-}
-
-.page-admin .entete__sous-titre {
-    display: inline;
-    margin: 0 0 0 0.6rem;
-    font-size: 0.8rem;
-}
-
-.page-admin .nav {
-    margin-top: 0;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    justify-content: flex-end;
-}
-
-@media (max-width: 40rem) {
-    .page-admin .entete__barre {
-        justify-content: center;
-        text-align: center;
-    }
-
-    .page-admin .nav {
-        justify-content: center;
-    }
-}
+/* 1.35.2 : l'administration reprend l'en-tête « journal » du site (même menu
+   complet, au-dessus du tableau de bord) ; plus de règles d'en-tête compact. */
 
 /* --------------------------------------------------------------------------
    Impression : le papier de la gazette reste à l'écran.
@@ -3584,7 +3530,7 @@ fieldset,
     padding-bottom: 0;
 }
 
-body:not(.page-admin) .entete__date {
+body .entete__date {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
@@ -3607,12 +3553,12 @@ body:not(.page-admin) .entete__date {
 }
 
 /* Le titre : très grand, centré, gothique. */
-body:not(.page-admin) .entete__titre {
+body .entete__titre {
     margin: 0.15rem 0 0.2rem;
     color: var(--texte);
 }
 
-body:not(.page-admin) .entete__nom {
+body .entete__nom {
     display: block;
     font-size: clamp(2.8rem, 9vw, 6rem);
     line-height: 0.95;
@@ -3624,7 +3570,7 @@ body:not(.page-admin) .entete__nom {
 
 /* Repli élégant quand la police gothique n'est pas déposée : Old Standard TT
    en gras et petites capitales, un peu espacée. */
-html:not(.police-titre) body:not(.page-admin) .entete__nom {
+html:not(.police-titre) body .entete__nom {
     font-family: var(--serif);
     font-weight: 700;
     font-variant-caps: small-caps;
@@ -3633,7 +3579,7 @@ html:not(.police-titre) body:not(.page-admin) .entete__nom {
     line-height: 1.02;
 }
 
-.police-titre body:not(.page-admin) .entete__nom {
+.police-titre body .entete__nom {
     font-family: var(--police-gothique);
     font-weight: 400;
 }
@@ -3673,7 +3619,7 @@ html:not(.police-titre) body:not(.page-admin) .entete__nom {
 }
 
 /* Menu : majuscules espacées, filets haut et bas, actif en rouge brique. */
-body:not(.page-admin) .nav {
+body .nav {
     background: transparent;
     border-top: 0;
     border-bottom: 3px double var(--bordure);
@@ -3681,7 +3627,7 @@ body:not(.page-admin) .nav {
     padding: 0.42rem 0 0.4rem;
 }
 
-body:not(.page-admin) .nav a {
+body .nav a {
     font-size: 0.7rem;
     letter-spacing: 0.16em;
     text-transform: uppercase;
@@ -3690,20 +3636,20 @@ body:not(.page-admin) .nav a {
     padding: 0.1rem 0;
 }
 
-body:not(.page-admin) .nav a:hover,
-body:not(.page-admin) .nav a:focus {
+body .nav a:hover,
+body .nav a:focus {
     color: var(--accent);
     border-bottom-color: var(--accent);
 }
 
-body:not(.page-admin) .nav a.actif,
-body:not(.page-admin) .nav a[aria-current="page"] {
+body .nav a.actif,
+body .nav a[aria-current="page"] {
     color: var(--accent);
     border-bottom-color: var(--accent);
     font-weight: 700;
 }
 
-body:not(.page-admin) .nav__accent {
+body .nav__accent {
     color: var(--accent) !important;
     border-bottom-color: transparent;
     box-shadow: none;
@@ -3711,11 +3657,11 @@ body:not(.page-admin) .nav__accent {
 
 /* « Se connecter » reste lisible : le texte prend la couleur du fond de la
    pastille, et non celle de l'accent (même couleur = texte invisible). */
-body:not(.page-admin) .nav__accent--connexion {
+body .nav__accent--connexion {
     color: var(--texte-sur-accent) !important;
 }
 
-body:not(.page-admin) .nav .lien-bouton {
+body .nav .lien-bouton {
     font-size: 0.7rem;
     letter-spacing: 0.16em;
 }
@@ -4522,7 +4468,7 @@ legend {
         padding-top: 0.5rem;
     }
 
-    body:not(.page-admin) .entete__date {
+    body .entete__date {
         justify-content: center;
         text-align: center;
         gap: 0.15rem 0.5rem;
@@ -4532,12 +4478,12 @@ legend {
 
     /* Sur téléphone, la ligne du haut garde la date et l'édition ; le prix
        n'apporte rien et prenait une ligne entière. */
-    body:not(.page-admin) .entete__date > :last-child {
+    body .entete__date > :last-child {
         display: none;
     }
 
-    body:not(.page-admin) .entete__nom,
-    html:not(.police-titre) body:not(.page-admin) .entete__nom {
+    body .entete__nom,
+    html:not(.police-titre) body .entete__nom {
         font-size: clamp(1.9rem, 11vw, 2.8rem);
         line-height: 1.02;
     }
@@ -4559,19 +4505,19 @@ legend {
         font-size: 0.85rem;
     }
 
-    body:not(.page-admin) .nav {
+    body .nav {
         gap: 0.25rem 0.7rem;
         font-size: 0.62rem;
     }
 
-    body:not(.page-admin) .nav a {
+    body .nav a {
         font-size: 0.62rem;
         letter-spacing: 0.1em;
     }
 
     /* Sur téléphone, la pastille « Se connecter » garde elle aussi sa marge
        intérieure : un peu moins large, pour ne pas déborder. */
-    body:not(.page-admin) .nav a.nav__accent--connexion {
+    body .nav a.nav__accent--connexion {
         padding: 0.5rem 1rem;
     }
 
