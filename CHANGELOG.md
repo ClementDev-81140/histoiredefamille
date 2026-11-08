@@ -62,7 +62,7 @@ Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
   Tchat inchangés.
 
 ### Essais
-- Nouvelle famille `tests.php archives36` (23 essais : migration, exclusions
+- Nouvelle famille `tests.php archives36` (24 essais : migration, exclusions
   des vitrines, droits et non-fuite des dossiers, suppression sans perte,
   proposition d'archive en attente, vocabulaire, menu). Matrice d'accès
   régénérée : 206 routes, **0 anomalie**. Contrôle navigateur
