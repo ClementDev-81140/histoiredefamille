@@ -484,7 +484,11 @@ body .nav a.nav__accent--connexion {
         display: block;
     }
 
-    .accueil-famille--repliable .accueil-famille__tout {
+    /* Le lien du bas (lecture sur téléphone) disparaît : celui de l'en-tête
+       suffit. Spécificité supérieure à la règle « :not([open]) » ci-dessus,
+       qui sinon le réafficherait (vu par le contrôle des doublons sous
+       Chromium récent, après la fusion 1.38.1). */
+    .accueil-famille--repliable .accueil-famille__repli:not([open]) > p.accueil-famille__tout {
         display: none;
     }
 }

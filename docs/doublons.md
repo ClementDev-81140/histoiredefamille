@@ -53,3 +53,36 @@ Attention : le Chromium du banc d'essai n'applique pas le masquage natif
 d'un `<details>` fermé (vérifié sur une page minimale) ; sur téléphone, le
 bloc paraît donc ouvert sur la capture, alors qu'un vrai navigateur
 l'affiche fermé, réduit à son titre « Dans la famille ».
+
+## Suite (1.38.1) : la colonne invisible sur ordinateur, et le contrôle qui la guette
+
+La fusion des deux rendus en un seul `<details>` fermé avait un angle
+mort : les navigateurs récents masquent le contenu d'un `<details>`
+fermé par `::details-content` (`content-visibility: hidden`). Les
+boîtes des enfants gardaient une taille mesurable, mais **aucun texte
+n'était peint** sur ordinateur — d'où la colonne « Dans la famille »
+vide, invisible pour le contrôle de 1.38.0 qui mesurait les boîtes sous
+un Chromium trop ancien pour appliquer ce masquage. La branche
+`claude/famille-colonne` (1.38.1, fusionnée telle quelle) ajoute la
+règle `::details-content { content-visibility: visible }` sur grand
+écran.
+
+Le contrôle `tools/navigateur/actions-famille-visible.mjs` garde ce
+point précis. À 1280 px, avec le `<details>` **fermé** comme en
+production, il exige : `::details-content` visible, `<summary>` masqué,
+**un seul** lien « Tout voir » affiché, et pour chaque titre et chaque
+ligne du bloc des rectangles de texte (`Range.getClientRects`) dont le
+centre répond au pointage (`document.elementFromPoint`) — du texte
+peint, pas des boîtes dimensionnées. Vérifié sous HeadlessChrome 153 :
+
+- feuille de style 1.38.0 → **échec** (contenu masqué, aucun texte) ;
+- feuille 1.38.1 fusionnée, avant correctif → **échec** : les deux
+  liens « Tout voir » étaient visibles sur ordinateur (la règle
+  d'affichage forcé, plus spécifique, réaffichait celui du bas, prévu
+  pour le téléphone). Corrigé par une règle plus spécifique ;
+- feuille actuelle → **OK**, et le contrôle des doublons repasse à
+  0 hors liste blanche.
+
+Captures après correction :
+`docs/captures/navigateur-1381-accueil-famille-{bureau,telephone}{,-bleu}.png`
+(le Chromium récent masque bien le bloc fermé à 390 px).

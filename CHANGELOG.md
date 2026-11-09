@@ -12,6 +12,14 @@ Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
   (`content-visibility: hidden`) ; la 1.38.0 n'avait qu'une règle `display`,
   sans effet. La feuille de style rend maintenant ce contenu visible sur
   grand écran ; sur téléphone le bloc reste replié.
+- Après la fusion de cette correction dans la branche principale, le
+  nouveau contrôle `tools/navigateur/actions-famille-visible.mjs`
+  (Chromium récent, texte mesuré à 1280 px, voir `docs/doublons.md`) a
+  montré que le lien « Tout voir » du bas du bloc, prévu pour le
+  téléphone, réapparaissait aussi sur ordinateur (conflit de
+  spécificité avec la règle d'affichage forcé). Il est de nouveau
+  masqué sur grand écran ; le contrôle échoue si l'un ou l'autre
+  problème revient.
 
 ## [1.38.0] — 2026-11-09
 

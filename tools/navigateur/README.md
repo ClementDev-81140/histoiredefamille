@@ -544,3 +544,18 @@ HDF_CONFIG=/chemin/config.local.php php tools/navigateur/rendre-tout.php /tmp/re
 HDF_THEME_CSS=/tmp/theme.css node tools/navigateur/actions-doublons.mjs /tmp/rendus
 php app/cli/tests.php doublons
 ```
+
+## Contrôle « Dans la famille » visible sur ordinateur (1.38.1)
+
+`actions-famille-visible.mjs <dossier-des-rendus>` ouvre l'accueil
+connecté (lecteur, route `/` du manifeste de `rendre-tout.php`) à
+1280 px et 390 px, thèmes papier et bleu (`HDF_THEME_CSS`), et échoue
+si, à 1280 px, le texte du bloc n'est pas réellement peint (rectangles
+de texte `Range` + pointage, `::details-content` visible, un seul
+« Tout voir » affiché). `HDF_CSS` permet de le vérifier contre une
+autre feuille de style (par exemple celle d'avant correction, pour
+s'assurer qu'il échoue bien).
+
+```bash
+node tools/navigateur/actions-famille-visible.mjs /tmp/rendus
+```

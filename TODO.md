@@ -3,6 +3,18 @@
 Ce fichier liste ce qui reste à faire, classé par priorité. Il n'y a pas de
 suivi automatique : cochez au fur et à mesure.
 
+## Fait (2026-11-09, 1.38.1 — colonne « Dans la famille » visible sur ordinateur)
+
+- [x] **Fusion** de `claude/famille-colonne` (avance rapide, contenu
+  inchangé) : `::details-content` rendu visible sur grand écran.
+- [x] **Contrôle navigateur** `actions-famille-visible.mjs` : à
+  1280 px, texte du bloc mesuré (rectangles `Range` + pointage), un
+  seul « Tout voir » visible ; vérifié sous HeadlessChrome 153 —
+  échoue avec la feuille 1.38.0 et avec celle d'avant le correctif de
+  spécificité, passe après. Constat au passage : le second « Tout
+  voir » réapparaissait sur ordinateur, corrigé. Contrôle des
+  doublons relancé : 0 hors liste blanche.
+
 ## Fait (2026-11-09, 1.38.0 — chasse aux doublons)
 
 - [x] **Contrôle automatique** : `tools/navigateur/rendre-tout.php` +
