@@ -58,10 +58,21 @@ function propositions_index(): void
         }
     }
 
+    // Ses albums en attente de validation (1.37.1) : invisibles partout
+    // ailleurs, il les retrouve ici et par leur adresse directe.
+    $albumsAttente = [];
+    if (compte_est_journaliste($compte) && album_moderation_faite()) {
+        $albumsAttente = db_all(
+            "SELECT * FROM albums WHERE created_by = ? AND moderation_state = 'attente' ORDER BY created_at DESC",
+            [(int) $compte['id']]
+        );
+    }
+
     render('propositions/index', [
         'titre'        => 'Mes propositions',
         'propositions' => propositions_de((int) $compte['id']),
         'corrigables'  => $corrigables,
+        'albumsAttente' => $albumsAttente,
         'echecs'       => form_errors(),
     ], 'layout');
 }

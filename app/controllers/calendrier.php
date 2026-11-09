@@ -129,16 +129,40 @@ function public_calendrier_ajouter_save(): void
 /**
  * Modifier un événement depuis le calendrier (1.37.0).
  *
- * Un journaliste peut corriger ses événements et ceux qui relèvent de son
- * périmètre ; un lecteur reçoit 403, un visiteur la connexion. Jamais de
- * suppression ici. « Sans validation » : la correction est directe (ancien
- * état gardé dans l'historique, action journalisée). « Avec validation » :
- * un événement déjà publié repasse en attente, invisible jusqu'à validation.
+ * Un journaliste « sans validation » peut corriger ses événements et ceux
+ * qui relèvent de son périmètre ; un lecteur reçoit 403, un visiteur la
+ * connexion. Jamais de suppression ici. La correction est directe (ancien
+ * état gardé dans l'historique, action journalisée). « Avec validation »
+ * (1.37.1) : refus net (403) — il ne modifie jamais directement.
  */
+/**
+ * 1.37.1 : un journaliste « avec validation » ne modifie jamais un
+ * événement directement — refus net (403), comme pour les albums et les
+ * fiches personnes. Seuls les journalistes « sans validation » (et les
+ * administrateurs) corrigent ici. Renvoie vrai si la page doit s'arrêter.
+ */
+function calendrier_modifier_refus_validation(array $compte): bool
+{
+    if (($compte['role'] ?? '') === 'admin' || !compte_est_journaliste($compte)
+        || !journaliste_avec_validation($compte)) {
+        return false;
+    }
+    http_response_code(403);
+    render('erreur', [
+        'titre'   => 'Modification non autorisée',
+        'message' => 'Votre réglage est « avec validation » : un événement ne peut pas être modifié directement. '
+            . 'Demandez à un administrateur de le corriger, ou de passer votre compte « sans validation ».',
+    ]);
+    return true;
+}
+
 function public_calendrier_modifier(array $params = []): void
 {
     require_proposer();
     $compte = current_account();
+    if (calendrier_modifier_refus_validation($compte)) {
+        return;
+    }
     $id     = (int) ($params['id'] ?? 0);
     $event  = $id > 0 ? evenement_par_id($id) : null;
 
@@ -165,6 +189,9 @@ function public_calendrier_modifier_save(array $params = []): void
     require_proposer();
     csrf_check();
     $compte = current_account();
+    if (calendrier_modifier_refus_validation($compte)) {
+        return;
+    }
     $id     = (int) ($params['id'] ?? 0);
     $event  = $id > 0 ? evenement_par_id($id) : null;
 
@@ -198,10 +225,6 @@ function public_calendrier_modifier_save(array $params = []): void
             journaliste_journaliser('modification', 'event', $id, (string) $valeurs['title'], $compte);
         }
         flash('succes', 'Événement modifié et publié directement.');
-    } else {
-        evenement_modifier($id, $valeurs);
-        db_update('events', $id, ['status' => 'en_attente']);
-        flash('succes', 'Correction enregistrée : l’événement attend la validation d’un administrateur et n’apparaît plus en attendant.');
     }
 
     $mois = substr((string) $valeurs['start_date'], 0, 7);

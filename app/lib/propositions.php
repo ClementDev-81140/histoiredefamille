@@ -171,11 +171,33 @@ function proposition_colonnes_contenu(string $type): array
  */
 function proposition_clause(string $kind, string $alias, array &$params): string
 {
+    // Albums (1.37.1) : même principe depuis la migration 025.
+    if ($kind === 'album') {
+        return album_moderation_faite() ? $alias . ".moderation_state = 'publie'" : '1 = 1';
+    }
     if (!in_array($kind, ['article', 'document', 'recipe'], true) || !proposition_migration_faite()) {
         return '1 = 1';
     }
 
     return $alias . ".moderation_state = 'publie'";
+}
+
+/** La migration 025 (albums en attente) est-elle appliquée ? */
+function album_moderation_faite(): bool
+{
+    static $fait = null;
+    if ($fait !== null) {
+        return $fait;
+    }
+
+    try {
+        $colonnes = array_column(db_all('PRAGMA table_info(albums)'), 'name');
+        $fait = in_array('moderation_state', $colonnes, true);
+    } catch (Throwable) {
+        $fait = false;
+    }
+
+    return $fait;
 }
 
 /**

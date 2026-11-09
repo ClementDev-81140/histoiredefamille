@@ -238,6 +238,7 @@ route('POST', '/admin/albums/nouveau', 'admin_album_save');
 route('GET', '/admin/albums/{id}/modifier', 'admin_album_form');
 route('POST', '/admin/albums/{id}/modifier', 'admin_album_save');
 route('POST', '/admin/albums/{id}/supprimer', 'admin_album_delete');
+route('POST', '/admin/albums/{id}/valider', 'admin_album_valider');
 route('GET', '/admin/albums/{id}/photos', 'admin_album_photos');
 route('POST', '/admin/albums/{id}/photos/titre', 'admin_album_photo_save');
 route('POST', '/admin/albums/{id}/photos/retirer', 'admin_album_photo_remove');

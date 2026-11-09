@@ -102,6 +102,27 @@ $types = proposition_types();
     <?php endif; ?>
 </section>
 
+<?php if (($albumsAttente ?? []) !== []): ?>
+<section class="section">
+    <div class="section__entete">
+        <h2>Mes albums en attente de validation</h2>
+    </div>
+    <p class="aide">
+        Ces albums ne sont visibles que de vous (par leur adresse) et des
+        administrateurs. Ils paraîtront lorsque l’un d’eux les aura validés,
+        avec la visibilité que vous avez demandée.
+    </p>
+    <ul>
+        <?php foreach ($albumsAttente as $albumAttente): ?>
+            <li>
+                <a href="/albums/<?= e((string) $albumAttente['slug']) ?>"><?= e((string) $albumAttente['title']) ?></a>
+                — visibilité demandée : <?= e(visibility_label((string) ($albumAttente['suggested_visibility'] ?? 'prive'))) ?>
+            </li>
+        <?php endforeach; ?>
+    </ul>
+</section>
+<?php endif; ?>
+
 <?php if (($corrigables ?? []) !== []): ?>
 <section class="section">
     <div class="section__entete">

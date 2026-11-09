@@ -11,7 +11,7 @@ $v = static function (string $cle, mixed $defaut = '') use ($old, $album): mixed
     return old_value($old, $cle, $base);
 };
 $action = $album !== null ? '/albums/' . (int) $album['id'] . '/modifier' : '/albums/nouveau';
-$visibilite = (string) $v('visibility', 'famille');
+$visibilite = (string) $v('visibility', 'prive');
 $choisies = array_map('intval', (array) old_value($old, 'branches', $branchesChoisies));
 $photosCochees = array_map('intval', (array) old_value($old, 'photos', $photosChoisies));
 ?>
@@ -22,10 +22,18 @@ $photosCochees = array_map('intval', (array) old_value($old, 'photos', $photosCh
 </nav>
 
 <h1><?= e($titre) ?></h1>
-<p class="aide">
-    L’album est publié directement, avec la visibilité choisie. L’ancienne version
-    est gardée dans l’historique tenu pour les administrateurs. Vous ne pouvez rien supprimer d’ici.
-</p>
+<?php if (!empty($enAttente)): ?>
+    <p class="aide">
+        Votre réglage est « avec validation » : cet album restera invisible de
+        tous les autres comptes jusqu’à ce qu’un administrateur le valide. La
+        visibilité choisie ci-dessous sera appliquée à ce moment-là.
+    </p>
+<?php else: ?>
+    <p class="aide">
+        L’album est publié directement, avec la visibilité choisie. L’ancienne version
+        est gardée dans l’historique tenu pour les administrateurs. Vous ne pouvez rien supprimer d’ici.
+    </p>
+<?php endif; ?>
 
 <?php if ($erreurs !== []): ?>
     <div class="message message--erreur">

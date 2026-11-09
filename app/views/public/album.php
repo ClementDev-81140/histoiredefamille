@@ -34,6 +34,14 @@
         </span></p>
     <?php endif; ?>
 
+    <?php if ((string) ($album['moderation_state'] ?? 'publie') === 'attente'): ?>
+        <p class="message message--info">
+            Cet album est <strong>en attente de validation</strong> : vous seul et les
+            administrateurs pouvez le voir. Il paraîtra après validation, avec la
+            visibilité demandée (<?= e(visibility_label((string) ($album['suggested_visibility'] ?? 'prive'))) ?>).
+        </p>
+    <?php endif; ?>
+
     <?php if (trim((string) $album['description']) !== ''): ?>
         <div class="texte album__description">
             <?= render_text((string) $album['description']) ?>

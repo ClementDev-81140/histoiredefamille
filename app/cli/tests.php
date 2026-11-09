@@ -2535,7 +2535,17 @@ if ($filtre === '' || $filtre === 'composition') {
     $derniere = basename((string) end($migrations));
     $sql009   = (string) @file_get_contents(dirname(__DIR__) . '/migrations/009_articles_modele.sql');
     // Chaque lot ajoute SA migration ; les précédentes ne bougent jamais.
-    verifier('migration : 024 est la dernière migration', $derniere === '024_journalistes.sql', $derniere);
+    verifier('migration : 025 est la dernière migration', $derniere === '025_albums_attente.sql', $derniere);
+    $migration025 = (string) @file_get_contents(dirname(__DIR__) . '/migrations/025_albums_attente.sql');
+    verifier(
+        'migration : 025 ajoute l’attente des albums (ajout seul) et le rattrapage des albums 1.37.0',
+        str_contains($migration025, 'ALTER TABLE albums ADD COLUMN moderation_state')
+            && str_contains($migration025, 'ALTER TABLE albums ADD COLUMN suggested_visibility')
+            && str_contains($migration025, "moderation_state = 'attente'")
+            && str_contains($migration025, 'journaliste_validation = 1')
+            && !str_contains($migration025, 'DELETE FROM') && !str_contains($migration025, 'DROP'),
+        $migration025 === '' ? 'fichier absent' : 'ok'
+    );
     $migration024 = (string) @file_get_contents(dirname(__DIR__) . '/migrations/024_journalistes.sql');
     verifier(
         'migration : 024 ajoute les droits des journalistes, EN AJOUT SEUL (défauts = comportement actuel)',

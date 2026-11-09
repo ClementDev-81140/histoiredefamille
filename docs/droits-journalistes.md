@@ -56,11 +56,30 @@ l'administration.
 
 ## Avec / sans validation
 
-- **Avec validation** : comportement historique. Ses ajouts naissent privés
-  et « en attente », invisibles de tous (sauf lui et les administrateurs) ;
-  la modification d'un contenu publié crée une version en attente, le texte
-  publié ne bouge pas. Un administrateur valide (la visibilité proposée
-  s'applique) ou refuse.
+- **Avec validation** : comportement historique, partout (renforcé en
+  1.37.1). Ses ajouts naissent privés et « en attente », invisibles de tous
+  (sauf lui et les administrateurs) ; la modification d'un contenu publié
+  crée une version en attente, le texte publié ne bouge pas. Un
+  administrateur valide (la visibilité proposée s'applique) ou refuse.
+  Inventaire des routes d'écriture, et ce qui s'y passe « avec
+  validation » :
+  - propositions article/document/recette (`/propositions…`, envois par
+    morceaux compris) : attente, comme depuis la 1.22 ;
+  - événement créé (`/calendrier/ajouter`) : « en attente », comme depuis
+    la 1.34 ;
+  - album créé (`/albums/nouveau`) : l'album naît privé et « en attente »
+    (migration 025), visibilité choisie gardée comme suggestion, appliquée
+    par l'administrateur au bouton « Valider » de la liste des albums ;
+    invisible de tous les autres comptes (listes, compteurs, recherche),
+    son auteur le relit par son adresse directe ;
+  - **modifications directes refusées (403)** : corriger un album
+    (`/albums/{id}/modifier`), un événement (`/calendrier/{id}/modifier`),
+    une fiche personne ou un lien (`/arbre/…`). Il n'existe pas de file
+    d'attente pour ces modifications : plutôt qu'un mécanisme de
+    propositions parallèle, le refus est net et expliqué à l'écran.
+    Pour les articles/documents/recettes, la modification d'un contenu
+    publié passe déjà par une version en attente (1.22/1.37.0) : rien à
+    refuser, le texte publié ne bouge pas.
 - **Sans validation** : ses ajouts sont publiés directement, avec la
   visibilité qu'il choisit (y compris « public »). La modification d'un
   contenu (le sien ou celui d'un autre, dans son périmètre) s'applique
@@ -83,11 +102,13 @@ l'administration.
 - Les événements et les albums créés par un journaliste passent par les
   écrans publics prévus (`/calendrier/ajouter`, `/albums/nouveau`) ; les
   écrans d'administration restent fermés.
-- Les fiches personnes n'ont pas de file d'attente : leur correction par un
-  journaliste est donc directe même « avec validation », mais toujours
-  tracée dans `contenu_historique` (et journalisée si « sans validation »).
-  C'est le seul endroit où « avec validation » ne passe pas par une
-  validation d'administrateur, faute de mécanisme existant.
+- Les fiches personnes n'ont pas de file d'attente : depuis la 1.37.1, un
+  journaliste « avec validation » ne peut donc ni en créer ni en corriger
+  (refus 403) — avant la 1.37.1, la correction était directe, ce qui
+  court-circuitait la validation.
+- Défaut « privé » : les formulaires de création ouverts aux journalistes
+  (album, fiche personne, événement, proposition) présélectionnent
+  « Privé », et un champ absent vaut « privé », jamais « famille ».
 - Un contenu que le journaliste ne peut pas **voir** (par exemple « privé »
   ou « Branches précises » hors de sa branche de compte) ne peut pas être
   corrigé par adresse directe : le formulaire répond 404, rien ne fuit.

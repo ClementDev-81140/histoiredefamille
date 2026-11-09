@@ -11,7 +11,7 @@ $v = static function (string $cle, mixed $defaut = '') use ($old, $person): mixe
     return old_value($old, $cle, $base);
 };
 $action = $person !== null ? '/arbre/' . (int) $person['id'] . '/modifier' : '/arbre/nouvelle-personne';
-$visibilite = (string) $v('visibility', 'famille');
+$visibilite = (string) $v('visibility', 'prive');
 $choisies = array_map('intval', (array) old_value($old, 'branches', $branchesChoisies));
 ?>
 <nav class="fil" aria-label="Fil d’Ariane">

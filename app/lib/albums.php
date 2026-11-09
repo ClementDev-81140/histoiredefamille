@@ -67,11 +67,29 @@ function find_viewable_album(string $slug): ?array
     $params = [];
     $clause = album_visible_clause('a', $params);
 
-    return db_one(
+    $album = db_one(
         "SELECT * FROM albums a
          WHERE a.slug = :slug AND {$clause}",
         $params + [':slug' => $slug]
     );
+    if ($album !== null) {
+        return $album;
+    }
+
+    // L'auteur d'un album en attente de validation (1.37.1) peut le relire
+    // par son adresse directe — personne d'autre. Il n'apparaît dans
+    // aucune liste ni aucun compteur tant qu'il n'est pas validé.
+    $compte = current_account();
+    if ($compte !== null && album_moderation_faite()) {
+        $attente = db_one('SELECT * FROM albums WHERE slug = ?', [$slug]);
+        if ($attente !== null
+            && (string) ($attente['moderation_state'] ?? 'publie') === 'attente'
+            && (int) ($attente['created_by'] ?? 0) === (int) $compte['id']) {
+            return $attente;
+        }
+    }
+
+    return null;
 }
 
 /** Nombre de photos visibles dans un album. */

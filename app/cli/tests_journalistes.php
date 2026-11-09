@@ -112,6 +112,7 @@ function tests_journalistes(): void
             tests37_publication();
             tests37_personnes_albums();
             tests37_journal_admin();
+            tests371_validation_stricte();
             throw new RuntimeException('fin du test, annulation');
         });
     } catch (RuntimeException $e) {
@@ -401,18 +402,18 @@ function tests37_publication(): void
         $repModif['code'] . ' ' . $repModif['erreur']
     );
 
-    $evtVal = (array) db_one('SELECT * FROM events WHERE title = ?', ['Fête directe 37']) ;
-    // Le journaliste « avec validation » corrige le même événement (toutes
-    // branches) : il repasse en attente, invisible jusqu'à validation.
-    tests37_requete('POST', '/calendrier/' . (int) $evtCible['id'] . '/modifier', $jValide, [
+    // 1.37.1 : le journaliste « avec validation » ne corrige plus rien
+    // directement — refus (403), l'événement publié ne bouge pas.
+    $refusEvtVal = tests37_requete('POST', '/calendrier/' . (int) $evtCible['id'] . '/modifier', $jValide, [
         'type' => '', 'title' => 'Fête recorrigée 37', 'start_date' => '2027-05-03',
         'place' => '', 'description' => '', 'visibility' => 'famille',
     ]);
     $evtValApres = (array) db_one('SELECT * FROM events WHERE id = ?', [(int) $evtCible['id']]);
     verifier(
-        'événements : correction par un journaliste « avec validation » — l’événement repasse en attente',
-        (string) $evtValApres['status'] === 'en_attente',
-        (string) $evtValApres['status']
+        'événements : correction par un journaliste « avec validation » — refusée (403), rien ne change',
+        $refusEvtVal['code'] === 403 && (string) $evtValApres['status'] === 'publie'
+            && (string) $evtValApres['title'] === 'Fête corrigée 37',
+        $refusEvtVal['code'] . ' / ' . (string) $evtValApres['status']
     );
 
     // Hors périmètre : 404 par adresse directe.
@@ -510,6 +511,186 @@ function tests37_personnes_albums(): void
         'interdits : un journaliste ne supprime rien (page d’administration fermée, 403)',
         $suppr['code'] === 403 && db_one('SELECT id FROM albums WHERE id = ?', [(int) ($album['id'] ?? 0)]) !== null,
         (string) $suppr['code']
+    );
+}
+
+/**
+ * 1.37.1 : un journaliste « avec validation » ne publie ni ne modifie
+ * jamais directement — albums en attente, modifications refusées (403),
+ * fiches personnes fermées, défaut « privé ».
+ */
+function tests371_validation_stricte(): void
+{
+    $admin = tests37_compte('admin');
+    $brancheA = tests37_branche('Branche A371');
+    $brancheB = tests37_branche('Branche B371');
+    $lecteur = tests37_compte('lecteur', $brancheA);
+    $jVal = tests37_compte('journaliste');
+    tests37_regler($jVal, true, false, [$brancheA]);
+    $jDirect = tests37_compte('journaliste');
+    tests37_regler($jDirect, false, false, [$brancheA]);
+    $jAutre = tests37_compte('journaliste');
+    tests37_regler($jAutre, false, true);
+
+    // --- Album créé « avec validation » : en attente, invisible. ---
+    tests37_requete('POST', '/albums/nouveau', $jVal, [
+        'title' => 'Album proposé 371', 'description' => '', 'visibility' => 'famille',
+    ]);
+    $album = db_one('SELECT * FROM albums WHERE title = ?', ['Album proposé 371']);
+    verifier(
+        '1.37.1 albums : l’album d’un journaliste « avec validation » naît privé et en attente',
+        $album !== null && (string) $album['moderation_state'] === 'attente'
+            && (string) $album['visibility'] === 'prive'
+            && (string) $album['suggested_visibility'] === 'famille',
+        $album === null ? 'absent' : (string) $album['moderation_state'] . '/' . (string) $album['visibility']
+    );
+    $vuLecteur = tests37_requete('GET', '/albums/' . $album['slug'], $lecteur);
+    $vuAutre = tests37_requete('GET', '/albums/' . $album['slug'], $jAutre);
+    $liste = tests37_requete('GET', '/albums', $lecteur);
+    verifier(
+        '1.37.1 albums : invisible d’un lecteur et d’un autre journaliste, absent des listes',
+        $vuLecteur['code'] === 404 && $vuAutre['code'] === 404
+            && !str_contains($liste['corps'], 'Album proposé 371'),
+        $vuLecteur['code'] . '/' . $vuAutre['code']
+    );
+    $vuAuteur = tests37_requete('GET', '/albums/' . $album['slug'], $jVal);
+    verifier(
+        '1.37.1 albums : son auteur peut le relire par son adresse directe',
+        $vuAuteur['code'] === 200 && str_contains($vuAuteur['corps'], 'en attente de validation'),
+        (string) $vuAuteur['code']
+    );
+
+    // Validation par l'administrateur : la visibilité suggérée s'applique.
+    tests37_requete('POST', '/admin/albums/' . (int) $album['id'] . '/valider', $admin);
+    $valide = (array) db_one('SELECT * FROM albums WHERE id = ?', [(int) $album['id']]);
+    $vuApres = tests37_requete('GET', '/albums/' . $album['slug'], $lecteur);
+    verifier(
+        '1.37.1 albums : après validation, visible avec la visibilité demandée',
+        (string) $valide['moderation_state'] === 'publie' && (string) $valide['visibility'] === 'famille'
+            && $vuApres['code'] === 200,
+        (string) $valide['moderation_state'] . '/' . (string) $valide['visibility'] . '/' . $vuApres['code']
+    );
+
+    // --- Album : modification refusée « avec validation », même le sien. ---
+    $avant = (array) db_one('SELECT * FROM albums WHERE id = ?', [(int) $album['id']]);
+    $refus = tests37_requete('POST', '/albums/' . (int) $album['id'] . '/modifier', $jVal, [
+        'title' => 'Album retouché 371', 'description' => '', 'visibility' => 'public',
+    ]);
+    $apres = (array) db_one('SELECT * FROM albums WHERE id = ?', [(int) $album['id']]);
+    verifier(
+        '1.37.1 albums : la modification directe est refusée (403) « avec validation », rien ne change',
+        $refus['code'] === 403 && (string) $apres['title'] === (string) $avant['title'],
+        (string) $refus['code']
+    );
+    $formRefus = tests37_requete('GET', '/albums/' . (int) $album['id'] . '/modifier', $jVal);
+    verifier(
+        '1.37.1 albums : le formulaire de modification répond aussi 403',
+        $formRefus['code'] === 403,
+        (string) $formRefus['code']
+    );
+
+    // « Sans validation » inchangé : création directe.
+    tests37_requete('POST', '/albums/nouveau', $jDirect, [
+        'title' => 'Album direct 371', 'description' => '', 'visibility' => 'famille',
+    ]);
+    $direct = db_one('SELECT * FROM albums WHERE title = ?', ['Album direct 371']);
+    verifier(
+        '1.37.1 albums : « sans validation » publie toujours directement',
+        $direct !== null && (string) $direct['moderation_state'] === 'publie'
+            && (string) $direct['visibility'] === 'famille'
+    );
+
+    // --- Personnes : création et correction refusées « avec validation ». ---
+    $crea = tests37_requete('POST', '/arbre/nouvelle-personne', $jVal, [
+        'first_name' => 'Refusée', 'last_name' => 'Personne371', 'sex' => 'F', 'visibility' => 'prive',
+    ]);
+    verifier(
+        '1.37.1 personnes : la création est refusée (403) « avec validation », aucune fiche créée',
+        $crea['code'] === 403 && db_one('SELECT id FROM persons WHERE last_name = ?', ['Personne371']) === null,
+        (string) $crea['code']
+    );
+    $pers = tests37_personne('Vera', [$brancheA]);
+    $corr = tests37_requete('POST', '/arbre/' . $pers . '/modifier', $jVal, [
+        'first_name' => 'Vera', 'last_name' => 'Touchée371', 'sex' => 'F', 'visibility' => 'famille',
+    ]);
+    $intacte = (array) db_one('SELECT * FROM persons WHERE id = ?', [$pers]);
+    verifier(
+        '1.37.1 personnes : la correction est refusée (403), la fiche ne change pas',
+        $corr['code'] === 403 && (string) $intacte['last_name'] === 'Essai37',
+        (string) $corr['code']
+    );
+    // « Sans validation » inchangé.
+    $okCorr = tests37_requete('POST', '/arbre/' . $pers . '/modifier', $jDirect, [
+        'first_name' => 'Vera', 'last_name' => 'Corrigée371', 'sex' => 'F', 'visibility' => 'famille',
+    ]);
+    $corrigee = (array) db_one('SELECT * FROM persons WHERE id = ?', [$pers]);
+    verifier(
+        '1.37.1 personnes : « sans validation » corrige toujours directement',
+        $okCorr['code'] === 303 && (string) $corrigee['last_name'] === 'Corrigée371',
+        (string) $okCorr['code']
+    );
+
+    // --- Événements : modification refusée « avec validation ». ---
+    $evt = db_insert('events', [
+        'title' => 'Fête figée 371', 'start_date' => '2027-08-01', 'place' => '',
+        'description' => '', 'visibility' => 'famille', 'annual' => 0,
+        'created_by' => $jVal, 'created_at' => time(), 'updated_at' => time(),
+    ]);
+    $refusEvt = tests37_requete('POST', '/calendrier/' . $evt . '/modifier', $jVal, [
+        'type' => '', 'title' => 'Fête retouchée 371', 'start_date' => '2027-08-02',
+        'place' => '', 'description' => '', 'visibility' => 'famille',
+    ]);
+    $evtApres = (array) db_one('SELECT * FROM events WHERE id = ?', [$evt]);
+    verifier(
+        '1.37.1 événements : la modification directe est refusée (403) « avec validation », rien ne change',
+        $refusEvt['code'] === 403 && (string) $evtApres['title'] === 'Fête figée 371'
+            && (string) $evtApres['status'] === 'publie',
+        (string) $refusEvt['code']
+    );
+    // La création reste une proposition en attente (déjà le cas depuis 1.34).
+    tests37_requete('POST', '/calendrier/ajouter', $jVal, [
+        'type' => '', 'title' => 'Fête proposée 371', 'start_date' => '2027-09-01',
+        'start_time' => '', 'end_date' => '', 'end_time' => '', 'place' => '',
+        'description' => '', 'visibility' => 'famille', 'annual' => '0',
+    ]);
+    $evtProp = db_one('SELECT * FROM events WHERE title = ?', ['Fête proposée 371']);
+    verifier(
+        '1.37.1 événements : la création reste en attente « avec validation »',
+        $evtProp !== null && (string) $evtProp['status'] === 'en_attente'
+    );
+
+    // --- Défaut « privé » présélectionné dans les formulaires de création. ---
+    $formAlbum = tests37_requete('GET', '/albums/nouveau', $jDirect);
+    $formPers = tests37_requete('GET', '/arbre/nouvelle-personne', $jDirect);
+    $formEvt = tests37_requete('GET', '/calendrier/ajouter', $jDirect);
+    $priveCoche = static fn (string $corps): bool => preg_match('/name="visibility" value="prive"[^>]*checked/', $corps) === 1;
+    verifier(
+        '1.37.1 défauts : « Privé » est présélectionné (album, personne, événement)',
+        $priveCoche($formAlbum['corps']) && $priveCoche($formPers['corps']) && $priveCoche($formEvt['corps']),
+        'album ' . $formAlbum['code'] . ', personne ' . $formPers['code'] . ', événement ' . $formEvt['code']
+    );
+
+    // --- Rattrapage 1.37.0 : un album publié par un journaliste « avec
+    // validation » repasse en attente et en privé (visibilité gardée). ---
+    $ancien = db_insert('albums', [
+        'title' => 'Album 1.37.0 à rattraper', 'slug' => 'album-rattrapage-371-' . bin2hex(random_bytes(3)),
+        'description' => '', 'visibility' => 'famille', 'created_by' => $jVal,
+        'moderation_state' => 'publie', 'created_at' => time(), 'updated_at' => time(),
+    ]);
+    db_exec(
+        "UPDATE albums SET suggested_visibility = visibility, visibility = 'prive', moderation_state = 'attente'
+         WHERE moderation_state = 'publie'
+           AND created_by IN (SELECT id FROM accounts WHERE role = 'famille'
+             AND COALESCE(account_type, 'branche') = 'personne' AND journaliste_validation = 1)"
+    );
+    $rattrape = (array) db_one('SELECT * FROM albums WHERE id = ?', [$ancien]);
+    $directIntact = (array) db_one('SELECT * FROM albums WHERE title = ?', ['Album direct 371']);
+    verifier(
+        '1.37.1 rattrapage : l’album 1.37.0 d’un journaliste « avec validation » repasse en attente/privé, celui d’un « sans validation » ne bouge pas',
+        (string) $rattrape['moderation_state'] === 'attente' && (string) $rattrape['visibility'] === 'prive'
+            && (string) $rattrape['suggested_visibility'] === 'famille'
+            && (string) $directIntact['moderation_state'] === 'publie',
+        (string) $rattrape['moderation_state'] . '/' . (string) $rattrape['visibility']
     );
 }
 

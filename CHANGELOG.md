@@ -3,6 +3,35 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.37.1] — 2026-11-09
+
+### Un journaliste « avec validation » ne publie plus rien directement
+- **Albums** : en 1.37.0, un journaliste « avec validation » créait un
+  album visible tout de suite. Désormais, son album naît privé et
+  « en attente » (invisible de tous les autres comptes : listes,
+  compteurs, fiches), avec la visibilité choisie gardée comme suggestion,
+  appliquée par l'administrateur au bouton « Valider » de la liste des
+  albums (Administration → Albums photos). Son auteur le relit par son
+  adresse directe et le retrouve dans « Mes propositions ».
+- **Modifications directes refusées (403)** pour un journaliste
+  « avec validation » : corriger un album, un événement, une fiche
+  personne ou un lien de parenté. Il n'existe pas de file d'attente pour
+  ces modifications ; le refus est net et expliqué à l'écran. Articles,
+  documents et recettes gardaient déjà le texte publié intact (version en
+  attente), événements créés toujours « en attente », comme avant.
+- **Défaut « privé »** : les formulaires de création ouverts aux
+  journalistes présélectionnent « Privé » (album, personne, événement ;
+  les propositions le faisaient déjà). Un journaliste « sans validation »
+  n'est pas touché.
+- **Migration 025** : colonnes `albums.moderation_state` et
+  `albums.suggested_visibility` en ajout seul (« publie » par défaut),
+  plus le rattrapage demandé : les albums déjà créés en 1.37.0 par un
+  journaliste dont le réglage actuel est « avec validation » repassent en
+  attente et en privé, visibilité d'origine gardée comme suggestion.
+  Aucune ligne supprimée ; les journalistes « sans validation » et les
+  autres profils ne changent pas. Comme toujours, `migrate.php` écrit sa
+  copie de sécurité avant d'appliquer.
+
 ## [1.37.0] — 2026-11-08
 
 ### Droits des journalistes réglables

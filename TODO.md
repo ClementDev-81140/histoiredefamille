@@ -3,6 +3,18 @@
 Ce fichier liste ce qui reste à faire, classé par priorité. Il n'y a pas de
 suivi automatique : cochez au fur et à mesure.
 
+## Fait (2026-11-09, 1.37.1 — « avec validation » ne publie jamais directement)
+
+- [x] **Albums** : création « avec validation » en attente/privé (migration
+  025, ajout seul + rattrapage des albums 1.37.0 des journalistes « avec
+  validation »), validation admin (bouton « Valider », visibilité suggérée
+  appliquée), auteur relit par adresse directe, section dans
+  « Mes propositions ».
+- [x] **Refus 403** des modifications directes « avec validation » :
+  album, événement, fiche personne et liens. Créations déjà en attente
+  inchangées (propositions, événements). Défaut « privé » présélectionné
+  partout. Essais `journalistes` 51, matrice 0 anomalie.
+
 ## Fait (2026-11-08, 1.37.0 — droits des journalistes réglables)
 
 - [x] **Deux réglages par journaliste** (fiche du compte, administrateurs

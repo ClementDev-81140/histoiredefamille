@@ -221,7 +221,19 @@ function matrice_attendu(string $methode, string $motif, string $profil): int
                 return 403; // un lecteur n'écrit rien par ces pages
             }
             // POST sans jeton CSRF : refusé.
-            return $methode === 'POST' ? 403 : 200;
+            if ($methode === 'POST') {
+                return 403;
+            }
+            // Le journaliste d'essai a le réglage par défaut « avec
+            // validation » : depuis la 1.37.1, il ne modifie rien
+            // directement — les pages de modification lui répondent 403
+            // (événement, album, fiche personne). Seules les pages de
+            // création s'ouvrent (elles partent en attente).
+            if ($profil === 'journaliste'
+                && in_array($motif, ['/calendrier/{id}/modifier', '/albums/{id}/modifier', '/arbre/{id}/modifier', '/arbre/nouvelle-personne'], true)) {
+                return 403;
+            }
+            return 200;
 
         case 'arbre':
             return $connecte ? 200 : 303;

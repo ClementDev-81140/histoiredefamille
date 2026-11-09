@@ -2,14 +2,17 @@
 /**
  * Fiches personnes des journalistes (1.37.0).
  *
- * Un journaliste peut ajouter et corriger les fiches personnes — et les
- * liens de parenté simples — des branches de son périmètre, sans passer
- * par l'administration (qui reste fermée). Un journaliste « toutes les
- * branches » peut corriger toute fiche. Aucune suppression ici.
+ * Un journaliste « sans validation » peut ajouter et corriger les fiches
+ * personnes — et les liens de parenté simples — des branches de son
+ * périmètre, sans passer par l'administration (qui reste fermée). Un
+ * journaliste « toutes les branches » peut corriger toute fiche. Aucune
+ * suppression ici.
  *
- * Il n'existe pas de file de validation pour les personnes : la correction
- * est directe, mais elle est toujours tracée (historique) et, pour un
- * journaliste « sans validation », journalisée comme ses autres actions.
+ * Il n'existe pas de file de validation pour les personnes : pour un
+ * journaliste « avec validation », la création comme la correction sont
+ * donc refusées (403) depuis la 1.37.1, plutôt que directes. Pour un
+ * journaliste « sans validation », la correction est directe, toujours
+ * tracée (historique) et journalisée comme ses autres actions.
  * Les personnes proposées dans les listes de liens sont seulement celles
  * que le compte peut déjà voir : aucun nom ne fuit par ce formulaire.
  */
@@ -29,6 +32,23 @@ function journaliste_personne_garde(): array
         ]);
         hdf_terminer();
     }
+
+    // 1.37.1 : les fiches personnes n'ont pas de file d'attente. Un
+    // journaliste « avec validation » ne peut donc ni en créer ni en
+    // corriger directement : refus net (403), plutôt qu'une modification
+    // qui court-circuiterait la validation. Choix noté dans
+    // docs/droits-journalistes.md.
+    if (($compte['role'] ?? '') !== 'admin' && journaliste_avec_validation($compte)) {
+        http_response_code(403);
+        render('erreur', [
+            'titre'   => 'Fiches personnes non modifiables directement',
+            'message' => 'Votre réglage est « avec validation » : les fiches personnes ne peuvent pas être '
+                . 'ajoutées ni corrigées directement. Demandez à un administrateur de le faire, '
+                . 'ou de passer votre compte « sans validation ».',
+        ]);
+        hdf_terminer();
+    }
+
     return $compte;
 }
 

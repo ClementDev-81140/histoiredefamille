@@ -54,6 +54,14 @@ require __DIR__ . '/partials/filtre_categories_liste.php';
                         <td><code>/albums/<?= e($album['slug']) ?></code></td>
                         <td><?= e(format_date((int) $album['updated_at'])) ?></td>
                         <td class="colonne-actions">
+                            <?php if ((string) ($album['moderation_state'] ?? 'publie') === 'attente'): ?>
+                                <span class="etiquette">En attente de validation</span>
+                                <form method="post" action="/admin/albums/<?= (int) $album['id'] ?>/valider"
+                                      class="formulaire-en-ligne">
+                                    <?= csrf_field() ?>
+                                    <button type="submit" class="bouton">Valider</button>
+                                </form>
+                            <?php endif; ?>
                             <a class="bouton bouton--secondaire" href="/admin/albums/<?= (int) $album['id'] ?>/modifier">Modifier</a>
                             <form method="post" action="/admin/albums/<?= (int) $album['id'] ?>/supprimer"
                                   class="formulaire-en-ligne"

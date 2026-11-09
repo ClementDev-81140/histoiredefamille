@@ -48,6 +48,37 @@ function admin_albums(): void
     ], 'layout_admin');
 }
 
+/**
+ * Valide un album proposé par un journaliste « avec validation » (1.37.1) :
+ * la visibilité suggérée s'applique, l'album devient visible normalement.
+ */
+function admin_album_valider(array $params = []): void
+{
+    require_admin();
+    csrf_check();
+
+    $album = find_album((int) ($params['id'] ?? 0));
+    if ($album === null || !album_moderation_faite()
+        || (string) ($album['moderation_state'] ?? 'publie') !== 'attente') {
+        flash('erreur', 'Album introuvable, ou déjà validé.');
+        redirect('/admin/albums');
+    }
+
+    $data = [
+        'moderation_state' => 'publie',
+        'updated_at'       => time(),
+    ];
+    $suggeree = sanitize_visibility((string) ($album['suggested_visibility'] ?? ''));
+    if ((string) ($album['suggested_visibility'] ?? '') !== '') {
+        $data['visibility'] = $suggeree;
+    }
+    db_update('albums', (int) $album['id'], $data);
+
+    log_activity((int) current_account()['id'], 'album_valide', (string) $album['title'] . ' (#' . (int) $album['id'] . ')');
+    flash('succes', 'L’album « ' . $album['title'] . ' » est validé, avec la visibilité demandée.');
+    redirect('/admin/albums');
+}
+
 /** Formulaire de création / modification d'un album. */
 function admin_album_form(array $params = []): void
 {

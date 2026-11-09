@@ -3,9 +3,11 @@
  * Albums des journalistes (1.37.0).
  *
  * Création et correction d'albums hors administration : les siens, et ceux
- * qui relèvent des branches de son périmètre. Un album n'a pas de file de
- * validation : il est publié directement ; l'action est journalisée pour
- * un journaliste « sans validation ». Aucune suppression.
+ * qui relèvent des branches de son périmètre. « Sans validation » : publié
+ * directement, action journalisée. « Avec validation » (1.37.1) : la
+ * création naît privée et « en attente » (invisible de tous les autres)
+ * jusqu'à validation par un administrateur, et la modification directe
+ * d'un album est refusée (403). Aucune suppression.
  */
 
 declare(strict_types=1);
@@ -50,6 +52,18 @@ function journaliste_album_form(array $params = []): void
         return;
     }
 
+    // 1.37.1 : un journaliste « avec validation » ne modifie jamais un
+    // album directement (ni le sien, ni celui d'un autre). Refus net.
+    if ($id > 0 && ($compte['role'] ?? '') !== 'admin' && journaliste_avec_validation($compte)) {
+        http_response_code(403);
+        render('erreur', [
+            'titre'   => 'Modification non autorisée',
+            'message' => 'Votre réglage est « avec validation » : un album ne peut pas être modifié directement. '
+                . 'Demandez à un administrateur de le corriger, ou de passer votre compte « sans validation ».',
+        ]);
+        return;
+    }
+
     render('public/album_modifier', [
         'titre'    => $album !== null ? 'Corriger l’album' : 'Nouvel album',
         'album'    => $album,
@@ -58,6 +72,8 @@ function journaliste_album_form(array $params = []): void
         'branches' => branches_list(true),
         'branchesChoisies' => $album !== null ? content_branch_ids('album', $id) : [],
         'peutBranches' => static fn (int $b): bool => ($compte['role'] ?? '') === 'admin' || journaliste_dans_perimetre($b, $compte),
+        // Création « avec validation » : l'album partira en attente (1.37.1).
+        'enAttente' => $album === null && ($compte['role'] ?? '') !== 'admin' && journaliste_avec_validation($compte),
         'erreurs'  => form_errors(),
         'old'      => form_old(),
     ]);
@@ -76,6 +92,18 @@ function journaliste_album_save(array $params = []): void
     if ($id > 0 && ($album === null || !journaliste_peut_modifier('album', $album, $compte))) {
         http_response_code(404);
         render('erreur', ['titre' => 'Album introuvable', 'message' => 'Cet album n’existe pas, ou il ne relève pas des branches où vous pouvez écrire.']);
+        return;
+    }
+
+    // 1.37.1 : modification directe refusée « avec validation » (voir le
+    // formulaire) ; la création, elle, part en attente (plus bas).
+    if ($id > 0 && !$estAdmin && journaliste_avec_validation($compte)) {
+        http_response_code(403);
+        render('erreur', [
+            'titre'   => 'Modification non autorisée',
+            'message' => 'Votre réglage est « avec validation » : un album ne peut pas être modifié directement. '
+                . 'Demandez à un administrateur de le corriger, ou de passer votre compte « sans validation ».',
+        ]);
         return;
     }
 
@@ -134,14 +162,24 @@ function journaliste_album_save(array $params = []): void
         $slug = $base . '-' . $index++;
     }
 
+    // 1.37.1 : un journaliste « avec validation » ne publie jamais un album
+    // directement. Il naît privé et « en attente » ; la visibilité choisie
+    // est gardée comme suggestion, appliquée à la validation par un
+    // administrateur (bouton « Valider » sur la liste des albums).
+    $enAttente = $id === 0 && !$estAdmin && journaliste_avec_validation($compte) && album_moderation_faite();
+
     $data = [
         'title'             => $old['title'],
         'slug'              => $slug,
         'description'       => $old['description'] !== '' ? $old['description'] : null,
         'cover_document_id' => $couverture,
-        'visibility'        => $visibility,
+        'visibility'        => $enAttente ? 'prive' : $visibility,
         'updated_at'        => time(),
     ];
+    if ($enAttente) {
+        $data['moderation_state']      = 'attente';
+        $data['suggested_visibility'] = $visibility;
+    }
 
     if ($id > 0) {
         db_update('albums', $id, $data);
@@ -161,6 +199,12 @@ function journaliste_album_save(array $params = []): void
         if (!journaliste_avec_validation($compte)) {
             journaliste_journaliser($id > 0 ? 'modification' : 'publication', 'album', $albumId, $old['title'], $compte);
         }
+    }
+
+    if ($enAttente) {
+        flash('succes', 'Album proposé : il paraîtra après validation par un administrateur. '
+            . 'Vous pouvez le relire par son adresse ; personne d’autre ne le voit pour le moment.');
+        redirect('/albums/' . $slug);
     }
 
     flash('succes', $id > 0 ? 'L’album a été mis à jour.' : 'L’album a été créé.');
