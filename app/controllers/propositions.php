@@ -33,9 +33,35 @@ function propositions_index(): void
     require_proposer();
     $compte = current_account();
 
+    // Contenus d'autres comptes qu'il peut corriger (son périmètre).
+    $corrigables = [];
+    if (compte_est_journaliste($compte)) {
+        foreach (['article', 'document', 'recette'] as $typeCorr) {
+            $infoCorr = proposition_type($typeCorr);
+            if ($infoCorr === null) {
+                continue;
+            }
+            $lignes = db_all(
+                'SELECT * FROM ' . $infoCorr['table'] . " WHERE moderation_state = 'publie' ORDER BY updated_at DESC LIMIT 200"
+            );
+            foreach ($lignes as $ligneCorr) {
+                if (proposition_appartient($ligneCorr, $compte)) {
+                    continue;
+                }
+                if (journaliste_peut_modifier(proposition_genre($typeCorr), $ligneCorr, $compte)) {
+                    $corrigables[] = ['type' => $typeCorr, 'label' => $infoCorr['label'], 'ligne' => $ligneCorr];
+                }
+                if (count($corrigables) >= 50) {
+                    break 2;
+                }
+            }
+        }
+    }
+
     render('propositions/index', [
         'titre'        => 'Mes propositions',
         'propositions' => propositions_de((int) $compte['id']),
+        'corrigables'  => $corrigables,
         'echecs'       => form_errors(),
     ], 'layout');
 }
@@ -60,7 +86,7 @@ function proposition_form(array $params = []): void
     $id  = (int) ($params['id'] ?? 0);
     $row = $id > 0 ? proposition_obtenir($type, $id) : null;
 
-    if ($id > 0 && ($row === null || !proposition_appartient($row, current_account()))) {
+    if ($id > 0 && ($row === null || !proposition_peut_editer($type, $row, current_account()))) {
         http_response_code(404);
         render('erreur', ['titre' => 'Proposition introuvable', 'message' => 'Cette proposition n’existe pas.']);
         return;
@@ -83,6 +109,9 @@ function proposition_form(array $params = []): void
         [(int) current_account()['id']]
     );
 
+    $compteForm = current_account();
+    $directForm = $compteForm !== null && compte_est_journaliste($compteForm) && !journaliste_avec_validation($compteForm);
+
     render('propositions/form', [
         'titre'    => ($row !== null ? 'Modifier' : 'Proposer') . ' — ' . mb_strtolower($info['label']),
         'type'     => $type,
@@ -92,6 +121,13 @@ function proposition_form(array $params = []): void
         'prets'    => $prets,
         'erreurs'  => form_errors(),
         'old'      => form_old(),
+        // 1.37.0 : publication directe et périmètre.
+        'publicationDirecte' => $directForm,
+        'estJournaliste'     => $compteForm !== null && compte_est_journaliste($compteForm),
+        'branchesChoisissables' => $directForm
+            ? array_values(array_filter(branches_list(true), static fn (array $b): bool => journaliste_dans_perimetre((int) $b['id'], $compteForm)))
+            : [],
+        'branchesContenu' => $row !== null ? content_branch_ids(proposition_genre($type), (int) $row['id']) : [],
     ], 'layout');
 }
 
@@ -101,6 +137,31 @@ function proposition_appartient(array $row, ?array $compte): bool
     return $compte !== null
         && (int) ($row['submitted_by'] ?? 0) > 0
         && (int) $row['submitted_by'] === (int) $compte['id'];
+}
+
+/** Type de contenu (« recette ») → genre de contenu_branches (« recipe »). */
+function proposition_genre(string $type): string
+{
+    return $type === 'recette' ? 'recipe' : $type;
+}
+
+/**
+ * Ce compte peut-il ouvrir ce contenu en édition par les propositions ?
+ *
+ * Le sien : toujours. Celui d'un autre : seulement un journaliste, et
+ * seulement si le contenu relève d'une branche de son périmètre (un
+ * administrateur passe par l'administration, jamais par ici). Un lecteur
+ * est déjà écarté par require_proposer().
+ */
+function proposition_peut_editer(string $type, array $row, ?array $compte): bool
+{
+    if (proposition_appartient($row, $compte)) {
+        return true;
+    }
+    if ($compte === null || !compte_est_journaliste($compte)) {
+        return false;
+    }
+    return journaliste_peut_modifier(proposition_genre($type), $row, $compte);
 }
 
 /**
@@ -126,7 +187,7 @@ function proposition_save(array $params = []): void
     $compte = current_account();
     $back  = $id > 0 ? '/propositions/' . $type . '/' . $id : '/propositions/nouvelle/' . $type;
 
-    if ($id > 0 && ($row === null || !proposition_appartient($row, $compte))) {
+    if ($id > 0 && ($row === null || !proposition_peut_editer($type, $row, $compte))) {
         http_response_code(404);
         render('erreur', ['titre' => 'Proposition introuvable', 'message' => 'Cette proposition n’existe pas.']);
         return;
@@ -144,6 +205,21 @@ function proposition_save(array $params = []): void
     $brouillon = post('action') === 'brouillon';
     $etat      = $brouillon ? 'brouillon' : 'attente';
     $suggeree  = sanitize_visibility(post('suggested_visibility'));
+
+    // Publication directe (1.37.0) : un journaliste réglé « sans validation »
+    // publie tout de suite, avec la visibilité qu'il choisit. Les autres
+    // chemins (avec validation, administrateur, brouillon) sont inchangés.
+    $publicationDirecte = !$brouillon
+        && compte_est_journaliste($compte)
+        && !journaliste_avec_validation($compte);
+    $branchesChoisies = array_values(array_unique(array_filter(array_map('intval', post_array('branches')))));
+    if ($publicationDirecte && $suggeree === 'branches' && $branchesChoisies === []) {
+        $erreursPre = ['Visibilité « Branches précises » : cochez au moins une branche.'];
+        form_fail($erreursPre, array_merge($_POST, ['suggested_visibility' => $suggeree]), $back);
+    }
+    if ($publicationDirecte && $suggeree === 'branches' && !journaliste_branches_permises($branchesChoisies, $compte)) {
+        form_fail(['Vous ne pouvez publier que pour les branches de votre périmètre.'], array_merge($_POST, ['suggested_visibility' => $suggeree]), $back);
+    }
 
     $erreurs = [];
     $donnees = [];
@@ -268,11 +344,18 @@ function proposition_save(array $params = []): void
     }
 
     // La proposition naît privée : elle ne devient jamais publique ici.
+    // (Sauf publication directe d'un journaliste « sans validation » : la
+    // visibilité choisie s'applique tout de suite, et c'est journalisé.)
     $donnees['visibility']            = $row !== null ? (string) $row['visibility'] : 'prive';
-    $donnees['moderation_state']      = $etat;
+    if ($publicationDirecte) {
+        $donnees['visibility'] = $suggeree;
+    }
+    $donnees['moderation_state']      = $publicationDirecte ? 'publie' : $etat;
     $donnees['moderation_note']       = '';
-    $donnees['submitted_by']          = (int) $compte['id'];
-    $donnees['submitted_at']          = time();
+    if (!($publicationDirecte && $row !== null && !proposition_appartient($row, $compte))) {
+        $donnees['submitted_by']          = (int) $compte['id'];
+        $donnees['submitted_at']          = time();
+    }
     $donnees['suggested_visibility']  = $suggeree;
 
     // Modifier une proposition déjà validée ne touche PAS au texte publié :
@@ -281,7 +364,17 @@ function proposition_save(array $params = []): void
     // (base non migrée), on retombe sur l'ancien comportement : la ligne
     // repasse « en attente » et disparaît des listes publiques.
     $remiseEnAttente = $row !== null && (string) ($row['moderation_state'] ?? '') === 'publie';
-    $creerVersion    = $remiseEnAttente && proposition_versions_faites();
+    $creerVersion    = $remiseEnAttente && proposition_versions_faites() && !$publicationDirecte;
+    if ($publicationDirecte && $remiseEnAttente) {
+        // L'ancien texte n'est pas perdu : il part dans l'historique.
+        contenu_historique_enregistrer(
+            proposition_genre($type),
+            $row,
+            (int) $compte['id'],
+            proposition_appartient($row, $compte) ? 'modification_directe' : 'modification_directe_autre',
+            contenu_historique_colonnes(proposition_genre($type))
+        );
+    }
     $donnees['replaces_id'] = null;
     if ($remiseEnAttente) {
         $donnees['validated_by'] = null;
@@ -358,13 +451,28 @@ function proposition_save(array $params = []): void
         conversion_planifier_document($propositionId);
     }
 
+    if ($publicationDirecte && $propositionId > 0) {
+        set_content_branches(proposition_genre($type), $propositionId, $suggeree === 'branches' ? $branchesChoisies : []);
+        journaliste_journaliser(
+            $id > 0 ? 'modification' : 'publication',
+            proposition_genre($type),
+            $propositionId,
+            (string) $donnees['title'],
+            $compte
+        );
+    }
+
     log_activity(
         (int) $compte['id'],
         'proposition_enregistree',
-        $info['label'] . ' « ' . $donnees['title'] . ' » (' . moderation_label($etat) . ')'
+        $info['label'] . ' « ' . $donnees['title'] . ' » (' . moderation_label($publicationDirecte ? 'publie' : $etat) . ')'
     );
 
-    if ($etat === 'attente') {
+    if ($publicationDirecte) {
+        flash('succes', $id > 0
+            ? 'Modification publiée directement : elle est visible selon la visibilité choisie.'
+            : 'Publié directement : il est visible selon la visibilité choisie.');
+    } elseif ($etat === 'attente') {
         // Un seul courriel par proposition et par administrateur.
         proposition_prevenir_admins($type, $propositionId);
         flash(

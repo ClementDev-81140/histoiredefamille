@@ -12,6 +12,8 @@
         <p class="aide">Les albums de photos de la famille, des plus récents aux plus anciens.</p>
         <?php if (is_admin()): ?>
             <a class="bouton" href="/admin/albums/nouveau">Créer un album</a>
+        <?php elseif (compte_est_journaliste(current_account())): ?>
+            <a class="bouton" href="/albums/nouveau">Créer un album</a>
         <?php endif; ?>
     </div>
 

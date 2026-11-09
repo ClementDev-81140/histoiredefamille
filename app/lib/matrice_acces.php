@@ -117,6 +117,17 @@ function matrice_famille(string $methode, string $motif): string
     if ($motif === '/calendrier/ajouter') {
         return 'propositions';
     }
+    // Écriture des journalistes hors administration (1.37.0) : corriger un
+    // événement, un album ou une fiche personne, créer un album ou une
+    // fiche. Visiteur renvoyé à la connexion, lecteur 403, journaliste et
+    // administrateur admis (périmètre vérifié ensuite, contenu par contenu).
+    if ($motif === '/calendrier/{id}/modifier'
+        || $motif === '/albums/nouveau'
+        || $motif === '/albums/{id}/modifier'
+        || $motif === '/arbre/{id}/modifier'
+        || $motif === '/arbre/nouvelle-personne') {
+        return 'journaliste_ecriture';
+    }
     // L'arbre généalogique n'est plus public (1.24.0) : un visiteur est
     // renvoyé vers la connexion, un compte connecté l'ouvre.
     if (str_starts_with($motif, '/arbre') || str_starts_with($motif, '/api/arbre')) {
@@ -193,12 +204,24 @@ function matrice_attendu(string $methode, string $motif, string $profil): int
             if ($methode === 'POST') {
                 return 403;
             }
-            // Une proposition d'un autre auteur répond exactement comme une
-            // proposition qui n'existe pas.
+            // Une proposition d'un autre auteur : depuis la 1.37.0, un
+            // journaliste « toutes les branches » (le profil d'essai) peut la
+            // corriger — la page s'ouvre. Pour tout autre profil non admis,
+            // elle répond comme une proposition qui n'existe pas.
             if ($motif === '/propositions/{type}/{id}') {
-                return 404;
+                return $profil === 'journaliste' ? 200 : 404;
             }
             return 200;
+
+        case 'journaliste_ecriture':
+            if (!$connecte) {
+                return 303; // renvoi vers la page de connexion
+            }
+            if ($profil === 'lecteur') {
+                return 403; // un lecteur n'écrit rien par ces pages
+            }
+            // POST sans jeton CSRF : refusé.
+            return $methode === 'POST' ? 403 : 200;
 
         case 'arbre':
             return $connecte ? 200 : 303;
@@ -290,6 +313,8 @@ function matrice_url(string $motif, array $f): string
             str_starts_with($url, '/dossiers/')                => $f['dossier_archive'],
             str_starts_with($url, '/admin/dossiers/')          => $f['dossier_archive'],
             str_starts_with($url, '/admin/calendrier/')         => $f['evenement'],
+            str_starts_with($url, '/calendrier/')               => $f['evenement'],
+            str_starts_with($url, '/albums/')                   => $f['album'],
             str_starts_with($url, '/admin/gazette/')            => $f['gazette'],
             str_starts_with($url, '/lieu/')                     => $f['place'],
             str_starts_with($url, '/tchat/')                    => $f['chat_message'],
@@ -392,7 +417,10 @@ function matrice_fixtures(): array
     // sur une fiche qui existe.
     $evenement = db_insert('events', [
         'title' => 'Événement (matrice)', 'start_date' => date('Y-m-d'),
-        'place' => '', 'description' => '', 'visibility' => 'prive', 'annual' => 0,
+        'place' => '', 'description' => '', 'visibility' => 'famille', 'annual' => 0,
+        // L'événement du journaliste d'essai : sa page de correction (1.37.0)
+        // doit s'ouvrir pour lui.
+        'created_by' => $comptePersonneB,
         'created_at' => $maintenant, 'updated_at' => $maintenant,
     ]);
 

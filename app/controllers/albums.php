@@ -63,6 +63,7 @@ function public_album(array $params): void
     render('public/album', [
         'titre'      => (string) $album['title'],
         'album'      => $album,
+        'peutCorriger' => journaliste_peut_modifier('album', $album),
         'photos'     => $photos,
         'personnes'  => $personnes,
         'pagination' => $pg,

@@ -481,6 +481,7 @@ function admin_compte_form(array $params): void
         'old'      => form_old(),
         'branches' => comptes_branches_proposees($brancheActuelle),
         'profils'  => ['lecteur' => 'Lecteur', 'journaliste' => 'Journaliste'],
+        'reglages' => journaliste_reglages($compte),
     ], 'layout_admin');
 }
 
@@ -595,8 +596,36 @@ function admin_compte_save(array $params): void
         }
     }
 
+    // Droits du journaliste (1.37.0) : seulement pour ce profil, et
+    // seulement si la migration est là. Hors profil journaliste, on ne
+    // touche à rien : un lecteur qui devient journaliste repart des
+    // réglages par défaut (« avec validation », « toutes les branches »),
+    // qui sont le comportement historique.
+    $reglagesJournaliste = null;
+    if ($profil === 'journaliste' && journaliste_migration_faite()) {
+        $reglagesJournaliste = [
+            'journaliste_validation'      => post('journaliste_validation') === '0' ? 0 : 1,
+            'journaliste_toutes_branches' => post('journaliste_toutes_branches') === '0' ? 0 : 1,
+            'branches'                    => array_values(array_unique(array_filter(array_map('intval', post_array('journaliste_branches'))))),
+        ];
+        if ($reglagesJournaliste['journaliste_toutes_branches'] === 0) {
+            if ($reglagesJournaliste['branches'] === []) {
+                $errors[] = 'Périmètre restreint : cochez au moins une branche, ou choisissez « Toutes les branches ».';
+            }
+            foreach ($reglagesJournaliste['branches'] as $brancheChoisie) {
+                if (find_branch($brancheChoisie) === null) {
+                    $errors[] = 'Une des branches cochées pour le périmètre n’existe pas.';
+                    break;
+                }
+            }
+        }
+    }
+
     if ($errors !== []) {
         form_fail($errors, [
+            'journaliste_validation'      => $reglagesJournaliste['journaliste_validation'] ?? 1,
+            'journaliste_toutes_branches' => $reglagesJournaliste['journaliste_toutes_branches'] ?? 1,
+            'journaliste_branches'        => $reglagesJournaliste['branches'] ?? [],
             'profil'      => $profil,
             'nom'         => $nom,
             'prenom'      => $prenom,
@@ -627,6 +656,34 @@ function admin_compte_save(array $params): void
         'notify_gazette'  => $notifyGazette ? 1 : 0,
         'updated_at'   => time(),
     ]);
+
+    if ($reglagesJournaliste !== null) {
+        db_update('accounts', $id, [
+            'journaliste_validation'      => $reglagesJournaliste['journaliste_validation'],
+            'journaliste_toutes_branches' => $reglagesJournaliste['journaliste_toutes_branches'],
+        ]);
+        db_exec('DELETE FROM journaliste_branches WHERE account_id = ?', [$id]);
+        if ($reglagesJournaliste['journaliste_toutes_branches'] === 0) {
+            foreach ($reglagesJournaliste['branches'] as $brancheChoisie) {
+                db_insert('journaliste_branches', [
+                    'account_id' => $id,
+                    'branch_id'  => $brancheChoisie,
+                ]);
+            }
+        }
+        log_activity(
+            (int) current_account()['id'],
+            'journaliste_reglages',
+            sprintf(
+                '%s : %s, %s',
+                $identifiant,
+                $reglagesJournaliste['journaliste_validation'] === 1 ? 'avec validation' : 'SANS VALIDATION',
+                $reglagesJournaliste['journaliste_toutes_branches'] === 1
+                    ? 'toutes les branches'
+                    : 'branches ' . implode(', ', $reglagesJournaliste['branches'])
+            )
+        );
+    }
 
     log_activity(
         (int) current_account()['id'],

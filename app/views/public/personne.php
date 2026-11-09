@@ -249,6 +249,12 @@ $listePersonnes = static function (array $personnes): void {
         </ul>
     <?php endif; ?>
 
+    <?php if (!empty($peutCorriger)): ?>
+        <p class="actions">
+            <a class="bouton bouton--secondaire" href="/arbre/<?= (int) $person['id'] ?>/modifier">Corriger cette fiche</a>
+        </p>
+    <?php endif; ?>
+
     <?php if (($dossiers ?? []) !== []): ?>
         <h2>Dossiers d’archives</h2>
         <ul>

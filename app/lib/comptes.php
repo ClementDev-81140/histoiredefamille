@@ -53,7 +53,8 @@ function compte_profil_resume(string $type): string
 {
     return match ($type) {
         'personne' => 'lit avec les droits de sa branche et propose des contenus, '
-            . 'publiés seulement après validation d’un administrateur.',
+            . 'publiés après validation d’un administrateur — sauf si l’administrateur '
+            . 'l’autorise à publier directement (réglage dans sa fiche).',
         'admin'    => 'gère tout le site et valide les propositions.',
         default    => 'lit ce que sa branche a le droit de voir ; ne peut rien écrire ni proposer '
             . '(sauf dans le tchat).',

@@ -408,6 +408,7 @@ function public_personne(array $params): void
         'reperes'       => person_reperes($person, $unions),
         'homonymes'     => person_homonyms($person, 6),
         'dossiers'      => dossiers_pour_personne((int) $person['id']),
+        'peutCorriger'  => journaliste_peut_modifier('person', $person),
         'photos'        => person_photos((int) $person['id'], 12),
         'nbPhotos'      => person_photo_count((int) $person['id']),
     ]);

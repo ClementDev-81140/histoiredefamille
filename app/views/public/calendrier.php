@@ -108,6 +108,9 @@ $moisNom = calendrier_mois_nom($mois);
                                     <?php if ((string) $evenement['lieu'] !== ''): ?>
                                         <span class="discret">— <?= e((string) $evenement['lieu']) ?></span>
                                     <?php endif; ?>
+                                    <?php if (!empty($evenement['peutModifier'])): ?>
+                                        <a href="/calendrier/<?= (int) $evenement['id'] ?>/modifier">Modifier</a>
+                                    <?php endif; ?>
                                 <?php elseif ($evenement['genre'] === 'mariage'): ?>
                                     <?php $ansMariage = (int) $annee - (int) $evenement['annee']; ?>
                                     Anniversaire de mariage de

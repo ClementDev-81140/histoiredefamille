@@ -3,6 +3,38 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.37.0] — 2026-11-08
+
+### Droits des journalistes réglables
+- Deux réglages par journaliste, dans sa fiche de compte (Administration →
+  Comptes), modifiables à tout moment par un administrateur, avec effet
+  immédiat : le **contrôle** (« avec validation » — comportement historique —
+  ou « sans validation » — publication directe) et le **périmètre**
+  d'écriture (« toutes les branches » ou une sélection de branches
+  cochées). La fiche affiche, pour un journaliste « sans validation »,
+  l'avertissement « Ce journaliste publie directement, y compris en
+  public. » Migration 024 en ajout seul : les comptes existants gardent
+  exactement leur comportement tant qu'un administrateur ne change rien.
+- La règle « un contenu relève d'une branche » est définie une seule fois
+  (`app/lib/journalistes.php`, documentée dans `docs/droits-journalistes.md`) :
+  rattachement explicite du contenu (`content_branches`) d'abord, branche
+  de l'auteur sinon ; pour les personnes, seul le rattachement compte.
+  Dans son périmètre, un journaliste peut créer, publier et corriger ses
+  contenus et ceux des autres (articles, documents, recettes, événements,
+  albums), ajouter et corriger des fiches personnes et des liens de
+  parenté simples, et choisir n'importe quelle visibilité. Un contenu
+  qu'il ne peut pas voir ne fuit pas en édition (404). La lecture ne
+  change pas (`visibility_clause()` / `can_view()` inchangés).
+- Un journaliste « sans validation » publie directement ; chaque action
+  est notée dans le journal d'activité et l'ancienne version du contenu
+  est gardée (`contenu_historique`). Les administrateurs disposent d'une
+  page « Journal des journalistes » (Administration → Journal) pour
+  relire ces actions et **dépublier** un contenu en un clic (privé,
+  jamais supprimé). Sans validation ou non, un journaliste ne supprime
+  rien et les pages d'administration (comptes, journaux de connexion,
+  réglages, sauvegardes, conversions, apparence, validations des autres)
+  lui restent fermées (403/404, y compris par adresse directe).
+
 ## [1.36.0] — 2026-11-08
 
 ### Vocabulaire — « Type » et « Thème »

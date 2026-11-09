@@ -21,6 +21,9 @@
                 <a class="bouton" href="/admin/albums/<?= (int) $album['id'] ?>/photos">Ajouter des photos</a>
                 <a class="bouton bouton--secondaire"
                    href="/admin/albums/<?= (int) $album['id'] ?>/modifier">Modifier</a>
+            <?php elseif (!empty($peutCorriger)): ?>
+                <a class="bouton bouton--secondaire"
+                   href="/albums/<?= (int) $album['id'] ?>/modifier">Modifier</a>
             <?php endif; ?>
         </div>
     </div>

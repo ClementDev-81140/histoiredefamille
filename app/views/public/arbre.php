@@ -26,6 +26,10 @@ $alphabet = range('A', 'Z');
                 <a class="bouton bouton--secondaire" href="/admin/arbre/couples">Couples</a>
                 <a class="bouton bouton--secondaire" href="/admin/arbre/import">Importer GEDCOM</a>
             </span>
+        <?php elseif (compte_est_journaliste(current_account())): ?>
+            <span class="actions">
+                <a class="bouton" href="/arbre/nouvelle-personne">Ajouter une personne</a>
+            </span>
         <?php endif; ?>
     </div>
 

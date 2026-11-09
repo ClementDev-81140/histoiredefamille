@@ -131,6 +131,64 @@ $profilChoisi = (string) old_value($old, 'profil', $profilActuel);
     </fieldset>
     <?php endif; ?>
 
+    <?php if ($profilChoisi === 'journaliste' || compte_type($compte) === 'personne'): ?>
+    <fieldset class="champ">
+        <legend>Droits du journaliste</legend>
+        <p class="aide">
+            Ces deux réglages ne concernent que les journalistes. Ils prennent effet
+            tout de suite, sans que la personne ait à se reconnecter.
+        </p>
+
+        <div class="champ">
+            <span id="journaliste-validation-titre">Publication</span>
+            <label class="case">
+                <input type="radio" name="journaliste_validation" value="1"
+                    <?= checked((int) old_value($old, 'journaliste_validation', !empty($reglages['validation']) ? '1' : '0') === 1) ?>>
+                Avec validation : ses ajouts restent invisibles tant qu’un administrateur ne les a pas validés.
+            </label>
+            <label class="case">
+                <input type="radio" name="journaliste_validation" value="0"
+                    <?= checked((int) old_value($old, 'journaliste_validation', !empty($reglages['validation']) ? '1' : '0') === 0) ?>>
+                Sans validation : ses ajouts sont publiés directement, avec la visibilité qu’il choisit.
+            </label>
+            <p class="aide">
+                « Sans validation » veut dire que ce journaliste peut publier tout de suite, y compris
+                un contenu public, sans relecture. Chacune de ses actions est alors notée dans le
+                journal des journalistes, où un administrateur peut dépublier en un clic.
+            </p>
+            <?php if (isset($reglages['validation']) && !$reglages['validation']): ?>
+                <p class="message message--attention">Ce journaliste publie directement, y compris en public.</p>
+            <?php endif; ?>
+        </div>
+
+        <div class="champ">
+            <span id="journaliste-perimetre-titre">Branches où il peut écrire</span>
+            <label class="case">
+                <input type="radio" name="journaliste_toutes_branches" value="1"
+                    <?= checked((int) old_value($old, 'journaliste_toutes_branches', !empty($reglages['toutes']) ? '1' : '0') === 1) ?>>
+                Toutes les branches : il peut créer et corriger les contenus de tout le site.
+            </label>
+            <label class="case">
+                <input type="radio" name="journaliste_toutes_branches" value="0"
+                    <?= checked((int) old_value($old, 'journaliste_toutes_branches', !empty($reglages['toutes']) ? '1' : '0') === 0) ?>>
+                Seulement les branches cochées ci-dessous.
+            </label>
+            <p class="aide">
+                Un contenu « relève » d’une branche quand il lui est rattaché (visibilité
+                « Branches précises ») ou quand son auteur appartient à cette branche.
+                Pour les fiches personnes, seul le rattachement compte.
+            </p>
+            <?php foreach ($branches as $branche): ?>
+                <label class="case">
+                    <input type="checkbox" name="journaliste_branches[]" value="<?= (int) $branche['id'] ?>"
+                        <?= checked(in_array((int) $branche['id'], array_map('intval', (array) old_value($old, 'journaliste_branches', $reglages['branches'] ?? [])), true)) ?>>
+                    <?= e($branche['name']) ?><?= (int) $branche['is_active'] === 1 ? '' : ' (désactivée)' ?>
+                </label>
+            <?php endforeach; ?>
+        </div>
+    </fieldset>
+    <?php endif; ?>
+
     <p class="actions">
         <button type="submit" class="bouton">Enregistrer</button>
         <a class="bouton bouton--secondaire" href="/admin/comptes">Annuler</a>

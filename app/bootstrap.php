@@ -28,6 +28,7 @@ require_once __DIR__ . '/lib/stream.php';
 require_once __DIR__ . '/lib/gedcom.php';
 require_once __DIR__ . '/lib/content.php';
 require_once __DIR__ . '/lib/archives.php';
+require_once __DIR__ . '/lib/journalistes.php';
 require_once __DIR__ . '/lib/tchat.php';
 require_once __DIR__ . '/lib/albums.php';
 require_once __DIR__ . '/lib/calendrier.php';

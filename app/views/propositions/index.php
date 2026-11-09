@@ -101,3 +101,32 @@ $types = proposition_types();
         </div>
     <?php endif; ?>
 </section>
+
+<?php if (($corrigables ?? []) !== []): ?>
+<section class="section">
+    <div class="section__entete">
+        <h2>Contenus de mes branches que je peux corriger</h2>
+    </div>
+    <p class="aide">
+        Ces contenus ont été déposés par d’autres comptes, mais ils relèvent des
+        branches où vous pouvez écrire. Vous pouvez les corriger ; vous ne pouvez
+        pas les supprimer.
+    </p>
+    <div class="tableau-scroll">
+        <table class="tableau">
+            <thead>
+                <tr><th>Type</th><th>Titre</th><th></th></tr>
+            </thead>
+            <tbody>
+            <?php foreach ($corrigables as $corrigeable): ?>
+                <tr>
+                    <td><?= e($corrigeable['label']) ?></td>
+                    <td><?= e((string) ($corrigeable['ligne']['title'] ?? '')) ?></td>
+                    <td><a href="/propositions/<?= e($corrigeable['type']) ?>/<?= (int) $corrigeable['ligne']['id'] ?>">Modifier</a></td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+</section>
+<?php endif; ?>

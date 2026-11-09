@@ -2535,7 +2535,18 @@ if ($filtre === '' || $filtre === 'composition') {
     $derniere = basename((string) end($migrations));
     $sql009   = (string) @file_get_contents(dirname(__DIR__) . '/migrations/009_articles_modele.sql');
     // Chaque lot ajoute SA migration ; les précédentes ne bougent jamais.
-    verifier('migration : 023 est la dernière migration', $derniere === '023_archives_dossiers.sql', $derniere);
+    verifier('migration : 024 est la dernière migration', $derniere === '024_journalistes.sql', $derniere);
+    $migration024 = (string) @file_get_contents(dirname(__DIR__) . '/migrations/024_journalistes.sql');
+    verifier(
+        'migration : 024 ajoute les droits des journalistes, EN AJOUT SEUL (défauts = comportement actuel)',
+        str_contains($migration024, 'journaliste_validation')
+            && str_contains($migration024, 'journaliste_toutes_branches')
+            && str_contains($migration024, 'CREATE TABLE journaliste_branches')
+            && str_contains($migration024, 'CREATE TABLE contenu_historique')
+            && str_contains($migration024, 'DEFAULT 1')
+            && preg_match('/^\\s*(UPDATE|DELETE FROM|DROP)\\s/im', $migration024) !== 1,
+        $migration024 === '' ? 'fichier absent' : 'ok'
+    );
     $migration023 = (string) @file_get_contents(dirname(__DIR__) . '/migrations/023_archives_dossiers.sql');
     verifier(
         'migration : 023 ajoute dossiers et archives, EN AJOUT SEUL',
@@ -2771,6 +2782,13 @@ if ($filtre === '' || $filtre === 'calendrier34') {
 if ($filtre === '' || $filtre === 'admin') {
     require_once __DIR__ . '/tests_admin.php';
     tests_admin();
+}
+
+// 1.37.0 : droits réglables des journalistes (réglages, périmètre,
+// publication directe, journal administrateur).
+if ($filtre === '' || $filtre === 'journalistes') {
+    require_once __DIR__ . '/tests_journalistes.php';
+    tests_journalistes();
 }
 
 

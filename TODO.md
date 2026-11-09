@@ -3,6 +3,25 @@
 Ce fichier liste ce qui reste à faire, classé par priorité. Il n'y a pas de
 suivi automatique : cochez au fur et à mesure.
 
+## Fait (2026-11-08, 1.37.0 — droits des journalistes réglables)
+
+- [x] **Deux réglages par journaliste** (fiche du compte, administrateurs
+  seuls, effet immédiat) : contrôle « avec / sans validation » et périmètre
+  « toutes les branches / sélection ». Migration 024 en ajout seul, défauts
+  = comportement historique. Avertissement « publie directement ».
+- [x] **Écriture dans le périmètre** : propositions en publication directe
+  si « sans validation », correction des contenus des autres relevant du
+  périmètre (règle unique `contenu_releve_branches()`), événements
+  (`/calendrier/{id}/modifier`), albums (`/albums/nouveau`,
+  `/albums/{id}/modifier`), fiches personnes et liens de parenté simples
+  (`/arbre/{id}/modifier`, `/arbre/nouvelle-personne`). Aucune suppression,
+  administration fermée (403/404), contenu invisible non fuyant.
+- [x] **Traces** : journal `journaliste_*` dans `activity_log`, page
+  Administration → « Journal des journalistes » avec dépublication en un
+  clic (privé, jamais supprimé), `contenu_historique` gardant la version
+  précédente. Essais `journalistes` (37), matrice 0 anomalie, captures
+  navigateur 1280/390 (`docs/captures/navigateur-137-*`).
+
 ## Fait (2026-11-08, 1.36.0 — Type/Thème, blocs conditionnels, archives et dossiers)
 
 - [x] **Type / Thème** : « catégorie » remplacé par « thème » partout dans

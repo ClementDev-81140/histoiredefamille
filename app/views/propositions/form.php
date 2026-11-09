@@ -150,11 +150,20 @@ $action     = $isEdit ? '/propositions/' . $type . '/' . (int) $ligne['id'] : '/
     <?php endif; ?>
 
     <fieldset class="champ">
-        <legend>Qui devrait pouvoir la voir, selon vous ?</legend>
-        <p class="aide">
-            Une suggestion : c’est l’administrateur qui décide au moment de valider.
-            En attendant, votre proposition n’est visible que de vous et des administrateurs.
-        </p>
+        <?php if (!empty($publicationDirecte)): ?>
+            <legend>Qui pourra la voir ?</legend>
+            <p class="aide">
+                Vous publiez directement, sans validation : choisissez la visibilité.
+                Elle s’appliquera tout de suite, et votre publication sera notée
+                dans le journal tenu pour les administrateurs.
+            </p>
+        <?php else: ?>
+            <legend>Qui devrait pouvoir la voir, selon vous ?</legend>
+            <p class="aide">
+                Une suggestion : c’est l’administrateur qui décide au moment de valider.
+                En attendant, votre proposition n’est visible que de vous et des administrateurs.
+            </p>
+        <?php endif; ?>
         <?php foreach (visibility_levels() as $valeur => $libelle): ?>
             <label class="radio">
                 <input type="radio" name="suggested_visibility" value="<?= e($valeur) ?>"
@@ -162,6 +171,16 @@ $action     = $isEdit ? '/propositions/' . $type . '/' . (int) $ligne['id'] : '/
                 <?= e($libelle) ?>
             </label>
         <?php endforeach; ?>
+        <?php if (!empty($publicationDirecte) && ($branchesChoisissables ?? []) !== []): ?>
+            <p class="aide">Si vous choisissez « Branches précises », cochez les branches (celles de votre périmètre seulement) :</p>
+            <?php foreach ($branchesChoisissables as $brancheChoisie): ?>
+                <label class="case">
+                    <input type="checkbox" name="branches[]" value="<?= (int) $brancheChoisie['id'] ?>"
+                        <?= checked(in_array((int) $brancheChoisie['id'], array_map('intval', (array) old_value($old, 'branches', $branchesContenu ?? [])), true)) ?>>
+                    <?= e($brancheChoisie['name']) ?>
+                </label>
+            <?php endforeach; ?>
+        <?php endif; ?>
     </fieldset>
 
     <p class="actions">

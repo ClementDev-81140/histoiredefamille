@@ -130,6 +130,7 @@ $account = $accountAdmin;
             <?= $navLink('/admin/courriels', 'Courriels') ?>
         <?php endif; ?>
         <?= $navLink('/admin/gazette', 'Gazette du mois') ?>
+        <?= $navLink('/admin/journalistes', 'Journal des journalistes') ?>
         <?= $navLink('/admin/apparence', 'Apparence du journal') ?>
         <?= $navLink('/admin/composition', 'Composition des pages') ?>
 
