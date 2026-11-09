@@ -2778,6 +2778,12 @@ if ($filtre === '' || $filtre === 'accueil') {
     tests_accueil();
 }
 
+// 1.38.0 : chasse aux doublons sur les pages clés.
+if ($filtre === '' || $filtre === 'doublons') {
+    require_once __DIR__ . '/tests_doublons.php';
+    tests_doublons();
+}
+
 // L'arbre « chêne gravé » (1.33.0) : rendu, droits, rangées, accessibilité.
 if ($filtre === '' || $filtre === 'arbre') {
     tests_arbre();

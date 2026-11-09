@@ -4,8 +4,6 @@
  *
  * @var array $stats, $documents, $activity
  */
-$backup = $stats['last_backup'];
-$backupDays = $backup && !empty($backup['date']) ? days_since((int) $backup['date']) : null;
 ?>
 <div class="section__entete">
     <h1>Tableau de bord</h1>
@@ -34,24 +32,11 @@ try {
     </div>
 <?php endif; ?>
 
-<?php if ($backup === null): ?>
-    <div class="message message--info">
-        Aucune sauvegarde enregistrée pour l’instant.
-        Mettez en place la tâche quotidienne décrite dans le README
-        (<code>deploy/backup.sh</code>) et vérifiez la page
-        <a href="/admin/etat">État du site</a>.
-    </div>
-<?php elseif (($backup['status'] ?? '') !== 'ok'): ?>
-    <div class="message message--erreur">
-        La dernière sauvegarde a échoué (<?= e((string) ($backup['date_humain'] ?? '')) ?>).
-        Consultez le journal : <code><?= e((string) config('maintenance.backup_log')) ?></code>.
-    </div>
-<?php elseif ($backupDays !== null && $backupDays > 2): ?>
-    <div class="message message--erreur">
-        La dernière sauvegarde réussie date de <?= (int) $backupDays ?> jours.
-        Vérifiez que la clé USB est branchée et que la tâche cron tourne.
-    </div>
-<?php endif; ?>
+<?php /* 1.38.0 : pas d'encadré « sauvegarde » ici. Le bandeau de
+         sauvegarde_alerte() (mise en page d'administration) s'affiche déjà
+         en haut de toutes les pages de l'administration, avec le lien vers
+         « État du site » : le répéter sur le tableau de bord disait deux
+         fois la même chose. */ ?>
 
 <?php /* Une seule carte : le contenu du site, et la part publique. Les deux
          anciennes cartes « Partie publique » / « Partie famille » obligeaient à

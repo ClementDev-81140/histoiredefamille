@@ -1,0 +1,29 @@
+{
+    "commentaire": "Doublons volontaires et justifiés du contrôle actions-doublons.mjs. Chaque entrée : page (texte contenu dans le motif de la route), type de doublon, texte (contenu dans le libellé trouvé, insensible à la casse) et justification. Ne jamais y mettre un doublon qu'on peut supprimer sans perdre un accès utile au clavier ou sur téléphone.",
+    "entrees": [
+        {
+            "page": "/articles",
+            "type": "lien-menu-et-secondaire",
+            "texte": "tout",
+            "justification": "La barre de filtres de la liste (« Tout », « Toutes ») réinitialise le filtre et pointe donc vers l'index de la rubrique, comme le menu principal. Ce n'est pas un second menu : sans elle, un filtre actif ne pourrait pas s'effacer. Conservé."
+        },
+        {
+            "page": "/arbre",
+            "type": "lien-menu-et-secondaire",
+            "texte": "toutes → /arbre",
+            "justification": "Même cas que la liste des articles : le filtre « Toutes » de l'arbre réinitialise l'affichage et pointe vers l'index. Conservé."
+        },
+        {
+            "page": "/calendrier",
+            "type": "lien-repete",
+            "texte": "frise chronologique",
+            "justification": "Le bouton « Frise chronologique » en haut de page et le lien dans la phrase du panneau « aucun événement ce mois-ci » (« elles restent consultables dans la frise chronologique ») : le second fait partie d'une phrase d'explication lue sur place, le premier est l'action. Conservés tous les deux."
+        },
+        {
+            "page": "/admin/composition",
+            "type": "titre-repete",
+            "texte": "sous la une, sur toute la largeur",
+            "justification": "La page règle séparément l'accueil public et l'accueil des comptes connectés (deux <h2> distincts) ; chacun a sa colonne « Sous la une, sur toute la largeur ». Même nom de colonne, deux réglages indépendants. Conservé."
+        }
+    ]
+}

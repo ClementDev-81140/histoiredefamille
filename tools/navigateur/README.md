@@ -527,3 +527,20 @@ Ce que le banc exige, et qu'aucun essai PHP ne peut voir :
   attribut `style`, aucun script en ligne, aucune ressource extérieure, aucun
   débordement horizontal, aucune erreur JavaScript ;
 - la palette demandée est bien appliquée (fond du `body`).
+
+## Contrôle des doublons (1.38.0)
+
+`rendre-tout.php` rend toutes les routes GET répondant 200 de la matrice
+d'accès (visiteur, lecteur, journaliste « avec validation », journaliste
+« sans validation », administrateur ; données fictives, transaction
+annulée), puis `actions-doublons.mjs` les ouvre à 1280 px et 390 px, en
+thème papier et bleu, et signale les blocs affichés deux fois (titres,
+liens ou boutons du même bloc, phrases d'aide, `id` dupliqués, double
+`<h1>`). Les doublons volontaires sont justifiés dans
+`doublons-liste-blanche.json`. Voir `docs/doublons.md` pour le rapport.
+
+```bash
+HDF_CONFIG=/chemin/config.local.php php tools/navigateur/rendre-tout.php /tmp/rendus
+HDF_THEME_CSS=/tmp/theme.css node tools/navigateur/actions-doublons.mjs /tmp/rendus
+php app/cli/tests.php doublons
+```

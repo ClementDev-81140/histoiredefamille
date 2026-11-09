@@ -3,6 +3,17 @@
 Ce fichier liste ce qui reste à faire, classé par priorité. Il n'y a pas de
 suivi automatique : cochez au fur et à mesure.
 
+## Fait (2026-11-09, 1.38.0 — chasse aux doublons)
+
+- [x] **Contrôle automatique** : `tools/navigateur/rendre-tout.php` +
+  `actions-doublons.mjs` (5 profils, 1280/390 px, papier/bleu) et essai
+  PHP `doublons` (16 vérifications). Après correction : 0 doublon hors
+  liste blanche (`doublons-liste-blanche.json`, 3 cas justifiés).
+- [x] **Corrections** : encadrés « sauvegarde » du tableau de bord
+  supprimés (le bandeau de l'administration suffit) ; bloc « Dans la
+  famille » de l'accueil connecté fusionné en un seul `<details>`.
+  Rapport : `docs/doublons.md`. Aucune migration.
+
 ## Fait (2026-11-09, 1.37.1 — « avec validation » ne publie jamais directement)
 
 - [x] **Albums** : création « avec validation » en attente/privé (migration

@@ -454,17 +454,28 @@ body .nav a.nav__accent--connexion {
 
 /* Repli sans JavaScript : au-delà de trois lignes, le bloc « Dans la famille »
    est fermé sur téléphone (un <details>) et s'ouvre au clic. Sur grand écran,
-   il reste ouvert — la colonne de droite est faite pour être lue. */
-.accueil-famille--repliable .accueil-famille__repli {
-    display: none;
+   il reste ouvert — la colonne de droite est faite pour être lue.
+   1.38.0 : un seul rendu HTML sert les deux largeurs (avant, le contenu
+   était écrit deux fois dans la page, une version étant masquée). */
+@media (max-width: 63.99rem) {
+    /* Le <summary> tient lieu de titre : l'en-tête du bloc (titre + lien)
+       est masqué, le lien « Tout voir » reste en bas du bloc ouvert. */
+    .accueil-famille--repliable .accueil-famille__entete {
+        display: none;
+    }
 }
 
-@media (max-width: 63.99rem) {
-    .accueil-famille--repliable .accueil-famille__repli {
+@media (min-width: 64rem) {
+    .accueil-famille--repliable .accueil-famille__repli > summary {
+        display: none;
+    }
+
+    /* Fermé ou non, le contenu s'affiche : la colonne est faite pour être lue. */
+    .accueil-famille--repliable .accueil-famille__repli:not([open]) > :not(summary) {
         display: block;
     }
 
-    .accueil-famille--repliable .accueil-famille__bloc {
+    .accueil-famille--repliable .accueil-famille__tout {
         display: none;
     }
 }

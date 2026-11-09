@@ -3,6 +3,32 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.38.0] — 2026-11-09
+
+### Chasse aux doublons sur tout le site
+- **Tableau de bord** : l'avertissement « aucune sauvegarde » (et ses
+  variantes « a échoué » / « date de plusieurs jours ») n'apparaît plus
+  deux fois. Le bandeau présent en haut de toutes les pages de
+  l'administration suffit ; les encadrés propres à la page sont retirés.
+- **Accueil connecté** : le bloc « Dans la famille » était écrit deux
+  fois dans la page (une version repliée pour le téléphone, une version
+  ouverte pour le bureau, l'une masquée selon la largeur). Un seul
+  `<details>` sert maintenant les deux largeurs : fermé sur téléphone,
+  toujours déplié à l'écran. Aucun changement de contenu ni de droits.
+- **Contrôle automatique réutilisable** : `rendre-tout.php` +
+  `actions-doublons.mjs` parcourent toutes les pages de la matrice
+  d'accès (cinq profils, 1280 et 390 px, thèmes papier et bleu) et
+  signalent titres, liens, boutons, phrases d'aide et blocs affichés
+  deux fois ; l'essai `php app/cli/tests.php doublons` couvre les pages
+  clés. Les rares doublons volontaires (filtre « Tout » des listes,
+  lien « frise chronologique » dans une phrase du calendrier, colonne
+  « Sous la une » des deux accueils réglés dans Composition) sont
+  listés et justifiés dans
+  `tools/navigateur/doublons-liste-blanche.json`. Rapport complet :
+  `docs/doublons.md`.
+- Aucune migration, aucun changement de droits ni de menu :
+  `git pull` suivi de `deploy/install.sh` suffit.
+
 ## [1.37.1] — 2026-11-09
 
 ### Un journaliste « avec validation » ne publie plus rien directement

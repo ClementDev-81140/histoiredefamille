@@ -13,9 +13,11 @@
  * puis un lien « Tout voir » vers l'espace famille, qui montre tout.
  *
  * Au-delà de trois lignes, le bloc se replie sur téléphone dans un `<details>`
- * (aucun JavaScript) ; sur grand écran, il reste ouvert. Les deux versions sont
- * écrites avec le même contenu : l'une est masquée par la feuille de style
- * selon la largeur (`.accueil-famille--repliable`).
+ * (aucun JavaScript) ; sur grand écran, il reste ouvert. Depuis la 1.38.0, un
+ * seul rendu sert les deux largeurs : la feuille de style masque le
+ * `<summary>` sur grand écran et y force l'affichage du contenu, fermé ou
+ * non (`.accueil-famille--repliable`). Avant, le contenu était écrit deux
+ * fois dans la page (une version par largeur).
  *
  * @var array $dansLaFamille  (anniversaires, evenements, personnes, nouveautes)
  * @var int   $familleMax     nombre de lignes visibles (5 par défaut)
@@ -56,7 +58,7 @@ while ($restant > 0) {
 $total     = $limite - $restant;
 $repliable = $total > 3;
 
-// Le contenu, écrit une seule fois puis posé deux fois (téléphone, grand écran).
+// Le contenu du bloc, écrit une seule fois.
 ob_start();
 ?>
 <div class="grille-pages">
@@ -127,20 +129,27 @@ $contenu = (string) ob_get_clean();
 ?>
 <div class="dans-la-famille accueil-famille<?= $repliable ? ' accueil-famille--repliable' : '' ?>">
     <?php if ($repliable): ?>
-        <?php /* Téléphone : replié, une ligne de résumé ; le contenu s'ouvre au
-                 clic. Le grand écran, lui, affiche le bloc entier (plus bas). */ ?>
+        <?php /* Un seul <details> pour les deux largeurs (1.38.0) : sur
+                 téléphone, fermé, le <summary> tient lieu de titre et le lien
+                 « Tout voir » est en bas ; sur grand écran, la feuille de
+                 style masque le <summary>, montre l'en-tête (titre + lien) et
+                 force l'affichage du contenu, <details> ouvert ou non. */ ?>
         <details class="accueil-famille__repli">
             <summary>Dans la famille</summary>
+            <div class="section__entete accueil-famille__entete">
+                <h2>Dans la famille</h2>
+                <a href="/famille">Tout voir →</a>
+            </div>
             <?= $contenu ?>
             <p class="accueil-famille__tout"><a href="/famille">Tout voir →</a></p>
         </details>
-    <?php endif; ?>
-
-    <div class="accueil-famille__bloc">
-        <div class="section__entete">
-            <h2>Dans la famille</h2>
-            <a href="/famille">Tout voir →</a>
+    <?php else: ?>
+        <div class="accueil-famille__bloc">
+            <div class="section__entete">
+                <h2>Dans la famille</h2>
+                <a href="/famille">Tout voir →</a>
+            </div>
+            <?= $contenu ?>
         </div>
-        <?= $contenu ?>
-    </div>
+    <?php endif; ?>
 </div>

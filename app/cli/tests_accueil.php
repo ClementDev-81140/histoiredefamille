@@ -422,12 +422,12 @@ function tests_accueil_une(): void
     $debut = strpos($corps, 'class="dans-la-famille');
     $fin   = $debut === false ? false : strpos($corps, '</aside>', $debut);
     $bloc  = ($debut === false || $fin === false) ? '' : substr($corps, $debut, $fin - $debut);
-    // Le contenu est écrit deux fois (repli du téléphone, version ouverte) :
-    // dix lignes au total, donc cinq visibles.
+    // 1.38.0 : un seul rendu sert le téléphone et le grand écran — cinq
+    // lignes au plus, écrites une seule fois dans la page.
     $lignes = substr_count($bloc, '<li>');
     verifier(
-        'accueil connecté : « Dans la famille » montre cinq lignes au plus',
-        $lignes > 0 && $lignes <= 10 && $lignes % 2 === 0,
+        'accueil connecté : « Dans la famille » montre cinq lignes au plus, écrites une seule fois',
+        $lignes > 0 && $lignes <= 5,
         $lignes . ' ligne(s) dans le bloc'
     );
     verifier(
@@ -454,8 +454,9 @@ function tests_accueil_une(): void
         'règle absente'
     );
     verifier(
-        'accueil connecté : sur téléphone, c’est le repli qui s’affiche (pas le bloc ouvert)',
-        preg_match('/@media\s*\(max-width:\s*63\.99rem\)\s*\{[^@]*\.accueil-famille--repliable \.accueil-famille__bloc\s*\{\s*display:\s*none/s', $css) === 1,
+        'accueil connecté : un seul <details> sert les deux largeurs (1.38.0)',
+        preg_match('/@media\\s*\\(min-width:\\s*64rem\\)\\s*\\{[^@]*\\.accueil-famille--repliable \\.accueil-famille__repli:not\\(\\[open\\]\\) > :not\\(summary\\)\\s*\\{\\s*display:\\s*block/s', $css) === 1
+            && preg_match('/@media\\s*\\(max-width:\\s*63\\.99rem\\)\\s*\\{[^@]*\\.accueil-famille--repliable \\.accueil-famille__entete\\s*\\{\\s*display:\\s*none/s', $css) === 1,
         'règle absente'
     );
     verifier(
