@@ -3,6 +3,16 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.38.1] — 2026-11-09
+
+### Corrigé
+- Accueil d'un compte connecté : sur ordinateur, la colonne « Dans la famille »
+  (à droite de « À la une ») s'affichait vide dans les navigateurs récents. Un
+  `<details>` fermé masque son contenu par `::details-content`
+  (`content-visibility: hidden`) ; la 1.38.0 n'avait qu'une règle `display`,
+  sans effet. La feuille de style rend maintenant ce contenu visible sur
+  grand écran ; sur téléphone le bloc reste replié.
+
 ## [1.38.0] — 2026-11-09
 
 ### Chasse aux doublons sur tout le site

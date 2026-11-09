@@ -470,7 +470,16 @@ body .nav a.nav__accent--connexion {
         display: none;
     }
 
-    /* Fermé ou non, le contenu s'affiche : la colonne est faite pour être lue. */
+    /* Fermé ou non, le contenu s'affiche : la colonne est faite pour être lue.
+       1.38.1 : les navigateurs récents masquent le contenu d'un <details>
+       fermé par ::details-content (content-visibility: hidden) ; seule cette
+       règle le rend visible. L'ancienne règle reste pour les moteurs plus
+       anciens. */
+    .accueil-famille--repliable .accueil-famille__repli::details-content {
+        content-visibility: visible;
+        display: block;
+    }
+
     .accueil-famille--repliable .accueil-famille__repli:not([open]) > :not(summary) {
         display: block;
     }
