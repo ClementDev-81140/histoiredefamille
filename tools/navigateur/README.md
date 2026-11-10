@@ -574,3 +574,17 @@ HDF_CONFIG=/chemin/config.local.php php tools/navigateur/rendre.php \
     "/arbre?racine=<id>" /tmp/arbre.html
 node tools/navigateur/actions-arbre-mobile.mjs /tmp/arbre.html
 ```
+
+## Contrôle « tout visible d'un coup » (1.39.1)
+
+`actions-arbre-visible.mjs <page.html> […]` ouvre des pages /arbre
+rendues par `rendre.php` à 360, 390 et 430 px et mesure le rectangle
+réel de chaque carte au chargement, après « Voir tout » et après
+« Centrer » : toutes dans le cadre, aucun texte coupé, indice des
+frères et sœurs exact quand il s'affiche.
+
+```bash
+HDF_CONFIG=/chemin/config.local.php php tools/navigateur/rendre.php \
+    "/arbre?racine=1" /tmp/arbre-r1.html <id-compte-admin>
+node tools/navigateur/actions-arbre-visible.mjs /tmp/arbre-r1.html
+```

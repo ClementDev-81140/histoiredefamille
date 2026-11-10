@@ -6645,16 +6645,18 @@ legend {
    rangée, et les traits — dont les centres sont des pourcentages de la
    rangée — restent en face des cartes. */
 @media (max-width: 47.99rem) {
-    /* Une seule colonne de grille, aussi large que la plus grande
-       rangée : les trois parties partagent la même toile, donc les
-       pourcentages des traits désignent les mêmes centres partout. */
-    .arbre-chene__dessin {
-        display: grid;
-        grid-template-columns: minmax(100%, max-content);
+    /* 1.39.1 : le dessin prend la largeur réelle de son contenu le plus
+       large (width: max-content), donc la gravure — son fond, étiré à
+       100 % de sa boîte — couvre toutes les cartes, sans qu'aucune ne
+       dépasse son bord droit. C'est le cadre qui défile horizontalement
+       quand JavaScript est absent ; avec JavaScript, le cadre de
+       l'exploration (overflow: hidden, règle plus spécifique) prend la
+       main et le déplacement se fait au doigt ou aux boutons. */
+    .arbre-explo__cadre {
         overflow-x: auto;
     }
 
-    .arbre-chene__partie {
+    .arbre-chene__dessin {
         width: max-content;
         min-width: 100%;
     }
@@ -6667,6 +6669,25 @@ legend {
         flex: 1 0 8.75rem;
         width: auto;
         text-align: center;
+    }
+
+    /* Fratrie très large : le script ajoute cette classe quand même le
+       zoom plancher ne suffirait pas ; le dessin repasse à la largeur
+       du cadre et les rangées s'étalent sur deux lignes plutôt que de
+       couper une carte. Les traits, dont les centres sont calculés
+       pour une seule ligne, s'effacent dans ce cas — la parenté reste
+       écrite sur chaque carte. */
+    .arbre-chene__dessin--serre {
+        width: auto;
+        min-width: 0;
+    }
+
+    .arbre-chene__dessin--serre .arbre-chene__rangee {
+        flex-wrap: wrap;
+    }
+
+    .arbre-chene__dessin--serre .arbre-chene__traits {
+        display: none;
     }
 }
 
@@ -6843,6 +6864,26 @@ legend {
     border: var(--filet);
     touch-action: none;
     cursor: grab;
+}
+
+/* Téléphone (1.39.1) : un cadre plus haut — environ 80 % de l'écran —
+   pour voir ancêtres, tronc et descendants avec moins de défilement. */
+@media (max-width: 47.99rem) {
+    .arbre-explo--actif .arbre-explo__cadre {
+        height: clamp(340px, 80vh, 760px);
+    }
+}
+
+/* L'indice sous le cadre : « N autres frères et sœurs : faites glisser ». */
+.arbre-explo__indice {
+    margin: 0.45rem 0 0;
+    font-size: 0.9rem;
+    font-style: italic;
+    color: var(--texte-doux);
+}
+
+.arbre-explo__indice[hidden] {
+    display: none;
 }
 
 .arbre-explo--actif .arbre-explo__cadre:active {

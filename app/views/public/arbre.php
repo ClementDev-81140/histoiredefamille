@@ -194,6 +194,10 @@ $alphabet = range('A', 'Z');
             </section>
         </div>
             </div>
+            <?php /* Rempli par le script d'exploration quand une partie de la
+                     fratrie est hors du cadre (1.39.1) : le nombre ne compte
+                     que les cartes présentes, donc visibles par ce compte. */ ?>
+            <p class="arbre-explo__indice" data-explo-indice hidden></p>
         </div>
         <script src="<?= e(asset_url('/assets/arbre-exploration.js')) ?>" defer></script>
 

@@ -3,6 +3,18 @@
 Ce fichier liste ce qui reste à faire, classé par priorité. Il n'y a pas de
 suivi automatique : cochez au fur et à mesure.
 
+## Fait (2026-11-10, 1.39.1 — arbre : tout visible d'un coup sur téléphone)
+
+- [x] **Zoom initial ajusté** sur téléphone (tout l'arbre dans le
+  cadre, plancher 55 %, sinon rangées sur deux lignes), **cadre à
+  80 vh**, dessin à la largeur du contenu (plus de carte hors
+  gravure), indice « N autres frères et sœurs : faites glisser »
+  (comptes visibles seulement, téléphone seulement).
+- [x] **Contrôle** `actions-arbre-visible.mjs` : démo racine=1 et 3
+  + cas 5 enfants/conjoint, 360/390/430 px, chargement/Voir
+  tout/Centrer — vert ; rouge en 1.39.0. Arbre 87/87, matrice 0
+  anomalie, doublons 0.
+
 ## Fait (2026-11-09, 1.39.0 — arbre sur téléphone : décor et fratrie)
 
 - [x] **Décor** : gravure en fond du `.arbre-chene__dessin` (relatif,

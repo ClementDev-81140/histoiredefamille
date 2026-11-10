@@ -3,6 +3,30 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.39.1] — 2026-11-10
+
+### Arbre sur téléphone : tout visible d'un coup, aucune carte coupée
+- **Zoom initial** : sur téléphone, l'arbre s'ouvre ajusté pour que
+  tout tienne dans le cadre (plancher de lisibilité à 55 % ; en
+  dessous, les rangées s'étalent sur deux lignes plutôt que de
+  couper une carte). Avant, il s'ouvrait à 100 % : 1 à 2 cartes
+  visibles sur 6 sur la démo.
+- **Aucune carte coupée** : le dessin prend la largeur réelle de son
+  contenu le plus large ; la gravure couvre donc toutes les cartes
+  jusqu'à leur bord droit, noms et dates compris. « Voir tout »
+  montre chaque carte en entier, « Centrer » garde la fratrie et le
+  conjoint dans le cadre quand tout y tient.
+- **Cadre plus haut** sur téléphone : environ 80 % de la hauteur
+  d'écran (contre 65 %).
+- **Indice** : sous le cadre, « N autres frères et sœurs : faites
+  glisser pour les voir » quand une partie de la fratrie est dehors
+  — le nombre ne compte que les personnes visibles par le compte.
+- Grand écran inchangé. Aucune migration : `git pull` suivi de
+  `deploy/install.sh` suffit.
+- Contrôle navigateur : `tools/navigateur/actions-arbre-visible.mjs`
+  (360/390/430 px, chargement / « Voir tout » / « Centrer », rectangles
+  réels des cartes ; échoue avec la feuille et le script 1.39.0).
+
 ## [1.39.0] — 2026-11-09
 
 ### L'arbre sur téléphone : décor aligné et fratrie entière

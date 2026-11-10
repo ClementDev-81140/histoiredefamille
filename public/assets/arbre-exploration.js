@@ -24,6 +24,7 @@
     var cadre = racine.querySelector('[data-explo-cadre]');
     var dessin = racine.querySelector('[data-explo-dessin]');
     var niveau = racine.querySelector('[data-explo-niveau]');
+    var indice = racine.querySelector('[data-explo-indice]');
     if (!barre || !cadre || !dessin) {
         return;
     }
@@ -87,6 +88,56 @@
         if (niveau) {
             niveau.textContent = Math.round(echelle * 100) + ' %';
         }
+        majIndice();
+    }
+
+    /**
+     * L'indice sous le cadre (1.39.1) : combien de frères et sœurs de la
+     * première génération des descendants sont hors du cadre en ce
+     * moment. Seules les cartes présentes comptent — une personne que le
+     * compte n'a pas le droit de voir n'a ni carte, ni trait, ni nombre.
+     */
+    function majIndice() {
+        if (!indice) {
+            return;
+        }
+        // Sur grand écran, rien ne change (1.39.1) : l'indice est une aide
+        // de téléphone, où le cadre rogne le plus.
+        if (cadre.clientWidth >= 768) {
+            indice.hidden = true;
+            return;
+        }
+        var rangee = dessin.querySelector(
+            '.arbre-chene__partie--racines .arbre-chene__rangee');
+        if (!rangee) {
+            indice.hidden = true;
+            return;
+        }
+        // Calculé depuis les positions de mise en page et le transform
+        // courant — jamais mesuré à l'écran pendant l'animation du
+        // transform, qui donnerait la position d'avant le déplacement.
+        var b = baseDessin();
+        var dehors = 0;
+        rangee.querySelectorAll('.arbre-chene__noeud').forEach(function (carte) {
+            var p = positionDans(carte, dessin);
+            var gauche = b.x + x + p.x * echelle;
+            var haut = b.y + y + p.y * echelle;
+            var droite = gauche + carte.offsetWidth * echelle;
+            var bas = haut + carte.offsetHeight * echelle;
+            if (haut < -1 || bas > cadre.clientHeight + 1
+                || gauche < -1 || droite > cadre.clientWidth + 1) {
+                dehors++;
+            }
+        });
+        if (dehors === 0) {
+            indice.hidden = true;
+            indice.textContent = '';
+        } else {
+            indice.hidden = false;
+            indice.textContent = dehors === 1
+                ? '1 autre frère ou sœur : faites glisser pour le voir'
+                : dehors + ' autres frères et sœurs : faites glisser pour les voir';
+        }
     }
 
     /**
@@ -134,6 +185,17 @@
         var b = baseDessin();
         x = cadre.clientWidth / 2 - b.x - c.x * echelle;
         y = cadre.clientHeight / 2 - b.y - c.y * echelle;
+        // Si tout le dessin tient dans le cadre au zoom courant (cas de
+        // l'ouverture sur téléphone), on le garde entier : centrer la
+        // toile revient alors à centrer la personne, sans pousser son
+        // conjoint ni sa fratrie dehors.
+        var t = tailleDessin();
+        if (t.largeur * echelle <= cadre.clientWidth) {
+            x = (cadre.clientWidth - t.largeur * echelle) / 2 - b.x;
+        }
+        if (t.hauteur * echelle <= cadre.clientHeight) {
+            y = (cadre.clientHeight - t.hauteur * echelle) / 2 - b.y;
+        }
         appliquer();
     }
 
@@ -349,13 +411,70 @@
         return Math.max(ZOOM_MIN, Math.min(1, cadre.clientHeight / hauteurUtile));
     }
 
-    echelle = zoomInitial();
-    appliquer();
-    centrer();
+    /** Zoom qui fait tenir tout l'arbre dans le cadre (plafonné à 100 %). */
+    function zoomTout() {
+        var t = tailleDessin();
+        if (t.largeur === 0 || t.hauteur === 0) {
+            return 1;
+        }
+        return Math.max(ZOOM_MIN, Math.min(
+            cadre.clientWidth / t.largeur,
+            cadre.clientHeight / t.hauteur,
+            1
+        ));
+    }
+
+    /** Centre le dessin entier dans le cadre, au zoom courant. */
+    function centrerDessin() {
+        var t = tailleDessin();
+        var b = baseDessin();
+        x = (cadre.clientWidth - t.largeur * echelle) / 2 - b.x;
+        y = (cadre.clientHeight - t.hauteur * echelle) / 2 - b.y;
+        appliquer();
+    }
+
+    /**
+     * État d'ouverture (1.39.1).
+     *
+     * Sur téléphone (cadre étroit), l'arbre s'ouvre ajusté : la rangée la
+     * plus large — donc tout l'arbre — tient dans le cadre, à condition
+     * que le zoom nécessaire reste lisible (plancher ZOOM_PLANCHER). Si
+     * même ce plancher ne suffit pas (très grande fratrie), les rangées
+     * passent sur deux lignes (classe « serre », posée avant de mesurer)
+     * et l'on réessaie ; à défaut, l'indice sous le cadre dit combien de
+     * frères et sœurs restent à faire glisser.
+     *
+     * Sur grand écran, comportement inchangé : zoom pour voir le tronc
+     * et les parents, centré sur la personne sélectionnée.
+     */
+    var ZOOM_PLANCHER = 0.55;
+
+    function etatInitial() {
+        if (cadre.clientWidth >= 768) {
+            echelle = zoomInitial();
+            appliquer();
+            centrer();
+            return;
+        }
+        dessin.classList.remove('arbre-chene__dessin--serre');
+        if (zoomTout() < ZOOM_PLANCHER) {
+            dessin.classList.add('arbre-chene__dessin--serre');
+        }
+        // Au mieux, tout tient ; au pire, on s'arrête au plancher lisible
+        // et l'indice annonce ce qui reste hors du cadre.
+        echelle = Math.max(zoomTout(), Math.min(ZOOM_PLANCHER, 1));
+        centrerDessin();
+    }
+
+    etatInitial();
 
     // Après le chargement complet (polices, gravure), les mesures sont stables.
     window.addEventListener('load', function () {
-        centrer();
+        if (cadre.clientWidth >= 768) {
+            centrer();
+        } else {
+            etatInitial();
+        }
     });
     window.addEventListener('resize', function () {
         appliquer();
