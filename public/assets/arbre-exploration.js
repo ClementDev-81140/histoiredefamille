@@ -51,9 +51,18 @@
         racine.classList.add('arbre-explo--anime');
     }
 
-    /** Dimensions du dessin sans le transform courant. */
+    /**
+     * Dimensions du dessin sans le transform courant. Sur téléphone, le
+     * dessin défile horizontalement en son sein (1.39.0) : sa largeur
+     * utile est alors son contenu défilant, pas sa boîte visible — sinon
+     * « Voir tout » croirait l'arbre moins large qu'il n'est et laisserait
+     * des enfants hors du cadre.
+     */
     function tailleDessin() {
-        return { largeur: dessin.offsetWidth, hauteur: dessin.offsetHeight };
+        return {
+            largeur: Math.max(dessin.offsetWidth, dessin.scrollWidth),
+            hauteur: Math.max(dessin.offsetHeight, dessin.scrollHeight)
+        };
     }
 
     function borner() {

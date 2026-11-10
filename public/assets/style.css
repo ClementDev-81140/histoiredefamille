@@ -6395,10 +6395,14 @@ legend {
     margin-bottom: 0.3rem;
 }
 
-/* La gravure : un bandeau sur téléphone (voir plus bas pour le grand écran). */
+/* La gravure : elle n'est plus un bandeau séparé au-dessus du dessin
+   (1.39.0). Elle vit en fond du dessin lui-même, à toutes les largeurs :
+   en bandeau, elle restait fixe pendant que les noms défilaient et ne se
+   plaçait jamais sous eux sur téléphone. Le <figure> reste dans la page
+   (sa légende décrit le dessin), mais il n'est plus affiché : le dessin
+   porte l'image. */
 .arbre-chene__gravure {
-    margin: 1.2rem 0 1.4rem;
-    padding: 0;
+    display: none;
 }
 
 .arbre-chene__gravure img {
@@ -6420,16 +6424,27 @@ legend {
     text-align: center;
 }
 
-/* Le dessin lui-même : un sillon vertical au centre (le tronc), les cartes
-   par-dessus, jamais l'inverse. */
+/* Le dessin lui-même : un conteneur relatif, la gravure en fond étirée à
+   sa hauteur totale (elle suit donc les noms quelle que soit la taille
+   d'écran, au lieu d'être un bandeau séparé), un sillon vertical au
+   centre (le tronc), les cartes par-dessus, jamais l'inverse. Les
+   couches : fond (z-index auto), sillon (0), parties et cartes (1). */
 .arbre-chene__dessin {
     position: relative;
     padding: 0.4rem 0 0.8rem;
+    background-image: image-set(
+        url("/assets/arbre-chene.webp") type("image/webp"),
+        url("/assets/arbre-chene.jpg") type("image/jpeg")
+    );
+    background-repeat: no-repeat;
+    background-position: center top;
+    background-size: 100% 100%;
 }
 
 .arbre-chene__dessin::before {
     content: "";
     position: absolute;
+    z-index: 0;
     left: 50%;
     top: 2.6rem;
     bottom: 3rem;
@@ -6440,6 +6455,7 @@ legend {
 
 .arbre-chene__partie {
     position: relative;
+    z-index: 1;
 }
 
 /* Titres et légendes sont posés sur la gravure : chacun reçoit un morceau de
@@ -6617,20 +6633,39 @@ legend {
     font-size: 0.9rem;
 }
 
-/* Téléphone : une colonne, la gravure en bandeau au-dessus (image affichée par
-   défaut). Les cartes prennent toute la largeur : aucune superposition, et le
-   sillon central reste derrière elles. */
+/* Téléphone (1.39.0) : les frères et sœurs restent sur la même rangée.
+   Avant, la rangée passait en colonne : chaque enfant prenait toute la
+   largeur, les uns sous les autres, et dans le cadre d'exploration —
+   hauteur fixe, contenu rogné — seul le premier enfant tenait à
+   l'écran, les autres semblaient absents alors qu'ils étaient dans la
+   page. Désormais, chaque partie du dessin prend la largeur de sa plus
+   grande rangée (au minimum celle de l'écran) et le dessin défile
+   horizontalement, proprement, sans couper aucun nom : les cartes ont
+   une largeur plancher en rem, grandissent à égalité pour remplir la
+   rangée, et les traits — dont les centres sont des pourcentages de la
+   rangée — restent en face des cartes. */
 @media (max-width: 47.99rem) {
+    /* Une seule colonne de grille, aussi large que la plus grande
+       rangée : les trois parties partagent la même toile, donc les
+       pourcentages des traits désignent les mêmes centres partout. */
+    .arbre-chene__dessin {
+        display: grid;
+        grid-template-columns: minmax(100%, max-content);
+        overflow-x: auto;
+    }
+
+    .arbre-chene__partie {
+        width: max-content;
+        min-width: 100%;
+    }
+
     .arbre-chene__rangee {
-        flex-direction: column;
+        flex-wrap: nowrap;
     }
 
     .arbre-chene__rangee .arbre-chene__noeud {
-        width: 100%;
-        text-align: left;
-    }
-
-    .arbre-chene__rangee .arbre-chene__noeud--tronc {
+        flex: 1 0 8.75rem;
+        width: auto;
         text-align: center;
     }
 }
@@ -6724,16 +6759,8 @@ legend {
     border-top: 2px dashed var(--texte-doux);
 }
 
-@media (max-width: 47.99rem) {
-    .arbre-chene__noeud--couple::before {
-        left: 50%;
-        top: calc(-1 * var(--chene-gap));
-        width: 0;
-        height: var(--chene-gap);
-        border-top: none;
-        border-left: 2px dashed var(--texte-doux);
-    }
-}
+/* Sur téléphone, les cartes restent en rangée (1.39.0) : le trait du
+   couple garde donc partout sa forme horizontale, entre voisines. */
 
 /* Les traits parents → enfants, en SVG écrit par le serveur. */
 .arbre-chene__traits {

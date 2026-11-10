@@ -3,6 +3,26 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.39.0] — 2026-11-09
+
+### L'arbre sur téléphone : décor aligné et fratrie entière
+- **Décor** : la gravure du chêne n'est plus un bandeau séparé
+  au-dessus des noms sur téléphone. Elle est en fond du dessin
+  lui-même (conteneur relatif, étirée à la hauteur totale de
+  l'arbre), à toutes les largeurs ; les cartes restent par-dessus,
+  lisibles comme avant. Couleurs, polices et formes inchangées.
+- **Frères et sœurs** : ils restent sur la même rangée au lieu d'être
+  empilés en colonne — avant, dans le cadre d'exploration à hauteur
+  fixe, seul le premier enfant tenait à l'écran et les autres
+  semblaient absents. Chaque partie du dessin prend la largeur de
+  sa plus grande rangée et le dessin défile horizontalement sans
+  couper aucun nom ; les traits parents → enfants restent en face
+  des cartes. « Voir tout » mesure désormais le contenu défilant du
+  dessin.
+- Contrôle navigateur : `tools/navigateur/actions-arbre-mobile.mjs`
+  (360, 390 et 430 px ; échoue avec la feuille d'avant correction).
+  Aucune migration : `git pull` + `deploy/install.sh` suffisent.
+
 ## [1.38.1] — 2026-11-09
 
 ### Corrigé

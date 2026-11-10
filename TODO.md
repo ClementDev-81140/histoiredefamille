@@ -3,6 +3,18 @@
 Ce fichier liste ce qui reste à faire, classé par priorité. Il n'y a pas de
 suivi automatique : cochez au fur et à mesure.
 
+## Fait (2026-11-09, 1.39.0 — arbre sur téléphone : décor et fratrie)
+
+- [x] **Décor** : gravure en fond du `.arbre-chene__dessin` (relatif,
+  `background-size: 100% 100%`) à toutes les largeurs ; le bandeau
+  séparé n'est plus affiché.
+- [x] **Fratrie** : rangées mobiles en ligne (plus de colonne),
+  toile uniforme par grille, défilement horizontal du dessin,
+  traits alignés (écart mesuré ≤ 4 px à 360/390/430), `tailleDessin`
+  en `scrollWidth` pour « Voir tout ». Contrôle
+  `actions-arbre-mobile.mjs` vert (4 enfants), rouge avant
+  correction. Essais arbre 87/87.
+
 ## Fait (2026-11-09, 1.38.1 — colonne « Dans la famille » visible sur ordinateur)
 
 - [x] **Fusion** de `claude/famille-colonne` (avance rapide, contenu

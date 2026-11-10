@@ -559,3 +559,18 @@ s'assurer qu'il échoue bien).
 ```bash
 node tools/navigateur/actions-famille-visible.mjs /tmp/rendus
 ```
+
+## Contrôle de l'arbre sur téléphone (1.39.0)
+
+`actions-arbre-mobile.mjs <page-arbre.html>` ouvre la page /arbre
+(rendue par `rendre.php`, personne avec au moins trois enfants) à
+360, 390 et 430 px et vérifie : gravure en fond du dessin, fratrie
+entière sur la même ligne, aucun nom coupé, traits en face des
+cartes, pas de débordement de page, et chaque enfant dans le cadre
+après « Voir tout » (JavaScript).
+
+```bash
+HDF_CONFIG=/chemin/config.local.php php tools/navigateur/rendre.php \
+    "/arbre?racine=<id>" /tmp/arbre.html
+node tools/navigateur/actions-arbre-mobile.mjs /tmp/arbre.html
+```
