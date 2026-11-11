@@ -83,7 +83,13 @@ const mesurer = () => {
             .map(l => (parseFloat(l.getAttribute('x1')) / 100) * r.width + (r.left - base));
     }
     return {
-        fond: dessin ? getComputedStyle(dessin).backgroundImage : '',
+        // Le décor derrière les noms : fond du dessin jusqu'en 1.39.x,
+        // couche ::before en filigrane depuis 1.40.0 — les deux comptent.
+        fond: dessin
+            ? (getComputedStyle(dessin).backgroundImage !== 'none'
+                ? getComputedStyle(dessin).backgroundImage
+                : getComputedStyle(dessin, '::before').backgroundImage)
+            : '',
         nbEnfants: enfants.length,
         annonce: legende ? parseInt(legende.textContent, 10) : null,
         memeLigne: new Set(enfants.map(el => Math.round(el.getBoundingClientRect().top))).size === 1,

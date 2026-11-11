@@ -71,6 +71,25 @@ function tests_arbre_morceau(string $html, string $debut, string $fin = ''): str
 }
 
 /** Toute la famille « arbre ». */
+/** Document d'essai (photo), avec ou sans miniature. */
+function tests_arbre_document(string $titre, string $visibilite = 'famille', bool $miniature = true): int
+{
+    $maintenant = time();
+    return db_insert('documents', [
+        'title' => $titre, 'kind' => 'photo', 'visibility' => $visibilite,
+        'rel_path' => 'essai/' . $titre . '.jpg',
+        'thumb_path' => $miniature ? 'essai/' . $titre . '-mini.jpg' : null,
+        'original_name' => $titre . '.jpg', 'mime' => 'image/jpeg', 'ext' => 'jpg',
+        'size' => 10, 'created_at' => $maintenant, 'updated_at' => $maintenant,
+    ]);
+}
+
+/** Donne un portrait (photo de la fiche) à une personne d'essai. */
+function tests_arbre_portrait(int $personId, int $documentId): void
+{
+    db_exec('UPDATE persons SET photo_document_id = ? WHERE id = ?', [$documentId, $personId]);
+}
+
 function tests_arbre(): void
 {
     echo "Arbre « chêne gravé » — rendu, droits, rangées, accessibilité\n";
@@ -82,6 +101,7 @@ function tests_arbre(): void
             tests_arbre_droits();
             tests_arbre_rangees();
             tests_arbre_exploration_parente();
+            tests_arbre_schema();
 
             throw new RuntimeException('fin du test, annulation');
         });
@@ -142,7 +162,7 @@ function tests_arbre_rendu(): void
     $tronc = tests_arbre_morceau($html, 'arbre-chene__partie--tronc', 'arbre-chene__partie--racines');
     verifier_contient('arbre : la personne demandée est sur le tronc', 'Casimir CHENE', $tronc);
     verifier_contient('arbre : son conjoint partage le tronc', 'Odile CHENE', $tronc);
-    verifier_contient('arbre : le tronc mène à la fiche', '/arbre/' . $moi, $tronc);
+    verifier_contient('arbre : la barre mène à la fiche choisie', 'href="/arbre/' . $moi . '">Voir la fiche</a>', $html);
 
     // Les générations sont nommées, et ce sont les bonnes personnes.
     foreach ([
@@ -192,6 +212,18 @@ function tests_arbre_droits(): void
     $html = (string) $page['corps'];
     verifier('arbre : la page s’ouvre pour un lecteur', $page['code'] === 200, 'code ' . $page['code']);
     verifier_contient('arbre : le lecteur voit la personne de sa famille', 'Berthe SECRET', $html);
+    verifier('arbre : le lecteur voit la fiche mais pas l’action de modification',
+        str_contains($html, '>Voir la fiche</a>') && !str_contains($html, '>Modifier la fiche</a>'));
+    $journaliste = tests_envoi_compte('famille');
+    db_update('accounts', $journaliste, ['account_type' => 'personne', 'journaliste_validation' => 1]);
+    $validation = (string) tests_envoi_requete('GET', '/arbre?racine=' . $moi, $journaliste)['corps'];
+    verifier('arbre : un journaliste avec validation ne voit pas « Modifier la fiche »',
+        !str_contains($validation, '>Modifier la fiche</a>'));
+    $direct = tests_envoi_compte('famille');
+    db_update('accounts', $direct, ['account_type' => 'personne', 'journaliste_validation' => 0, 'journaliste_toutes_branches' => 1]);
+    $htmlDirect = (string) tests_envoi_requete('GET', '/arbre?racine=' . $moi, $direct)['corps'];
+    verifier('arbre : un journaliste autorisé voit « Modifier la fiche »',
+        str_contains($htmlDirect, 'href="/arbre/' . $moi . '/modifier">Modifier la fiche</a>'));
     verifier('arbre : le lecteur ne voit pas le nom d’une personne privée',
         !str_contains($html, 'Inconnu'), 'le nom « Inconnu » apparaît dans la page');
     verifier('arbre : le lecteur ne reçoit aucun lien vers une fiche privée',
@@ -268,9 +300,10 @@ function tests_arbre_rangees(): void
 
     $html = (string) tests_envoi_requete('GET', '/arbre?racine=' . $moi . '&plus=1', $admin)['corps'];
     $descendants = tests_arbre_morceau($html, 'arbre-chene__partie--racines', 'arbre-chene__plus');
-    verifier('arbre : « voir plus » montre les dix enfants, en deux rangées',
+    verifier('arbre : « voir plus » montre les dix enfants dans une rangée logique',
         substr_count($descendants, '<li class="arbre-chene__noeud"') === 10
-        && str_contains($descendants, 'arbre-chene__rangee--2'),
+        && str_contains($descendants, 'arbre-chene__rangee--10')
+        && str_contains($html, 'arbre-chene__dessin--elargi'),
         'cartes : ' . substr_count($descendants, '<li class="arbre-chene__noeud"'));
     verifier_contient('arbre : « voir moins » est proposé ensuite', 'Voir moins', $html);
 
@@ -281,11 +314,17 @@ function tests_arbre_rangees(): void
         preg_match('/<script(?![^>]*\ssrc=)[^>]*>/i', $html) !== 1, 'un <script> sans src est présent');
     verifier('arbre : aucune ressource extérieure',
         preg_match('#(?:src|href)="(?:https?:)?//#i', $html) !== 1, 'une adresse extérieure est présente');
-    verifier('arbre : chaque carte est un lien vers une fiche',
-        preg_match_all('/<li class="arbre-chene__noeud[^>]*>\s*<a class="arbre-chene__lien"[^>]*href="\/arbre\/\d+"/', $html) ===
+    // 1.40.0 : la carte entière centre l'arbre sur la personne (lien
+    // serveur, sans JavaScript), la barre extérieure ouvre sa fiche.
+    verifier('arbre : chaque carte centre l’arbre sur sa personne',
+        preg_match_all('/<li class="arbre-chene__noeud[^>]*>\s*<a class="arbre-chene__lien"[^>]*href="\/arbre\?racine=\d+#chene"/', $html) ===
         substr_count($html, '<li class="arbre-chene__noeud'),
-        'cartes liées : ' . preg_match_all('/<li class="arbre-chene__noeud[^>]*>\s*<a class="arbre-chene__lien"[^>]*href="\/arbre\/\d+"/', $html)
+        'cartes liées : ' . preg_match_all('/<li class="arbre-chene__noeud[^>]*>\s*<a class="arbre-chene__lien"[^>]*href="\/arbre\?racine=\d+#chene"/', $html)
         . ' sur ' . substr_count($html, '<li class="arbre-chene__noeud'));
+    verifier('arbre : aucun lien Fiche dans les cartes',
+        !str_contains($html, 'arbre-chene__fiche'), 'un lien Fiche est dans une carte');
+    verifier_contient('arbre : la barre propose « Voir la fiche »', '>Voir la fiche</a>', $html);
+    verifier_contient('arbre : la barre propose « Modifier la fiche » à l’administrateur', '>Modifier la fiche</a>', $html);
 }
 
 /** 5. Exploration et parenté lisible (1.35.0). */
@@ -350,13 +389,15 @@ function tests_arbre_exploration_parente(): void
         'Serge EXPLOR, enfant'                  => 'un enfant',
         'Léon EXPLOR, petit-enfant'             => 'un petit-enfant',
     ] as $aria => $quoi) {
+        // 1.40.0 : le libellé dit aussi ce que fait le clic — centrer.
         verifier_contient('arbre 1.35 : le nom accessible dit ' . $quoi,
-            'aria-label="' . $aria . '"', $dessin);
+            'aria-label="' . $aria . ' — centrer l’arbre sur cette personne"', $dessin);
     }
     verifier_contient('arbre 1.35 : la relation est écrite en petit sur la carte',
         'arbre-chene__relation">Conjointe<', $dessin);
     verifier('arbre 1.35 : la conjointe n’est jamais une sœur',
-        !str_contains($dessin, 'Odile EXPLOR, sœur') && !str_contains($dessin, '>Sœur<'),
+        !str_contains($dessin, 'Odile EXPLOR, sœur')
+        && str_contains($dessin, 'Odile EXPLOR, conjointe'),
         'la conjointe est présentée comme une sœur');
     verifier('arbre 1.35 : les parents de la conjointe (autre famille) ne sont pas inventés comme ancêtres',
         !str_contains($dessin, 'Henri AILLEURS') && !str_contains($dessin, 'Marcelle AILLEURS'),
@@ -417,4 +458,170 @@ function tests_arbre_exploration_parente(): void
     verifier('arbre 1.35 : contre-épreuve, l’administrateur a les traits des deux enfants (4 segments)',
         substr_count($dessinAdmin, '<line') === 4,
         'segments : ' . substr_count($dessinAdmin, '<line'));
+}
+
+/** 6. Le schéma 1.40.0 : rangée du tronc, photos rondes, traits, droits. */
+function tests_arbre_schema(): void
+{
+    $admin = tests_envoi_compte('admin');
+    $lecteur = tests_envoi_compte('famille');
+
+    // Une famille complète : deux parents, la personne choisie, son frère,
+    // sa sœur (privée), sa conjointe — qui a ses propres parents, ailleurs.
+    $papa = tests_arbre_personne('Papa', 'SCHEMA', 'famille');
+    $maman = tests_arbre_personne('Maman', 'SCHEMA', 'famille', 'F');
+    $moi = tests_arbre_personne('Racine', 'SCHEMA', 'famille');
+    $frere = tests_arbre_personne('Frangin', 'SCHEMA', 'famille');
+    $soeur = tests_arbre_personne('Cachee', 'SCHEMA', 'prive', 'F');
+    $elle = tests_arbre_personne('Epouse', 'SCHEMA', 'famille', 'F');
+    $beauP = tests_arbre_personne('Beaupere', 'HORSFAMILLE', 'famille');
+    $beauM = tests_arbre_personne('Bellemere', 'HORSFAMILLE', 'famille', 'F');
+    tests_arbre_famille($papa, $maman, [$moi, $frere, $soeur]);
+    tests_arbre_famille($moi, $elle, []);
+    tests_arbre_famille($beauP, $beauM, [$elle]);
+
+    // Les portraits : visible avec miniature (moi), visible sans miniature
+    // (papa, repli sur le fichier), privé (la conjointe), absent (le frère).
+    $docMoi = tests_arbre_document('schema-moi');
+    $docPapa = tests_arbre_document('schema-papa', 'famille', false);
+    $docElle = tests_arbre_document('schema-elle', 'prive');
+    tests_arbre_portrait($moi, $docMoi);
+    tests_arbre_portrait($papa, $docPapa);
+    tests_arbre_portrait($elle, $docElle);
+
+    $html = (string) tests_envoi_requete('GET', '/arbre?racine=' . $moi, $lecteur)['corps'];
+    $dessin = tests_arbre_morceau($html, 'arbre-chene__dessin', 'arbre-explo__indice');
+    $tronc = tests_arbre_morceau($html, 'arbre-chene__partie--tronc', 'arbre-chene__partie--racines');
+    $branches = tests_arbre_morceau($html, 'arbre-chene__partie--branches', 'arbre-chene__partie--tronc');
+
+    // --- La rangée du tronc : personne, conjoint, frères et sœurs ---------
+    $posMoi = strpos($tronc, 'Racine SCHEMA');
+    $posElle = strpos($tronc, 'Epouse SCHEMA');
+    $posFrere = strpos($tronc, 'Frangin SCHEMA');
+    verifier('arbre 1.40 : le tronc aligne personne, conjoint puis frère, dans cet ordre',
+        $posMoi !== false && $posElle !== false && $posFrere !== false
+        && $posMoi < $posElle && $posElle < $posFrere,
+        'positions : ' . var_export([$posMoi, $posElle, $posFrere], true));
+    verifier_contient('arbre 1.40 : le conjoint est dit conjoint sur le tronc',
+        'arbre-chene__relation">Conjointe<', $tronc);
+    verifier_contient('arbre 1.40 : le frère est dit frère sur le tronc',
+        'arbre-chene__relation">Frère<', $tronc);
+    verifier('arbre 1.40 : le conjoint n’est jamais un frère ou une sœur',
+        !str_contains($tronc, 'Epouse SCHEMA, sœur') && !str_contains($tronc, 'Epouse SCHEMA, frère'),
+        'la conjointe est présentée comme fratrie');
+    verifier('arbre 1.40 : la sœur privée n’a ni carte ni nom pour le lecteur',
+        !str_contains($html, 'Cachee'), 'le nom « Cachee » apparaît');
+    verifier('arbre 1.40 : les parents du conjoint ne sont pas dans le schéma',
+        !str_contains($dessin, 'HORSFAMILLE'), 'un parent du conjoint apparaît');
+    verifier('arbre 1.40 : la personne sélectionnée est marquée pour le centrage',
+        str_contains($tronc, 'data-relation="selection" data-explo-centre="1"'),
+        'le centre d’exploration manque sur le tronc');
+    verifier('arbre 1.40 : la carte de la personne sélectionnée la recentre',
+        str_contains($tronc, 'href="/arbre?racine=' . $moi . '#chene"'),
+        'le lien de centrage manque');
+
+    // --- Les photos rondes -------------------------------------------------
+    verifier_contient('arbre 1.40 : le portrait visible est servi en miniature',
+        '/media/miniature/' . $docMoi, $dessin);
+    verifier_contient('arbre 1.40 : le portrait a son texte de remplacement',
+        'alt="Portrait de Racine SCHEMA"', $dessin);
+    verifier_contient('arbre 1.40 : sans miniature, le portrait passe par le fichier',
+        '/f/' . $docPapa, $dessin);
+    verifier('arbre 1.40 : le portrait privé de la conjointe ne laisse aucune adresse',
+        !str_contains($html, '/media/miniature/' . $docElle) && !str_contains($html, '/f/' . $docElle),
+        'une adresse du portrait privé est dans la page');
+    verifier('arbre 1.40 : sans portrait visible, la silhouette du site prend le relais',
+        substr_count($dessin, 'arbre-chene__photo--silhouette') >= 2
+        && str_contains($dessin, 'arbre-chene__photo arbre-chene__photo--silhouette'),
+        'silhouettes : ' . substr_count($dessin, 'arbre-chene__photo--silhouette'));
+    verifier('arbre 1.40 : la silhouette n’a pas de texte de remplacement (décor)',
+        preg_match('/arbre-chene__photo--silhouette"\s+src="[^"]*silhouette\.svg[^"]*" alt=""/', $dessin) === 1,
+        'la silhouette n’est pas un décor muet');
+    verifier('arbre 1.40 : plus de dates sur les cartes (elles restent sur la fiche)',
+        !str_contains($dessin, 'arbre-chene__dates'), 'une date est encore sur une carte');
+
+    // Contre-épreuve : l'administrateur voit le portrait de la conjointe
+    // et la carte de la sœur — les essais ci-dessus regardent donc bien
+    // une question de droits, pas une absence de données.
+    $htmlAdmin = (string) tests_envoi_requete('GET', '/arbre?racine=' . $moi, $admin)['corps'];
+    $dessinAdmin = tests_arbre_morceau($htmlAdmin, 'arbre-chene__dessin', 'arbre-explo__indice');
+    verifier_contient('arbre 1.40 : contre-épreuve, l’administrateur voit le portrait privé',
+        '/media/miniature/' . $docElle, $dessinAdmin);
+    verifier_contient('arbre 1.40 : contre-épreuve, l’administrateur voit la sœur',
+        'Cachee SCHEMA', $dessinAdmin);
+
+    // --- Les traits : vers les enfants des parents affichés, jamais vers
+    // le conjoint ni vers une personne invisible. Parents au centre 50 % ;
+    // tronc du lecteur [Racine 16.67, Epouse 50, Frangin 83.33] : descente,
+    // barre et deux arrivées = 4 segments, aucune arrivée à 50 %.
+    verifier('arbre 1.40 : les parents se relient à leurs enfants du tronc (4 segments)',
+        substr_count($branches, '<line') === 4,
+        'segments : ' . substr_count($branches, '<line'));
+    verifier('arbre 1.40 : aucun trait ne descend sur le conjoint',
+        !str_contains($branches, 'x1="50" y1="12"'),
+        'un trait arrive au centre du conjoint');
+    $branchesAdmin = tests_arbre_morceau($htmlAdmin, 'arbre-chene__partie--branches', 'arbre-chene__partie--tronc');
+    verifier('arbre 1.40 : contre-épreuve, la sœur visible ajoute son arrivée (5 segments)',
+        substr_count($branchesAdmin, '<line') === 5,
+        'segments : ' . substr_count($branchesAdmin, '<line'));
+
+    // --- Cas limites --------------------------------------------------------
+    // Un seul enfant : descente et arrivée alignées, pas de barre.
+    $solo = tests_arbre_personne('Unique', 'ENFANT', 'famille');
+    $unique = tests_arbre_personne('Petit', 'ENFANT', 'famille');
+    tests_arbre_famille($solo, null, [$unique]);
+    $htmlUn = (string) tests_envoi_requete('GET', '/arbre?racine=' . $solo, $admin)['corps'];
+    $racinesUn = tests_arbre_morceau($htmlUn, 'arbre-chene__partie--racines', 'arbre-explo__indice');
+    verifier('arbre 1.40 : un seul enfant, deux segments alignés',
+        substr_count($racinesUn, '<line') === 2,
+        'segments : ' . substr_count($racinesUn, '<line'));
+
+    // Couple sans enfants : les deux cartes, le trait du couple, rien d’autre.
+    $luiC = tests_arbre_personne('Lui', 'COUPLE', 'famille');
+    $elleC = tests_arbre_personne('Elle', 'COUPLE', 'famille', 'F');
+    tests_arbre_famille($luiC, $elleC, []);
+    $htmlCouple = (string) tests_envoi_requete('GET', '/arbre?racine=' . $luiC, $admin)['corps'];
+    $dessinCouple = tests_arbre_morceau($htmlCouple, 'arbre-chene__dessin', 'arbre-explo__indice');
+    verifier('arbre 1.40 : couple sans enfants, deux cartes et aucun trait de génération',
+        substr_count($dessinCouple, '<li class="arbre-chene__noeud') === 2
+        && !str_contains($dessinCouple, '<svg class="arbre-chene__traits"')
+        && str_contains($dessinCouple, 'Aucun enfant connu'),
+        'cartes : ' . substr_count($dessinCouple, '<li class="arbre-chene__noeud'));
+
+    // Personne seule : une carte, aucun trait, aucune génération inventée.
+    $seul = tests_arbre_personne('Solitaire', 'SEUL', 'famille');
+    $htmlSeul = (string) tests_envoi_requete('GET', '/arbre?racine=' . $seul, $admin)['corps'];
+    $dessinSeul = tests_arbre_morceau($htmlSeul, 'arbre-chene__dessin', 'arbre-explo__indice');
+    verifier('arbre 1.40 : personne seule, une carte et aucun trait',
+        substr_count($dessinSeul, '<li class="arbre-chene__noeud') === 1
+        && !str_contains($dessinSeul, '<svg class="arbre-chene__traits"')
+        && str_contains($dessinSeul, 'Aucun parent connu')
+        && str_contains($dessinSeul, 'Aucun enfant connu'),
+        'cartes : ' . substr_count($dessinSeul, '<li class="arbre-chene__noeud'));
+
+    // Fratrie nombreuse : le tronc suit la même règle que les générations —
+    // huit cartes, le reste annoncé, puis toutes les cartes avec « plus ».
+    $centre = tests_arbre_personne('Centre', 'NOMBREUX', 'famille');
+    $parrain = tests_arbre_personne('Pere', 'NOMBREUX', 'famille');
+    $fratrie = [$centre];
+    for ($i = 1; $i <= 9; $i++) {
+        $fratrie[] = tests_arbre_personne('Frere' . $i, 'NOMBREUX', 'famille');
+    }
+    tests_arbre_famille($parrain, null, $fratrie);
+    $enfantCentre = tests_arbre_personne('Enfant', 'NOMBREUX', 'famille');
+    tests_arbre_famille($centre, null, [$enfantCentre]);
+    $htmlNombreux = (string) tests_envoi_requete('GET', '/arbre?racine=' . $centre, $admin)['corps'];
+    $troncNombreux = tests_arbre_morceau($htmlNombreux, 'arbre-chene__partie--tronc', 'arbre-chene__partie--racines');
+    verifier('arbre 1.40 : fratrie nombreuse, le tronc reste à huit cartes',
+        substr_count($troncNombreux, '<li class="arbre-chene__noeud') === 8,
+        'cartes : ' . substr_count($troncNombreux, '<li class="arbre-chene__noeud'));
+    verifier_contient('arbre 1.40 : le reste de la fratrie est annoncé',
+        'Voir les 2 autres personnes de la famille', $htmlNombreux);
+    $htmlTout = (string) tests_envoi_requete('GET', '/arbre?racine=' . $centre . '&plus=1', $admin)['corps'];
+    $troncTout = tests_arbre_morceau($htmlTout, 'arbre-chene__partie--tronc', 'arbre-chene__partie--racines');
+    verifier('arbre 1.40 : « voir plus » montre toute la fratrie dans une rangée logique',
+        substr_count($troncTout, '<li class="arbre-chene__noeud') === 10
+        && str_contains($troncTout, 'arbre-chene__rangee--10')
+        && str_contains($htmlTout, 'arbre-chene__dessin--elargi'),
+        'cartes : ' . substr_count($troncTout, '<li class="arbre-chene__noeud'));
 }

@@ -3,6 +3,24 @@
 Toutes les dates sont au format `AAAA-MM-JJ`.
 Le projet suit un numéro de version simple : `majeure.mineure.correctif`.
 
+## [1.40.0] — 2026-10-25
+
+### Arbre généalogique en schéma
+- Générations en rangées, liens de parenté calculés par le serveur, conjoint
+  et fratrie sur la rangée de la personne sélectionnée. Au-delà de huit cartes,
+  « Voir les autres personnes » affiche les personnes visibles supplémentaires.
+- Portrait visible de la fiche servi par les routes existantes, ou silhouette
+  neutre locale ; noms et relations restent sur les cartes, dates sur la fiche.
+  Le chêne devient un filigrane pâle et disparaît à l'impression.
+- Une carte entière est un lien vers l'arbre centré sur la personne. Une barre
+  hors du dessin propose « Voir la fiche » et, aux comptes autorisés,
+  « Modifier la fiche » ; sur téléphone elle reste fixe à l'écran et ses
+  boutons ne sont pas réduits par le zoom.
+- Zoom, déplacement, clavier et option de mouvement réduit conservés. En mode
+  serré sur téléphone, les traits sont masqués lorsque les rangées se replient.
+  Aucun droit d'accès modifié et aucune migration : `git pull` puis
+  `deploy/install.sh` suffisent pour mettre les fichiers à jour.
+
 ## [1.39.1] — 2026-11-10
 
 ### Arbre sur téléphone : tout visible d'un coup, aucune carte coupée

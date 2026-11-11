@@ -74,7 +74,7 @@ function arbre_chene_libelle_descendant(int $niveau): string
  *
  * @return array{id:int, nom:string, dates:string, sexe:string, url:string,
  *               relation:string, relation_libelle:string, couple_id:int,
- *               trait_couple:bool}
+ *               trait_couple:bool, photo:?string}
  */
 function arbre_chene_noeud(array $person, int $racineId = 0): array
 {
@@ -83,6 +83,19 @@ function arbre_chene_noeud(array $person, int $racineId = 0): array
     $relation = $racineId > 0
         ? arbre_chene_relation($racineId, $person)
         : ['cle' => '', 'libelle' => ''];
+
+    // Le portrait : persons.photo_document_id désigne le document « photo
+    // de la fiche ». Il ne devient une image que si le compte courant a le
+    // droit de voir ce document (find_viewable_document) ; sinon, la vue
+    // affiche la silhouette — jamais l'image, jamais son existence, comme
+    // sur la fiche personne.
+    $photo = null;
+    if (!empty($person['photo_document_id'])) {
+        $doc = find_viewable_document((int) $person['photo_document_id']);
+        if ($doc !== null) {
+            $photo = thumbnail_url($doc) ?? file_url($doc);
+        }
+    }
 
     return [
         'id'               => $id,
@@ -94,6 +107,7 @@ function arbre_chene_noeud(array $person, int $racineId = 0): array
         'relation_libelle' => $relation['libelle'],
         'couple_id'        => 0,
         'trait_couple'     => false,
+        'photo'            => $photo,
     ];
 }
 
@@ -382,6 +396,17 @@ function arbre_chene_conjoints(int $personId): array
     return arbre_chene_visibles($conjoints);
 }
 
+/**
+ * Les frères et sœurs visibles d'une personne : ils partagent sa rangée
+ * (le « tronc » du schéma), chacun avec sa relation « Frère / Sœur ».
+ *
+ * @return array<int, array>
+ */
+function arbre_chene_fratrie(int $personId): array
+{
+    return arbre_chene_visibles(person_siblings($personId));
+}
+
 // ---------------------------------------------------------------------------
 // Rangées et « voir plus »
 // ---------------------------------------------------------------------------
@@ -406,12 +431,13 @@ function arbre_chene_rangees(array $personnes, bool $tout): array
     $rangees        = [$rang];
     $restePersonnes = array_slice($personnes, ARBRE_CHENE_MAX_RANGEE);
 
-    if ($restePersonnes !== []) {
-        if ($tout) {
-            foreach (array_chunk($restePersonnes, ARBRE_CHENE_MAX_RANGEE) as $morceau) {
-                $rangees[] = $morceau;
-            }
-        }
+    if ($tout && $restePersonnes !== []) {
+        // Garder la génération entière dans une seule rangée logique : les
+        // traits calculés par le serveur restent ainsi reliés aux bonnes
+        // cartes, y compris quand « voir plus » dépasse huit personnes.
+        // La vue donne alors au dessin la largeur nécessaire ; sur téléphone,
+        // le mode serré peut replier cette rangée et masquer ses traits.
+        $rangees = [$personnes];
     }
 
     return [
@@ -538,7 +564,25 @@ function arbre_chene_traits_liaison(array $parents, array $enfants): array
             continue;
         }
         sort($presents);
-        $groupes[implode('-', $presents)][] = $j;
+        // Un point entre deux cartes n'est une source valable que pour un
+        // couple adjacent effectivement dessiné. Sinon, relier séparément
+        // chaque parent présent plutôt que partir d'une carte sans lien.
+        if (count($presents) === 2) {
+            $indices = [$indexParents[$presents[0]], $indexParents[$presents[1]]];
+            sort($indices);
+            $coupleAdjacent = $indices[1] === $indices[0] + 1
+                && !empty($parents[$indices[1]]['trait_couple'])
+                && (int) ($parents[$indices[1]]['couple_id'] ?? 0) === (int) $parents[$indices[0]]['id'];
+        } else {
+            $coupleAdjacent = count($presents) === 1;
+        }
+        if ($coupleAdjacent) {
+            $groupes[implode('-', $presents)][] = $j;
+        } else {
+            foreach ($presents as $pid) {
+                $groupes[(string) $pid][] = $j;
+            }
+        }
     }
 
     $segments = [];
@@ -569,6 +613,21 @@ function arbre_chene_traits_liaison(array $parents, array $enfants): array
     }
 
     return $segments;
+}
+
+/** Marque les couples adjacents dont au moins un enfant affiché est commun. */
+function arbre_chene_marquer_descente(array &$parents, array $enfants): void
+{
+    foreach ($enfants as $enfant) {
+        $ids = array_map(static fn (array $p): int => (int) $p['id'], person_parents((int) $enfant['id']));
+        for ($i = 1, $n = count($parents); $i < $n; $i++) {
+            if (!empty($parents[$i]['trait_couple'])
+                && in_array((int) $parents[$i - 1]['id'], $ids, true)
+                && in_array((int) $parents[$i]['id'], $ids, true)) {
+                $parents[$i]['trait_descente'] = true;
+            }
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -641,32 +700,87 @@ function arbre_chene_donnees(int $racineId, bool $tout = false): ?array
         $noeud['trait_couple'] = $noeudsConjoints === [];
         $noeudsConjoints[] = $noeud;
     }
-    $tronc = array_merge([$noeudRacine], $noeudsConjoints);
+
+    // La rangée de la personne sélectionnée (1.40.0) : elle, son conjoint,
+    // puis ses frères et sœurs — jamais confondus, la relation est calculée
+    // par arbre_chene_relation (le couple passe avant la fratrie). Même
+    // règle que les générations : huit cartes au plus, le reste attend le
+    // « voir plus » et compte dans $reste.
+    $noeudsFratrie = [];
+    $idsConjoints = array_fill_keys(array_column($noeudsConjoints, 'id'), true);
+    foreach (arbre_chene_fratrie($racineId) as $frere) {
+        // Une même personne peut être à la fois conjoint et membre de la
+        // fratrie dans les données : ne la représenter qu'une seule fois.
+        if (!isset($idsConjoints[(int) $frere['id']])) {
+            $noeudsFratrie[] = arbre_chene_noeud($frere, $racineId);
+        }
+    }
+    $troncTous = array_merge([$noeudRacine], $noeudsConjoints, $noeudsFratrie);
+    // Même découpage que les générations (arbre_chene_rangees, mais sur des
+    // nœuds déjà construits) : une première rangée de huit cartes au plus,
+    // le reste attend le « voir plus » — et les traits, qui raisonnent en
+    // pourcentages d'une rangée, restent en face des cartes.
+    if (!$tout && count($troncTous) > ARBRE_CHENE_MAX_RANGEE) {
+        $reste              += count($troncTous) - ARBRE_CHENE_MAX_RANGEE;
+        $troncRangees        = [array_slice($troncTous, 0, ARBRE_CHENE_MAX_RANGEE)];
+    } else {
+        $troncRangees = [$troncTous];
+    }
+    $tronc = $troncRangees[0] ?? [];
 
     // Les traits, génération par génération, entre cartes affichées seulement
     // (la première rangée de chaque génération : au-delà du « voir plus », les
     // cartes ne sont pas là, les traits non plus).
     foreach ($ancetres as $niveau => $generation) {
+        // Les parents se relient à toute leur rangée d'enfants affichée :
+        // au niveau 1, c'est le tronc (personne, conjoint, fratrie) ; le
+        // conjoint, dont les parents sont d'une autre famille, ne reçoit
+        // aucun trait — la fonction ne relie que les parents présents.
         $enfantsAffiches = $niveau === 1
-            ? [$noeudRacine]
+            ? $tronc
             : ($ancetres[$niveau - 1]['rangees'][0] ?? []);
+        arbre_chene_marquer_descente($ancetres[$niveau]['rangees'][0], $enfantsAffiches);
         $ancetres[$niveau]['traits'] = arbre_chene_traits_liaison(
             $generation['rangees'][0] ?? [],
             $enfantsAffiches
         );
     }
     $precedent = $tronc;
+    $niveauPrecedent = null;
     foreach ($descendants as $niveau => $generation) {
+        $enfantsAffiches = $generation['rangees'][0] ?? [];
+        arbre_chene_marquer_descente($precedent, $enfantsAffiches);
+        if ($niveauPrecedent === null) {
+            $tronc = $precedent;
+            $troncRangees[0] = $precedent;
+        } else {
+            $descendants[$niveauPrecedent]['rangees'][0] = $precedent;
+        }
         $descendants[$niveau]['traits_avant'] = arbre_chene_traits_liaison(
             $precedent,
-            $generation['rangees'][0] ?? []
+            $enfantsAffiches
         );
-        $precedent = $generation['rangees'][0] ?? [];
+        $precedent = $enfantsAffiches;
+        $niveauPrecedent = $niveau;
+    }
+
+    $dessinElargi = count($tronc) > ARBRE_CHENE_MAX_RANGEE;
+    foreach (array_merge($ancetres, $descendants) as $generation) {
+        if (count($generation['rangees'][0] ?? []) > ARBRE_CHENE_MAX_RANGEE) {
+            $dessinElargi = true;
+            break;
+        }
     }
 
     return [
+        'elargi'      => $dessinElargi,
         'racine'      => $noeudRacine,
         'conjoints'   => $noeudsConjoints,
+        // La première rangée du tronc (personne, conjoints, fratrie) :
+        // c'est elle que les traits prennent pour rangée des enfants au
+        // niveau des parents. La vue affiche toutes les rangées.
+        'tronc'        => $tronc,
+        'tronc_rangees' => $troncRangees,
         'ancetres'    => $ancetres,
         'descendants' => $descendants,
         'reste'       => $reste,

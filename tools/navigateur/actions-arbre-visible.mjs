@@ -64,7 +64,17 @@ console.log('Navigateur :', await browser.version());
 const mesurerCartes = () => {
     const cadreEl = document.querySelector('[data-explo-cadre]');
     const cadre = cadreEl.getBoundingClientRect();
-    const cartes = [...document.querySelectorAll('.arbre-chene__noeud')].map(el => {
+    const elementsCartes = [...document.querySelectorAll('.arbre-chene__noeud')];
+    const rectangles = elementsCartes.map(el => el.getBoundingClientRect());
+    let superpositions = 0;
+    for (let i = 0; i < rectangles.length; i++) {
+        for (let j = i + 1; j < rectangles.length; j++) {
+            const a = rectangles[i], b = rectangles[j];
+            if (Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1
+                && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1) superpositions++;
+        }
+    }
+    const cartes = elementsCartes.map(el => {
         const r = el.getBoundingClientRect();
         const nom = (el.querySelector('.arbre-chene__nom') || {}).textContent || '';
         let texteCoupe = false;
@@ -84,6 +94,51 @@ const mesurerCartes = () => {
             texteCoupe,
         };
     });
+    // Un SVG doit toucher les deux rangées auxquelles il appartient et
+    // chacune de ses arrivées doit tomber sur une carte de la rangée suivante.
+    // En mode serré les SVG sont masqués, et ne doivent pas être mesurés.
+    const rangsEtTraits = [...document.querySelectorAll('.arbre-chene__rangee, .arbre-chene__traits')];
+    const erreursTraits = [];
+    rangsEtTraits.forEach((svg, i) => {
+        if (!svg.matches('svg') || getComputedStyle(svg).display === 'none') return;
+        const avant = rangsEtTraits[i - 1], apres = rangsEtTraits[i + 1];
+        if (!avant || !apres || !avant.matches('ul') || !apres.matches('ul')) {
+            erreursTraits.push('rangée voisine absente');
+            return;
+        }
+        const s = svg.getBoundingClientRect();
+        const a = avant.getBoundingClientRect(), b = apres.getBoundingClientRect();
+        if (Math.abs(a.bottom - s.top) > 3 || Math.abs(b.top - s.bottom) > 3) {
+            erreursTraits.push('trait séparé des rangées');
+        }
+        const parents = [...avant.querySelectorAll('.arbre-chene__noeud')];
+        const centresParents = parents.map(el => {
+            const r = el.getBoundingClientRect();
+            return (r.left + r.right) / 2;
+        });
+        const sources = [...centresParents];
+        parents.forEach((el, j) => {
+            if (j > 0 && el.classList.contains('arbre-chene__noeud--descente')) {
+                sources.push((centresParents[j - 1] + centresParents[j]) / 2);
+            }
+        });
+        svg.querySelectorAll('line[y1="0"][y2="12"]').forEach(ligne => {
+            const x = s.left + s.width * parseFloat(ligne.getAttribute('x1')) / 100;
+            if (!sources.length || Math.min(...sources.map(c => Math.abs(c - x))) > 4) {
+                erreursTraits.push('départ sans parent en face');
+            }
+        });
+        const centres = [...apres.querySelectorAll('.arbre-chene__noeud')].map(el => {
+            const r = el.getBoundingClientRect();
+            return (r.left + r.right) / 2;
+        });
+        svg.querySelectorAll('line[y1="12"][y2="24"]').forEach(ligne => {
+            const x = s.left + s.width * parseFloat(ligne.getAttribute('x1')) / 100;
+            if (centres.length === 0 || Math.min(...centres.map(c => Math.abs(c - x))) > 4) {
+                erreursTraits.push('arrivée sans carte en face');
+            }
+        });
+    });
     const indice = document.querySelector('[data-explo-indice]');
     const premiereRangee = document.querySelector(
         '.arbre-chene__partie--racines .arbre-chene__rangee');
@@ -97,8 +152,17 @@ const mesurerCartes = () => {
             }
         }
     }
+    const barrePersonne = document.querySelector('.arbre-explo__personne');
+    const actionsPersonne = barrePersonne ? [...barrePersonne.querySelectorAll('a')].map(a => {
+        const r = a.getBoundingClientRect();
+        return { texte: a.textContent.trim(), largeur: r.width, hauteur: r.height,
+            visible: r.top >= 0 && r.bottom <= innerHeight && r.left >= 0 && r.right <= innerWidth };
+    }) : [];
     return {
+        actionsPersonne,
         cartes,
+        superpositions,
+        erreursTraits,
         freresDehors,
         indice: indice ? { visible: !indice.hidden, texte: indice.textContent.trim() } : null,
         debordementPage: document.documentElement.scrollWidth > window.innerWidth,
@@ -110,13 +174,13 @@ const mesurerCartes = () => {
 let echecs = 0;
 for (const fichier of fichiers) {
     htmlCourant = fs.readFileSync(fichier, 'utf8');
-    for (const largeur of [360, 390, 430]) {
+    for (const largeur of [360, 390, 430, 1280, 1920]) {
         const page = await browser.newPage();
         await page.setViewport({ width: largeur, height: 800 });
         await page.goto('http://127.0.0.1:8962/arbre', { waitUntil: 'load' });
         await new Promise(r => setTimeout(r, 500));
 
-        for (const etape of ['chargement', 'tout', 'centrer']) {
+        for (const etape of ['chargement', 'tout', 'centrer', 'zoom-moins']) {
             if (etape !== 'chargement') {
                 await page.evaluate((nom) => {
                     const b = document.querySelector(`[data-explo="${nom}"]`);
@@ -133,8 +197,20 @@ for (const fichier of fichiers) {
                 + (coupes.length ? ` — texte coupé : ${coupes.map(c => c.nom).join(', ')}` : '')
                 + ` ; cadre ${m.hauteurCadre}px/${m.hauteurEcran}px`
                 + (m.indice ? ` ; indice ${m.indice.visible ? '« ' + m.indice.texte + ' »' : 'masqué'}` : ' ; indice ABSENT'));
+            if (largeur < 768) {
+                if (!m.actionsPersonne.some(a => a.texte === 'Voir la fiche')) {
+                    console.log(`ÉCHEC [${largeur}px, ${etape}] action « Voir la fiche » absente`); echecs++;
+                }
+                for (const action of m.actionsPersonne) {
+                    if (action.largeur < 44 || action.hauteur < 44 || !action.visible) {
+                        console.log(`ÉCHEC [${largeur}px, ${etape}] « ${action.texte} » : ${action.largeur} × ${action.hauteur} px, visible=${action.visible}`); echecs++;
+                    } else console.log(`    « ${action.texte} » : ${Math.round(action.largeur)} × ${Math.round(action.hauteur)} px, visible`);
+                }
+            }
             if (dehors.length > 0) { console.log(`ÉCHEC [${largeur}px, ${etape}] des cartes sont hors du cadre`); echecs++; }
             if (coupes.length > 0) { console.log(`ÉCHEC [${largeur}px, ${etape}] du texte est coupé dans une carte`); echecs++; }
+            if (m.superpositions > 0) { console.log(`ÉCHEC [${largeur}px, ${etape}] ${m.superpositions} superposition(s) de cartes`); echecs++; }
+            if (m.erreursTraits.length > 0) { console.log(`ÉCHEC [${largeur}px, ${etape}] traits : ${m.erreursTraits.join(', ')}`); echecs++; }
             if (m.debordementPage) { console.log(`ÉCHEC [${largeur}px] la page déborde horizontalement`); echecs++; }
             if (m.indice === null) { console.log(`ÉCHEC [${largeur}px] l'indice « frères et sœurs » est absent de la page`); echecs++; }
             else if (m.freresDehors > 0) {

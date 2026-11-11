@@ -451,18 +451,24 @@
 
     function etatInitial() {
         if (cadre.clientWidth >= 768) {
-            echelle = zoomInitial();
-            appliquer();
-            centrer();
+            if (tailleDessin().largeur > cadre.clientWidth) {
+                echelle = zoomTout();
+                centrerDessin();
+            } else {
+                echelle = zoomInitial();
+                appliquer();
+                centrer();
+            }
             return;
         }
         dessin.classList.remove('arbre-chene__dessin--serre');
         if (zoomTout() < ZOOM_PLANCHER) {
             dessin.classList.add('arbre-chene__dessin--serre');
         }
-        // Au mieux, tout tient ; au pire, on s'arrête au plancher lisible
-        // et l'indice annonce ce qui reste hors du cadre.
-        echelle = Math.max(zoomTout(), Math.min(ZOOM_PLANCHER, 1));
+        // Après le repli, ajuster aussi la hauteur : si un grand nombre de
+        // rangées ne tient toujours pas au plancher, on préfère montrer les
+        // cartes entières dès l'ouverture. Le zoom permet ensuite de lire.
+        echelle = zoomTout();
         centrerDessin();
     }
 

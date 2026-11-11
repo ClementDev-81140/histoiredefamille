@@ -6383,7 +6383,7 @@ legend {
    (`arbre-chene__rangee--1` à `--8`). Aucune classe existante n'est renommée.
    ========================================================================== */
 .arbre-chene {
-    --chene-gap: 0.6rem;
+    --chene-gap: 0.15rem;
 }
 
 .arbre-chene__selecteur {
@@ -6432,25 +6432,29 @@ legend {
 .arbre-chene__dessin {
     position: relative;
     padding: 0.4rem 0 0.8rem;
+}
+
+/* Le chêne en filigrane (1.40.0) : la gravure, presque effacée, derrière
+   tout le schéma — jamais sous les cartes au sens propre, elle ne doit
+   que se deviner. Une couche à part (::before), opacité faible, étirée
+   en « cover » sur toute la hauteur du dessin sans déformation ; les
+   parties (z-index 1) et leurs cartes opaques restent devant, donc les
+   noms et les traits gardent leur contraste. À l'impression, la couche
+   disparaît (voir @media print). */
+.arbre-chene__dessin::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
     background-image: image-set(
         url("/assets/arbre-chene.webp") type("image/webp"),
         url("/assets/arbre-chene.jpg") type("image/jpeg")
     );
     background-repeat: no-repeat;
-    background-position: center top;
-    background-size: 100% 100%;
-}
-
-.arbre-chene__dessin::before {
-    content: "";
-    position: absolute;
-    z-index: 0;
-    left: 50%;
-    top: 2.6rem;
-    bottom: 3rem;
-    width: 1px;
-    background: var(--bordure);
-    opacity: 0.45;
+    background-position: center center;
+    background-size: cover;
+    opacity: 0.12;
+    pointer-events: none;
 }
 
 .arbre-chene__partie {
@@ -6592,6 +6596,36 @@ legend {
     font-weight: 700;
 }
 
+/* La photo ronde du schéma (1.40.0) : portrait visible, sinon silhouette
+   du site. Même taille pour toutes les cartes, jamais déformée. */
+.arbre-chene__photo {
+    display: block;
+    width: 3.4rem;
+    height: 3.4rem;
+    margin: 0.35rem auto 0.4rem;
+    border-radius: 50%;
+    object-fit: cover;
+    border: var(--filet-fort);
+    background: var(--surface);
+}
+
+/* Toute la carte est une cible unique, jusqu'aux bords intérieurs. */
+.arbre-chene__dessin .arbre-chene__noeud {
+    padding: 0;
+}
+.arbre-chene__lien {
+    padding: 0.7rem 0.55rem;
+    min-height: 100%;
+}
+
+/* La personne sélectionnée : le liseré rouge de la charte, un peu plus
+   épais — on la retrouve d'un coup d'œil sans changer la forme des
+   cartes. */
+.arbre-chene__noeud[data-relation="selection"] {
+    border: 2px solid var(--accent);
+    box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--accent);
+}
+
 .arbre-chene__dates {
     display: block;
     font-size: 0.76rem;
@@ -6686,49 +6720,29 @@ legend {
         flex-wrap: wrap;
     }
 
-    .arbre-chene__dessin--serre .arbre-chene__traits {
+    .arbre-chene__dessin--serre .arbre-chene__traits,
+    .arbre-chene__dessin--serre .arbre-chene__noeud--couple::before,
+    .arbre-chene__dessin--serre .arbre-chene__noeud--descente::after {
         display: none;
     }
 }
 
-/* Grand écran : la gravure passe en fond du dessin, et le bandeau disparaît.
-   Le cadre garde les proportions de la gravure (2 pour 3) : elle le remplit
-   exactement, sans être coupée ni étirée, et les trois parties se partagent la
-   hauteur comme sur le dessin — les branches en haut, le tronc au milieu, les
-   racines en bas. */
+/* Grand écran (1.40.0) : le schéma occupe toute la largeur du cadre.
+   Fini le petit dessin centré aux proportions de la gravure (46 rem,
+   ~70 % du cadre, cartes perdues dans de grandes rangées vides) : les
+   générations s'empilent en rangées qui remplissent le cadre, chacune
+   à sa hauteur naturelle, et le chêne n'est plus que le filigrane
+   pâle derrière. Lisible sans zoom à 1280 px. */
 @media (min-width: 64rem) {
     .arbre-chene__gravure {
         display: none;
     }
 
     .arbre-chene__dessin {
-        display: grid;
-        grid-template-rows: 40% 22% 38%;
-        aspect-ratio: 2 / 3;
-        max-width: 46rem;
-        margin: 0 auto;
-        padding: 0 1.2rem;
-        background-image: image-set(
-            url("/assets/arbre-chene.webp") type("image/webp"),
-            url("/assets/arbre-chene.jpg") type("image/jpeg")
-        );
-        background-repeat: no-repeat;
-        background-position: center top;
-        background-size: 100% 100%;
+        width: 100%;
+        margin: 0;
+        padding: 1rem 1.2rem 1.4rem;
         border: var(--filet);
-    }
-
-    .arbre-chene__partie {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-    }
-
-    /* Le sillon central traverse les trois parties, comme le tronc. */
-    .arbre-chene__dessin::before {
-        top: 1.2rem;
-        bottom: 1.2rem;
-        opacity: 0.5;
     }
 
     .arbre-chene__rangee {
@@ -6736,14 +6750,62 @@ legend {
     }
 }
 
-/* Impression : la gravure en fond coûterait de l'encre, on la retire. */
+/* « Voir les autres » : une seule rangée logique par génération, même
+   au-delà de huit cartes. Le dessin s'élargit au contenu pour que les
+   centres des cartes restent en face des traits calculés par le serveur. */
+.arbre-chene__dessin.arbre-chene__dessin--elargi {
+    width: max-content;
+    min-width: 100%;
+}
+.arbre-chene__dessin--elargi .arbre-chene__rangee {
+    flex-wrap: nowrap;
+}
+.arbre-chene__dessin--elargi .arbre-chene__rangee .arbre-chene__noeud {
+    flex: 1 0 8.75rem;
+    width: auto;
+}
+@media (max-width: 47.99rem) {
+    .arbre-chene__dessin.arbre-chene__dessin--elargi.arbre-chene__dessin--serre {
+        width: auto;
+        min-width: 0;
+    }
+    .arbre-chene__dessin--elargi.arbre-chene__dessin--serre .arbre-chene__rangee {
+        flex-wrap: wrap;
+    }
+}
+
+/* Les traits touchent les deux rangées, sans titre ou marge intercalé.
+   Les intitulés restent disponibles aux technologies d'assistance ; chaque
+   carte indique aussi sa relation avec la personne sélectionnée. */
+.arbre-chene__dessin .arbre-chene__partie h2,
+.arbre-chene__dessin .arbre-chene__legende {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+.arbre-chene__partie--branches,
+.arbre-chene__partie--tronc,
+.arbre-chene__partie--racines {
+    padding: 0;
+    border: 0;
+}
+.arbre-chene__dessin .arbre-chene__rangee {
+    margin: 0;
+}
+
+/* Impression : le filigrane coûterait de l'encre, on le retire. */
 @media print {
-    .arbre-chene__gravure,
-    .arbre-chene__dessin {
-        background-image: none;
+    .arbre-chene__gravure {
+        display: none;
     }
 
-    .arbre-chene__gravure {
+    .arbre-chene__dessin::before {
         display: none;
     }
 }
@@ -6770,31 +6832,51 @@ legend {
 }
 
 /* Le trait en pointillés du couple : il traverse l'écart entre les deux
-   cartes voisines (horizontal en rangée, vertical en colonne). */
+   cartes voisines (horizontal en rangée, vertical en colonne). Depuis
+   1.40.0, les traits sont en couleur du texte (--texte), pas en
+   --texte-doux : sur le filigrane, même au pire pixel de la gravure,
+   leur contraste mesuré reste au-dessus de 4,5:1 (voir le contrôle
+   tools/navigateur/actions-arbre-schema.mjs). */
 .arbre-chene__noeud--couple::before {
     content: "";
     position: absolute;
     left: calc(-1 * var(--chene-gap));
     top: 50%;
     width: var(--chene-gap);
-    border-top: 2px dashed var(--texte-doux);
+    border-top: 2px dashed var(--texte);
+    opacity: 0.75;
+}
+
+/* Descente depuis le milieu du trait du couple jusqu'au SVG de la
+   génération suivante. Elle n'existe que pour un enfant commun affiché. */
+.arbre-chene__noeud--descente::after {
+    content: "";
+    position: absolute;
+    left: calc(-1 * var(--chene-gap) / 2);
+    top: 50%;
+    bottom: -1px;
+    border-left: 1.5px solid var(--texte);
+    opacity: 0.85;
+    pointer-events: none;
 }
 
 /* Sur téléphone, les cartes restent en rangée (1.39.0) : le trait du
    couple garde donc partout sa forme horizontale, entre voisines. */
 
-/* Les traits parents → enfants, en SVG écrit par le serveur. */
+/* Les traits parents → enfants, en SVG écrit par le serveur. Couleur du
+   texte à 85 % : mesurée sur le filigrane, elle garde un contraste
+   d'au moins 4,5:1 là où --texte-doux tombait à ~3,3:1 (1.40.0). */
 .arbre-chene__traits {
     display: block;
     width: 100%;
     height: 1.4rem;
-    color: var(--texte-doux);
+    color: var(--texte);
 }
 
 .arbre-chene__traits line {
-    stroke: var(--texte-doux);
+    stroke: var(--texte);
     stroke-width: 1.5;
-    opacity: 0.75;
+    opacity: 0.85;
 }
 
 /* --- La barre d'outils -------------------------------------------------- */
@@ -6852,6 +6934,12 @@ legend {
     color: var(--texte-doux);
 }
 
+/* Sans JavaScript aussi, une génération élargie défile dans le cadre
+   plutôt que de provoquer un débordement horizontal de toute la page. */
+.arbre-explo__cadre {
+    overflow-x: auto;
+}
+
 /* --- Le cadre -------------------------------------------------------------
    Sans JavaScript : aucun de ces styles ne s'applique (la classe
    `arbre-explo--actif` est ajoutée par le script). Avec : hauteur bornée,
@@ -6866,11 +6954,54 @@ legend {
     cursor: grab;
 }
 
+/* Sur grand écran le cadre suit la hauteur naturelle du schéma : les
+   générations ne sont pas coupées à l'ouverture, même sans dézoomer. */
+@media (min-width: 48rem) {
+    .arbre-explo--actif .arbre-explo__cadre {
+        height: auto;
+    }
+}
+
 /* Téléphone (1.39.1) : un cadre plus haut — environ 80 % de l'écran —
    pour voir ancêtres, tronc et descendants avec moins de défilement. */
 @media (max-width: 47.99rem) {
     .arbre-explo--actif .arbre-explo__cadre {
         height: clamp(340px, 80vh, 760px);
+    }
+}
+
+/* Les actions de la personne choisie restent hors du dessin transformé. */
+.arbre-explo__personne {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem;
+    background: var(--surface);
+    border: var(--filet);
+    color: var(--texte);
+}
+.arbre-explo__personne > span {
+    flex: 1 1 12rem;
+    overflow-wrap: anywhere;
+}
+.arbre-explo__personne-action {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    min-width: 44px;
+    min-height: 44px;
+}
+@media (max-width: 47.99rem) {
+    .arbre-explo__personne {
+        position: fixed;
+        z-index: 100;
+        bottom: 0;
+        left: 0;
+        right: 0;
+    }
+    .arbre-chene {
+        padding-bottom: 9rem;
     }
 }
 

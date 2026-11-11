@@ -119,7 +119,7 @@ $alphabet = range('A', 'Z');
             </p>
             <div class="arbre-explo__cadre" data-explo-cadre tabindex="0" role="region"
                  aria-label="Cadre d’exploration de l’arbre. Tab pour en sortir, flèches pour déplacer l’arbre.">
-        <div class="arbre-chene__dessin arbre-explo__dessin" data-explo-dessin>
+        <div class="arbre-chene__dessin arbre-explo__dessin<?= !empty($arbre['elargi']) ? ' arbre-chene__dessin--elargi' : '' ?>" data-explo-dessin>
             <section class="arbre-chene__partie arbre-chene__partie--branches" aria-labelledby="chene-ancetres">
                 <h2 id="chene-ancetres">Les ancêtres</h2>
                 <?php if ($arbre['ancetres'] === []): ?>
@@ -148,23 +148,16 @@ $alphabet = range('A', 'Z');
 
             <section class="arbre-chene__partie arbre-chene__partie--tronc" aria-labelledby="chene-tronc">
                 <h2 id="chene-tronc">Le tronc</h2>
-                <ul class="arbre-chene__rangee arbre-chene__rangee--<?= 1 + count($arbre['conjoints']) ?>">
-                    <?php $noeud = $arbre['racine']; ?>
-                    <li class="arbre-chene__noeud arbre-chene__noeud--tronc"
-                        data-relation="selection" data-explo-centre="1">
-                        <a class="arbre-chene__lien" href="<?= e($noeud['url']) ?>"
-                           aria-label="<?= e($noeud['nom'] . ', personne sélectionnée') ?>">
-                            <span class="arbre-chene__relation"><?= e($noeud['relation_libelle']) ?></span>
-                            <span class="arbre-chene__nom"><?= e($noeud['nom']) ?></span>
-                            <?php if ($noeud['dates'] !== ''): ?>
-                                <span class="arbre-chene__dates"><?= e($noeud['dates']) ?></span>
-                            <?php endif; ?>
-                        </a>
-                    </li>
-                    <?php foreach ($arbre['conjoints'] as $noeud): ?>
+                <?php /* Les rangées du schéma : la personne sélectionnée, son
+                         conjoint, ses frères et sœurs (1.40.0). */ ?>
+                <?php foreach ($arbre['tronc_rangees'] as $rangeeTronc): ?>
+                <ul class="arbre-chene__rangee arbre-chene__rangee--<?= count($rangeeTronc) ?>">
+                    <?php foreach ($rangeeTronc as $noeud): ?>
+                        <?php $noeud['centre'] = (int) $noeud['id'] === (int) $arbre['racine']['id']; ?>
                         <?php $classe = 'arbre-chene__noeud--tronc'; require __DIR__ . '/partials/carte_arbre.php'; ?>
                     <?php endforeach; ?>
                 </ul>
+                <?php endforeach; ?>
             </section>
 
             <section class="arbre-chene__partie arbre-chene__partie--racines" aria-labelledby="chene-descendants">
@@ -198,6 +191,24 @@ $alphabet = range('A', 'Z');
                      fratrie est hors du cadre (1.39.1) : le nombre ne compte
                      que les cartes présentes, donc visibles par ce compte. */ ?>
             <p class="arbre-explo__indice" data-explo-indice hidden></p>
+            <?php
+                $compteArbre = current_account();
+                $peutModifierArbre = is_admin() || (
+                    $compteArbre !== null
+                    && compte_est_journaliste($compteArbre)
+                    && !journaliste_avec_validation($compteArbre)
+                    && $root !== null
+                    && journaliste_peut_modifier('person', $root, $compteArbre)
+                );
+            ?>
+            <div class="arbre-explo__personne" aria-label="Personne choisie">
+                <span>Personne choisie : <strong><?= e($arbre['racine']['nom']) ?></strong></span>
+                <a class="bouton arbre-explo__personne-action" href="<?= e($arbre['racine']['url']) ?>">Voir la fiche</a>
+                <?php if ($peutModifierArbre): ?>
+                    <a class="bouton bouton--secondaire arbre-explo__personne-action"
+                       href="<?= is_admin() ? '/admin/arbre/personne/' : '/arbre/' ?><?= (int) $arbre['racine']['id'] ?><?= is_admin() ? '' : '/modifier' ?>">Modifier la fiche</a>
+                <?php endif; ?>
+            </div>
         </div>
         <script src="<?= e(asset_url('/assets/arbre-exploration.js')) ?>" defer></script>
 
@@ -219,8 +230,8 @@ $alphabet = range('A', 'Z');
 
         <p class="note arbre-chene__note">
             Trois générations d’ancêtres et deux de descendants, avec les seules
-            personnes que votre compte a le droit de voir. Chaque nom mène à la
-            fiche de la personne.
+            personnes que votre compte a le droit de voir. Choisissez un nom pour
+            centrer l’arbre sur cette personne, puis « Voir la fiche » pour ouvrir sa fiche.
         </p>
     <?php endif; ?>
 

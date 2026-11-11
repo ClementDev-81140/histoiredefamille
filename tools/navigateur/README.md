@@ -581,7 +581,18 @@ node tools/navigateur/actions-arbre-mobile.mjs /tmp/arbre.html
 rendues par `rendre.php` à 360, 390 et 430 px et mesure le rectangle
 réel de chaque carte au chargement, après « Voir tout » et après
 « Centrer » : toutes dans le cadre, aucun texte coupé, indice des
-frères et sœurs exact quand il s'affiche.
+frères et sœurs exact quand il s'affiche. Depuis 1.40.0, il teste aussi
+1280 et 1920 px, les superpositions et les départs et arrivées des traits.
+Sur téléphone il mesure les boutons de la barre hors du dessin au chargement,
+après « Voir tout », « Centrer » et un zoom arrière : au moins 44 × 44 px
+et visibles dans la fenêtre. Prévoir une page rendue avec un administrateur
+pour tester aussi « Modifier la fiche » ; pour tester les grandes fratries,
+rendre une page avec `plus=1`.
+
+`actions-arbre-schema.mjs <page.html>` contrôle les portraits, le filigrane,
+le contraste et l'impression ; `HDF_THEME=/chemin/theme.css` applique la
+palette bleue. Les liens « Fiche » ne sont plus dans les cartes : la barre
+fixe ouvre la fiche de la personne choisie.
 
 ```bash
 HDF_CONFIG=/chemin/config.local.php php tools/navigateur/rendre.php \
