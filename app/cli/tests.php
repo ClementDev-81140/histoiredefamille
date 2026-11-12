@@ -2789,6 +2789,12 @@ if ($filtre === '' || $filtre === 'arbre') {
     tests_arbre();
 }
 
+// Contrôles préparatoires à la saisie des liens d'une fiche personne.
+if ($filtre === '' || $filtre === 'personne_saisie') {
+    require_once __DIR__ . '/tests_personne_saisie.php';
+    tests_personne_saisie();
+}
+
 // 1.34.0 : étiquette de décennie, calendrier (anniversaires, propositions),
 // lignes de décès vides.
 if ($filtre === '' || $filtre === 'calendrier34') {
