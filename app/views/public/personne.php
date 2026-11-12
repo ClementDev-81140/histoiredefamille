@@ -103,6 +103,45 @@ $listePersonnes = static function (array $personnes): void {
         </div>
     </div>
 
+    <?php if (!empty($peutAjouterFamille)): ?>
+    <section id="famille-ajout" class="panneau">
+        <h2>Famille</h2>
+        <form method="get" action="/arbre/<?= (int) $person['id'] ?>#famille-ajout" class="formulaire">
+            <div class="champ">
+                <label for="famille_recherche">Rechercher une personne</label>
+                <input type="search" id="famille_recherche" name="famille_recherche" maxlength="100" value="<?= e($rechercheFamille) ?>">
+            </div>
+            <button class="bouton bouton--secondaire" type="submit">Rechercher</button>
+        </form>
+        <?php if (trim($rechercheFamille) !== ''): ?>
+            <?php if ($suggestionsFamille === []): ?>
+                <p>Aucune personne trouvée.</p>
+            <?php else: ?>
+            <form method="post" action="/arbre/<?= (int) $person['id'] ?>/famille/apercu" class="formulaire">
+                <?= csrf_field() ?>
+                <div class="champ"><label for="famille_personne">Personne</label>
+                    <select id="famille_personne" name="personne" required>
+                        <option value="">Choisir une personne</option>
+                        <?php foreach ($suggestionsFamille as $suggestion): ?>
+                            <option value="<?= (int) $suggestion['id'] ?>"><?= e(person_full_name($suggestion)) ?><?= !empty($suggestion['birth_year']) ? ' — ' . e((string) $suggestion['birth_year']) : '' ?><?= !empty($suggestion['birth_place']) ? ' — ' . e((string) $suggestion['birth_place']) : '' ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="champ"><label for="famille_lien">Lien à ajouter</label>
+                    <select id="famille_lien" name="lien">
+                        <option value="parent">Ajouter un parent</option>
+                        <option value="conjoint">Ajouter un conjoint</option>
+                        <option value="enfant">Ajouter un enfant</option>
+                        <option value="fratrie">Ajouter un frère ou une sœur</option>
+                    </select>
+                </div>
+                <button type="submit" class="bouton">Voir l’aperçu</button>
+            </form>
+            <?php endif; ?>
+        <?php endif; ?>
+    </section>
+    <?php endif; ?>
+
     <div class="fiche-personne__corps">
         <div>
             <h2>Repères</h2>

@@ -53,6 +53,7 @@ require_once __DIR__ . '/lib/conversion.php';
 require_once __DIR__ . '/lib/propositions.php';
 require_once __DIR__ . '/lib/une_publique.php';
 require_once __DIR__ . '/lib/arbre_chene.php';
+require_once __DIR__ . '/lib/personne_saisie.php';
 require_once __DIR__ . '/lib/demo.php';
 
 /**

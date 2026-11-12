@@ -1,7 +1,9 @@
 # Inventaire préalable : saisie d'une fiche personne
 
-État relevé sur le socle 1.40.0. Ce document est un inventaire ; le parcours
-« tout-en-un » et l'aperçu de confirmation ne sont pas encore livrés.
+État relevé sur le socle 1.40.0. Le parcours « tout-en-un » n'est pas
+encore livré. Une section séparée sur la fiche permet maintenant de proposer
+un lien à la fois, avec aperçu puis confirmation, sans modifier le formulaire
+existant. La création de personnes sur place reste à faire.
 
 ## Personne
 
@@ -43,8 +45,14 @@ il faudra traiter les cas ambigus sans effacer de liens à l'insu du lecteur.
 
 ## Travail restant
 
-Concevoir et implémenter le formulaire, l'aperçu sans écriture, la
-confirmation atomique et son historique, les contrôles des liens et des dates,
-la création privée « à compléter » et sa migration en ajout seul, le filtre
-administrateur, l'intégration à l'arbre et tous les tests de parcours et de
-droits. Une sauvegarde est nécessaire avant l'application de la migration.
+Le nouveau parcours crée toujours une famille distincte : un parent ou un
+conjoint n'est jamais ajouté à une famille préexistante. Pour une fratrie, il
+faut une seule famille de parents connue et accessible ; ses parents sont
+montrés dans l'aperçu et une nouvelle famille les relie aux deux enfants.
+Les situations ambiguës sont refusées. La confirmation vérifie à nouveau les
+droits et les cycles, dans une transaction ; elle est journalisée. L'ancien
+formulaire reste inchangé et ne bénéficie pas de ces nouveaux contrôles.
+
+Restent notamment la création privée sur place, l'historique des liens et les
+contrôles de dates. La migration 026 ajoute l'indicateur « à compléter » et le
+filtre administrateur ; une sauvegarde est nécessaire avant son application.

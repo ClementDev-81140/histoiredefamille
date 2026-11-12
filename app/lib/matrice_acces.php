@@ -125,6 +125,8 @@ function matrice_famille(string $methode, string $motif): string
         || $motif === '/albums/nouveau'
         || $motif === '/albums/{id}/modifier'
         || $motif === '/arbre/{id}/modifier'
+        || $motif === '/arbre/{id}/famille/apercu'
+        || $motif === '/arbre/{id}/famille/confirmer'
         || $motif === '/arbre/nouvelle-personne') {
         return 'journaliste_ecriture';
     }

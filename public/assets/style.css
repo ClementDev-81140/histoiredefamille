@@ -7064,3 +7064,10 @@ legend {
         transform: none;
     }
 }
+
+/* Saisie d'un lien familial : commandes faciles à utiliser au doigt. */
+#famille-ajout input, #famille-ajout select, #famille-ajout button,
+.famille-apercu-actions .bouton {
+    min-height: 44px;
+    max-width: 100%;
+}

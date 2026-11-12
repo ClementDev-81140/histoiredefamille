@@ -393,7 +393,25 @@ function public_personne(array $params): void
     $onclesTantes   = filter_visible_persons(person_uncles_aunts((int) $person['id']));
     $neveuxNieces   = filter_visible_persons(person_nephews_nieces((int) $person['id']));
 
+    $compteFamille = current_account();
+    $peutAjouterFamille = $compteFamille !== null
+        && (($compteFamille['role'] ?? '') === 'admin' || (compte_est_journaliste($compteFamille) && !journaliste_avec_validation($compteFamille)))
+        && journaliste_peut_modifier('person', $person, $compteFamille);
+    $rechercheFamille = mb_substr(query('famille_recherche'), 0, 100);
+    $suggestionsFamille = [];
+    if ($peutAjouterFamille && trim($rechercheFamille) !== '') {
+        $aChercher = famille_lien_normaliser($rechercheFamille);
+        foreach (personne_saisie_suggestions() as $candidate) {
+            if ((int) $candidate['id'] !== (int) $person['id']
+                && str_contains(famille_lien_normaliser(person_full_name($candidate)), $aChercher)) {
+                $suggestionsFamille[] = $candidate;
+            }
+        }
+    }
     render('public/personne', [
+        'peutAjouterFamille' => $peutAjouterFamille,
+        'rechercheFamille' => $rechercheFamille,
+        'suggestionsFamille' => $suggestionsFamille,
         'titre'         => person_full_name($person),
         'person'        => $person,
         'parents'       => $parents,

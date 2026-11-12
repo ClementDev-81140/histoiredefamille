@@ -56,6 +56,8 @@ function tests_personne_saisie(): void
             verifier('saisie personne : contre-épreuve, l’administrateur voit les quatre personnes',
                 count(array_intersect([$visible, $hors, $sansBranche, $prive], $idsAdmin)) === 4);
 
+            tests_famille_liens_parcours($admin, $validation, $direct, $brancheA, $hors, $prive);
+
             // Visible → privé → hors : la détection doit prendre en compte
             // les chemins privés, sans jamais renvoyer leur contenu.
             tests_arbre_famille($visible, null, [$prive]);
@@ -85,4 +87,57 @@ function tests_personne_saisie(): void
     } finally {
         $_SESSION = $sessionAvant;
     }
+}
+
+/** Parcours réel sans JavaScript : aperçu, confirmation et refus. */
+function tests_famille_liens_parcours(int $admin, int $validation, int $direct, int $branche, int $hors, int $prive): void
+{
+    $moi = tests37_personne('FamilleMoi', [$branche]);
+    $parent = tests37_personne('FamilleParent', [$branche]);
+    $enfant = tests37_personne('FamilleEnfant', [$branche]);
+    $frere = tests37_personne('FamilleFrere', [$branche]);
+    $conjoint = tests37_personne('FamilleConjoint', [$branche]);
+    $url = '/arbre/' . $moi . '/famille/';
+    $fiche = tests37_requete('GET', '/arbre/' . $moi . '?famille_recherche=familleparent', $admin);
+    verifier('famille : recherche et choix visibles sur la fiche', str_contains($fiche['corps'], 'FamilleParent') && str_contains($fiche['corps'], 'Ajouter un parent'), $fiche['erreur']);
+    $avant = (int) db_value('SELECT COUNT(*) FROM families');
+    $r = tests37_requete('POST', $url . 'apercu', $admin, ['personne' => (string) $parent, 'lien' => 'parent']);
+    verifier('famille : aperçu sans écriture', $r['code'] === 200 && str_contains($r['corps'], 'deviendra l’enfant de') && (int) db_value('SELECT COUNT(*) FROM families') === $avant, 'code=' . $r['code'] . ' ' . $r['erreur'] . ' ' . strip_tags($r['corps']));
+    preg_match('/name="signature" value="([a-f0-9]+)"/', $r['corps'], $match);
+    $signature = $match[1] ?? '';
+    $refus = tests37_requete('POST', $url . 'confirmer', $admin, ['personne' => (string) $parent, 'lien' => 'parent', 'signature' => 'invalide']);
+    verifier('famille : confirmation falsifiée refusée sans écriture', $refus['code'] === 400 && (int) db_value('SELECT COUNT(*) FROM families') === $avant, $refus['erreur']);
+    $ok = tests37_requete('POST', $url . 'confirmer', $admin, ['personne' => (string) $parent, 'lien' => 'parent', 'signature' => $signature]);
+    verifier('famille : confirmation crée uniquement le lien parent annoncé', $ok['code'] === 303 && in_array($parent, array_map('intval', array_column(person_parents($moi), 'id')), true), $ok['erreur']);
+    foreach ([['enfant', $enfant], ['conjoint', $conjoint], ['fratrie', $frere]] as [$type, $cible]) {
+        $r = tests37_requete('POST', $url . 'apercu', $admin, ['personne' => (string) $cible, 'lien' => $type]);
+        preg_match('/name="signature" value="([a-f0-9]+)"/', $r['corps'], $match);
+        $apercu = $r['code'] === 200 && !empty($match[1]);
+        $ok = tests37_requete('POST', $url . 'confirmer', $admin, ['personne' => (string) $cible, 'lien' => $type, 'signature' => $match[1] ?? '']);
+        $existe = match ($type) {
+            'enfant' => in_array($moi, array_map('intval', array_column(person_parents($cible), 'id')), true),
+            'fratrie' => in_array($parent, array_map('intval', array_column(person_parents($cible), 'id')), true)
+                && in_array($cible, array_map('intval', array_column(person_siblings($moi), 'id')), true),
+            default => (int) db_value('SELECT COUNT(*) FROM families WHERE (husband_id = ? AND wife_id = ?) OR (husband_id = ? AND wife_id = ?)', [$moi, $cible, $cible, $moi]) === 1,
+        };
+        verifier('famille : aperçu et confirmation ' . $type, $apercu && $ok['code'] === 303 && $existe, $r['erreur'] . ' ' . $ok['erreur']);
+    }
+    $cycle = tests37_requete('POST', $url . 'apercu', $admin, ['personne' => (string) $enfant, 'lien' => 'parent']);
+    verifier('famille : cycle refusé avant écriture', $cycle['code'] === 400 && str_contains($cycle['corps'], 'cycle'), $cycle['erreur']);
+    $sansCsrf = tests_envoi_requete('POST', $url . 'apercu', $admin, ['personne' => (string) $parent, 'lien' => 'parent']);
+    verifier('famille : un aperçu sans jeton CSRF est refusé', $sansCsrf['code'] === 403, $sansCsrf['erreur']);
+    $validationConfirm = tests37_requete('POST', $url . 'confirmer', $validation, ['personne' => (string) $conjoint, 'lien' => 'conjoint', 'signature' => $signature]);
+    verifier('famille : journaliste avec validation ne peut pas confirmer', $validationConfirm['code'] === 403, $validationConfirm['erreur']);
+    $nouvelleCible = tests37_personne('FamilleCibleChangee', [$branche]);
+    $r = tests37_requete('POST', $url . 'apercu', $admin, ['personne' => (string) $nouvelleCible, 'lien' => 'enfant']);
+    preg_match('/name="signature" value="([a-f0-9]+)"/', $r['corps'], $match);
+    db_update('persons', $nouvelleCible, ['first_name' => 'AutreNom']);
+    $refusChange = tests37_requete('POST', $url . 'confirmer', $admin, ['personne' => (string) $nouvelleCible, 'lien' => 'enfant', 'signature' => $match[1] ?? '']);
+    verifier('famille : changement après aperçu impose une nouvelle vérification', $refusChange['code'] === 400 && person_parents($nouvelleCible) === [], $refusChange['erreur']);
+    $refus = tests37_requete('POST', $url . 'apercu', $validation, ['personne' => (string) $parent, 'lien' => 'parent']);
+    verifier('famille : journaliste avec validation reçoit 403', $refus['code'] === 403, $refus['erreur']);
+    $refus = tests37_requete('POST', $url . 'apercu', $direct, ['personne' => (string) $hors, 'lien' => 'conjoint']);
+    verifier('famille : cible hors périmètre refusée', $refus['code'] === 404, $refus['erreur']);
+    $page = tests37_requete('GET', '/arbre/' . $moi . '?famille_recherche=privesaisie', $direct);
+    verifier('famille : recherche ne révèle pas les personnes privées', !str_contains($page['corps'], 'PriveSaisie'), $page['erreur']);
 }
