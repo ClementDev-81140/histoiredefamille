@@ -56,6 +56,10 @@ $listePersonnes = static function (array $personnes): void {
 </nav>
 
 <section class="section fiche-personne">
+    <?php if (!empty($person['needs_completion']) && (is_admin()
+        || (!empty($peutCorriger) && !journaliste_avec_validation(current_account())))): ?>
+        <p class="note">Fiche à compléter.</p>
+    <?php endif; ?>
     <div class="fiche-personne__entete">
         <?php if ($photo !== null): ?>
             <img class="fiche-personne__photo <?= e(aspect_photo_classe($photo)) ?>" src="<?= e(file_url($photo)) ?>"

@@ -22,6 +22,12 @@
         <label for="q">Rechercher</label>
         <input type="search" id="q" name="q" value="<?= e($q) ?>" placeholder="Nom ou prénom">
     </div>
+    <div class="champ">
+        <label class="case">
+            <input type="checkbox" name="a_completer" value="1" <?= checked((bool) ($aCompleter ?? false)) ?>>
+            À compléter
+        </label>
+    </div>
     <div class="champ champ--bouton">
         <button type="submit" class="bouton">Rechercher</button>
         <a class="lien" href="/admin/arbre">Tout</a>
@@ -56,7 +62,7 @@
                 <?php foreach ($persons as $person): ?>
                     <tr>
                         <td><?= e((string) $person['last_name']) ?></td>
-                        <td><?= e((string) $person['first_name']) ?></td>
+                        <td><?= e((string) $person['first_name']) ?><?php if (!empty($person['needs_completion'])): ?> <span class="discret">À compléter</span><?php endif; ?></td>
                         <td><?= e(trim((string) ($person['birth_date'] ?? ''))) ?></td>
                         <td><?= e(trim((string) ($person['death_date'] ?? ''))) ?></td>
                         <td><span class="<?= e(visibility_class((string) $person['visibility'])) ?>">

@@ -2535,7 +2535,12 @@ if ($filtre === '' || $filtre === 'composition') {
     $derniere = basename((string) end($migrations));
     $sql009   = (string) @file_get_contents(dirname(__DIR__) . '/migrations/009_articles_modele.sql');
     // Chaque lot ajoute SA migration ; les précédentes ne bougent jamais.
-    verifier('migration : 025 est la dernière migration', $derniere === '025_albums_attente.sql', $derniere);
+    verifier('migration : 026 est la dernière migration', $derniere === '026_personnes_a_completer.sql', $derniere);
+    $migration026 = (string) @file_get_contents(dirname(__DIR__) . '/migrations/026_personnes_a_completer.sql');
+    verifier('migration : 026 ajoute seulement l’indicateur à compléter, désactivé par défaut',
+        str_contains($migration026, 'ADD COLUMN needs_completion INTEGER NOT NULL DEFAULT 0')
+        && !str_contains($migration026, 'DELETE FROM') && !str_contains($migration026, 'DROP TABLE'),
+        $migration026 === '' ? 'fichier absent' : 'contenu non conforme');
     $migration025 = (string) @file_get_contents(dirname(__DIR__) . '/migrations/025_albums_attente.sql');
     verifier(
         'migration : 025 ajoute l’attente des albums (ajout seul) et le rattrapage des albums 1.37.0',

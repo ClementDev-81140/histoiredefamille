@@ -14,6 +14,10 @@ function admin_persons(): void
     $params = [];
     $where  = ['1 = 1'];
     $q      = query('q');
+    $aCompleter = query('a_completer') === '1';
+    if ($aCompleter) {
+        $where[] = 'p.needs_completion = 1';
+    }
     if ($q !== '') {
         $where[] = "(p.first_name LIKE :q OR p.last_name LIKE :q)";
         $params[':q'] = '%' . $q . '%';
@@ -39,6 +43,7 @@ function admin_persons(): void
         'pagination' => $pg,
         'total'      => $total,
         'q'          => $q,
+        'aCompleter' => $aCompleter,
         'nbCouples'  => (int) db_value('SELECT COUNT(*) FROM families', [], 0),
     ], 'layout_admin');
 }

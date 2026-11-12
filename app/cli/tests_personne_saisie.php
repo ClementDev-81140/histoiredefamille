@@ -24,7 +24,20 @@ function tests_personne_saisie(): void
             $hors = tests37_personne('HorsSaisie', [$brancheB]);
             $sansBranche = tests37_personne('SansBrancheSaisie');
             $prive = tests37_personne('PriveSaisie', [$brancheA]);
-            db_update('persons', $prive, ['visibility' => 'prive']);
+            db_update('persons', $prive, ['visibility' => 'prive', 'needs_completion' => 1]);
+            verifier('saisie personne : les autres fiches restent à compléter = non par défaut',
+                (int) db_value('SELECT needs_completion FROM persons WHERE id = ?', [$visible], -1) === 0);
+            $listeAdmin = tests_envoi_requete('GET', '/admin/arbre?a_completer=1', $admin);
+            verifier('saisie personne : le filtre administrateur trouve les fiches à compléter',
+                str_contains((string) $listeAdmin['corps'], 'PriveSaisie')
+                && !str_contains((string) $listeAdmin['corps'], 'VisibleSaisie'));
+            $ficheAdmin = tests_envoi_requete('GET', '/arbre/' . $prive, $admin);
+            verifier('saisie personne : la mention est affichée à l’administrateur sur la fiche',
+                str_contains((string) $ficheAdmin['corps'], 'Fiche à compléter.'));
+            db_update('persons', $visible, ['needs_completion' => 1]);
+            $ficheLecteur = tests_envoi_requete('GET', '/arbre/' . $visible, $lecteur);
+            verifier('saisie personne : la mention reste invisible pour le lecteur',
+                !str_contains((string) $ficheLecteur['corps'], 'Fiche à compléter.'));
 
             $_SESSION = ['account_id' => $direct];
             $ids = array_map('intval', array_column(personne_saisie_suggestions(), 'id'));
