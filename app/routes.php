@@ -334,6 +334,7 @@ route('GET', '/admin/arbre/personne/{id}', 'admin_person_form');
 route('POST', '/admin/arbre/personne/{id}', 'admin_person_save');
 route('POST', '/admin/arbre/personne/{id}/supprimer', 'admin_person_delete');
 route('GET', '/admin/arbre/couples', 'admin_couples');
+route('GET', '/admin/arbre/liens-historique', 'admin_famille_historique');
 route('GET', '/admin/arbre/couple/nouveau', 'admin_couple_form');
 route('POST', '/admin/arbre/couple/nouveau', 'admin_couple_save');
 route('GET', '/admin/arbre/couple/{id}', 'admin_couple_form');

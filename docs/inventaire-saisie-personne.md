@@ -45,14 +45,19 @@ il faudra traiter les cas ambigus sans effacer de liens à l'insu du lecteur.
 
 ## Travail restant
 
-Le nouveau parcours crée toujours une famille distincte : un parent ou un
-conjoint n'est jamais ajouté à une famille préexistante. Pour une fratrie, il
-faut une seule famille de parents connue et accessible ; ses parents sont
-montrés dans l'aperçu et une nouvelle famille les relie aux deux enfants.
-Les situations ambiguës sont refusées. La confirmation vérifie à nouveau les
-droits et les cycles, dans une transaction ; elle est journalisée. L'ancien
-formulaire reste inchangé et ne bénéficie pas de ces nouveaux contrôles.
+Le parcours propose les familles de parents accessibles, ou « sans
+conjoint ». Une famille unique est choisie par défaut ; son utilisation est
+annoncée avant confirmation. Compléter une famille existante peut attribuer
+le nouveau parent à plusieurs enfants : tous doivent être accessibles et
+modifiables, sont nommés dans l'aperçu et font l'objet des contrôles de cycle
+et de places de parents. Pour une fratrie, il faut une seule famille de
+parents connue et accessible ; une nouvelle famille les relie aux deux enfants.
 
-Restent notamment la création privée sur place, l'historique des liens et les
-contrôles de dates. La migration 026 ajoute l'indicateur « à compléter » et le
-filtre administrateur ; une sauvegarde est nécessaire avant son application.
+La confirmation vérifie à nouveau les droits et les cycles dans une
+transaction. L'historique des liens, accessible aux seuls administrateurs depuis
+l'arbre d'administration, conserve les noms et l'état antérieur de la famille
+et renvoie vers sa modification. L'ancien formulaire reste inchangé et ne
+bénéficie pas de ces nouveaux contrôles. Restent notamment la création privée
+sur place et les contrôles de dates. La migration 026 ajoute l'indicateur « à
+compléter » et le filtre administrateur ; une sauvegarde est nécessaire avant
+son application.
